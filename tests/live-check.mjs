@@ -164,15 +164,28 @@ async function testDevice(device, [postcode, place]) {
     const started = Date.now();
     await page.click("#runBtn");
     await reportDone(page);
-    topics = await page.evaluate(() => orderedResults().map(c => ({ id: c.id, status: c.status, found: c.found })));
+    const readTopics = () => page.evaluate(() => orderedResults().map(c => ({ id: c.id, status: c.status, found: c.found })));
+    topics = await readTopics();
     const total = await page.evaluate(() => CHECKS.length);
-    const failed = topics.filter(t => t.status === "error");
+    let failed = topics.filter(t => t.status === "error");
+    // A government service that is slow for a moment shows "Try again" on that topic.
+    // Press it once, as a person would (this also tests the button). A topic that
+    // fails a second time still fails the test.
+    const retried = failed.map(t => t.id);
+    for (const id of retried) {
+      await page.waitForTimeout(20000);
+      await page.click(`[data-retry="${id}"]`);
+      await page.waitForTimeout(500);
+      await reportDone(page);
+    }
+    if (retried.length) { topics = await readTopics(); failed = topics.filter(t => t.status === "error"); }
     const secs = Math.round((Date.now() - started) / 1000);
     if (topics.length !== total || failed.length) {
       const why = [...new Set(failedRequests)].slice(0, 6).join("; ");
-      throw new Error(`${failed.length} topic(s) failed: ` + failed.map(t => `${t.id} (${t.found})`).join("; ") + (why ? ` | failed requests: ${why}` : ""));
+      throw new Error(`${failed.length} topic(s) failed` + (retried.length ? " even after Try again" : "") + ": " +
+        failed.map(t => `${t.id} (${t.found})`).join("; ") + (why ? ` | failed requests: ${why}` : ""));
     }
-    return `${total} topics in ${secs} s`;
+    return `${total} topics in ${secs} s` + (retried.length ? ` (needed Try again: ${retried.join(", ")})` : "");
   });
   await page.$eval("#reportTop", x => x.scrollIntoView()).catch(() => {});
   await page.waitForTimeout(1500);

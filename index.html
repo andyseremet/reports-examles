@@ -761,7 +761,7 @@ function geometryCentre(geometry) {
 // these are queued: only a few at a time, with a short gap between starts,
 // and a longer wait before trying again if one is refused.
 const PACED_HOSTS = [
-  { prefix: "https://environment.data.gov.uk/spatialdata/", maxAtOnce: 2, gapMs: 300, retryWaitsMs: [2000, 6000] }
+  { prefix: "https://environment.data.gov.uk/spatialdata/", maxAtOnce: 2, gapMs: 300, retryWaitsMs: [2000, 6000], timeoutMs: 35000 }
 ];
 const pacing = new Map();
 
@@ -789,10 +789,12 @@ async function fetchJSON(url, options = {}, attempt = 1) {
   const retryWaits = rule ? rule.retryWaitsMs : [options.timeout ? 300 : 1500];
   const release = rule ? await pacedSlot(rule) : null;
   try {
-    return await fetchJSONOnce(url, options.timeout || REQUEST_TIMEOUT, !!options.timeout, options.body);
+    return await fetchJSONOnce(url, options.timeout || (rule && rule.timeoutMs) || REQUEST_TIMEOUT, !!options.timeout || !!rule, options.body);
   } catch (error) {
     if (release) release();
-    if (attempt <= retryWaits.length && (error.retryable || (rule && error.refused))) {
+    // A slow answer is tried once more; waiting for a third would keep the visitor too long.
+    const slowAgain = error.timedOut && attempt > 1;
+    if (attempt <= retryWaits.length && !slowAgain && (error.retryable || (rule && error.refused))) {
       await new Promise(resolve => setTimeout(resolve, retryWaits[attempt - 1]));
       return fetchJSON(url, options, attempt + 1);
     }
@@ -824,6 +826,7 @@ async function fetchJSONOnce(url, timeoutMs, retryOnTimeout, body) {
     if (error.name === "AbortError") {
       const err = new Error("the data service took too long to respond");
       err.retryable = retryOnTimeout;
+      err.timedOut = true;
       throw err;
     }
     if (error instanceof TypeError) {

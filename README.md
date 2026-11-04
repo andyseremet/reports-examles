@@ -84,7 +84,9 @@ screenshots and sample reports are kept for 14 days with each run.
 
 The Environment Agency map server (surface water, noise, landfill) briefly refuses an address that sends more
 than about 15 requests a minute, which happens to GitHub's shared test machines. The test therefore waits a minute
-before each report, and the page itself sends at most 2 requests at a time to that server and retries a refusal.
+before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
+answer and retries a refusal or a slow answer. If a topic still shows "Try again", the test presses it once, as a
+person would; a topic that fails twice fails the test.
 
 Run it yourself: `npm install playwright@1.49.1 && npx playwright install chromium && node tests/live-check.mjs`
 (set `BASE` to test another address, for example a local copy; set `PAUSE_MS=0` to skip the pauses).
