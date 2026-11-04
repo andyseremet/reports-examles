@@ -42,17 +42,23 @@ official checkers.
 
 - **Map:** on phones, scroll the page with one finger and move the map with two; on computers, use Ctrl (⌘ on Mac)
   + scroll to zoom. Full-screen map button, "my location" button, satellite and street backgrounds.
-- **Report:** results appear topic by topic as the data arrives; any topic that fails has a **Try again** button.
+- **Report:** results appear topic by topic as the data arrives. A topic whose data fails is tried once more by itself
+  after 20 seconds; if it fails again, it shows a **Try again** button.
   A section bar stays at the top while scrolling, with **Open all / Close all** and a back-to-top button.
 - **Save and share:** every report is saved on your device (nothing is sent anywhere). Reopen saved properties,
   **compare two side by side**, tick off the checklist (remembered per property), and share with the phone's share menu.
-- **Clear at a glance:** a row of topic icons shows every result's colour; on phones, tables become easy-to-read cards and
+- **Clear at a glance:** a row of topic icons shows every result's colour; tap one to see the reason in one line,
+  with a link to the full section. On phones, tables become easy-to-read cards and
   "Check this property" stays at the bottom of the screen until pressed.
 - **Back button:** returns from a report to the search and map, and closes the full-screen map.
 - **Fair ratings:** old landfill and landslides are rated by distance (very close sites stand out; distant ones are for information).
 - **Privacy:** no account, cookies or tracking; see "Privacy: what is sent where" at the bottom of the page.
 - **Saved properties:** reopen instantly from saved results (with a refresh button), private notes, a starred shortlist,
-  and export/import to move the list to another device.
+  and export/import to move the list to another device. Saved properties live only in the browser, so the app asks the
+  browser to keep them, says plainly if something could not be saved (for example, storage full or a private window),
+  and suggests **Download a backup** once you have 5 or more saved properties and no backup in the last 30 days.
+- **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
+  message at the top, and starts by itself when the signal returns.
 - **Printouts:** a short "Print summary" option, and a QR code that opens the live report.
 - **Comfort:** dark mode follows your device setting; **A+** makes text larger; **install as an app** on your phone's
   home screen (on iPhone: Share, then Add to Home Screen).
@@ -79,14 +85,16 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 
 It checks that all 21 data services still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
-full screen, the section bar, Back and Forward, saved reports and notes, printing and downloads. Results,
+full screen, the offline message, the section bar, the topic icons, Back and Forward, saved reports and notes,
+printing and downloads. Results,
 screenshots and sample reports are kept for 14 days with each run.
 
 The Environment Agency map server (surface water, noise, landfill) briefly refuses an address that sends more
 than about 15 requests a minute, which happens to GitHub's shared test machines. The test therefore waits a minute
 before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
-answer and retries a refusal or a slow answer. If a topic still shows "Try again", the test presses it once, as a
-person would; a topic that fails twice fails the test.
+answer and retries a refusal or a slow answer. A topic that still fails is tried once more by the page after 20
+seconds. If it then shows "Try again", the test presses it once, as a person would; a topic that still fails after
+that fails the test.
 
 That server sometimes refuses GitHub's shared test machines outright ("403 Forbidden") for many minutes while
 answering everyone else. That refusal, and only that, is shown as a **warning** (⚠️ in the summary) instead of a

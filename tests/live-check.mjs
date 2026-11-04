@@ -118,7 +118,7 @@ async function randomEnglishPostcode() {
   return ["CM8 1AY", "Braintree"];
 }
 
-const reportDone = page => page.waitForFunction(() => typeof run !== "undefined" && run && run.done, null, { timeout: 150000 });
+const reportDone = page => page.waitForFunction(() => typeof run !== "undefined" && run && run.done, null, { timeout: 240000 });
 
 async function testDevice(device, [postcode, place]) {
   const group = `${device.name} – ${postcode}, ${place}`;
@@ -175,6 +175,24 @@ async function testDevice(device, [postcode, place]) {
     return r[0] === 0 && r[1] === 0 && Math.abs(r[2] - r[4]) <= 1 && Math.abs(r[3] - r[5]) <= 1 && closed ? `map ${r[2]}×${r[3]}` : false;
   });
 
+  await step("Offline: says so and waits to run the check", async () => {
+    await page.context().setOffline(true);
+    try {
+      await page.click("#runBtn");
+      await page.waitForSelector("#offlineBar:not(.hidden)", { timeout: 5000 });
+      const text = await page.$eval("#offlineBar", x => x.textContent.replace(/\s+/g, " ").trim());
+      const started = await page.evaluate(() => !!run);
+      await page.click("#cancelQueued");
+      if (started) throw new Error("a report started with no signal");
+      if (!/will start by itself/.test(text)) throw new Error(`unexpected message: ${text}`);
+    } finally { await page.context().setOffline(false); }
+    await page.waitForTimeout(500);
+    const gone = await page.$eval("#offlineBar", x => x.classList.contains("hidden"));
+    const started = await page.evaluate(() => !!run);
+    if (started) throw new Error("the cancelled check still started");
+    return gone ? "message shown, check waited and was cancelled" : false;
+  });
+
   let topics = [];
   await step("Report runs with every topic", async () => {
     const started = Date.now();
@@ -204,7 +222,9 @@ async function testDevice(device, [postcode, place]) {
       throw new Error(`${failed.length} topic(s) failed` + (retried.length ? " even after Try again" : "") + ": " +
         failed.map(t => `${t.id} (${t.found})`).join("; ") + (why ? ` | failed requests: ${why}` : ""));
     }
-    return `${total} topics in ${secs} s` + (retried.length ? ` (needed Try again: ${retried.join(", ")})` : "");
+    const auto = await page.evaluate(() => run.autoRetried || []);
+    return `${total} topics in ${secs} s` + (auto.length ? ` (retried by itself: ${auto.join(", ")})` : "")
+      + (retried.length ? ` (needed Try again: ${retried.join(", ")})` : "");
   });
   await page.$eval("#reportTop", x => x.scrollIntoView()).catch(() => {});
   await page.waitForTimeout(1500);
@@ -216,6 +236,17 @@ async function testDevice(device, [postcode, place]) {
     await page.waitForTimeout(1500);
     const active = await page.$eval("#reportNav a.active", x => x.textContent).catch(() => null);
     return icons >= 13 && active === "Living" ? `${icons} icons, section bar ok` : false;
+  });
+
+  await step("Tapping a topic shows why", async () => {
+    await page.click('.topic-strip [data-why="radon"]');
+    await page.waitForTimeout(300);
+    const text = await page.$eval("#whyBox", x => x.hidden ? "" : x.textContent.replace(/\s+/g, " ").trim());
+    const expanded = await page.$eval('.topic-strip [data-why="radon"]', x => x.getAttribute("aria-expanded"));
+    await page.click('.topic-strip [data-why="radon"]');   // tap again to close
+    await page.waitForTimeout(300);
+    const closed = await page.$eval("#whyBox", x => x.hidden);
+    return text.startsWith("Radon") && text.length > 25 && expanded === "true" && closed ? text.slice(0, 70) + "…" : false;
   });
 
   await step("Back returns to the search, Forward reopens the report", async () => {

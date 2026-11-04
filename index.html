@@ -311,6 +311,7 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
   .notes-print:empty::before {content:"(No notes)";color:#666}
   .saved-note button,#refreshBtn {display:none!important}
   body.print-summary .details-start,body.print-summary #sourcesBox,body.print-summary .topic-strip {display:none!important}
+  .app-bar,.why-box,.backup-note {display:none!important}
   body.print-summary #reportMap {height:200px}
   body.print-summary .checklist {break-before:page}
 }
@@ -330,6 +331,19 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 .topic.manual,.topic.error,.topic.loading {background:var(--manual-bg);color:var(--manual)}
 .topic.loading .topic-icon {opacity:.4}
 .summary-title {font-size:17px;margin:4px 0 0}
+.topic-strip .topic {cursor:pointer;font:inherit;font-size:12px;font-weight:bold}
+.topic[aria-expanded="true"] {outline:3px solid currentColor;outline-offset:1px}
+.why-box {margin:-8px 0 16px;padding:10px 12px;border-radius:8px;border-left:4px solid currentColor;font-size:14px;background:var(--surface-2)}
+.why-box.high {color:var(--high)} .why-box.medium {color:var(--med)} .why-box.low {color:var(--low)} .why-box.info {color:var(--info)}
+.why-box.manual,.why-box.error,.why-box.loading {color:var(--manual)}
+.why-box p {margin:0;color:var(--text)}
+.why-box a {display:inline-block;margin-top:4px}
+
+/* ---------- offline and storage messages ---------- */
+.app-bar {position:sticky;top:0;z-index:1500;display:flex;gap:10px;align-items:center;justify-content:space-between;
+  padding:10px 16px;font-size:14px;background:var(--notice-bg);border-bottom:2px solid #d99a26}
+.storage-bar {background:var(--high-bg);color:var(--high);border-bottom-color:var(--high)}
+.backup-note .backup-btns {display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px}
 
 /* ---------- sticky "Check this property" on phones ---------- */
 .sticky-run {position:fixed;left:0;right:0;bottom:0;z-index:1400;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
@@ -385,6 +399,13 @@ body.has-sticky footer {padding-bottom:100px}
 </head>
 
 <body>
+
+<div id="offlineBar" class="app-bar offline-bar hidden" role="status" aria-live="polite"></div>
+<div id="storageBar" class="app-bar storage-bar hidden" role="alert">
+  <span>Your browser would not save this on this device. Its storage may be full, or blocked (for example in a private window).
+    Download the report or your list now, or remove some saved properties.</span>
+  <button class="link-btn" type="button" id="storageBarClose">Close</button>
+</div>
 
 <header class="zoomable">
   <div class="title-row">
@@ -481,6 +502,12 @@ body.has-sticky footer {padding-bottom:100px}
       <p>Every report you run is saved automatically, <strong>only on this device</strong> (nothing is sent anywhere).
          Tap a name to run its checks again with the latest data. Tick two properties and press
          <strong>Compare</strong> to see them side by side.</p>
+    </div>
+    <div class="notice backup-note hidden" id="backupNote">
+      <strong>Keep a copy of your saved properties.</strong> They are stored only in this browser, and phones can clear them
+      if the site is not used for a while.
+      <span class="backup-btns"><button class="primary small-btn" type="button" id="backupNow">Download a backup</button>
+      <button class="link-btn" type="button" id="backupLater">Not now</button></span>
     </div>
     <ul class="saved-list" id="savedList"></ul>
     <div class="saved-actions">
@@ -668,7 +695,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.8.2";
+const APP_VERSION = "1.9.0";
 const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -2523,9 +2550,25 @@ const store = {
     catch (e) { return fallback; }
   },
   set(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage full or blocked */ }
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch (e) { showStorageProblem(); return false; }   // storage full or blocked
   }
 };
+
+// Say plainly when something could not be saved, instead of losing it silently.
+function showStorageProblem() { $("storageBar").classList.remove("hidden"); }
+$("storageBarClose").addEventListener("click", () => $("storageBar").classList.add("hidden"));
+
+// Ask the browser not to clear saved properties when the device is short of space.
+// Most browsers decide by themselves, without asking the user.
+function askToKeepData() {
+  try {
+    if (navigator.storage && navigator.storage.persist && !store.get("plc-persist-asked", false)) {
+      navigator.storage.persist().catch(() => {});
+      localStorage.setItem("plc-persist-asked", "true");
+    }
+  } catch (e) {}
+}
 const SAVED_KEY = "plc-saved-v1";
 const MAX_SAVED = 20;
 
@@ -2549,6 +2592,14 @@ $("runBtn").addEventListener("click", () => runChecks());
 
 function runChecks(options = {}) {
   if (!selected) { setControlOpen(searchControl, true); return; }
+  if (!navigator.onLine) {                 // no signal: start by itself once it is back
+    queuedRun = { options, name: $("siteName").value.trim() || selected.label || "this location" };
+    updateOfflineBar();
+    $("offlineBar").scrollIntoView({ block: "nearest" });
+    return;
+  }
+  queuedRun = null;
+  updateOfflineBar();
   const wasFull = mapIsFull;
   if (mapIsFull) setMapFull(false, true);
   const loc = {
@@ -2578,6 +2629,29 @@ function runChecks(options = {}) {
 
   TASKS.forEach(([key]) => startTask(run, key));
 }
+
+/* ---------- no signal ---------- */
+let queuedRun = null;   // a check asked for while offline
+
+function updateOfflineBar() {
+  const bar = $("offlineBar");
+  const offline = !navigator.onLine;
+  bar.classList.toggle("hidden", !offline);
+  if (!offline) return;
+  bar.innerHTML = queuedRun
+    ? `<span>You're offline. <strong>Your check of ${escapeHTML(queuedRun.name)} will start by itself</strong> when the signal returns.
+        Saved properties still open.</span><button class="link-btn" type="button" id="cancelQueued">Cancel</button>`
+    : `<span>You're offline. Saved properties still open; new checks need a signal.</span>`;
+}
+window.addEventListener("offline", updateOfflineBar);
+window.addEventListener("online", () => {
+  updateOfflineBar();
+  if (queuedRun && selected) { const { options } = queuedRun; runChecks(options); }
+});
+document.addEventListener("click", e => {
+  if (e.target.id === "cancelQueued") { queuedRun = null; updateOfflineBar(); }
+});
+updateOfflineBar();
 
 let lastRunKey = null;
 let shownSearch = location.search;   // the ?lat=… part of the address for what is on screen
@@ -2614,12 +2688,27 @@ window.addEventListener("popstate", () => {
   }
 });
 
-function startTask(r, key) {
+// A topic whose data fails is tried once more by itself: after 20 seconds,
+// or as soon as the signal returns if the device went offline.
+// If it fails again, the topic shows a "Try again" button.
+const AUTO_RETRY_MS = 20000;
+const onlineAgain = () => navigator.onLine ? Promise.resolve()
+  : new Promise(res => window.addEventListener("online", res, { once: true }));
+
+function startTask(r, key, autoRetry = true) {
   delete r.R[key];
   TASK_FN[key](r.loc).then(
     value => { r.R[key] = { ok: true, value }; },
-    error => { r.R[key] = { ok: false, error: error.message || "unknown error" }; }
-  ).then(() => { if (r === run) onTaskSettled(key); });
+    async error => {
+      if (autoRetry && r === run) {
+        if (navigator.onLine) await new Promise(res => setTimeout(res, AUTO_RETRY_MS));
+        else await onlineAgain();
+        if (r === run) { r.autoRetried = [...(r.autoRetried || []), key]; startTask(r, key, false); }
+        return "retrying";
+      }
+      r.R[key] = { ok: false, error: error.message || "unknown error" };
+    }
+  ).then(state => { if (state !== "retrying" && r === run) onTaskSettled(key); });
 }
 
 const depsReady = c => c.deps.every(k => run.R[k]);
@@ -2819,7 +2908,7 @@ document.addEventListener("click", e => {
   run.done = false;            // the report is being completed again
   setExportEnabled(false);
   renderSummary();
-  keys.forEach(k => startTask(run, k));
+  keys.forEach(k => startTask(run, k, false));
 });
 
 function plotFeatures(layer, R) {
@@ -3007,17 +3096,40 @@ function renderSummary() {
         const st = res ? res.status : "loading";
         const [icon, short] = TOPIC_ICONS[c.id];
         const label = res ? STATUS_LABEL[st] : "Checking";
-        return `<li><a class="topic ${st}" href="#slot-${c.id}" data-open="check-${c.id}"
-            title="${escapeHTML(c.title)}: ${label}" aria-label="${escapeHTML(c.title)}: ${label}">
-            <span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></a></li>`;
+        return `<li><button type="button" class="topic ${st}" data-why="${c.id}" aria-controls="whyBox"
+            aria-expanded="${run.whyId === c.id}" aria-label="${escapeHTML(c.title)}: ${label}. Show why">
+            <span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
       }).join("")}
     </ul>
+    ${whyBox()}
     ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
       <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
           <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul>` : ""}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
       Some official data only covers England. Those topics are marked “Check yourself”, with a link to the right national service.</div>` : ""}`;
 }
+
+// The one-line reason for the topic tapped in the strip above.
+function whyBox() {
+  const c = run.whyId && CHECKS.find(x => x.id === run.whyId);
+  if (!c) return `<div id="whyBox" hidden></div>`;
+  const res = run.results[c.id];
+  const st = res ? res.status : "loading";
+  const text = res ? res.found : "Still checking the official data…";
+  return `<div id="whyBox" class="why-box ${st}" aria-live="polite">
+    <strong>${escapeHTML(c.title)}: ${res ? STATUS_LABEL[st] : "Checking"}</strong>
+    <p>${escapeHTML(text || "")}</p>
+    ${res ? `<a href="#check-${c.id}" data-open="check-${c.id}">Read the full section</a>` : ""}</div>`;
+}
+
+document.addEventListener("click", e => {
+  const btn = e.target.closest("[data-why]");
+  if (!btn || !run) return;
+  run.whyId = run.whyId === btn.dataset.why ? null : btn.dataset.why;
+  renderSummary();
+  const again = document.querySelector(`[data-why="${btn.dataset.why}"]`);
+  if (again) again.focus();
+});
 
 function drawReportMap(loc) {
   if (reportMap) { reportMap.remove(); reportMap = null; }
@@ -3156,6 +3268,7 @@ function saveCurrentReport() {
   if (old) { entry.starred = !!old.starred; if (old.name && old.renamed) { entry.name = old.name; entry.renamed = true; } }
   const saved = [entry, ...all.filter(s => s.key !== entry.key)];
   store.set(SAVED_KEY, trimSaved(saved));
+  askToKeepData();
   renderSaved();
 }
 
@@ -3177,6 +3290,7 @@ function renderSaved() {
   const raw = store.get(SAVED_KEY, []);
   const saved = Array.isArray(raw) ? [...raw].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)) : [];
   $("savedPanel").classList.toggle("hidden", !saved.length);
+  $("backupNote").classList.toggle("hidden", !backupDue(saved.length));
   $("savedList").innerHTML = saved.map(s => `
     <li>
       <label class="cmp" title="Select to compare"><input type="checkbox" data-compare="${escapeHTML(s.key)}" aria-label="Compare ${escapeHTML(s.name)}"></label>
@@ -3194,6 +3308,18 @@ function renderSaved() {
     </li>`).join("");
   updateCompareButton();
 }
+
+// Suggest a backup once there are 5 or more saved properties and there has been
+// no backup (or "Not now") in the last 30 days.
+const BACKUP_MIN = 5, BACKUP_DAYS = 30;
+function backupDue(count) {
+  if (count < BACKUP_MIN) return false;
+  const last = [store.get("plc-backup-at", null), store.get("plc-backup-later", null)]
+    .filter(Boolean).map(d => new Date(d).getTime()).filter(t => !isNaN(t));
+  return !last.length || Date.now() - Math.max(...last) > BACKUP_DAYS * 86400000;
+}
+$("backupNow").addEventListener("click", () => $("exportBtn").click());
+$("backupLater").addEventListener("click", () => { store.set("plc-backup-later", new Date().toISOString()); renderSaved(); });
 
 function selectedForCompare() {
   return [...document.querySelectorAll("#savedList input[data-compare]:checked")].map(b => b.dataset.compare);
@@ -3275,6 +3401,8 @@ $("exportBtn").addEventListener("click", () => {
     saved, snapshots: pick("plc-snap:"), notes: pick("plc-notes:"), ticks: pick("plc-ticks:")
   };
   downloadFile("property-check-saved-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify(data), "application/json");
+  store.set("plc-backup-at", new Date().toISOString());
+  renderSaved();
   $("transferHelp").textContent = `Exported ${plural(saved.length, "property", "properties")}. Open the file on the other device with “Import list”.`;
 });
 
@@ -3375,7 +3503,7 @@ $("downloadHtml").addEventListener("click", () => {
   const copy = $("report").cloneNode(true);
   copy.querySelectorAll("details").forEach(d => d.setAttribute("open", ""));
   copy.querySelectorAll(".info-body").forEach(d => d.removeAttribute("hidden"));
-  copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button").forEach(b => b.remove());
+  copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button, #whyBox").forEach(b => b.remove());
   copy.querySelectorAll("#notesText").forEach(t => t.remove());
   copy.querySelectorAll(".notes-print").forEach(d => { d.removeAttribute("aria-hidden"); d.classList.add("notes-download"); });
   copy.querySelectorAll("input[data-tick]").forEach(b => { if (b.checked) b.setAttribute("checked", ""); });
