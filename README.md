@@ -67,3 +67,21 @@ official checkers.
 
 This is a free first look using public data. It does not replace a building
 survey or the searches a conveyancer orders. Most data covers England only.
+
+## Automatic testing
+
+A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-check.mjs`:
+
+- **Every day** against the live site. If anything fails (for example a government data service changes its
+  address), it opens or updates a GitHub issue called "Live check failed" with the details.
+- **On every pull request** that changes the page, against the proposed version, before it is merged.
+- **By hand** from the Actions tab (Live check, then Run workflow).
+
+It checks that all 18 data services still answer and allow web pages to read them, then opens the page on a
+desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
+full screen, the section bar, Back and Forward, saved reports and notes, printing and downloads. Results,
+screenshots and sample reports are kept for 14 days with each run.
+
+Run it yourself: `npm install playwright@1.49.1 && npx playwright install chromium && node tests/live-check.mjs`
+(set `BASE` to test another address, for example a local copy).
+
