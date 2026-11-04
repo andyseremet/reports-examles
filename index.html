@@ -541,7 +541,7 @@ body.has-sticky footer {padding-bottom:100px}
 <footer class="zoomable">
   Property Location Check · Contains public sector information licensed under the Open Government Licence v3.0 ·
   Map data © OpenStreetMap contributors, © Esri and © CARTO · Air quality model: Copernicus Atmosphere Monitoring Service via Open-Meteo ·
-  Postcode data: Office for National Statistics via postcodes.io · Places: OpenStreetMap contributors ·
+  Postcode data: Office for National Statistics via postcodes.io · Schools: Department for Education · GP surgeries and pharmacies: NHS Organisation Data Service · Stops and stations: NaPTAN (Department for Transport) ·
   Flood maps for Scotland and Wales: SEPA and Natural Resources Wales · Census 2021 via Nomis
   <p><button class="link-btn" type="button" data-info aria-expanded="false" aria-controls="info-privacy">Privacy: what is sent where</button>
      · <span id="appVersion"></span></p>
@@ -551,7 +551,7 @@ body.has-sticky footer {padding-bottom:100px}
     <ul>
       <li><strong>What you type in the search</strong> goes to OpenStreetMap Nominatim (addresses) and postcodes.io (postcodes and places).</li>
       <li><strong>The pin's location</strong> (latitude and longitude) goes to postcodes.io, planning.data.gov.uk, the Environment Agency,
-          the British Geological Survey, the Mining Remediation Authority, Open-Meteo, data.police.uk, OpenStreetMap (Overpass),
+          the British Geological Survey, the Mining Remediation Authority, Open-Meteo, data.police.uk, the NHS Organisation Data Service,
           the Office for National Statistics (boundaries and Nomis census figures), and for Scotland and Wales, SEPA and Natural
           Resources Wales, to get the results.</li>
       <li><strong>The map pictures</strong> come from Esri, OpenStreetMap or CARTO, which see which area of the map is shown.</li>
@@ -590,8 +590,7 @@ const API = {
   surfaceWater: "https://environment.data.gov.uk/spatialdata/nafra2-risk-of-flooding-from-surface-water/wms",
   sepaFlood: "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer",
   nrwFlood: "https://datamap.gov.wales/geoserver/ows",
-  overpass: ["https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-             "https://overpass.private.coffee/api/interpreter"],
+  ods: "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations",
   nomis: "https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.json",
   msoaBoundary: "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query"
 };
@@ -659,7 +658,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.7.1";
+const APP_VERSION = "1.8.0";
 const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -757,9 +756,10 @@ function geometryCentre(geometry) {
 // Fetch JSON, trying once more after a short pause if the service is briefly busy
 // (network blip, "too many requests" or a server error).
 // options.timeout: give up sooner on services that sometimes hang, then retry straight away.
+// options.body: send a JSON body with POST (for example a list of postcodes).
 async function fetchJSON(url, options = {}, attempt = 1) {
   try {
-    return await fetchJSONOnce(url, options.timeout || REQUEST_TIMEOUT, !!options.timeout);
+    return await fetchJSONOnce(url, options.timeout || REQUEST_TIMEOUT, !!options.timeout, options.body);
   } catch (error) {
     if (attempt < 2 && error.retryable) {
       await new Promise(resolve => setTimeout(resolve, options.timeout ? 300 : 1500));
@@ -769,11 +769,17 @@ async function fetchJSON(url, options = {}, attempt = 1) {
   }
 }
 
-async function fetchJSONOnce(url, timeoutMs, retryOnTimeout) {
+async function fetchJSONOnce(url, timeoutMs, retryOnTimeout, body) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { signal: controller.signal, headers: { "Accept": "application/json" } });
+    const request = { signal: controller.signal, headers: { "Accept": "application/json" } };
+    if (body !== undefined) {
+      request.method = "POST";
+      request.body = JSON.stringify(body);
+      request.headers["Content-Type"] = "application/json";
+    }
+    const response = await fetch(url, request);
     if (!response.ok) {
       const err = new Error("the data service replied with error " + response.status);
       err.retryable = response.status === 429 || response.status >= 500;
@@ -1422,58 +1428,87 @@ async function getFloodNational(loc) {
   return { country: country || null };
 }
 
-// Everyday places nearby, from OpenStreetMap (Overpass API), with a backup server.
+// Everyday places nearby, from official sources:
+// - schools: Department for Education register, via planning.data.gov.uk
+// - bus, tram and underground stops: NaPTAN (Department for Transport), via planning.data.gov.uk
+// - GP surgeries and pharmacies: NHS Organisation Data Service, located with postcodes.io
+// - railway stations: NaPTAN national station list, saved with the app (data/rail-stations.json)
 const AMENITY_TYPES = [
-  { key: "school", label: "School", short: "school", query: 'nwr(around:2000,LAT,LON)[amenity=school];' },
-  { key: "doctors", label: "GP surgery or doctors", short: "GP", query: 'nwr(around:3000,LAT,LON)[amenity~"^(doctors|clinic)$"];' },
-  { key: "pharmacy", label: "Pharmacy", short: "pharmacy", query: 'nwr(around:3000,LAT,LON)[amenity=pharmacy];' },
-  { key: "supermarket", label: "Supermarket", short: "supermarket", query: 'nwr(around:3000,LAT,LON)[shop=supermarket];' },
-  { key: "station", label: "Train station", short: "station", query: 'nwr(around:5000,LAT,LON)[railway=station][!disused];' },
-  { key: "bus_stop", label: "Bus stop", short: "bus stop", query: 'node(around:800,LAT,LON)[highway=bus_stop];' }
+  { key: "school", label: "School", short: "school", within: 1 },
+  { key: "gp", label: "GP surgery", short: "GP", within: 2 },
+  { key: "pharmacy", label: "Pharmacy", short: "pharmacy", within: 2 },
+  { key: "station", label: "Railway station", short: "station", within: 3 },
+  { key: "tram", label: "Tram, metro or underground stop", short: "tram or underground", within: 1 },
+  { key: "bus_stop", label: "Bus stop", short: "bus stop", within: 0.5 }
 ];
 
-async function getAmenities(loc) {
-  const body = "[out:json][timeout:20];(" +
-    AMENITY_TYPES.map(t => t.query.replace(/LAT/g, loc.lat).replace(/LON/g, loc.lon)).join("") + ");out center 300;";
-  let data = null, lastError = null;
-  // Overpass servers are often busy: try each server, and a busy one twice.
-  const attempts = API.overpass.flatMap(server => [server, server]);
-  const started = Date.now();
-  for (let i = 0; i < attempts.length && !data; i++) {
-    if (Date.now() - started > 25000) break;                     // give up after 25 seconds in total
-    const server = attempts[i];
-    if (i % 2 === 1 && !(lastError && lastError.busy)) continue;   // only retry a server that said "busy"
-    if (i % 2 === 1) await new Promise(resolve => setTimeout(resolve, 1200));
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), Math.max(3000, Math.min(12000, 25000 - (Date.now() - started))));
-      const res = await fetch(server, { method: "POST", body: "data=" + encodeURIComponent(body),
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }, signal: controller.signal });
-      clearTimeout(timer);
-      if (!res.ok) {
-        const err = new Error("the map data service replied with error " + res.status);
-        err.busy = res.status === 429 || res.status === 504 || res.status === 503;
-        throw err;
-      }
-      data = await res.json();
-    } catch (e) {
-      lastError = e.name === "AbortError" ? new Error("the map data service took too long to respond") : e;
-    }
+const titleCase = text => String(text || "").toLowerCase()
+  .replace(/\b([a-z])/g, c => c.toUpperCase()).replace(/\b(Pms|Nhs|Gp|Uk)\b/g, w => w.toUpperCase());
+
+let stationListPromise = null;
+function getStationList() {
+  if (!stationListPromise) {
+    stationListPromise = fetchJSON("data/rail-stations.json");
+    stationListPromise.catch(() => { stationListPromise = null; });
   }
-  if (!data) throw lastError || new Error("the map data service could not be reached");
-  const typeOf = tags => tags.amenity === "school" ? "school"
-    : (tags.amenity === "doctors" || tags.amenity === "clinic") ? "doctors"
-    : tags.amenity === "pharmacy" ? "pharmacy" : tags.shop === "supermarket" ? "supermarket"
-    : tags.railway === "station" ? "station" : tags.highway === "bus_stop" ? "bus_stop" : null;
+  return stationListPromise;
+}
+
+async function getPlanningPlaces(loc) {
+  const query = (dataset, radiusM) => {
+    const params = new URLSearchParams({
+      geometry: circleWkt(loc.lat, loc.lon, radiusM), geometry_relation: "intersects", limit: 500, exclude_field: "geometry"
+    });
+    params.append("dataset", dataset);
+    return fetchJSON(API.planning + "?" + params).then(d => d.entities || []);
+  };
+  const [schools, stops] = await Promise.all([query("educational-establishment", 2000), query("transport-access-node", 1000)]);
+  const place = e => { const p = parseWktPoint(e.point); return p ? { name: e.name || "", ...p, distanceKm: distanceKm(loc, p) } : null; };
+  const open = e => ["1", "3"].includes(String(e["educational-establishment-status"])) && !e["end-date"];
+  return {
+    school: schools.filter(open).map(place).filter(Boolean),
+    bus_stop: stops.filter(e => ["BCT", "BCS", "BCQ"].includes(e["transport-access-node-type"])).map(place).filter(Boolean),
+    tram: stops.filter(e => ["TMU", "MET", "PLT"].includes(e["transport-access-node-type"])).map(place).filter(Boolean)
+  };
+}
+
+async function getNhsPlaces(loc) {
+  const place = await getPlace(loc);
+  const near = await fetchJSON(API.postcodes.replace("/postcodes", "/outcodes") +
+    "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=4000&limit=6").catch(() => ({ result: [] }));
+  const outcodes = [...new Set([place && place.outcode, ...((near.result || []).map(o => o.outcode))].filter(Boolean))].slice(0, 6);
+  if (!outcodes.length) return { gp: [], pharmacy: [] };
+  const roles = { gp: "PrimaryRoleId=RO177&NonPrimaryRoleId=RO76", pharmacy: "PrimaryRoleId=RO182" };
+  const lists = await Promise.all(Object.entries(roles).flatMap(([type, role]) => outcodes.map(oc =>
+    fetchJSON(`${API.ods}?${role}&PostCode=${encodeURIComponent(oc)}&Status=Active&Limit=100`)
+      .then(d => (d.Organisations || []).filter(o => (o.PostCode || "").startsWith(oc + " ")).map(o => ({ type, name: titleCase(o.Name), postcode: o.PostCode }))))));
+  const orgs = lists.flat();
+  // Find where each postcode is (postcodes.io accepts up to 100 at a time).
+  const postcodes = [...new Set(orgs.map(o => o.postcode))];
+  const where = {};
+  for (let i = 0; i < postcodes.length; i += 100) {
+    const res = await fetchJSON(API.postcodes, { body: { postcodes: postcodes.slice(i, i + 100) } });
+    (res.result || []).forEach(r => { if (r.result) where[r.query] = { lat: r.result.latitude, lon: r.result.longitude }; });
+  }
+  const out = { gp: [], pharmacy: [] };
+  orgs.forEach(o => { const p = where[o.postcode]; if (p) out[o.type].push({ name: o.name, ...p, distanceKm: distanceKm(loc, p) }); });
+  return out;
+}
+
+async function getStations(loc) {
+  const data = await getStationList();
+  return { station: data.stations.map(([name, lat, lon]) => ({ name, lat, lon, distanceKm: distanceKm(loc, { lat, lon }) }))
+    .filter(x => x.distanceKm <= 10) };
+}
+
+async function getAmenities(loc) {
+  const parts = await Promise.allSettled([getPlanningPlaces(loc), getNhsPlaces(loc), getStations(loc)]);
+  if (parts.every(p => p.status === "rejected")) throw parts[0].reason;
   const groups = {};
-  (data.elements || []).forEach(el => {
-    const tags = el.tags || {};
-    const type = typeOf(tags);
-    const lat = el.lat ?? el.center?.lat, lon = el.lon ?? el.center?.lon;
-    if (!type || lat == null) return;
-    (groups[type] = groups[type] || []).push({ name: tags.name || "", lat, lon, distanceKm: distanceKm(loc, { lat, lon }) });
-  });
+  parts.forEach(p => { if (p.status === "fulfilled") Object.assign(groups, p.value); });
   Object.values(groups).forEach(list => list.sort((a, b) => a.distanceKm - b.distanceKm));
+  groups.missing = [["schools and stops", parts[0]], ["GP surgeries and pharmacies", parts[1]], ["railway stations", parts[2]]]
+    .filter(([, p]) => p.status === "rejected").map(([name]) => name);
   return groups;
 }
 
@@ -1688,7 +1723,7 @@ const TASKS = [
   ["crime", "Reported crime", getCrime],
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater],
   ["floodNational", "Scotland and Wales flood maps", getFloodNational],
-  ["amenities", "Schools, doctors, shops and transport", getAmenities],
+  ["amenities", "Schools, doctors and transport", getAmenities],
   ["crimeArea", "Crime compared with England and Wales", getCrimeArea]
 ];
 
@@ -1870,31 +1905,38 @@ function checkSurfaceWater(R) {
 // Everyday places nearby.
 function checkAmenities(R) {
   const base = {
-    id: "amenities", group: "living", title: "Schools, doctors, shops and transport",
-    source: { name: "OpenStreetMap contributors (Overpass API)", url: LINKS.osm },
+    id: "amenities", group: "living", title: "Schools, doctors and transport",
+    source: { name: "Department for Education and NaPTAN (via planning.data.gov.uk), NHS Organisation Data Service, NaPTAN rail stations", url: LINKS.planningData },
     dataDate: "Checked live on " + today()
   };
   if (!R.amenities.ok) return unavailable(base, R, "amenities");
   const g = R.amenities.value;
+  // Schools and stops come from planning.data.gov.uk, which covers England only.
+  const country = R.place && R.place.ok && R.place.value ? R.place.value.country : null;
+  const notCoveredHere = key => country && country !== "England" && ["school", "bus_stop", "tram"].includes(key);
   const rows = AMENITY_TYPES.map(t => {
-    const list = g[t.key] || [];
-    const near = list[0];
-    const within = t.key === "bus_stop" ? 0.8 : 1;
-    const count = list.filter(x => x.distanceKm <= within).length;
-    return { t, near, count, within };
+    const list = notCoveredHere(t.key) ? [] : (g[t.key] || []);
+    return { t, near: list[0], count: list.filter(x => x.distanceKm <= t.within).length, notCovered: notCoveredHere(t.key) };
   });
-  const summary = rows.filter(x => x.near && x.t.key !== "bus_stop").slice(0, 5)
+  const summary = rows.filter(x => x.near && x.near.distanceKm <= 5 && x.t.key !== "bus_stop" && x.t.key !== "tram").slice(0, 4)
     .map(x => `${x.t.short} ${formatDistance(x.near.distanceKm)}`);
+  const missing = (g.missing || []).length
+    ? `<p><strong>Not available right now:</strong> ${escapeHTML(g.missing.join(", "))}. Press “Refresh with the latest data” later.</p>` : "";
   return {
     ...base, status: "info",
-    found: summary.length ? "Nearest: " + summary.join(", ") + "." : "No schools, doctors, shops or stations found nearby in OpenStreetMap.",
-    details: `<div class="table-wrap"><table><thead><tr><th>Place</th><th>Nearest</th><th>Distance</th><th>Number nearby</th></tr></thead><tbody>${
-      rows.map(x => `<tr><td>${escapeHTML(x.t.label)}</td><td>${x.near ? escapeHTML(x.near.name || "Unnamed") : "None found"}</td>
-        <td>${x.near ? formatDistance(x.near.distanceKm) : "–"}</td><td>${x.count} within ${formatRadius(x.within * 1000)}</td></tr>`).join("")
+    found: summary.length ? "Nearest: " + summary.join(", ") + "." : "No schools, GP surgeries or stations found nearby.",
+    details: missing + `<div class="table-wrap"><table><thead><tr><th>Place</th><th>Nearest</th><th>Distance</th><th>Number nearby</th></tr></thead><tbody>${
+      rows.map(x => x.notCovered
+        ? `<tr><td>${escapeHTML(x.t.label)}</td><td colspan="3">Not covered in ${escapeHTML(country)}: this register covers England only</td></tr>`
+        : `<tr><td>${escapeHTML(x.t.label)}</td><td>${x.near ? escapeHTML(x.near.name || "Unnamed") : "None found nearby"}</td>
+        <td>${x.near ? formatDistance(x.near.distanceKm) : "–"}</td><td>${x.count} within ${formatRadius(x.t.within * 1000)}</td></tr>`).join("")
     }</tbody></table></div>`,
-    meaning: `<p>Straight-line distances from the pin, from OpenStreetMap, a map made by volunteers. It is usually complete
-      in towns but may miss some places. School catchment areas and Ofsted ratings are not shown: check them with the council
-      and on the Ofsted website.</p>`,
+    meaning: `<p>Straight-line distances from the pin, from official registers: schools from the Department for Education
+      (England), GP surgeries and pharmacies from the NHS Organisation Data Service (located by their postcode, so
+      distances are approximate), and bus stops, tram and underground stops and railway stations from NaPTAN, the
+      Department for Transport's national list of public transport stops.</p>
+      <p>Supermarkets and shops are not included because there is no official open list. School catchment areas and
+      Ofsted ratings are not shown: check them with the council and on the Ofsted website.</p>`,
     actions: ["Check school admission areas with the council before relying on a nearby school.", "Try the journey to work or school at rush hour."],
     seller: [], conveyancer: []
   };
@@ -2343,7 +2385,7 @@ function checkNature(R) {
 const GROUPS = [
   { id: "flood", title: "Flooding", intro: "Flood risk from rivers, the sea and heavy rain, and any warnings in force today." },
   { id: "ground", title: "Ground and land", intro: "What is in or under the ground: mining, radon, landfill, contamination and ground movement." },
-  { id: "living", title: "Living environment", intro: "What it is like to live here: noise, air quality, nearby schools, doctors, shops and transport, and crime." },
+  { id: "living", title: "Living environment", intro: "What it is like to live here: noise, air quality, nearby schools, doctors and transport, and crime." },
   { id: "planning", title: "Planning and surroundings", intro: "Rules that affect changes to the property, and protected places nearby." }
 ];
 
@@ -2358,7 +2400,7 @@ const CHECKS = [
   { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },
   { id: "noise", group: "living", title: "Noise: road, railway and aircraft", deps: ["noise", "railNoise"], build: checkNoise },
   { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air"], build: checkAir },
-  { id: "amenities", group: "living", title: "Schools, doctors, shops and transport", deps: ["amenities"], build: checkAmenities },
+  { id: "amenities", group: "living", title: "Schools, doctors and transport", deps: ["amenities"], build: checkAmenities },
   { id: "crime", group: "living", title: "Reported crime", deps: ["crime", "crimeArea"], build: checkCrime },
   { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby"], build: checkPlanning },
   { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby"], build: checkNature }

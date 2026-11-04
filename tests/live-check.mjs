@@ -55,20 +55,23 @@ const SERVICES = [
   ["Scotland flood maps (SEPA)", "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer/2/query?geometry=-3.43,56.404&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnCountOnly=true&f=json", d => Number.isFinite(d.count)],
   ["Wales flood maps (Natural Resources Wales)", wms("https://datamap.gov.wales/geoserver/ows", "inspire-nrw:NRW_FLOODZONE_RIVERS_SEAS_MERGED", 51.47, -3.188, 0.00005), d => Array.isArray(d.features) && d.features.length > 0],
   ["Address search (OpenStreetMap Nominatim)", "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=Barnsley%20Town%20Hall", d => Array.isArray(d) && d.length > 0],
-  ["Amenities (OpenStreetMap Overpass)", "https://overpass-api.de/api/interpreter", d => Array.isArray(d.elements),
-    { method: "POST", body: "data=" + encodeURIComponent(`[out:json][timeout:20];nwr(around:1000,${LAT},${LON})[amenity=pharmacy];out center 5;`),
-      headers: { "Content-Type": "application/x-www-form-urlencoded" } }]
+  ["Schools register (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?dataset=educational-establishment&latitude=${LAT}&longitude=${LON}&limit=1`, d => Array.isArray(d.entities)],
+  ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
+  ["Postcode lookup for many postcodes (postcodes.io)", "https://api.postcodes.io/postcodes", d => Array.isArray(d.result) && d.result[0].result,
+    { method: "POST", body: JSON.stringify({ postcodes: ["S70 2TA"] }), headers: { "Content-Type": "application/json" } }],
+  ["Railway station list (saved with the app)", new URL("data/rail-stations.json", BASE).href, d => Array.isArray(d.stations) && d.stations.length > 2000, { sameSite: true }]
 ];
 
 async function checkService([name, url, expect, options = {}]) {
   const started = Date.now();
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      const res = await fetch(url, { ...options, headers: { Origin: ORIGIN, "User-Agent": UA, Accept: "application/json", ...(options.headers || {}) },
+      const { sameSite, ...fetchOptions } = options;
+      const res = await fetch(url, { ...fetchOptions, headers: { Origin: ORIGIN, "User-Agent": UA, Accept: "application/json", ...(options.headers || {}) },
         signal: AbortSignal.timeout(30000) });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const cors = res.headers.get("access-control-allow-origin");
-      if (!cors || (cors !== "*" && cors !== ORIGIN)) throw new Error("web pages are not allowed to read it (no CORS header)");
+      if (!options.sameSite && (!cors || (cors !== "*" && cors !== ORIGIN))) throw new Error("web pages are not allowed to read it (no CORS header)");
       const data = await res.json();
       if (!expect(data)) throw new Error("unexpected content");
       return record("Data services", name, true, `${Date.now() - started} ms`);

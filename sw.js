@@ -2,13 +2,14 @@
 // The page itself and the map library are kept so the app opens without a
 // connection. Live data (flood, radon, noise, maps) always comes from the
 // network and is never stored here.
-const CACHE = "plc-v3";
+const CACHE = "plc-v4";
 const SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./data/rail-stations.json",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
   "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"
