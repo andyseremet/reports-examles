@@ -22,7 +22,7 @@ mkdirSync(OUT, { recursive: true });
 
 const results = [];
 const record = (group, name, pass, info = "") => {
-  results.push({ group, name, pass, info: String(info).slice(0, 300) });
+  results.push({ group, name, pass, info: String(info).slice(0, 900) });
   console.log(`${pass ? "PASS" : "FAIL"}  [${group}] ${name}${info ? "  – " + String(info).slice(0, 160) : ""}`);
 };
 
@@ -77,7 +77,9 @@ async function checkService([name, url, expect, options = {}]) {
       return record("Data services", name, true, `${Date.now() - started} ms`);
     } catch (e) {
       if (attempt === 2) return record("Data services", name, false, e.message);
-      await new Promise(r => setTimeout(r, 3000));
+      // A refusal (403) from the Environment Agency map server is its short block on
+      // busy addresses (it lasts up to about 40 s), so wait it out before trying again.
+      await new Promise(r => setTimeout(r, e.message === "HTTP 403" ? 45000 : 3000));
     }
   }
 }
@@ -85,6 +87,8 @@ async function checkService([name, url, expect, options = {}]) {
 /* ---------------------------------------------------------------
    2. The page in a browser
 --------------------------------------------------------------- */
+const PAUSE_BEFORE_REPORT_MS = Number(process.env.PAUSE_MS ?? 60000);
+
 const DEVICES = [
   { name: "Desktop", options: { viewport: { width: 1366, height: 900 } } },
   { name: "Phone (iPhone 13)", options: { ...devices["iPhone 13"] } },
@@ -110,6 +114,16 @@ async function testDevice(device, [postcode, place]) {
   const page = await context.newPage();
   const pageErrors = [];
   page.on("pageerror", e => pageErrors.push(e.message));
+  // Record data requests that fail, with the reply, to explain any topic that could not load.
+  const failedRequests = [];
+  const shortUrl = u => { const x = new URL(u); return x.host + x.pathname.replace(/\/(wms|query|items)$/, "/$1"); };
+  page.on("response", res => {
+    if (res.status() >= 400 && !/tile|png|jpg/.test(res.url()))
+      failedRequests.push(`${shortUrl(res.url())} → HTTP ${res.status()}${res.headers()["retry-after"] ? " (retry-after " + res.headers()["retry-after"] + ")" : ""}`);
+  });
+  page.on("requestfailed", req => {
+    if (!/tile|png|jpg/.test(req.url())) failedRequests.push(`${shortUrl(req.url())} → ${req.failure() ? req.failure().errorText : "failed"}`);
+  });
   const step = async (name, fn) => {
     try { const info = await fn(); record(group, name, info !== false, info === false ? "" : info || ""); }
     catch (e) { record(group, name, false, e.message.split("\n")[0]); }
@@ -150,12 +164,28 @@ async function testDevice(device, [postcode, place]) {
     const started = Date.now();
     await page.click("#runBtn");
     await reportDone(page);
-    topics = await page.evaluate(() => orderedResults().map(c => ({ id: c.id, status: c.status, found: c.found })));
+    const readTopics = () => page.evaluate(() => orderedResults().map(c => ({ id: c.id, status: c.status, found: c.found })));
+    topics = await readTopics();
     const total = await page.evaluate(() => CHECKS.length);
-    const failed = topics.filter(t => t.status === "error");
+    let failed = topics.filter(t => t.status === "error");
+    // A government service that is slow for a moment shows "Try again" on that topic.
+    // Press it once, as a person would (this also tests the button). A topic that
+    // fails a second time still fails the test.
+    const retried = failed.map(t => t.id);
+    for (const id of retried) {
+      await page.waitForTimeout(20000);
+      await page.click(`[data-retry="${id}"]`);
+      await page.waitForTimeout(500);
+      await reportDone(page);
+    }
+    if (retried.length) { topics = await readTopics(); failed = topics.filter(t => t.status === "error"); }
     const secs = Math.round((Date.now() - started) / 1000);
-    if (topics.length !== total || failed.length) throw new Error(`${failed.length} topic(s) failed: ` + failed.map(t => `${t.id} (${t.found})`).join("; "));
-    return `${total} topics in ${secs} s`;
+    if (topics.length !== total || failed.length) {
+      const why = [...new Set(failedRequests)].slice(0, 6).join("; ");
+      throw new Error(`${failed.length} topic(s) failed` + (retried.length ? " even after Try again" : "") + ": " +
+        failed.map(t => `${t.id} (${t.found})`).join("; ") + (why ? ` | failed requests: ${why}` : ""));
+    }
+    return `${total} topics in ${secs} s` + (retried.length ? ` (needed Try again: ${retried.join(", ")})` : "");
   });
   await page.$eval("#reportTop", x => x.scrollIntoView()).catch(() => {});
   await page.waitForTimeout(1500);
@@ -219,6 +249,10 @@ try {
   const randomPlace = await randomEnglishPostcode();
   const places = [FIXED[0], FIXED[1], randomPlace];
   for (let i = 0; i < DEVICES.length; i++) {
+    // The Environment Agency map server allows only about 15 requests a minute from
+    // one address, and one report sends about 7. Pausing before each report keeps
+    // the test within that limit, like a person checking one property at a time.
+    await new Promise(r => setTimeout(r, PAUSE_BEFORE_REPORT_MS));
     const topics = await testDevice(DEVICES[i], places[i]);
     reports[`${DEVICES[i].name}: ${places[i].join(", ")}`] = topics;
   }
