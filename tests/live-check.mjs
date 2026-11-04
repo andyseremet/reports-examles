@@ -32,7 +32,7 @@ const record = (group, name, pass, info = "") => {
 // refusal, and only that, is recorded as a warning instead of a failure. Anything
 // else from this server (slow, wrong content, other errors) still fails.
 const EA_MAP_SERVER = "environment.data.gov.uk/spatialdata/";
-const EA_TOPICS = ["surfacewater", "landuse", "noise"];
+const EA_TOPICS = ["surfacewater", "landuse", "coastal", "noise"];
 const EA_REFUSAL_NOTE = "the Environment Agency map server refused GitHub's test machine (403), as it often does with GitHub's shared machines; if this repeats for days, check the live site by hand";
 
 /* ---------------------------------------------------------------
@@ -56,6 +56,8 @@ const SERVICES = [
   ["Road noise (Defra)", wms("https://environment.data.gov.uk/spatialdata/road-noise-all-metrics-england-round-4/wms", "Road_Noise_Lden_England_Round_4_All"), d => Array.isArray(d.features)],
   ["Rail noise (Defra)", wms("https://environment.data.gov.uk/spatialdata/rail-noise-england-round-4-all/wms", "Rail_Noise_Lden_England_Round_4_All_1000Hz"), d => Array.isArray(d.features)],
   ["Historic landfill (Environment Agency)", `https://environment.data.gov.uk/spatialdata/historic-landfill/ogc/features/v1/collections/Historic_Landfill_Sites/items?f=json&limit=5&bbox=${LON - 0.02},${LAT - 0.02},${LON + 0.02},${LAT + 0.02}`, d => Array.isArray(d.features)],
+  ["Coastal erosion (Environment Agency)", "https://environment.data.gov.uk/spatialdata/ncern-national-2024/ogc/features/v1/collections/NCERM_SMP_2105_70CC/items?f=json&limit=5&bbox=1.52,52.82,1.54,52.83",
+    d => Array.isArray(d.features) && d.features.some(f => f.properties.smp2105_70 > 0)],
   ["Air quality model (Open-Meteo)", `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&hourly=pm2_5&past_days=1&forecast_days=0&timeformat=unixtime`, d => d.hourly && d.hourly.pm2_5.length > 0],
   ["Crime (data.police.uk)", `https://data.police.uk/api/crimes-street/all-crime?lat=${LAT}&lng=${LON}`, d => Array.isArray(d) && d.length > 0],
   ["Police force for a place (data.police.uk)", `https://data.police.uk/api/locate-neighbourhood?q=${LAT},${LON}`, d => d.force === "south-yorkshire"],
@@ -272,6 +274,21 @@ async function testDevice(device, [postcode, place]) {
     });
     if (r.total <= 5 && r.status !== "manual") throw new Error(`only ${r.total} crimes, but rated "${r.status}": ${r.found}`);
     return `${r.total} crimes within a mile → ${r.status === "manual" ? "Check yourself" : "shown"}: ${r.found.slice(0, 70)}…`;
+  });
+
+  await step("Coastal erosion on an eroding coast", async () => {
+    // Happisburgh, Norfolk: the village edge is inside the area the coast is expected to reach by 2105.
+    const r = await page.evaluate(async () => {
+      const loc = { name: "Happisburgh test", lat: 52.8245, lon: 1.5325, radius: 1000 };
+      try {
+        const c = checkCoastal({ loc, coastal: { ok: true, value: await getCoastalErosion(loc) } });
+        return { status: c.status, found: c.found };
+      } catch (e) { return { error: e.message }; }
+    });
+    if (r.error && /\b403\b/.test(r.error)) return { warn: `HTTP 403: ${EA_REFUSAL_NOTE}` };
+    if (r.error) throw new Error(r.error);
+    if (!["high", "medium"].includes(r.status)) throw new Error(`rated "${r.status}": ${r.found}`);
+    return r.found.slice(0, 90) + "…";
   });
 
   await step("Send to my conveyancer", async () => {

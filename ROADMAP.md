@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.12.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.13.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 4 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -11,7 +11,7 @@ Property Location Check: what the app does today, and what is planned next.
 
 ---
 
-## Part 1: What the app does today (version 1.12.0)
+## Part 1: What the app does today (version 1.13.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -28,6 +28,7 @@ Property Location Check: what the app does today, and what is planned next.
 | Ground and land | Coal mining | Mining Remediation Authority |
 | Ground and land | Past use of the land: old landfill, brownfield, and contaminated land or major hazard sites where published | Environment Agency; planning.data.gov.uk |
 | Ground and land | Landslides | BGS National Landslide Database |
+| Ground and land | Coastal erosion: whether the property is in the area the coast is expected to reach by 2055 or 2105, and the shoreline plan for the coast nearby | Environment Agency NCERM 2024 |
 | Living environment | Road traffic noise (day and night) | Defra noise mapping, Round 4 |
 | Living environment | Air quality | Council Air Quality Management Areas; Copernicus CAMS via Open-Meteo |
 | Living environment | Reported crime, and crime per 1,000 residents (where the police force publishes data) | data.police.uk; ONS; Census 2021 (saved with the app) |
@@ -38,6 +39,9 @@ Property Location Check: what the app does today, and what is planned next.
 
 Councils publish protected trees and Article 4 areas themselves, and many have not yet. The app checks whether the
 council for the location has published them: if not, the topic says "Check yourself" instead of "No issue found".
+
+Coastal erosion is checked within 1 km of the property; inland it says "Not near the coast". The Environment Agency
+says its map is a national guide and cannot give exact details for a single property, and the report says so.
 
 Topics with no free live data (for example rail and aircraft noise, Japanese knotweed) are listed with links to
 the official checkers. Topics not covered in Wales or Scotland say "Check yourself" and link to the national service.
@@ -85,7 +89,7 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 
 ### Behind the scenes
 - An automatic check runs every day against the live site, and on every pull request before it is merged. It
-  tests all 21 outside data services, the 2 data files saved with the app, and the full report on a desktop, a phone
+  tests all 22 outside data services, the 2 data files saved with the app, and the full report on a desktop, a phone
   and a tablet. A failure opens a "Live check failed" issue on GitHub.
 
 ---
@@ -95,21 +99,6 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 Chosen from the quiz on 4 November 2026. Each version keeps the same habits: bump the version number and the
 offline cache name together, update the README, add the new topic to the daily check, and never weaken a test to get
 a pass.
-
-### Version 1.13.0: Coastal erosion
-
-**New topic: Coastal erosion** (Ground and land)
-- What it tells the buyer: whether the coast near the property is expected to retreat over the next 20, 50 or 100
-  years.
-- Data: Environment Agency **National Coastal Erosion Risk Mapping (NCERM) 2024**, which replaced the 2018–2021 map.
-  It is published on the Defra Data Services Platform with WFS and OGC API Features services.
-- Before building:
-  - confirm that the service can be read directly by a web page, as other EA layers can;
-  - confirm the licence on the Defra page, because data.gov.uk lists it as "No licence provided".
-- Checked live, because the map is updated as new surveys come in.
-- Shown only for locations near the coast; inland locations get a short "Not near the coast".
-- Honest limit to show: the Environment Agency says the map is for guidance and cannot give details for single
-  properties.
 
 ### Version 1.14.0: Power lines and pylons
 
@@ -173,7 +162,7 @@ services.
 | A part of a topic that fails is left out silently | The Cambridge school search timed out once; the summary line just left schools out | Retried and named in 1.12.0 |
 | Air quality model times out at times | It failed on the first try in 2 of 8 places; the automatic retry fixed both | Already handled |
 | Councils publish unevenly (trees, Article 4) | Hull, Manchester and Cornwall publish none | Already handled ("Check yourself") |
-| Environment Agency map server limits requests | Its 4 topics were the slowest requests (5 to 8 seconds) | Keep the pacing; avoid adding requests to it |
+| Environment Agency map server limits requests | Its 4 topics were the slowest requests (5 to 8 seconds) | Keep the pacing; avoid adding requests to it. Coastal erosion (1.13.0) adds one small request per report, and a second only for properties in an erosion area |
 | Data service outages | BGS landslides were down for several days in November 2026 | Already handled ("Try again", daily check) |
 
 **Ratings that flag too often:** road noise was flagged in 7 of 8 places and air quality in 4 of 8. Road noise is
