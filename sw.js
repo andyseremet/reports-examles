@@ -3,7 +3,7 @@
 // connection. Live data (flood, radon, noise, maps) always comes from the
 // network and is never stored here; only fixed data that never changes (Census 2021
 // figures) is kept once it has been used.
-const CACHE = "plc-v9";
+const CACHE = "plc-v10";
 const SHELL = [
   "./",
   "./index.html",
@@ -12,8 +12,7 @@ const SHELL = [
   "./icons/icon-512.png",
   "./data/rail-stations.json",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
-  "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"
+  "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 ];
 const FIXED_DATA = ["./data/census2021-msoa-residents.json"];   // kept once used, not downloaded up front
 

@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.11.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.12.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 4 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -11,7 +11,7 @@ Property Location Check: what the app does today, and what is planned next.
 
 ---
 
-## Part 1: What the app does today (version 1.11.0)
+## Part 1: What the app does today (version 1.12.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -24,15 +24,13 @@ Property Location Check: what the app does today, and what is planned next.
 |---|---|---|
 | Flooding | Rivers and the sea (Flood Zones 1–3) | Environment Agency; SEPA (Scotland); Natural Resources Wales |
 | Flooding | Heavy rain (surface water, 2025 map) | Environment Agency; SEPA; Natural Resources Wales |
-| Flooding | Current flood warnings | Environment Agency real-time flood monitoring |
 | Ground and land | Radon gas | BGS / UKHSA Radon Indicative Atlas |
 | Ground and land | Coal mining | Mining Remediation Authority |
-| Ground and land | Historic landfill | Environment Agency |
-| Ground and land | Contaminated land, brownfield, major hazard (COMAH) sites | planning.data.gov.uk |
+| Ground and land | Past use of the land: old landfill, brownfield, and contaminated land or major hazard sites where published | Environment Agency; planning.data.gov.uk |
 | Ground and land | Landslides | BGS National Landslide Database |
 | Living environment | Road traffic noise (day and night) | Defra noise mapping, Round 4 |
 | Living environment | Air quality | Council Air Quality Management Areas; Copernicus CAMS via Open-Meteo |
-| Living environment | Reported crime, and crime per 1,000 residents | data.police.uk; ONS; Census 2021 (saved with the app) |
+| Living environment | Reported crime, and crime per 1,000 residents (where the police force publishes data) | data.police.uk; ONS; Census 2021 (saved with the app) |
 | Planning and surroundings | Planning restrictions and heritage | planning.data.gov.uk |
 | Planning and surroundings | Protected trees (Tree Preservation Orders) and Article 4 areas | Councils, via planning.data.gov.uk |
 | Planning and surroundings | Protected nature sites | Natural England, via planning.data.gov.uk |
@@ -58,6 +56,9 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 
 ### Reliability
 - A topic whose data fails is tried again by itself after 20 seconds, then offers **Try again**.
+- If part of a topic fails (for example the school search), that part is tried again; if still missing, the summary
+  line names it.
+- No false "all clear": missing police data and unpublished contaminated land are shown as gaps, not as good news.
 - Careful pacing of requests to the Environment Agency map server, so it does not refuse them.
 - **No signal:** the app still opens, saved properties still open, and a check asked for while offline waits and
   starts by itself when the signal returns.
@@ -73,7 +74,6 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 ### Share, print and export
 - Shareable links (`?postcode=` or `?lat=&lon=&name=&r=`) and the phone's share menu.
 - Download the report, print it or save it as a PDF; a short "Print summary" option.
-- A QR code on printouts that opens the live report.
 
 ### Comfort and access
 - Dark mode follows the device setting; **A+** makes text larger.
@@ -96,7 +96,7 @@ Chosen from the quiz on 4 November 2026. Each version keeps the same habits: bum
 offline cache name together, update the README, add the new topic to the daily check, and never weaken a test to get
 a pass.
 
-### Version 1.12.0: Coastal erosion
+### Version 1.13.0: Coastal erosion
 
 **New topic: Coastal erosion** (Ground and land)
 - What it tells the buyer: whether the coast near the property is expected to retreat over the next 20, 50 or 100
@@ -111,7 +111,7 @@ a pass.
 - Honest limit to show: the Environment Agency says the map is for guidance and cannot give details for single
   properties.
 
-### Version 1.13.0: Power lines and pylons
+### Version 1.14.0: Power lines and pylons
 
 **New topic: Power lines and pylons** (Living environment)
 - What it tells the buyer: distance to high-voltage overhead lines, pylons and large substations nearby.
@@ -126,6 +126,15 @@ a pass.
   2. or drop the topic and link to the official maps instead.
 - England first, in line with the coverage choice.
 
+### Chosen next ideas (not yet given a version number)
+
+| Idea | What it does |
+|---|---|
+| Data gaps box | A short box at the top of the report listing the topics where the app could not give a real answer (no data published, not covered, or a service down), and who to ask instead. |
+| Simpler print options | One "Print or save as PDF" button with a choice of short summary or full report, instead of separate buttons. |
+| Sold prices nearby | Recent sale prices within the search distance, from HM Land Registry Price Paid data (Open Government Licence). It changes monthly, so it would be a live check. Before building, confirm a web page can read it directly. |
+| Data service health page | A simple page showing which outside data services worked in today's automatic check, so a buyer can see when a topic is down for everyone. |
+
 ---
 
 ## Part 3: Ideas parked for later
@@ -134,17 +143,41 @@ Suggested in the quiz but not chosen this time. They can be picked up in a futur
 
 | Idea | Notes |
 |---|---|
-| Sold prices nearby | HM Land Registry Price Paid data; changes monthly, so it would be a live check. |
 | Compare 3 or more properties | Today the app compares two side by side. |
 | Travel time to a chosen place | Distance and rough walking/driving time to work or a school. |
 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales. |
 | Fuller coverage for Scotland | Fill topics that say "Check yourself" in Scotland. |
 | Welsh language | Removed on 4 November 2026: the app stays in English only. |
+| Remove "Download report" | Considered on 4 November 2026 and kept; may be covered by "Simpler print options". |
+| Remove the latitude and longitude boxes | Considered on 4 November 2026 and kept, in Advanced options. |
+| Remove or reduce railway noise, landslides, aircraft | Considered on 4 November 2026 and kept as they are. |
+| Softer air quality rating | Considered on 4 November 2026; the council hotspot stays "Worth checking". |
 
 ## Known issues
 
-- None at the moment. (The British Geological Survey landslide service failed in early November 2026 and
-  recovered on 4 November 2026; the fault was on their side.)
+- None at the moment. Fixed in 1.12.0: crime in Greater Manchester (the police force publishes no data) and the
+  contaminated land topic that always said "No issue found".
+
+## Part 4: App review, 4 November 2026
+
+The app was run on 8 very different places in England (central London, Hull, Great Yarmouth, the Lake District,
+central Manchester, Truro, Milton Keynes and Cambridge), and odd results were checked directly with the data
+services.
+
+**Weaknesses caused by outside data**
+
+| Problem | Evidence | Decision |
+|---|---|---|
+| Greater Manchester Police has published no crime data since March 2025 | 2 crimes within a mile of central Manchester, against about 1,500 in central Leeds; confirmed by the [data.police.uk changelog](https://data.police.uk/changelog/) | Fixed in 1.12.0 |
+| National contaminated land and major hazard datasets are empty | 0 records on planning.data.gov.uk; the topic said "No issue found" in 8 of 8 places | Merged into "Past use of the land" in 1.12.0 |
+| A part of a topic that fails is left out silently | The Cambridge school search timed out once; the summary line just left schools out | Retried and named in 1.12.0 |
+| Air quality model times out at times | It failed on the first try in 2 of 8 places; the automatic retry fixed both | Already handled |
+| Councils publish unevenly (trees, Article 4) | Hull, Manchester and Cornwall publish none | Already handled ("Check yourself") |
+| Environment Agency map server limits requests | Its 4 topics were the slowest requests (5 to 8 seconds) | Keep the pacing; avoid adding requests to it |
+| Data service outages | BGS landslides were down for several days in November 2026 | Already handled ("Try again", daily check) |
+
+**Ratings that flag too often:** road noise was flagged in 7 of 8 places and air quality in 4 of 8. Road noise is
+rated more fairly since 1.12.0; air quality stays as it is.
 
 ## How this road map is updated
 

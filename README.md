@@ -7,18 +7,16 @@ England. Pick a location on the map and it checks official data for:
 |---|---|
 | Flooding from rivers and the sea (Flood Zones 1–3) | Environment Agency, via planning.data.gov.uk; SEPA (Scotland); Natural Resources Wales |
 | Flooding from heavy rain (surface water) | Environment Agency (2025); SEPA (Scotland); Natural Resources Wales |
-| Current flood warnings | Environment Agency real-time flood monitoring |
 | Radon gas | BGS / UKHSA Radon Indicative Atlas |
 | Coal mining | Mining Remediation Authority (formerly the Coal Authority) |
 | Road traffic noise (day and night) | Defra strategic noise mapping, Round 4 |
 | Air quality | Council Air Quality Management Areas; Copernicus CAMS model via Open-Meteo |
-| Historic landfill | Environment Agency Historic Landfill Sites |
-| Contaminated land, brownfield, major hazard (COMAH) sites | planning.data.gov.uk |
+| Past use of the land: old landfill, brownfield sites, and contaminated land or major hazard (COMAH) sites where published | Environment Agency Historic Landfill Sites; planning.data.gov.uk |
 | Landslides | BGS National Landslide Database |
 | Planning restrictions and heritage | planning.data.gov.uk |
 | Protected trees (Tree Preservation Orders) and Article 4 areas, and whether the council publishes this data | Councils, via planning.data.gov.uk |
 | Protected nature sites | Natural England, via planning.data.gov.uk |
-| Reported crime, and crime per 1,000 residents compared with England and Wales | data.police.uk; ONS boundaries; Census 2021 residents (saved in `data/census2021-msoa-residents.json`); ONS crime and population figures |
+| Reported crime, and crime per 1,000 residents compared with England and Wales (where the police force publishes its data) | data.police.uk; ONS boundaries; Census 2021 residents (saved in `data/census2021-msoa-residents.json`); ONS crime and population figures |
 | Schools, GP surgeries, pharmacies, railway stations, tram and bus stops | Department for Education and NaPTAN (via planning.data.gov.uk); NHS Organisation Data Service; NaPTAN rail stations (saved in `data/rail-stations.json`) |
 
 Each result is given a plain-English rating (Look into this / Worth checking /
@@ -62,6 +60,12 @@ official checkers.
 - **Honest gaps:** where a council has not published its protected trees or Article 4 areas, the report says so and
   rates the topic "Check yourself", instead of "No issue found".
 - **Fair ratings:** old landfill and landslides are rated by distance (very close sites stand out; distant ones are for information).
+  Road and railway noise is flagged only when loud (a 24-hour average of 65 dB or more, or 55 dB at night); moderate
+  levels above the WHO recommendation are shown for information.
+- **No false "all clear":** where a police force has not published crime data (Greater Manchester Police since March
+  2025), the crime topic says so and links to the force. Contaminated land is not published nationally, so the app
+  never reports it as clear. If part of a topic fails (for example the school search), it is tried again and, if still
+  missing, named in the topic's summary line.
 - **Privacy:** no account, cookies or tracking; see "Privacy: what is sent where" at the bottom of the page.
 - **Saved properties:** reopen instantly from saved results (with a refresh button), private notes, a starred shortlist,
   and export/import to move the list to another device. Saved properties live only in the browser, so the app asks the
@@ -69,7 +73,7 @@ official checkers.
   and suggests **Download a backup** once you have 5 or more saved properties and no backup in the last 30 days.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
   message at the top, and starts by itself when the signal returns.
-- **Printouts:** a short "Print summary" option, and a QR code that opens the live report.
+- **Printouts:** a short "Print summary" option, or the full report.
 - **Comfort:** dark mode follows your device setting; **A+** makes text larger; **install as an app** on your phone's
   home screen (on iPhone: Share, then Add to Home Screen).
 
