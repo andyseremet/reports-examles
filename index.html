@@ -199,6 +199,15 @@ details.advanced summary {cursor:pointer;color:var(--link)}
 .saved-main {flex:1;min-width:0}
 .saved-main a {font-weight:bold}
 .saved-main small {display:block;color:var(--muted)}
+.saved-btns {display:flex;gap:4px;flex-shrink:0}
+/* Narrow screens: name and details use the full width; Rename and Remove go underneath. */
+@media (max-width:600px) {
+  .saved-list li {display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:10px;align-items:start}
+  .saved-list .cmp,.saved-list .star-btn {margin-top:2px}
+  .saved-main {grid-column:3}
+  .saved-btns {grid-column:3;gap:18px;margin-top:-4px}
+  .saved-btns .link-btn {padding:6px 0}
+}
 .mini-counts {display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
 .mini-counts .chip {font-size:11px;padding:1px 7px}
 .link-btn {background:none;color:var(--link);padding:6px;font-weight:normal;text-decoration:underline}
@@ -209,6 +218,7 @@ details.advanced summary {cursor:pointer;color:var(--link)}
 /* ---------- report ---------- */
 .toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:10px}
 .toolbar button {padding:9px 14px;font-size:14px}
+@media (max-width:600px) { .toolbar {justify-content:flex-start} }
 .report-nav {
   position:sticky;top:0;z-index:1100;display:flex;gap:4px;align-items:center;overflow-x:auto;white-space:nowrap;
   background:var(--surface);border-bottom:1px solid var(--border);margin:0 -22px 10px;padding:8px 22px;scrollbar-width:none;
@@ -658,7 +668,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.8.1";
+const APP_VERSION = "1.8.2";
 const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -3177,8 +3187,10 @@ function renderSaved() {
         <small>${s.postcode ? escapeHTML(s.postcode) + " · " : ""}${s.district ? escapeHTML(s.district) + " · " : ""}checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}</small>
         <div class="mini-counts">${countChips(s.checks)}</div>
       </div>
-      <button class="link-btn" type="button" data-rename="${escapeHTML(s.key)}">Rename</button>
-      <button class="link-btn" type="button" data-remove="${escapeHTML(s.key)}">Remove</button>
+      <div class="saved-btns">
+        <button class="link-btn" type="button" data-rename="${escapeHTML(s.key)}">Rename</button>
+        <button class="link-btn" type="button" data-remove="${escapeHTML(s.key)}">Remove</button>
+      </div>
     </li>`).join("");
   updateCompareButton();
 }
