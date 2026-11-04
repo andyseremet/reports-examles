@@ -73,6 +73,10 @@ official checkers.
 - `?lat=53.5542&lon=-1.4827&name=My%20house&r=1000` runs it for an exact
   point (`r` is the nearby search distance in metres: 250, 500, 1000 or 2000).
 
+## Road map
+
+See [ROADMAP.md](ROADMAP.md) for the full feature list and the planned next versions.
+
 ## Limits
 
 This is a free first look using public data. It does not replace a building
