@@ -2,7 +2,7 @@
 // The page itself and the map library are kept so the app opens without a
 // connection. Live data (flood, radon, noise, maps) always comes from the
 // network and is never stored here.
-const CACHE = "plc-v1";
+const CACHE = "plc-v2";
 const SHELL = [
   "./",
   "./index.html",
