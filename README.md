@@ -13,6 +13,7 @@ England. Pick a location on the map and it checks official data for:
 | Air quality | Council Air Quality Management Areas; Copernicus CAMS model via Open-Meteo |
 | Past use of the land: old landfill, brownfield sites, and contaminated land or major hazard (COMAH) sites where published | Environment Agency Historic Landfill Sites; planning.data.gov.uk |
 | Landslides | BGS National Landslide Database |
+| Coastal erosion by 2055 and 2105, and the shoreline plan for the coast nearby | Environment Agency National Coastal Erosion Risk Map (NCERM 2024) |
 | Planning restrictions and heritage | planning.data.gov.uk |
 | Protected trees (Tree Preservation Orders) and Article 4 areas, and whether the council publishes this data | Councils, via planning.data.gov.uk |
 | Protected nature sites | Natural England, via planning.data.gov.uk |
@@ -101,13 +102,13 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 - **On every pull request** that changes the page, against the proposed version, before it is merged.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
-It checks that all 21 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
+It checks that all 22 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
-full screen, the offline message, the section bar, the topic icons, Send to my conveyancer, Back and Forward, saved reports and notes,
+full screen, the offline message, the section bar, the topic icons, coastal erosion on an eroding coast, Send to my conveyancer, Back and Forward, saved reports and notes,
 printing and downloads. Results,
 screenshots and sample reports are kept for 14 days with each run.
 
-The Environment Agency map server (surface water, noise, landfill) briefly refuses an address that sends more
+The Environment Agency map server (surface water, noise, landfill, coastal erosion) briefly refuses an address that sends more
 than about 15 requests a minute, which happens to GitHub's shared test machines. The test therefore waits a minute
 before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
 answer and retries a refusal or a slow answer. A topic that still fails is tried once more by the page after 20

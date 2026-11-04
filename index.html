@@ -626,6 +626,7 @@ const API = {
   roadNoise: "https://environment.data.gov.uk/spatialdata/road-noise-all-metrics-england-round-4/wms",
   railNoise: "https://environment.data.gov.uk/spatialdata/rail-noise-england-round-4-all/wms",
   landfill: "https://environment.data.gov.uk/spatialdata/historic-landfill/ogc/features/v1/collections/Historic_Landfill_Sites/items",
+  coastal: "https://environment.data.gov.uk/spatialdata/ncern-national-2024/ogc/features/v1/collections/",
   airModel: "https://air-quality-api.open-meteo.com/v1/air-quality",
   crime: "https://data.police.uk/api/crimes-street/all-crime",
   police: "https://data.police.uk/api/",
@@ -650,6 +651,8 @@ const LINKS = {
   landfill: "https://www.data.gov.uk/dataset/17edf94f-6de3-4034-b66b-004ebd0dd010/historic-landfill-sites",
   planningData: "https://www.planning.data.gov.uk/",
   landslides: "https://www.bgs.ac.uk/datasets/national-landslide-database/",
+  coastalMap: "https://www.gov.uk/check-coastal-erosion-management-in-your-area",
+  coastalData: "https://environment.data.gov.uk/dataset/9fede91f-5acd-4fd2-9bd8-98153fa3c2ff",
   geosure: "https://www.bgs.ac.uk/datasets/geosure/",
   police: "https://www.police.uk/",
   policeData: "https://data.police.uk/",
@@ -700,7 +703,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.12.0";
+const APP_VERSION = "1.13.0";
 const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -1841,6 +1844,77 @@ async function getLandslides(loc) {
   }).sort((a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99));
 }
 
+// England's coast: Environment Agency National Coastal Erosion Risk Map (NCERM 2024).
+// Each area is land expected to be lost to the sea, with the shoreline plan in place and the
+// sea level rise the Environment Agency advises planning for (the "70CC" layers).
+// One request covers 1 km around the pin; a second, small one is made only if the pin is
+// inside the area expected to be lost by 2105. Inland, nothing is found.
+const COAST_NEAR_M = 1000;
+
+function pointInRings(pt, rings) {
+  let inside = false;
+  rings.forEach(ring => {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > pt.lat) !== (yj > pt.lat) && pt.lon < (xj - xi) * (pt.lat - yi) / (yj - yi) + xi) inside = !inside;
+    }
+  });
+  return inside;
+}
+
+function geometryHas(geometry, pt) {
+  if (!geometry) return false;
+  const polys = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.type === "MultiPolygon" ? geometry.coordinates : [];
+  return polys.some(rings => pointInRings(pt, rings));
+}
+
+// Shortest distance from the pin to the edge of an area, in km.
+function distanceToGeometryKm(geometry, pt) {
+  const kx = 111.32 * Math.cos(pt.lat * Math.PI / 180), ky = 110.54;
+  let best = Infinity;
+  (function walk(c) {
+    if (typeof c[0][0] === "number") {
+      for (let i = 1; i < c.length; i++) {
+        const ax = (c[i - 1][0] - pt.lon) * kx, ay = (c[i - 1][1] - pt.lat) * ky;
+        const bx = (c[i][0] - pt.lon) * kx, by = (c[i][1] - pt.lat) * ky;
+        const dx = bx - ax, dy = by - ay, len = dx * dx + dy * dy;
+        const t = len ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len)) : 0;
+        best = Math.min(best, Math.hypot(ax + t * dx, ay + t * dy));
+      }
+    } else c.forEach(walk);
+  })(geometry.coordinates || []);
+  return best;
+}
+
+async function getCoastalErosion(loc) {
+  const items = (layer, radiusM) => fetchJSON(API.coastal + layer + "/items?f=json&limit=200&bbox=" +
+    boundingBox(loc.lat, loc.lon, radiusM).join(",")).then(d => d.features || []);
+  const zones = await items("NCERM_SMP_2105_70CC", COAST_NEAR_M);
+  const eroding = zones.filter(f => Number(f.properties.smp2105_70) > 0);
+  const nearest = eroding
+    .map(f => ({ f, km: geometryHas(f.geometry, loc) ? 0 : distanceToGeometryKm(f.geometry, loc) }))
+    .sort((a, b) => a.km - b.km)[0];
+  const closest = nearest ? nearest.f : zones
+    .map(f => ({ f, km: distanceToGeometryKm(f.geometry, loc) })).sort((a, b) => a.km - b.km)[0]?.f;
+  const inside2105 = !!nearest && nearest.km === 0;
+  let metres2055 = null;
+  if (inside2105) {
+    const near = await items("NCERM_SMP_2055_70CC", 100);
+    const hit = near.find(f => Number(f.properties.smp2055_70) > 0 && geometryHas(f.geometry, loc));
+    if (hit) metres2055 = Number(hit.properties.smp2055_70);
+  }
+  const p = closest ? closest.properties : {};
+  return {
+    nearCoast: zones.length > 0,
+    inside2105, inside2055: metres2055 != null,
+    erosionKm: nearest ? nearest.km : null,
+    metres2105: nearest ? Number(nearest.f.properties.smp2105_70) : null,
+    metres2055,
+    plan: { now: p.mt_smp || null, later: p.lt_smp || null, area: p.smp_name || null, defence: p.def_type || null },
+    published: Math.max(0, ...zones.map(f => Number(f.properties.published) || 0)) || null
+  };
+}
+
 async function getCrime(loc) {
   const items = await fetchJSON(API.crime + "?lat=" + loc.lat + "&lng=" + loc.lon);
   const byType = {};
@@ -1879,6 +1953,7 @@ const TASKS = [
   ["air", "Air quality", getAirModel],
   ["landfill", "Old landfill sites", getLandfill],
   ["landslides", "Landslides", getLandslides],
+  ["coastal", "Coastal erosion", getCoastalErosion],
   ["crime", "Reported crime", getCrime],
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater],
   ["floodNational", "Scotland and Wales flood maps", getFloodNational],
@@ -2263,6 +2338,73 @@ function checkLandslides(R) {
   };
 }
 
+// Shoreline management plan policies, in plain words.
+const SHORELINE_PLAN = {
+  "hold the line": "keep the existing sea defences",
+  "advance the line": "build new defences further out to sea",
+  "managed realignment": "let the coast move back in a planned way",
+  "no active intervention": "no money is planned for sea defences"
+};
+function shorelinePlan(policy) {
+  const words = SHORELINE_PLAN[String(policy || "").trim().toLowerCase()];
+  return words ? `“${escapeHTML(policy)}” (${words})` : policy ? `“${escapeHTML(policy)}”` : "";
+}
+
+function checkCoastal(R) {
+  const base = {
+    id: "coastal", group: "ground", title: "Coastal erosion",
+    source: { name: "Environment Agency, National Coastal Erosion Risk Map (NCERM 2024)", url: LINKS.coastalData },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.coastal.ok) return unavailable(base, R, "coastal");
+  const c = R.coastal.value;
+  if (c.published) base.dataDate = `Map last updated ${c.published}. Checked live on ${today()}`;
+  const checker = link(LINKS.coastalMap, "Check coastal erosion management in your area");
+  if (!c.nearCoast) {
+    return {
+      ...base, status: "low",
+      found: "Not near the coast: no coastline is mapped within 1 km.",
+      meaning: "<p>This check looks for coast within 1 km of the property that is expected to wear away over the next 100 years.</p>",
+      actions: [], seller: [], conveyancer: []
+    };
+  }
+  const plan = c.plan.now || c.plan.later;
+  const planLine = plan
+    ? `<p>The local ${term("shoreline management plan", "The long-term plan for this stretch of coast, agreed by the council and the Environment Agency")}
+      ${c.plan.area ? `(${escapeHTML(c.plan.area)}) ` : ""}says ${shorelinePlan(c.plan.now)} until about 2055${c.plan.later && c.plan.later !== c.plan.now ? `, then ${shorelinePlan(c.plan.later)}` : ""}.</p>`
+    : "";
+  let status, found;
+  if (c.inside2055) {
+    status = "high";
+    found = `The property is inside the area the coast is expected to reach by 2055 (up to about ${c.metres2055} m of land lost).`;
+  } else if (c.inside2105) {
+    status = "medium";
+    found = `The property is inside the area the coast is expected to reach by 2105 (up to about ${c.metres2105} m of land lost), but not by 2055.`;
+  } else if (c.erosionKm != null && c.erosionKm <= 0.2) {
+    status = "info";
+    found = `The coast nearby is expected to wear away. The edge of the area expected to be lost by 2105 is about ${formatDistance(c.erosionKm)} from the property.`;
+  } else {
+    status = "low";
+    found = c.erosionKm != null
+      ? `The coast is within 1 km. The nearest area expected to be lost by 2105 is about ${formatDistance(c.erosionKm)} away.`
+      : "The coast is within 1 km, but no land there is expected to be lost to the sea by 2105.";
+  }
+  return {
+    ...base, status, found,
+    meaning: `<p>Rating: inside the area expected to be lost by 2055 is “Look into this”; by 2105 is “Worth checking”;
+      within 200 m of it is “For information”.</p>
+      ${planLine}
+      <p>The map assumes the shoreline plan is carried out and the sea level rise the Environment Agency advises planning for.
+      The Environment Agency says it is a national guide and cannot give exact details for a single property.</p>`,
+    actions: status === "low" ? [] : [
+      `See the map and the plan for this stretch of coast on ${checker}.`,
+      "Ask the council's coastal team how the coast here is changing, and whether the defences will be kept."
+    ],
+    seller: status === "low" ? [] : ["Has the cliff or shore near the property moved, or have the sea defences been repaired, in your time here?"],
+    conveyancer: status === "low" ? [] : ["Does the environmental search cover coastal erosion, and will lenders and insurers accept the property?"]
+  };
+}
+
 function noiseComparison(db) {
   if (db < 45) return "very quiet";
   if (db < 55) return "like a quiet residential street";
@@ -2613,7 +2755,7 @@ function checkNature(R) {
 
 const GROUPS = [
   { id: "flood", title: "Flooding", intro: "Flood risk from rivers, the sea and heavy rain." },
-  { id: "ground", title: "Ground and land", intro: "What is in or under the ground: mining, radon, landfill, contamination and ground movement." },
+  { id: "ground", title: "Ground and land", intro: "What is in or under the ground: mining, radon, landfill, contamination, ground movement and coastal erosion." },
   { id: "living", title: "Living environment", intro: "What it is like to live here: noise, air quality, nearby schools, doctors and transport, and crime." },
   { id: "planning", title: "Planning and surroundings", intro: "Rules that affect changes to the property, and protected places nearby." }
 ];
@@ -2626,6 +2768,7 @@ const CHECKS = [
   { id: "radon", group: "ground", title: "Radon gas", deps: ["radon"], build: checkRadon },
   { id: "landuse", group: "ground", title: "Past use of the land: landfill and contamination", deps: ["landfill", "planningPoint", "planningNearby"], build: checkLanduse },
   { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },
+  { id: "coastal", group: "ground", title: "Coastal erosion", deps: ["coastal"], build: checkCoastal },
   { id: "noise", group: "living", title: "Noise: road, railway and aircraft", deps: ["noise", "railNoise"], build: checkNoise },
   { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air"], build: checkAir },
   { id: "amenities", group: "living", title: "Schools, doctors and transport", deps: ["amenities"], build: checkAmenities },
@@ -2642,7 +2785,7 @@ const TOPIC_ICONS = {
   flood: ["🌊", "Flood"], coal: ["⛏️", "Coal"], radon: ["☢️", "Radon"], landuse: ["🗑️", "Land use"],
   landslides: ["⛰️", "Ground"], noise: ["🔊", "Noise"],
   air: ["💨", "Air"], crime: ["🚓", "Crime"], planning: ["🏛️", "Planning"], nature: ["🌳", "Nature"],
-  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"], trees: ["🌲", "Trees"]
+  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"], trees: ["🌲", "Trees"], coastal: ["🏖️", "Coast"]
 };
 
 // Every check waits for the nearest-postcode lookup, which tells us the country.
@@ -2652,7 +2795,7 @@ CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
 // "Check yourself" and links to the right national service, instead of a
 // misleading "No issue found".
 const COVERAGE = {
-  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England"], noise: ["England"],
+  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England"], coastal: ["England"], noise: ["England"],
   air: ["England"], planning: ["England"], trees: ["England"], nature: ["England"],
   crime: ["England", "Wales", "Northern Ireland"],
   coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"]
