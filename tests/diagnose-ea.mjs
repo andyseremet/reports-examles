@@ -1,40 +1,49 @@
-// Temporary diagnostic: why do Environment Agency map-server requests fail
-// from the live page? Sends the page's exact requests directly and records the
-// real HTTP status and CORS header, with different page addresses (Origin and
-// Referer) and in bursts like the page makes.
+// Temporary diagnostic: measure the Environment Agency map server's burst limit.
+// 1. How long does a block last? Trip it, then probe every 3 s until it answers.
+// 2. Which pace is safe? Send 24 requests at several paces, waiting for any
+//    block to clear between tests, and note the first refused request.
 
 const LAT = 53.5526, LON = -1.4797, d = 0.0005;
 const bbox = [LAT - d, LON - d, LAT + d, LON + d].join(",");
-const wms = (svc, layers) => `https://environment.data.gov.uk/spatialdata/${svc}/wms?` + new URLSearchParams({
-  service: "WMS", version: "1.3.0", request: "GetFeatureInfo", layers, query_layers: layers, styles: "",
+const URL1 = "https://environment.data.gov.uk/spatialdata/nafra2-risk-of-flooding-from-surface-water/wms?" + new URLSearchParams({
+  service: "WMS", version: "1.3.0", request: "GetFeatureInfo", layers: "rofsw", query_layers: "rofsw", styles: "",
   crs: "EPSG:4326", bbox, width: 11, height: 11, i: 5, j: 5, info_format: "application/json", feature_count: 10
 });
-const bands = [63, 125, 250, 500, 1000, 2000, 4000, 8000];
-const PAGE_REQUESTS = [
-  wms("nafra2-risk-of-flooding-from-surface-water", "rofsw"),
-  wms("road-noise-all-metrics-england-round-4", ["Lday", "Leve", "Lnight", "Lden"].map(m => `Road_Noise_${m}_England_Round_4_All`).join(",")),
-  ...["Lday", "Leve", "Lnight", "Lden"].map(m => wms("rail-noise-england-round-4-all", bands.map(b => `Rail_Noise_${m}_England_Round_4_All_${b}Hz`).join(",")))
-];
-const CHROME_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+const HEADERS = { "User-Agent": "Mozilla/5.0 Chrome/131.0.0.0", Origin: "https://andyseremet.github.io", Referer: "https://andyseremet.github.io/" };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const t0 = Date.now();
+const at = () => ((Date.now() - t0) / 1000).toFixed(1) + "s";
+const status = async () => { try { return (await fetch(URL1, { headers: HEADERS, signal: AbortSignal.timeout(20000) })).status; } catch (e) { return "ERR"; } };
 
-async function one(url, origin) {
-  const headers = { "User-Agent": CHROME_UA, Accept: "application/json" };
-  if (origin) { headers.Origin = origin; headers.Referer = origin + "/"; }
-  const started = Date.now();
-  try {
-    const res = await fetch(url, { headers, signal: AbortSignal.timeout(25000) });
-    const body = await res.text();
-    return `${res.status} cors=${res.headers.get("access-control-allow-origin") || "none"} ${Date.now() - started}ms` +
-      (res.ok ? "" : ` body="${body.replace(/\s+/g, " ").slice(0, 120)}" server=${res.headers.get("server") || ""}`);
-  } catch (e) {
-    return `ERROR ${e.message}`;
+async function waitClear(label) {
+  for (let i = 0; i < 40; i++) {
+    const s = await status();
+    if (s === 200) { console.log(`${at()} ${label}: clear after ${i * 3} s of probing`); return; }
+    await sleep(3000);
   }
+  console.log(`${at()} ${label}: still blocked after 120 s`);
 }
 
-for (const origin of ["https://andyseremet.github.io", "http://localhost:8080", null]) {
-  for (let round = 1; round <= 3; round++) {
-    const results = await Promise.all(PAGE_REQUESTS.map(u => one(u, origin)));
-    console.log(`origin=${origin || "(none)"} burst ${round}: ` + results.map((r, i) => `[${i}] ${r}`).join(" | "));
-  }
-  await new Promise(r => setTimeout(r, 2000));
+// 1. Trip it with a burst of 12, then time the block.
+console.log(`${at()} burst of 12:`, (await Promise.all(Array.from({ length: 12 }, status))).join(" "));
+await waitClear("block length");
+
+// 2. Paces: [concurrent, gap between starts in ms]
+for (const [conc, gap] of [[1, 0], [2, 500], [2, 250], [3, 0], [1, 1000]]) {
+  await sleep(5000);
+  const results = [];
+  let next = 0;
+  const worker = async () => {
+    while (next < 24) {
+      const i = next++;
+      await sleep(gap);
+      results[i] = await status();
+    }
+  };
+  const started = Date.now();
+  await Promise.all(Array.from({ length: conc }, worker));
+  const first403 = results.findIndex(s => s !== 200);
+  console.log(`${at()} pace ${conc} at a time, ${gap} ms gap: ${((Date.now() - started) / 1000).toFixed(1)} s for 24; ` +
+    (first403 < 0 ? "all 200" : `first refused at request ${first403 + 1}: ${results.join(" ")}`));
+  if (first403 >= 0) await waitClear("recovery");
 }
