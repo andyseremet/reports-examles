@@ -88,6 +88,11 @@ before each report, and the page itself sends at most 2 requests at a time to th
 answer and retries a refusal or a slow answer. If a topic still shows "Try again", the test presses it once, as a
 person would; a topic that fails twice fails the test.
 
+That server sometimes refuses GitHub's shared test machines outright ("403 Forbidden") for many minutes while
+answering everyone else. That refusal, and only that, is shown as a **warning** (⚠️ in the summary) instead of a
+failure, so it does not open an issue. Any other problem with that server, such as an error, a slow answer or wrong
+content, still fails the check. If the warning appears for several days in a row, check the live site by hand.
+
 Run it yourself: `npm install playwright@1.49.1 && npx playwright install chromium && node tests/live-check.mjs`
 (set `BASE` to test another address, for example a local copy; set `PAUSE_MS=0` to skip the pauses).
 

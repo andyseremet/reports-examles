@@ -21,10 +21,19 @@ const UA = "property-location-check-tests (https://github.com/andyseremet/report
 mkdirSync(OUT, { recursive: true });
 
 const results = [];
+// pass: true, false, or "warn". A warning is shown in the summary but does not fail the run.
 const record = (group, name, pass, info = "") => {
-  results.push({ group, name, pass, info: String(info).slice(0, 900) });
-  console.log(`${pass ? "PASS" : "FAIL"}  [${group}] ${name}${info ? "  – " + String(info).slice(0, 160) : ""}`);
+  results.push({ group, name, pass: pass === "warn" ? true : pass, warn: pass === "warn", info: String(info).slice(0, 900) });
+  console.log(`${pass === "warn" ? "WARN" : pass ? "PASS" : "FAIL"}  [${group}] ${name}${info ? "  – " + String(info).slice(0, 160) : ""}`);
 };
+
+// The Environment Agency map server sometimes refuses GitHub's shared test machines
+// outright ("403 Forbidden") for many minutes, while answering everyone else. That
+// refusal, and only that, is recorded as a warning instead of a failure. Anything
+// else from this server (slow, wrong content, other errors) still fails.
+const EA_MAP_SERVER = "environment.data.gov.uk/spatialdata/";
+const EA_TOPICS = ["surfacewater", "landfill", "noise"];
+const EA_REFUSAL_NOTE = "the Environment Agency map server refused GitHub's test machine (403), as it often does with GitHub's shared machines; if this repeats for days, check the live site by hand";
 
 /* ---------------------------------------------------------------
    1. Data services: answer, expected content, and readable by web pages (CORS)
@@ -76,7 +85,10 @@ async function checkService([name, url, expect, options = {}]) {
       if (!expect(data)) throw new Error("unexpected content");
       return record("Data services", name, true, `${Date.now() - started} ms`);
     } catch (e) {
-      if (attempt === 2) return record("Data services", name, false, e.message);
+      if (attempt === 2) {
+        const refusedByEA = e.message === "HTTP 403" && url.includes(EA_MAP_SERVER);
+        return record("Data services", name, refusedByEA ? "warn" : false, refusedByEA ? `HTTP 403: ${EA_REFUSAL_NOTE}` : e.message);
+      }
       // A refusal (403) from the Environment Agency map server is its short block on
       // busy addresses (it lasts up to about 40 s), so wait it out before trying again.
       await new Promise(r => setTimeout(r, e.message === "HTTP 403" ? 45000 : 3000));
@@ -125,7 +137,11 @@ async function testDevice(device, [postcode, place]) {
     if (!/tile|png|jpg/.test(req.url())) failedRequests.push(`${shortUrl(req.url())} → ${req.failure() ? req.failure().errorText : "failed"}`);
   });
   const step = async (name, fn) => {
-    try { const info = await fn(); record(group, name, info !== false, info === false ? "" : info || ""); }
+    try {
+      const info = await fn();
+      if (info && info.warn) record(group, name, "warn", info.warn);
+      else record(group, name, info !== false, info === false ? "" : info || "");
+    }
     catch (e) { record(group, name, false, e.message.split("\n")[0]); }
   };
   const file = name => `${OUT}/${device.name.replace(/\W+/g, "-")}-${name}.png`;
@@ -182,6 +198,9 @@ async function testDevice(device, [postcode, place]) {
     const secs = Math.round((Date.now() - started) / 1000);
     if (topics.length !== total || failed.length) {
       const why = [...new Set(failedRequests)].slice(0, 6).join("; ");
+      const refusedByEA = topics.length === total && failed.every(t => EA_TOPICS.includes(t.id)) &&
+        failedRequests.some(r => r.includes(EA_MAP_SERVER) && r.includes("HTTP 403"));
+      if (refusedByEA) return { warn: `${failed.map(t => t.id).join(", ")} could not load: ${EA_REFUSAL_NOTE}. Other ${total - failed.length} topics ok` };
       throw new Error(`${failed.length} topic(s) failed` + (retried.length ? " even after Try again" : "") + ": " +
         failed.map(t => `${t.id} (${t.found})`).join("; ") + (why ? ` | failed requests: ${why}` : ""));
     }
@@ -274,12 +293,14 @@ try {
 }
 
 const failed = results.filter(r => !r.pass);
+const warned = results.filter(r => r.warn);
 const lines = [
   `# Property Location Check – automatic test`,
   ``,
   `Tested: ${BASE}  `,
   `Date: ${new Date().toUTCString()}  `,
-  `Result: **${failed.length ? `${failed.length} problem(s) found` : "all checks passed"}** (${results.length - failed.length} of ${results.length} passed)`,
+  `Result: **${failed.length ? `${failed.length} problem(s) found` : "all checks passed"}** (${results.length - failed.length} of ${results.length} passed` +
+    (warned.length ? `, ${warned.length} with a warning` : "") + `)`,
   ``
 ];
 if (failed.length) {
@@ -287,8 +308,13 @@ if (failed.length) {
   failed.forEach(r => lines.push(`| ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`));
   lines.push(``);
 }
+if (warned.length) {
+  lines.push(`## Warnings (do not fail the check)`, ``, `| Area | Check | Details |`, `|---|---|---|`);
+  warned.forEach(r => lines.push(`| ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`));
+  lines.push(``);
+}
 lines.push(`## All checks`, ``, `| Result | Area | Check | Details |`, `|---|---|---|---|`);
-results.forEach(r => lines.push(`| ${r.pass ? "✅" : "❌"} | ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`));
+results.forEach(r => lines.push(`| ${r.warn ? "⚠️" : r.pass ? "✅" : "❌"} | ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`));
 lines.push(``, `## Report results`, ``);
 Object.entries(reports).forEach(([name, topics]) => {
   lines.push(`**${name}**`, ``);
@@ -300,5 +326,5 @@ const summary = lines.join("\n");
 writeFileSync(`${OUT}/summary.md`, summary);
 writeFileSync(`${OUT}/results.json`, JSON.stringify({ base: BASE, date: new Date().toISOString(), results, reports }, null, 2));
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
-console.log(`\n${results.length - failed.length} of ${results.length} checks passed.`);
+console.log(`\n${results.length - failed.length} of ${results.length} checks passed` + (warned.length ? ` (${warned.length} with a warning).` : "."));
 process.exit(failed.length ? 1 : 0);
