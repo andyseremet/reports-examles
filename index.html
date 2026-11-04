@@ -658,7 +658,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.8.0";
+const APP_VERSION = "1.8.1";
 const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -757,15 +757,48 @@ function geometryCentre(geometry) {
 // (network blip, "too many requests" or a server error).
 // options.timeout: give up sooner on services that sometimes hang, then retry straight away.
 // options.body: send a JSON body with POST (for example a list of postcodes).
+// Some services refuse visitors who send many requests at once. Requests to
+// these are queued: only a few at a time, with a short gap between starts,
+// and a longer wait before trying again if one is refused.
+const PACED_HOSTS = [
+  { prefix: "https://environment.data.gov.uk/spatialdata/", maxAtOnce: 2, gapMs: 300, retryWaitsMs: [2000, 6000] }
+];
+const pacing = new Map();
+
+function pacedSlot(rule) {
+  let state = pacing.get(rule);
+  if (!state) { state = { active: 0, lastStart: 0, waiting: [] }; pacing.set(rule, state); }
+  const tryStart = () => {
+    while (state.active < rule.maxAtOnce && state.waiting.length) {
+      const wait = state.lastStart + rule.gapMs - Date.now();
+      if (wait > 0) { clearTimeout(state.timer); state.timer = setTimeout(tryStart, wait); return; }
+      state.active++;
+      state.lastStart = Date.now();
+      state.waiting.shift()();
+    }
+  };
+  return new Promise(resolve => { state.waiting.push(resolve); tryStart(); })
+    .then(() => {
+      let done = false;
+      return () => { if (!done) { done = true; state.active--; tryStart(); } };
+    });
+}
+
 async function fetchJSON(url, options = {}, attempt = 1) {
+  const rule = PACED_HOSTS.find(r => url.startsWith(r.prefix));
+  const retryWaits = rule ? rule.retryWaitsMs : [options.timeout ? 300 : 1500];
+  const release = rule ? await pacedSlot(rule) : null;
   try {
     return await fetchJSONOnce(url, options.timeout || REQUEST_TIMEOUT, !!options.timeout, options.body);
   } catch (error) {
-    if (attempt < 2 && error.retryable) {
-      await new Promise(resolve => setTimeout(resolve, options.timeout ? 300 : 1500));
+    if (release) release();
+    if (attempt <= retryWaits.length && (error.retryable || (rule && error.refused))) {
+      await new Promise(resolve => setTimeout(resolve, retryWaits[attempt - 1]));
       return fetchJSON(url, options, attempt + 1);
     }
     throw error;
+  } finally {
+    if (release) release();
   }
 }
 
@@ -783,6 +816,7 @@ async function fetchJSONOnce(url, timeoutMs, retryOnTimeout, body) {
     if (!response.ok) {
       const err = new Error("the data service replied with error " + response.status);
       err.retryable = response.status === 429 || response.status >= 500;
+      err.refused = response.status === 403;
       throw err;
     }
     return await response.json();
