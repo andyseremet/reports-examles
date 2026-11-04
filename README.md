@@ -17,7 +17,7 @@ England. Pick a location on the map and it checks official data for:
 | Landslides | BGS National Landslide Database |
 | Planning restrictions and heritage | planning.data.gov.uk |
 | Protected nature sites | Natural England, via planning.data.gov.uk |
-| Reported crime, and crime per 1,000 residents compared with England and Wales | data.police.uk; ONS boundaries; Census 2021 via Nomis; ONS crime and population figures |
+| Reported crime, and crime per 1,000 residents compared with England and Wales | data.police.uk; ONS boundaries; Census 2021 residents (saved in `data/census2021-msoa-residents.json`); ONS crime and population figures |
 | Schools, GP surgeries, pharmacies, railway stations, tram and bus stops | Department for Education and NaPTAN (via planning.data.gov.uk); NHS Organisation Data Service; NaPTAN rail stations (saved in `data/rail-stations.json`) |
 
 Each result is given a plain-English rating (Look into this / Worth checking /
@@ -51,6 +51,10 @@ official checkers.
   with a link to the full section. On phones, tables become easy-to-read cards and
   "Check this property" stays at the bottom of the screen until pressed.
 - **Back button:** returns from a report to the search and map, and closes the full-screen map.
+- **How current the data is:** each topic shows a **Data:** line, for example "Crimes reported in September 2026" or
+  "Noise maps published by Defra in 2022". Saved results older than 3 months are marked, with a suggestion to refresh.
+- **Accessibility:** checked against WCAG 2.2 AA with the axe-core checker (light and dark mode, phone and desktop),
+  plus keyboard focus and tap target sizes (at least 24 × 24 pixels).
 - **Fair ratings:** old landfill and landslides are rated by distance (very close sites stand out; distant ones are for information).
 - **Privacy:** no account, cookies or tracking; see "Privacy: what is sent where" at the bottom of the page.
 - **Saved properties:** reopen instantly from saved results (with a refresh button), private notes, a starred shortlist,
@@ -83,7 +87,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 - **On every pull request** that changes the page, against the proposed version, before it is merged.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
-It checks that all 21 data services still answer and allow web pages to read them, then opens the page on a
+It checks that all 19 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, Back and Forward, saved reports and notes,
 printing and downloads. Results,
@@ -111,3 +115,12 @@ saved with the app because the NaPTAN service cannot be read directly by web pag
 download `https://naptan.api.dft.gov.uk/v1/access-nodes?dataFormat=csv&atcoAreaCodes=910` and keep the active `RLY` rows
 (name, latitude, longitude).
 
+
+### Census 2021 residents (fixed, saved with the app)
+
+`data/census2021-msoa-residents.json` holds the number of usual residents in each of the 7,264 local areas
+(middle layer super output areas, MSOA 2021) of England and Wales, from the Office for National Statistics Census 2021
+(table TS001, Nomis dataset `NM_2021_1`, Open Government Licence). A census is never re-counted, so these figures do not
+change and do not need refreshing. They were downloaded from
+`https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv?date=latest&geography=TYPE152&c2021_restype_3=0&measures=20100&select=geography_code,obs_value`.
+When the 2031 Census is published, it would be a new, separate file.

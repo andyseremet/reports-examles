@@ -1,8 +1,9 @@
 // Property Location Check – offline support.
 // The page itself and the map library are kept so the app opens without a
 // connection. Live data (flood, radon, noise, maps) always comes from the
-// network and is never stored here.
-const CACHE = "plc-v7";
+// network and is never stored here; only fixed data that never changes (Census 2021
+// figures) is kept once it has been used.
+const CACHE = "plc-v8";
 const SHELL = [
   "./",
   "./index.html",
@@ -14,6 +15,7 @@ const SHELL = [
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
   "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"
 ];
+const FIXED_DATA = ["./data/census2021-msoa-residents.json"];   // kept once used, not downloaded up front
 
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -54,6 +56,16 @@ self.addEventListener("fetch", event => {
   const isShell = SHELL.some(path => new URL(path, self.location).href === url.href);
   if (isShell) {
     event.respondWith(caches.match(request).then(hit => hit || fetch(request)));
+    return;
+  }
+
+  // Fixed data saved with the app (Census 2021 figures never change): keep a copy the
+  // first time it is used, so later reports read it from this device.
+  if (FIXED_DATA.some(path => new URL(path, self.location).href === url.href)) {
+    event.respondWith(caches.match(request).then(hit => hit || fetch(request).then(response => {
+      if (response.ok) { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(request, copy)); }
+      return response;
+    })));
   }
   // Everything else (live data, map tiles) goes straight to the network.
 });
