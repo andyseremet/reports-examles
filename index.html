@@ -22,6 +22,7 @@
   --blue:#1769aa;
   --link:#1769aa;
   --teal:#087f8c;
+  --accent-bg:#087f8c;
   --bg:#f2f5f8;
   --surface:#ffffff;
   --surface-2:#f1f5f9;
@@ -49,6 +50,7 @@
     --navy:#0b1826;
     --link:#7cbcf0;
     --teal:#0f9aa8;
+    --accent-bg:#0a6f7a;
     --bg:#0e161f;
     --surface:#16212d;
     --surface-2:#1e2b39;
@@ -121,7 +123,7 @@ button {border:0;padding:12px 18px;cursor:pointer;font-weight:bold}
 button:disabled {opacity:.5;cursor:not-allowed}
 .primary {background:#1769aa;color:#fff}
 .secondary {background:var(--btn2-bg);color:var(--btn2-text)}
-.big {background:var(--teal);color:#fff;font-size:18px;padding:15px 26px}
+.big {background:var(--accent-bg);color:#fff;font-size:18px;padding:15px 26px}
 .small-btn {padding:7px 12px;font-size:14px}
 .help {font-size:13px;color:var(--muted);margin-top:6px}
 .status {padding:11px 13px;border-radius:6px;background:var(--surface-2);margin:12px 0 0;font-size:14px}
@@ -157,7 +159,7 @@ button:disabled {opacity:.5;cursor:not-allowed}
 .map-hint.show {opacity:1}
 .map-run {
   display:none;position:absolute;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:1050;
-  background:var(--teal);color:#fff;font-size:17px;padding:14px 24px;border-radius:30px;box-shadow:0 3px 12px #0007;white-space:nowrap;
+  background:var(--accent-bg);color:#fff;font-size:17px;padding:14px 24px;border-radius:30px;box-shadow:0 3px 12px #0007;white-space:nowrap;
 }
 .map-run.show {display:block}
 .map-ctrl {font:14px/1.5 Arial,Helvetica,sans-serif;color:var(--text)}
@@ -212,10 +214,10 @@ details.advanced summary {cursor:pointer;color:var(--link)}
 }
 .report-nav::-webkit-scrollbar {display:none}
 .report-nav a {padding:6px 10px;border-radius:20px;text-decoration:none;color:var(--text);font-size:14px}
-.report-nav a.active {background:var(--teal);color:#fff}
+.report-nav a.active {background:var(--accent-bg);color:#fff}
 .report-nav .spacer {flex:1}
 .report-nav button {padding:6px 10px;font-size:13px}
-.cover,.group,#checklist {scroll-margin-top:60px}
+.cover,.group,#checklist,.slot {scroll-margin-top:64px}
 .cover h1 {font-size:26px;color:var(--heading);margin:0}
 .cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
 #reportMap {height:260px;border-radius:8px;border:1px solid var(--border);margin:14px 0;isolation:isolate}
@@ -275,9 +277,48 @@ label.tick input:checked + span {text-decoration:line-through;color:var(--muted)
 .legend-list li {margin:6px 0}
 .to-top {
   position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:1500;width:48px;height:48px;padding:0;
-  border-radius:50%;background:var(--teal);color:#fff;font-size:22px;box-shadow:0 2px 10px #0006;border:2px solid #ffffffaa;
+  border-radius:50%;background:var(--accent-bg);color:#fff;font-size:22px;box-shadow:0 2px 10px #0006;border:2px solid #ffffffaa;
 }
 footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
+
+/* ---------- topic strip ---------- */
+.topic-strip {display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px;margin:4px 0 16px;padding:0;list-style:none}
+.topic-strip li {display:flex}
+.topic-strip .topic {flex:1}
+.topic {display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:8px;text-decoration:none;
+  font-size:12px;font-weight:bold;border:1px solid transparent}
+.topic-icon {font-size:20px;line-height:1}
+.topic.high {background:var(--high-bg);color:var(--high);border-color:var(--high)}
+.topic.medium {background:var(--med-bg);color:var(--med)}
+.topic.low {background:var(--low-bg);color:var(--low)}
+.topic.info {background:var(--info-bg);color:var(--info)}
+.topic.manual,.topic.error,.topic.loading {background:var(--manual-bg);color:var(--manual)}
+.topic.loading .topic-icon {opacity:.4}
+.summary-title {font-size:17px;margin:4px 0 0}
+
+/* ---------- sticky "Check this property" on phones ---------- */
+.sticky-run {position:fixed;left:0;right:0;bottom:0;z-index:1400;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -2px 10px #0003}
+.sticky-run .big {width:100%}
+body.has-sticky .to-top {bottom:calc(90px + env(safe-area-inset-bottom))}
+body.has-sticky footer {padding-bottom:100px}
+
+/* ---------- saved list rename ---------- */
+.rename-input {padding:6px 8px;font-size:15px;max-width:320px}
+
+/* ---------- tables: keyboard focus, and stacked cards on phones ---------- */
+.table-wrap:focus-visible {outline:3px solid var(--focus)}
+@media (max-width:600px) {
+  table.stack-table, table.stack-table tbody, table.stack-table tr, table.stack-table td {display:block;width:100%}
+  table.stack-table thead {position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  table.stack-table tr {border:1px solid var(--border);border-radius:8px;margin:8px 0;padding:6px 10px;background:var(--surface)}
+  table.stack-table td {border:0;padding:4px 0}
+  table.stack-table td[data-label]::before {content:attr(data-label);display:block;font-size:11px;font-weight:bold;
+    text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  table.stack-table td:first-child {font-size:14px}
+  .compare-table td {min-width:0}
+}
+
 
 @media(max-width:800px) {
   .adv-grid {grid-template-columns:1fr 1fr}
@@ -463,11 +504,27 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 </main>
 
 <button class="to-top no-print hidden" id="toTop" type="button" aria-label="Back to top">↑</button>
+<div class="sticky-run no-print hidden" id="stickyRun"><button class="big" id="stickyRunBtn" type="button">Check this property</button></div>
 
 <footer class="zoomable">
   Property Location Check · Contains public sector information licensed under the Open Government Licence v3.0 ·
   Map data © OpenStreetMap contributors, © Esri and © CARTO · Air quality model: Copernicus Atmosphere Monitoring Service via Open-Meteo ·
   Postcode data: Office for National Statistics via postcodes.io
+  <p><button class="link-btn" type="button" data-info aria-expanded="false" aria-controls="info-privacy">Privacy: what is sent where</button>
+     · <span id="appVersion"></span></p>
+  <div class="info-body" id="info-privacy" hidden style="text-align:left;max-width:760px;margin:8px auto">
+    <p><strong>No account, no cookies, no tracking or advertising.</strong> This page has no server of its own: your browser asks
+       each public data service directly.</p>
+    <ul>
+      <li><strong>What you type in the search</strong> goes to OpenStreetMap Nominatim (addresses) and postcodes.io (postcodes and places).</li>
+      <li><strong>The pin's location</strong> (latitude and longitude) goes to postcodes.io, planning.data.gov.uk, the Environment Agency,
+          the British Geological Survey, the Mining Remediation Authority, Open-Meteo and data.police.uk, to get the results.</li>
+      <li><strong>The map pictures</strong> come from Esri, OpenStreetMap or CARTO, which see which area of the map is shown.</li>
+      <li><strong>Your device's location</strong> is used only when you press the location button, to place the pin.</li>
+      <li><strong>Saved properties, checklist ticks and settings</strong> stay in this browser only. Remove them with “Remove”, or by clearing
+          this site's data in your browser.</li>
+    </ul>
+  </div>
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -553,6 +610,8 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
+const APP_VERSION = "1.6.0";
+const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
 let selected = null;      // {lat, lon, label}
@@ -648,21 +707,22 @@ function geometryCentre(geometry) {
 
 // Fetch JSON, trying once more after a short pause if the service is briefly busy
 // (network blip, "too many requests" or a server error).
-async function fetchJSON(url, attempt = 1) {
+// options.timeout: give up sooner on services that sometimes hang, then retry straight away.
+async function fetchJSON(url, options = {}, attempt = 1) {
   try {
-    return await fetchJSONOnce(url);
+    return await fetchJSONOnce(url, options.timeout || REQUEST_TIMEOUT, !!options.timeout);
   } catch (error) {
     if (attempt < 2 && error.retryable) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      return fetchJSON(url, attempt + 1);
+      await new Promise(resolve => setTimeout(resolve, options.timeout ? 300 : 1500));
+      return fetchJSON(url, options, attempt + 1);
     }
     throw error;
   }
 }
 
-async function fetchJSONOnce(url) {
+async function fetchJSONOnce(url, timeoutMs, retryOnTimeout) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, { signal: controller.signal, headers: { "Accept": "application/json" } });
     if (!response.ok) {
@@ -672,7 +732,11 @@ async function fetchJSONOnce(url) {
     }
     return await response.json();
   } catch (error) {
-    if (error.name === "AbortError") throw new Error("the data service took too long to respond");
+    if (error.name === "AbortError") {
+      const err = new Error("the data service took too long to respond");
+      err.retryable = retryOnTimeout;
+      throw err;
+    }
     if (error instanceof TypeError) {
       const err = new Error("the data service could not be reached");
       err.retryable = true;
@@ -898,7 +962,7 @@ function initMap() {
   mapRun.type = "button";
   mapRun.textContent = "Check this property";
   L.DomEvent.disableClickPropagation(mapRun);
-  mapRun.addEventListener("click", () => { setMapFull(false); runChecks(); });
+  mapRun.addEventListener("click", () => runChecks());   // runChecks closes full screen itself
 
   // A tap on the map closes an open panel first, so the pin is not moved by accident.
   map.on("click", e => {
@@ -952,7 +1016,13 @@ function setupGestureHandling() {
 }
 
 // Full-screen map: one finger moves the map, the wheel zooms.
-function setMapFull(on) {
+function setMapFull(on, fromHistory) {
+  // The phone's Back button closes the full-screen map.
+  if (on && !mapIsFull && !fromHistory) history.pushState({ view: "fullmap" }, "", location.href);
+  if (!on && mapIsFull && !fromHistory && history.state && history.state.view === "fullmap") {
+    history.back();                 // the popstate handler finishes closing it
+    return;
+  }
   mapIsFull = on;
   $("map").classList.toggle("map-full", on);
   document.body.classList.toggle("no-scroll", on);
@@ -962,6 +1032,7 @@ function setMapFull(on) {
   fullControl.btn.setAttribute("aria-label", fullControl.btn.title);
   fullControl.btn.classList.toggle("active", on);
   updateMapRunButton();
+  updateStickyRun();
   setTimeout(() => map.invalidateSize(), 60);
 }
 
@@ -1001,10 +1072,16 @@ function setLocation(lat, lon, label, options = {}) {
   const inUK = lat >= 49.8 && lat <= 61 && lon >= -8.7 && lon <= 2;
   showSearchStatus(inUK ? "" : "This location is outside the UK. The checks cover England, and some cover Scotland, Wales and Northern Ireland.", !inUK);
 
+  // Keep a searched name when the pin is only nudged (within 200 m), and never
+  // overwrite a name the user typed in Advanced options.
+  if (label) namedPlace = { lat, lon, label };
+  else if (namedPlace && distanceKm(namedPlace, { lat, lon }) <= 0.2) label = namedPlace.label;
+  else namedPlace = null;
+
   selected = { lat, lon, label: label || null };
   $("latitude").value = lat.toFixed(6);
   $("longitude").value = lon.toFixed(6);
-  $("siteName").value = label || "";
+  if (!siteNameTyped) $("siteName").value = label || "";
 
   if (!marker) {
     marker = L.marker([lat, lon], { draggable: true, title: "Property location", keyboard: true }).addTo(map);
@@ -1027,6 +1104,8 @@ function setLocation(lat, lon, label, options = {}) {
   $("confirm").classList.remove("hidden");
   $("confirmText").textContent = label || "Pin placed on the map";
 
+  updateStickyRun();
+
   // When the pin is placed by hand, name it after the nearest postcode.
   if (!label) {
     fetchJSON(API.postcodes + "?lon=" + lon + "&lat=" + lat + "&radius=500&limit=1")
@@ -1034,7 +1113,7 @@ function setLocation(lat, lon, label, options = {}) {
         const pc = d.result && d.result[0];
         if (pc && selected && selected.lat === lat && selected.lon === lon) {
           selected.label = "Near " + pc.postcode;
-          $("siteName").value = selected.label;
+          if (!siteNameTyped) $("siteName").value = selected.label;
           $("confirmText").textContent = "Near " + pc.postcode + ", " + pc.admin_district;
         }
       })
@@ -1056,7 +1135,11 @@ function addMapPoint(layer, lat, lon, colour, popup) {
     .bindPopup(popup).addTo(layer);
 }
 
-$("radius").addEventListener("change", drawRadius);
+$("radius").addEventListener("change", () => { drawRadius(); updateStickyRun(); });
+
+let namedPlace = null;        // the last place found by search, to keep its name when the pin is nudged
+let siteNameTyped = false;    // true once the user types their own name
+$("siteName").addEventListener("input", () => { siteNameTyped = $("siteName").value.trim() !== ""; });
 
 $("usePinBtn").addEventListener("click", () => {
   const lat = Number($("latitude").value), lon = Number($("longitude").value);
@@ -1353,14 +1436,18 @@ function nearestAirports(loc) {
 }
 
 async function getAirModel(loc) {
+  // Open-Meteo sometimes hangs for about 12 seconds before failing, so give up
+  // after 6 seconds and try again. Unix times keep the download about 30% smaller.
   const d = await fetchJSON(API.airModel + "?latitude=" + loc.lat + "&longitude=" + loc.lon +
-    "&hourly=pm2_5,nitrogen_dioxide&past_days=92&forecast_days=1&timezone=Europe%2FLondon");
+    "&hourly=pm2_5,nitrogen_dioxide&past_days=92&forecast_days=0&timeformat=unixtime&timezone=Europe%2FLondon",
+    { timeout: 6000 });
   const avg = arr => {
     const v = (arr || []).filter(Number.isFinite);
     return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null;
   };
   const times = d.hourly?.time || [];
-  return { pm25: avg(d.hourly?.pm2_5), no2: avg(d.hourly?.nitrogen_dioxide), from: times[0], to: times[times.length - 1] };
+  const iso = t => t == null ? null : new Date(t * 1000).toISOString();
+  return { pm25: avg(d.hourly?.pm2_5), no2: avg(d.hourly?.nitrogen_dioxide), from: iso(times[0]), to: iso(times[times.length - 1]) };
 }
 
 async function getLandfill(loc) {
@@ -1578,7 +1665,9 @@ function checkLandfill(R) {
   let status = "low";
   let found = `No old landfill sites recorded within ${formatRadius(R.loc.radius)}.`;
   if (sites.length) {
-    status = nearest.distanceKm != null && nearest.distanceKm <= 0.25 ? "high" : "medium";
+    // Within 250 m: look into it. Up to 1 km: worth checking. Further: for information.
+    const d = nearest.distanceKm ?? 0;
+    status = d <= 0.25 ? "high" : d <= 1 ? "medium" : "info";
     found = `${plural(sites.length, "old landfill site")} within ${formatRadius(R.loc.radius)}. The nearest is about ${formatDistance(nearest.distanceKm)} away.`;
   }
   const wasteTypes = s => [s.household && "household", s.special && "hazardous (“special”)", s.industrial && "industrial",
@@ -1591,7 +1680,8 @@ function checkLandfill(R) {
       sites.slice(0, 10).map(s => `<tr><td>${escapeHTML(s.site_name || "Unnamed site")}</td><td>${escapeHTML(formatDistance(s.distanceKm))}</td><td>${escapeHTML(wasteTypes(s))}</td><td>${escapeHTML(years(s))}</td></tr>`).join("")
     }</tbody></table></div>` : "",
     meaning: `<p>The orange dots on the map show where the sites are.</p><p>Old landfill can give off gas or affect the ground. Sites within 250 m usually get a closer look.
-      Household and hazardous waste carry more risk than inert waste such as soil and rubble.</p>`,
+      Household and hazardous waste carry more risk than inert waste such as soil and rubble.</p>
+      <p>Rating: within 250 m “Look into this”, 250 m to 1 km “Worth checking”, further away “For information”.</p>`,
     actions: sites.length ? ["If a site is very close, ask the council whether it has been investigated."] : [],
     seller: [],
     conveyancer: sites.length ? ["An environmental search. It covers landfill, contaminated land and former industrial uses of the land."] : []
@@ -1642,12 +1732,14 @@ function checkLandslides(R) {
   if (!R.landslides.ok) return unavailable(base, R, "landslides");
   const s = R.landslides.value;
   return {
-    ...base, status: s.length ? "medium" : "low",
+    // Only a landslide within 500 m is worth checking; further ones are for information.
+    ...base, status: !s.length ? "low" : (s[0].distanceKm ?? 0) <= 0.5 ? "medium" : "info",
     found: s.length
       ? `${plural(s.length, "recorded landslide")} within ${formatRadius(R.loc.radius)}. The nearest is about ${formatDistance(s[0].distanceKm)} away.`
       : `No recorded landslides within ${formatRadius(R.loc.radius)}.`,
     details: s.length ? `<ul>${s.slice(0, 5).map(x => `<li>${escapeHTML(x.name)} (${escapeHTML(formatDistance(x.distanceKm))})</li>`).join("")}</ul>` : "",
-    meaning: `<p>This check does not cover clay soil that shrinks and swells in dry and wet weather. That is the most common
+    meaning: `<p>Rating: a recorded landslide within 500 m is “Worth checking”; further away it is “For information”.</p>
+      <p>This check does not cover clay soil that shrinks and swells in dry and wet weather. That is the most common
       cause of subsidence in England, especially in the South East.</p>`,
     actions: [`For clay soil, sinkholes and other ground hazards, the environmental search or a ${link(LINKS.geosure, "BGS GeoSure")} report can help.`],
     seller: ["Has there been any subsidence, cracking or underpinning?"],
@@ -1922,6 +2014,13 @@ const CHECKS = [
 
 const TASK_FN = Object.fromEntries(TASKS.map(([key, , fn]) => [key, fn]));
 
+// Short names and symbols for the row of topic icons in the summary.
+const TOPIC_ICONS = {
+  flood: ["🌊", "Flood"], coal: ["⛏️", "Coal"], radon: ["☢️", "Radon"], landfill: ["🗑️", "Landfill"],
+  contamination: ["🧪", "Contamination"], landslides: ["⛰️", "Ground"], noise: ["🔊", "Noise"],
+  air: ["💨", "Air"], crime: ["🚓", "Crime"], planning: ["🏛️", "Planning"], nature: ["🌳", "Nature"]
+};
+
 // Every check waits for the nearest-postcode lookup, which tells us the country.
 CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
 
@@ -2006,9 +2105,10 @@ let reportFeatureLayer = null;  // dots on the report map
 
 $("runBtn").addEventListener("click", () => runChecks());
 
-function runChecks() {
+function runChecks(options = {}) {
   if (!selected) { setControlOpen(searchControl, true); return; }
-  if (mapIsFull) setMapFull(false);
+  const wasFull = mapIsFull;
+  if (mapIsFull) setMapFull(false, true);
   const loc = {
     name: $("siteName").value.trim() || selected.label || "Selected location",
     lat: selected.lat, lon: selected.lon, radius: Number($("radius").value)
@@ -2018,7 +2118,14 @@ function runChecks() {
   reportData = null;
   $("runBtn").disabled = true;
   featureLayer.clearLayers();
-  history.replaceState(null, "", reportUrl(loc));
+  // Browser history: Back from a report returns to the search and map.
+  const url = reportUrl(loc);
+  if (options.fromHistory) { /* the address is already right */ }
+  else if (options.fromLoad || wasFull) history.replaceState({ view: "report" }, "", url);
+  else history.pushState({ view: "report" }, "", url);
+  shownSearch = location.search;
+  lastRunKey = reportKey(loc);
+  updateStickyRun();
 
   renderSkeleton(loc);
   setExportEnabled(false);
@@ -2029,6 +2136,40 @@ function runChecks() {
 
   TASKS.forEach(([key]) => startTask(run, key));
 }
+
+let lastRunKey = null;
+let shownSearch = location.search;   // the ?lat=… part of the address for what is on screen
+const REPORT_PLACEHOLDER = $("report").innerHTML;
+
+// Back to the search and map, as before the report was run.
+function showSearchView() {
+  run = null;
+  reportData = null;
+  lastRunKey = null;
+  if (reportMap) { reportMap.remove(); reportMap = null; }
+  featureLayer.clearLayers();
+  $("report").innerHTML = REPORT_PLACEHOLDER;
+  $("toolbar").classList.add("hidden");
+  $("reportNav").classList.add("hidden");
+  $("runBtn").disabled = false;
+  shownSearch = location.search;
+  updateStickyRun();
+  window.scrollTo({ top: 0 });
+}
+
+window.addEventListener("popstate", () => {
+  if (mapIsFull) { setMapFull(false, true); return; }      // Back closes the full-screen map first
+  if (location.search === shownSearch) return;              // only the #section part changed
+  const params = new URLSearchParams(location.search);
+  if (params.has("lat") && params.has("lon")) {
+    const r = params.get("r");
+    if (r && [...$("radius").options].some(o => o.value === r)) $("radius").value = r;
+    setLocation(params.get("lat"), params.get("lon"), params.get("name") || null);
+    runChecks({ fromHistory: true });
+  } else {
+    showSearchView();
+  }
+});
 
 function startTask(r, key) {
   delete r.R[key];
@@ -2057,7 +2198,7 @@ function onTaskSettled(key) {
     const result = buildCheck(c);
     run.results[c.id] = result;
     const slot = $("slot-" + c.id);
-    if (slot) slot.innerHTML = renderCheck(result);
+    if (slot) { slot.innerHTML = renderCheck(result); prepareTables(slot, c.title); }
   });
   if (key === "place") renderMeta();
   if (["landfill", "landslides", "planningNearby"].includes(key)) replotFeatures();
@@ -2071,9 +2212,24 @@ function finishRun() {
   renderSummary();
   $("checklistBox").innerHTML = buildChecklist(orderedResults());
   restoreTicks();
+  renderSources();
   reportData = buildReportData();
   saveCurrentReport();
   setExportEnabled(true);
+}
+
+// Where each result came from, and how current the data is.
+function renderSources() {
+  const rows = orderedResults().filter(c => c.source && c.source.name).map(c => `<tr>
+      <td>${escapeHTML(c.title)}</td>
+      <td>${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}</td>
+      <td>${escapeHTML(c.dataDate || "Checked live on " + today())}</td></tr>`).join("");
+  $("sourcesBox").innerHTML = `
+    <section class="group" id="sources">
+      <h2>Data sources and dates</h2>
+      <div class="table-wrap"><table><thead><tr><th>Topic</th><th>Source</th><th>Data date</th></tr></thead><tbody>${rows}</tbody></table></div>
+    </section>`;
+  prepareTables($("sourcesBox"), "Data sources");
 }
 
 function orderedResults() {
@@ -2083,6 +2239,24 @@ function orderedResults() {
 function setExportEnabled(on) {
   ["downloadHtml", "downloadJson", "printReport"].forEach(id => { $(id).disabled = !on; });
 }
+
+// Phones: keep "Check this property" at the bottom of the screen until it is pressed,
+// whenever the page's own button is scrolled out of view.
+let runBtnVisible = true;
+if ("IntersectionObserver" in window) {
+  new IntersectionObserver(entries => { runBtnVisible = entries[0].isIntersecting; updateStickyRun(); })
+    .observe($("runBtn"));
+}
+function updateStickyRun() {
+  const box = $("stickyRun");
+  if (!box) return;
+  const pending = selected && reportKey({ lat: selected.lat, lon: selected.lon, radius: Number($("radius").value) }) !== lastRunKey;
+  const show = !!pending && !runBtnVisible && !mapIsFull && window.innerWidth <= 800 && !$("confirm").classList.contains("hidden");
+  box.classList.toggle("hidden", !show);
+  document.body.classList.toggle("has-sticky", show);
+}
+$("stickyRunBtn").addEventListener("click", () => runChecks());
+window.addEventListener("resize", updateStickyRun);
 
 // "Try again" on a check that could not load: re-fetch only the data it is missing.
 document.addEventListener("click", e => {
@@ -2151,6 +2325,21 @@ function loadingCard(c) {
     </div>`;
 }
 
+// Tables: label each cell (shown as stacked cards on phones) and let keyboard users scroll them.
+function prepareTables(container, title) {
+  container.querySelectorAll(".table-wrap").forEach(wrap => {
+    wrap.setAttribute("tabindex", "0");
+    wrap.setAttribute("role", "region");
+    wrap.setAttribute("aria-label", (title || "Table") + " table");
+    const table = wrap.querySelector("table");
+    if (!table) return;
+    table.classList.add("stack-table");
+    const heads = [...table.querySelectorAll("thead th")].map(th => th.textContent.trim());
+    table.querySelectorAll("tbody tr").forEach(tr =>
+      [...tr.children].forEach((td, i) => { if (heads[i]) td.setAttribute("data-label", heads[i]); }));
+  });
+}
+
 function renderCheck(c) {
   const open = ["high", "medium", "error"].includes(c.status);
   const actions = c.actions && c.actions.length
@@ -2181,7 +2370,7 @@ function renderSkeleton(loc) {
       <h1>Property Location Report</h1>
       <p class="meta" id="reportMeta"></p>
       <div id="reportMap" aria-label="Map of the property and nearby features"></div>
-      <h3>Summary${infoButton("info-read", "How to read this report")}</h3>
+      <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
       ${infoBox("info-read", `
         <ul class="legend-list">
           <li><span class="chip high">Look into this</span> Something that could affect value, insurance, health or safety. Investigate before you commit.</li>
@@ -2212,7 +2401,9 @@ function renderSkeleton(loc) {
       </section>
     </div>
 
-    <p class="help">Created with Property Location Check. Contains public sector information licensed under the Open Government
+    <div id="sourcesBox"></div>
+
+    <p class="help">Created with Property Location Check (version ${APP_VERSION}). Contains public sector information licensed under the Open Government
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
   renderMeta();
@@ -2261,6 +2452,17 @@ function renderSummary() {
       <div class="count low"><strong>${n("low")}</strong><span>No issue found</span></div>
       <div class="count info"><strong>${n("info")}</strong><span>For information</span></div>
     </div>
+    <ul class="topic-strip" aria-label="All topics at a glance">
+      ${CHECKS.map(c => {
+        const res = run.results[c.id];
+        const st = res ? res.status : "loading";
+        const [icon, short] = TOPIC_ICONS[c.id];
+        const label = res ? STATUS_LABEL[st] : "Checking";
+        return `<li><a class="topic ${st}" href="#slot-${c.id}" data-open="check-${c.id}"
+            title="${escapeHTML(c.title)}: ${label}" aria-label="${escapeHTML(c.title)}: ${label}">
+            <span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></a></li>`;
+      }).join("")}
+    </ul>
     ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
       <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
           <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul>` : ""}
@@ -2358,12 +2560,16 @@ function watchSections() {
 $("openAll").addEventListener("click", () => document.querySelectorAll("#report details.check").forEach(d => { d.open = true; }));
 $("closeAll").addEventListener("click", () => document.querySelectorAll("#report details.check").forEach(d => { d.open = false; }));
 
-// "Start here" links open the topic they point to.
+// Links within the report (section bar, topic icons, "Start here") scroll to their
+// section without adding steps to the browser history, and open the topic they point to.
 document.addEventListener("click", e => {
-  const a = e.target.closest("[data-open]");
-  if (!a) return;
-  const d = $(a.dataset.open);
-  if (d) d.open = true;
+  const a = e.target.closest('a[href^="#"]');
+  if (!a || !a.closest("#report, #reportNav")) return;
+  const target = document.getElementById(a.getAttribute("href").slice(1));
+  if (!target) return;
+  e.preventDefault();
+  if (a.dataset.open) { const d = $(a.dataset.open); if (d) d.open = true; }
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 window.addEventListener("scroll", () => {
@@ -2418,6 +2624,7 @@ function renderSaved() {
         <small>${s.postcode ? escapeHTML(s.postcode) + " · " : ""}${s.district ? escapeHTML(s.district) + " · " : ""}checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}</small>
         <div class="mini-counts">${countChips(s.checks)}</div>
       </div>
+      <button class="link-btn" type="button" data-rename="${escapeHTML(s.key)}">Rename</button>
       <button class="link-btn" type="button" data-remove="${escapeHTML(s.key)}">Remove</button>
     </li>`).join("");
   updateCompareButton();
@@ -2435,7 +2642,50 @@ function updateCompareButton() {
 }
 
 $("savedList").addEventListener("change", updateCompareButton);
+function renameSaved(key, newName) {
+  const name = newName.trim().slice(0, 80);
+  if (!name) return;
+  const saved = store.get(SAVED_KEY, []);
+  const item = saved.find(s => s.key === key);
+  if (!item) return;
+  item.name = name;
+  store.set(SAVED_KEY, saved);
+  // If this property's report is open, update it too.
+  if (run && reportKey(run.loc) === key) {
+    run.loc.name = name;
+    renderMeta();
+    if (reportData) reportData.location.name = name;
+    history.replaceState(history.state, "", reportUrl(run.loc));
+  }
+}
+
 $("savedList").addEventListener("click", e => {
+  const ren = e.target.closest("[data-rename]");
+  if (ren) {
+    const li = ren.closest("li");
+    const linkEl = li.querySelector(".saved-main a");
+    const input = document.createElement("input");
+    input.className = "rename-input";
+    input.value = linkEl.textContent;
+    input.setAttribute("aria-label", "New name for this property");
+    linkEl.replaceWith(input);
+    ren.textContent = "Save";
+    input.focus();
+    input.select();
+    let finished = false;
+    const finish = save => {
+      if (finished) return;
+      finished = true;
+      if (save) renameSaved(ren.dataset.rename, input.value);
+      renderSaved();
+    };
+    input.addEventListener("keydown", ev => {
+      if (ev.key === "Enter") finish(true);
+      if (ev.key === "Escape") finish(false);
+    });
+    input.addEventListener("blur", () => finish(true));
+    return;
+  }
   const btn = e.target.closest("[data-remove]");
   if (!btn) return;
   store.set(SAVED_KEY, store.get(SAVED_KEY, []).filter(s => s.key !== btn.dataset.remove));
@@ -2460,6 +2710,7 @@ $("compareBtn").addEventListener("click", () => {
       </tbody>
     </table></div>
     <p class="help">Saved results from the day each property was checked. Open a property to run its checks again with the latest data.</p>`;
+  prepareTables($("compareBody"), "Comparison");
   $("comparePanel").classList.remove("hidden");
   $("comparePanel").scrollIntoView({ behavior: "smooth", block: "start" });
 });
@@ -2522,9 +2773,9 @@ body{max-width:960px;margin:24px auto;padding:0 18px}</style>
   downloadFile(fileBase() + ".html", html, "text/html");
 });
 
-// "i" buttons: show or hide the explanation they point to.
+// "i" buttons (and text links marked data-info): show or hide the explanation they point to.
 document.addEventListener("click", e => {
-  const btn = e.target.closest(".info-btn");
+  const btn = e.target.closest(".info-btn, [data-info]");
   if (!btn) return;
   e.preventDefault();
   e.stopPropagation();
@@ -2550,6 +2801,8 @@ $("printReport").addEventListener("click", () => window.print());
 /* =========================================================
    COMFORT: larger text, install as an app
 ========================================================= */
+
+$("appVersion").textContent = `Version ${APP_VERSION}, updated ${APP_UPDATED}`;
 
 function setLargeText(on) {
   document.documentElement.classList.toggle("large-text", on);
@@ -2594,10 +2847,10 @@ window.addEventListener("load", async () => {
 
   if (params.has("lat") && params.has("lon")) {
     setLocation(params.get("lat"), params.get("lon"), params.get("name") || null);
-    runChecks();
+    runChecks({ fromLoad: true });
   } else if (params.has("postcode")) {
     await lookupPostcode(params.get("postcode"));
-    if (selected) runChecks();
+    if (selected) runChecks({ fromLoad: true });
   } else {
     setControlOpen(searchControl, true);   // first visit: show where to type
   }

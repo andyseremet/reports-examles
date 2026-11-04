@@ -44,6 +44,11 @@ official checkers.
   A section bar stays at the top while scrolling, with **Open all / Close all** and a back-to-top button.
 - **Save and share:** every report is saved on your device (nothing is sent anywhere). Reopen saved properties,
   **compare two side by side**, tick off the checklist (remembered per property), and share with the phone's share menu.
+- **Clear at a glance:** a row of topic icons shows every result's colour; on phones, tables become easy-to-read cards and
+  "Check this property" stays at the bottom of the screen until pressed.
+- **Back button:** returns from a report to the search and map, and closes the full-screen map.
+- **Fair ratings:** old landfill and landslides are rated by distance (very close sites stand out; distant ones are for information).
+- **Privacy:** no account, cookies or tracking; see "Privacy: what is sent where" at the bottom of the page.
 - **Comfort:** dark mode follows your device setting; **A+** makes text larger; **install as an app** on your phone's
   home screen (on iPhone: Share, then Add to Home Screen).
 
