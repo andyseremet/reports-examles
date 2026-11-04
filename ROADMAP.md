@@ -5,6 +5,7 @@ Property Location Check: what the app does today, and what is planned next.
 - Current version: **1.10.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 4 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
+- Language: the app stays in English only.
 - Data rule: outside data is saved with the app only when it is certain never to change; everything else is checked
   live.
 
@@ -140,14 +141,6 @@ a pass.
   2. or drop the topic and link to the official maps instead.
 - England first, in line with the coverage choice.
 
-### Version 1.14.0: Welsh language
-
-- The whole app in Welsh as well as English, with a language switch, starting with buyers in Wales.
-- Text is kept in one place per language so both stay in step.
-- Translation should be done or checked by a qualified Welsh translator, not by machine alone, following the Welsh
-  Language Commissioner's guidance.
-- This is the largest item, so it comes last; English coverage work in versions 1.11 to 1.13 comes first.
-
 ---
 
 ## Part 3: Ideas parked for later
@@ -161,6 +154,7 @@ Suggested in the quiz but not chosen this time. They can be picked up in a futur
 | Travel time to a chosen place | Distance and rough walking/driving time to work or a school. |
 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales. |
 | Fuller coverage for Scotland | Fill topics that say "Check yourself" in Scotland. |
+| Welsh language | Removed on 4 November 2026: the app stays in English only. |
 
 ## Known issues
 
