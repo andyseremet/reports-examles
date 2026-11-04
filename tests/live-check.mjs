@@ -63,6 +63,9 @@ const SERVICES = [
   ["Scotland flood maps (SEPA)", "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer/2/query?geometry=-3.43,56.404&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnCountOnly=true&f=json", d => Number.isFinite(d.count)],
   ["Wales flood maps (Natural Resources Wales)", wms("https://datamap.gov.wales/geoserver/ows", "inspire-nrw:NRW_FLOODZONE_RIVERS_SEAS_MERGED", 51.47, -3.188, 0.00005), d => Array.isArray(d.features) && d.features.length > 0],
   ["Address search (OpenStreetMap Nominatim)", "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=Barnsley%20Town%20Hall", d => Array.isArray(d) && d.length > 0],
+  ["Council list (planning.data.gov.uk)", "https://www.planning.data.gov.uk/entity.json?dataset=local-authority&dataset=national-park-authority&dataset=development-corporation&limit=500&field=entity&field=local-planning-authority&field=end-date",
+    d => Array.isArray(d.entities) && d.entities.length < 500 && d.entities.filter(e => e["local-planning-authority"]).length > 300],
+  ["Protected trees and Article 4 (planning.data.gov.uk)", "https://www.planning.data.gov.uk/entity.json?dataset=tree&organisation_entity=192&limit=1&field=entity", d => d.count > 0],
   ["Schools register (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?dataset=educational-establishment&latitude=${LAT}&longitude=${LON}&limit=1`, d => Array.isArray(d.entities)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
   ["Postcode lookup for many postcodes (postcodes.io)", "https://api.postcodes.io/postcodes", d => Array.isArray(d.result) && d.result[0].result,
@@ -256,6 +259,16 @@ async function testDevice(device, [postcode, place]) {
       .map(c => c.id));
     if (missing.length) throw new Error("no data date on: " + missing.join(", "));
     return await page.$eval("#check-crime .data-date", x => x.textContent.trim()).catch(() => "ok");
+  });
+
+  await step("Send to my conveyancer", async () => {
+    const text = await page.evaluate(() => conveyancerText());
+    if (!text.includes("?lat=") || !text.includes("Please could you include these searches")) throw new Error("the email text is incomplete");
+    await page.click("#emailConveyancer");
+    await page.waitForTimeout(300);
+    const note = await page.$eval("#sendNote", x => x.textContent);
+    if (!note.startsWith("Opening your email app")) throw new Error("the email button did not respond");
+    return `email text ${text.length} characters`;
   });
 
   await step("Back returns to the search, Forward reopens the report", async () => {

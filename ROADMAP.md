@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.10.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.11.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 4 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -11,7 +11,7 @@ Property Location Check: what the app does today, and what is planned next.
 
 ---
 
-## Part 1: What the app does today (version 1.10.0)
+## Part 1: What the app does today (version 1.11.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -34,8 +34,12 @@ Property Location Check: what the app does today, and what is planned next.
 | Living environment | Air quality | Council Air Quality Management Areas; Copernicus CAMS via Open-Meteo |
 | Living environment | Reported crime, and crime per 1,000 residents | data.police.uk; ONS; Census 2021 (saved with the app) |
 | Planning and surroundings | Planning restrictions and heritage | planning.data.gov.uk |
+| Planning and surroundings | Protected trees (Tree Preservation Orders) and Article 4 areas | Councils, via planning.data.gov.uk |
 | Planning and surroundings | Protected nature sites | Natural England, via planning.data.gov.uk |
 | Planning and surroundings | Schools, GP surgeries, pharmacies, stations, tram and bus stops | DfE; NHS ODS; NaPTAN (rail stations saved with the app) |
+
+Councils publish protected trees and Article 4 areas themselves, and many have not yet. The app checks whether the
+council for the location has published them: if not, the topic says "Check yourself" instead of "No issue found".
 
 Topics with no free live data (for example rail and aircraft noise, Japanese knotweed) are listed with links to
 the official checkers. Topics not covered in Wales or Scotland say "Check yourself" and link to the national service.
@@ -49,6 +53,8 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 - Each topic has a **Data:** line saying how current its data is.
 - A section bar that stays at the top while scrolling, with Open all / Close all and back to top.
 - Checklist for the seller and conveyancer, with ticks remembered for each property.
+- **Send to my conveyancer:** opens your email app with the report link, the topics to look into and the checklist,
+  or copies the same text. Nothing passes through the app.
 
 ### Reliability
 - A topic whose data fails is tried again by itself after 20 seconds, then offers **Try again**.
@@ -79,7 +85,7 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 
 ### Behind the scenes
 - An automatic check runs every day against the live site, and on every pull request before it is merged. It
-  tests all 19 outside data services, the 2 data files saved with the app, and the full report on a desktop, a phone
+  tests all 21 outside data services, the 2 data files saved with the app, and the full report on a desktop, a phone
   and a tablet. A failure opens a "Live check failed" issue on GitHub.
 
 ---
@@ -89,27 +95,6 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 Chosen from the quiz on 4 November 2026. Each version keeps the same habits: bump the version number and the
 offline cache name together, update the README, add the new topic to the daily check, and never weaken a test to get
 a pass.
-
-### Version 1.11.0: Tree protection and Article 4, and "Send to my conveyancer"
-
-**New topic: Tree protection and Article 4 areas** (Planning and surroundings)
-- What it tells the buyer:
-  - whether the property is in a **Tree Preservation Order** area, where cutting or pruning trees needs council
-    consent;
-  - whether it is in an **Article 4 area**, where some extensions and changes that normally need no planning
-    permission do need it.
-- Data: planning.data.gov.uk datasets `tree-preservation-zone` (about 111,000 areas), `tree` (about 273,000 single
-  protected trees) and `article-4-direction-area` (about 7,600 areas). Checked live; this is the same service the app
-  already uses, so no new outside connection.
-- Honest limit to show in the report: not every council has published this data yet. Where nothing is found, the
-  report should say "None published. Ask the council or your conveyancer", not "No issue found".
-- England only.
-
-**New tool: Send to my conveyancer**
-- A button that opens the phone's or computer's email app with a ready-made message: the address, the report link,
-  and the questions for the conveyancer and seller from the topics rated "Look into this" or "Worth checking".
-- No new outside service: it uses a standard `mailto:` link, so nothing passes through the app.
-- Also offered as **Copy text**, for people who use web email or messaging apps.
 
 ### Version 1.12.0: Coastal erosion
 
@@ -158,10 +143,8 @@ Suggested in the quiz but not chosen this time. They can be picked up in a futur
 
 ## Known issues
 
-- **Landslides (BGS):** since early November 2026 the British Geological Survey landslide service answers every
-  question with "Failed to execute query", even simple ones. Radon on the same BGS server still works, so the fault
-  is on their side. The app shows "Try again" for this topic until it recovers. No code change is planned unless BGS
-  moves the service.
+- None at the moment. (The British Geological Survey landslide service failed in early November 2026 and
+  recovered on 4 November 2026; the fault was on their side.)
 
 ## How this road map is updated
 

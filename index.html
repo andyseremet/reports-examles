@@ -284,6 +284,11 @@ th {background:var(--surface-2);color:var(--heading)}
 .checklist h3 {margin-top:16px}
 .checklist ul {list-style:none;padding:0}
 .checklist li {border-bottom:1px solid var(--border)}
+.send-box {border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:10px 0 4px;background:var(--surface-2)}
+.send-box p {margin:0}
+.send-box .help:empty {display:none}
+.send-box .help {margin-top:6px}
+.send-box .send-buttons {display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
 label.tick {display:flex;gap:10px;align-items:flex-start;font-weight:normal;font-size:14px;margin:0;padding:8px 2px;cursor:pointer}
 label.tick input {width:24px;height:24px;margin:0;flex:none}
 label.tick input:checked + span {text-decoration:line-through;color:var(--muted)}
@@ -698,7 +703,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.10.0";
+const APP_VERSION = "1.11.0";
 const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -1647,6 +1652,53 @@ async function getPlanningNearby(loc) {
   });
 }
 
+// Protected trees (Tree Preservation Orders) and Article 4 directions, from planning.data.gov.uk.
+// Councils publish these themselves and many have not yet, so this also finds the council for the pin
+// and counts what it has published. "None found" is only a result where the council publishes the data.
+const TREE_NEAR_M = 50;
+let councilOrgs = null;   // planning authority code -> organisation number, loaded once per visit
+
+async function getCouncilOrgs() {
+  if (councilOrgs) return councilOrgs;
+  const params = new URLSearchParams({ limit: 500 });
+  ["local-authority", "national-park-authority", "development-corporation"].forEach(d => params.append("dataset", d));
+  ["entity", "name", "local-planning-authority", "end-date"].forEach(f => params.append("field", f));
+  const list = (await fetchJSON(API.planning + "?" + params)).entities || [];
+  const orgs = {};
+  list.filter(o => o["local-planning-authority"] && !o["end-date"])
+    .forEach(o => { orgs[o["local-planning-authority"]] = { entity: o.entity, name: o.name }; });
+  return (councilOrgs = orgs);
+}
+
+async function countPublished(dataset, org) {
+  const params = new URLSearchParams({ dataset, organisation_entity: org, limit: 1, field: "entity" });
+  return (await fetchJSON(API.planning + "?" + params)).count || 0;
+}
+
+async function getProtectedTrees(loc) {
+  const near = new URLSearchParams({
+    geometry: circleWkt(loc.lat, loc.lon, TREE_NEAR_M), geometry_relation: "intersects", limit: 200, exclude_field: "geometry"
+  });
+  ["tree", "tree-preservation-zone"].forEach(d => near.append("dataset", d));
+  const lpaParams = new URLSearchParams({ latitude: loc.lat, longitude: loc.lon, dataset: "local-planning-authority", exclude_field: "geometry" });
+  const [nearData, lpaData, orgs] = await Promise.all([
+    fetchJSON(API.planning + "?" + near), fetchJSON(API.planning + "?" + lpaParams), getCouncilOrgs()
+  ]);
+  const nearby = (nearData.entities || []).map(e => {
+    const p = parseWktPoint(e.point);
+    return { dataset: e.dataset, name: e.name, order: e["tree-preservation-order"] || "", distanceKm: p ? distanceKm(loc, p) : null };
+  });
+  const lpa = (lpaData.entities || [])[0];
+  const org = lpa && orgs[lpa.reference];
+  let published = null;   // null: we could not tell which council publishes for this place
+  if (org) {
+    const [trees, zones, article4] = await Promise.all(
+      ["tree", "tree-preservation-zone", "article-4-direction-area"].map(d => countPublished(d, org.entity)));
+    published = { trees: trees + zones, article4 };
+  }
+  return { nearby, council: org ? org.name : (lpa ? lpa.name : ""), published };
+}
+
 async function getFloodWarnings(loc) {
   const km = Math.max(loc.radius / 1000, 1);   // this API takes kilometres
   return (await fetchJSON(API.floodWarnings + "?lat=" + loc.lat + "&long=" + loc.lon + "&dist=" + km)).items || [];
@@ -1811,6 +1863,7 @@ const TASKS = [
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater],
   ["floodNational", "Scotland and Wales flood maps", getFloodNational],
   ["amenities", "Schools, doctors and transport", getAmenities],
+  ["trees", "Protected trees and Article 4 areas", getProtectedTrees],
   ["crimeArea", "Crime compared with England and Wales", getCrimeArea]
 ];
 
@@ -2411,8 +2464,6 @@ function checkPlanning(R) {
   const rules = [
     ["conservation-area", "Conservation area", "Extra permission is needed for demolition, some extensions, and work on trees."],
     ["listed-building-outline", "Listed building", "Listed building consent is needed for most changes, inside and out."],
-    ["article-4-direction-area", "Article 4 area", "Some normal home improvements, such as new windows or porches, need planning permission."],
-    ["tree-preservation-zone", "Tree preservation order", "You need consent to cut back or remove protected trees."],
     ["green-belt", "Green Belt", "New building is strictly limited."],
     ["area-of-outstanding-natural-beauty", "National Landscape", "Stricter planning rules apply to protect the landscape."],
     ["national-park", "National Park", "The National Park authority deals with planning, with stricter rules."],
@@ -2432,13 +2483,80 @@ function checkPlanning(R) {
       : "No conservation area, listed building, Green Belt or similar restriction found here.",
     details: (applies.length ? `<ul>${applies.map(a => `<li><strong>${escapeHTML(a.name)}</strong>${a.detail ? " (" + escapeHTML(a.detail) + ")" : ""}: ${escapeHTML(a.what)}</li>`).join("")}</ul>` : "") +
       (listedNear.length ? `<p>${plural(listedNear.length, "listed building")} within 200 m.</p>` : ""),
-    meaning: "<p>These rules mainly matter if you plan to extend, alter or build. Not every council publishes this data yet, and protection orders on single trees may be missing.</p>",
+    meaning: "<p>These rules mainly matter if you plan to extend, alter or build. Not every council publishes this data yet. Protected trees and Article 4 areas have their own topic below.</p>",
     actions: [
       "Search the council's planning website by postcode for applications on and next to the property.",
       `Check listed buildings on the ${link(LINKS.historicEngland, "National Heritage List for England")}.`
     ],
     seller: ["Have any extensions or alterations been made? Are there planning permissions and building regulations sign-offs for them?"],
     conveyancer: []
+  };
+}
+
+function checkTrees(R) {
+  const base = {
+    id: "trees", group: "planning", title: "Protected trees and Article 4 areas",
+    source: { name: "Council data published on planning.data.gov.uk (Ministry of Housing, Communities and Local Government)", url: LINKS.planningData },
+    dataDate: "Checked live on " + today() + "; as published by the council"
+  };
+  if (!R.trees.ok) return unavailable(base, R, "trees");
+  if (!R.planningPoint.ok) return unavailable(base, R, "planningPoint");
+  const t = R.trees.value;
+  const here = R.planningPoint.ok ? R.planningPoint.value : [];
+  const council = t.council || "the council";
+  const names = list => [...new Set(list.map(e => e.name).filter(Boolean))];
+  const article4 = names(byDataset(here, "article-4-direction-area"));
+  const zoneHere = byDataset(here, "tree-preservation-zone").length > 0;
+  const trees = t.nearby.filter(e => e.dataset === "tree").sort((a, b) => (a.distanceKm ?? 1) - (b.distanceKm ?? 1));
+  const zonesNear = !zoneHere && t.nearby.some(e => e.dataset === "tree-preservation-zone");
+  const p = t.published;
+  const noTreeData = p && p.trees === 0, noA4Data = p && p.article4 === 0;
+
+  const items = [];
+  if (article4.length) items.push(`<li><strong>Article 4 area</strong> (${article4.map(escapeHTML).join("; ")}): some changes that normally need no
+    planning permission do need it here. Depending on the direction, this can cover things like new windows, porches,
+    extensions, or turning a house into flats or shared housing.</li>`);
+  if (zoneHere) items.push("<li><strong>Tree Preservation Order area:</strong> the pin is inside an area where trees are protected.</li>");
+  if (zonesNear) items.push(`<li>A <strong>Tree Preservation Order area</strong> is within ${TREE_NEAR_M} m of the pin.</li>`);
+  if (trees.length) items.push(`<li><strong>${plural(trees.length, "protected tree")}</strong> within ${TREE_NEAR_M} m, the nearest ${trees[0].distanceKm != null && trees[0].distanceKm < 0.01
+    ? "less than 10 m" : "about " + formatDistance(trees[0].distanceKm)} away${trees[0].order ? " (order " + escapeHTML(trees[0].order) + ")" : ""}.</li>`);
+  const missing = [noTreeData && "protected trees", noA4Data && "Article 4 areas"].filter(Boolean);
+  const missingNote = missing.length
+    ? `<p><strong>${escapeHTML(council)} has not published its ${missing.join(" or ")} on planning.data.gov.uk</strong>, so a clear result is not possible
+      for ${missing.length > 1 ? "these" : "this"}. Ask the council, or check the local authority search.</p>` : "";
+  const unknownNote = p ? "" : "<p>We could not tell which council's data covers this place, so a clear result is not possible.</p>";
+
+  let status, found;
+  const bits = [article4.length && "Article 4 area", (zoneHere || zonesNear) && "Tree Preservation Order area",
+    trees.length && plural(trees.length, "protected tree") + " nearby"].filter(Boolean);
+  if (bits.length) {
+    status = "info";
+    found = "Found: " + bits.join(", ") + ".";
+  } else if (!p || noTreeData || noA4Data) {
+    status = "manual";
+    found = !p ? "Could not tell whether the council has published this data. Ask the council."
+      : missing.length > 1 ? `None published: ${council} has not published protected trees or Article 4 areas. Ask the council or your conveyancer.`
+      : `No ${noTreeData ? "Article 4 area" : "protected trees"} found, but ${council} has not published its ${missing[0]}. Ask the council or your conveyancer.`;
+  } else {
+    status = "low";
+    found = `No Article 4 area or protected trees found within ${TREE_NEAR_M} m, in the data ${council} has published.`;
+  }
+
+  const anyTree = zoneHere || zonesNear || trees.length;
+  return {
+    ...base, status, found,
+    details: (items.length ? `<ul>${items.join("")}</ul>` : "") + missingNote + unknownNote,
+    meaning: `<p><strong>Tree Preservation Orders</strong> protect single trees, groups or woodland. You need the council's consent to cut down,
+      top or prune a protected tree, even in your own garden. Large trees close to a house can also matter for subsidence on clay soils.</p>
+      <p><strong>Article 4 directions</strong> remove some "permitted development" rights, so changes that normally need no planning permission
+      need it in that area. Each direction covers different things, so ask the council what this one restricts.</p>
+      <p>This only shows what councils have published so far. The local authority search your conveyancer orders is the definitive record.</p>`,
+    actions: [
+      `Ask ${escapeHTML(council)} for a Tree Preservation Order and Article 4 check, or look on its planning website.`,
+      ...(anyTree ? ["Look at the trees on and next to the property when you visit, and ask the surveyor about any close to the house."] : [])
+    ],
+    seller: anyTree ? ["Are any trees on or next to the property protected? Has any protected tree work been done, and was consent given?"] : [],
+    conveyancer: ["Confirm from the local authority search whether a Tree Preservation Order or Article 4 direction affects the property."]
   };
 }
 
@@ -2491,6 +2609,7 @@ const CHECKS = [
   { id: "amenities", group: "living", title: "Schools, doctors and transport", deps: ["amenities"], build: checkAmenities },
   { id: "crime", group: "living", title: "Reported crime", deps: ["crime", "crimeArea"], build: checkCrime },
   { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby"], build: checkPlanning },
+  { id: "trees", group: "planning", title: "Protected trees and Article 4 areas", deps: ["planningPoint", "trees"], build: checkTrees },
   { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby"], build: checkNature }
 ];
 
@@ -2501,7 +2620,7 @@ const TOPIC_ICONS = {
   flood: ["🌊", "Flood"], coal: ["⛏️", "Coal"], radon: ["☢️", "Radon"], landfill: ["🗑️", "Landfill"],
   contamination: ["🧪", "Contamination"], landslides: ["⛰️", "Ground"], noise: ["🔊", "Noise"],
   air: ["💨", "Air"], crime: ["🚓", "Crime"], planning: ["🏛️", "Planning"], nature: ["🌳", "Nature"],
-  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"]
+  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"], trees: ["🌲", "Trees"]
 };
 
 // Every check waits for the nearest-postcode lookup, which tells us the country.
@@ -2512,7 +2631,7 @@ CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
 // misleading "No issue found".
 const COVERAGE = {
   flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landfill: ["England"], contamination: ["England"], noise: ["England"],
-  air: ["England"], planning: ["England"], nature: ["England"],
+  air: ["England"], planning: ["England"], trees: ["England"], nature: ["England"],
   crime: ["England", "Wales", "Northern Ireland"],
   coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"]
 };
@@ -2541,7 +2660,7 @@ function notCovered(c, country, place) {
   if (c.id === "flood" && n.flood) service = n.flood;
   if (c.id === "crime" && n.police) service = n.police;
   const covered = COVERAGE[c.id].join(", ").replace(/, ([^,]*)$/, " and $1");
-  const actions = (c.id === "planning" || c.id === "nature")
+  const actions = (c.id === "planning" || c.id === "nature" || c.id === "trees")
     ? [`Ask ${escapeHTML(council)}'s planning service about restrictions and protected sites.`]
     : service ? [`Check this on ${link(service[1], service[0])}.`] : [];
   return {
@@ -3216,17 +3335,73 @@ function buildChecklist(checks) {
     "Visit at different times of day, including rush hour and evening.",
     "Get a building survey (RICS Level 2 or 3), especially for older homes."
   ];
+  lastChecklist = { seller: seller.map(plainText), conveyancer: conveyancer.map(plainText) };
   const list = items => `<ul>${items.map(i =>
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(plainText(i))}"><span>${i}</span></label></li>`).join("")}</ul>`;
   return `
     <section class="group checklist" id="checklist">
       <h2>Your checklist${infoButton("info-checklist", "About the checklist")}</h2>
       ${infoBox("info-checklist", "<p>Everything to follow up, gathered from the checks above. Tick items as you go: your ticks are remembered on this device for this property.</p>")}
+      <div class="send-box no-print">
+        <p><strong>Send to my conveyancer:</strong> an email with the link to this report, the topics to look into and the questions below.</p>
+        <div class="send-buttons">
+          <button class="primary" id="emailConveyancer" type="button">Email to my conveyancer</button>
+          <button class="secondary" id="copyConveyancer" type="button">Copy as text</button>
+        </div>
+        <p class="help" id="sendNote" role="status"></p>
+      </div>
       <h3>Questions to ask the seller or estate agent</h3>${list(seller)}
       <h3>Searches and reports to ask your conveyancer for</h3>${list(conveyancer)}
       <h3>Things to check yourself</h3>${list(yourself)}
     </section>`;
 }
+
+let lastChecklist = { seller: [], conveyancer: [] };
+
+/* ---------- send to my conveyancer ---------- */
+// Plain text for an email or a message. Nothing passes through the app: the email opens in the person's
+// own email app, or the text is copied for them to paste.
+function conveyancerText() {
+  const loc = run.loc;
+  const p = run.R.place && run.R.place.ok ? run.R.place.value : null;
+  const where = loc.name + (p && p.postcode && !loc.name.includes(p.postcode) ? ` (near ${p.postcode})` : "");
+  const flagged = orderedResults().filter(c => c.status === "high" || c.status === "medium");
+  const lines = [
+    "Hello,", "",
+    `I am looking at buying ${where}. I ran a free check of official open data for the location. The full report is here:`,
+    new URL(reportUrl(loc), location.href).href, ""
+  ];
+  if (flagged.length) {
+    lines.push("Topics to look into:");
+    flagged.forEach(c => lines.push(`- ${c.title}: ${STATUS_LABEL[c.status]}. ${plainText(c.found)}`));
+  } else {
+    lines.push("The check found nothing rated \"Look into this\" or \"Worth checking\".");
+  }
+  lines.push("", "Please could you include these searches:");
+  lastChecklist.conveyancer.forEach(i => lines.push("- " + i));
+  lines.push("", "Questions I plan to ask the seller or estate agent:");
+  lastChecklist.seller.forEach(i => lines.push("- " + i));
+  lines.push("", "This check is a first look from public data and does not replace the official searches.", "", "Thank you");
+  return lines.join("\n");
+}
+
+function conveyancerSubject() {
+  return "Property I am buying: " + run.loc.name;
+}
+
+document.addEventListener("click", async e => {
+  if (!run) return;
+  if (e.target.closest("#emailConveyancer")) {
+    e.preventDefault();
+    $("sendNote").textContent = "Opening your email app. Add your conveyancer's address and send. If the email looks cut off, use Copy as text.";
+    location.href = "mailto:?subject=" + encodeURIComponent(conveyancerSubject()) + "&body=" + encodeURIComponent(conveyancerText());
+  }
+  if (e.target.closest("#copyConveyancer")) {
+    const text = conveyancerSubject() + "\n\n" + conveyancerText();
+    try { await navigator.clipboard.writeText(text); $("sendNote").textContent = "Copied. Paste it into an email or message to your conveyancer."; }
+    catch (err) { prompt("Copy this text:", text); }
+  }
+});
 
 const ticksKey = () => "plc-ticks:" + reportKey(run.loc);
 
@@ -3549,7 +3724,7 @@ $("downloadHtml").addEventListener("click", () => {
   const copy = $("report").cloneNode(true);
   copy.querySelectorAll("details").forEach(d => d.setAttribute("open", ""));
   copy.querySelectorAll(".info-body").forEach(d => d.removeAttribute("hidden"));
-  copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button, #whyBox").forEach(b => b.remove());
+  copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button, #whyBox, .send-box").forEach(b => b.remove());
   copy.querySelectorAll("#notesText").forEach(t => t.remove());
   copy.querySelectorAll(".notes-print").forEach(d => { d.removeAttribute("aria-hidden"); d.classList.add("notes-download"); });
   copy.querySelectorAll("input[data-tick]").forEach(b => { if (b.checked) b.setAttribute("checked", ""); });
