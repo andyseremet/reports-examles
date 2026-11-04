@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Property Location Check</title>
-<meta name="description" content="Free environmental and local area checks for anyone buying a house or land in England: flood, radon, coal mining, noise, air quality, landfill and more.">
+<meta name="description" content="Free checks for anyone buying a house or land in England: flooding, radon, coal mining, noise, air quality, landfill, planning and more, from official data.">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -17,6 +17,7 @@
   --text:#263445;
   --muted:#5f6f81;
   --border:#dce3ea;
+  --focus:#f2a900;
   --high-bg:#fdecea;   --high:#a3261d;
   --med-bg:#fff2d6;    --med:#7a4f00;
   --low-bg:#e5f4ea;    --low:#17653b;
@@ -24,111 +25,136 @@
   --manual-bg:#eeeef3; --manual:#4a4a5e;
 }
 * {box-sizing:border-box}
-body {
-  margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  color:var(--text);
-  background:var(--bg);
-  line-height:1.5;
-}
+body {margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:var(--bg);line-height:1.5}
+:focus-visible {outline:3px solid var(--focus);outline-offset:2px}
 header {background:var(--navy);color:#fff;padding:22px 5%}
-header h1 {margin:0;font-size:25px}
-header p {margin:6px 0 0;color:#cbd8e5;max-width:800px}
-.container {max-width:1200px;margin:auto;padding:22px}
-.panel {
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:20px;
-  margin-bottom:18px;
-  box-shadow:0 2px 6px #10243a0a;
-}
-h2 {font-size:19px;margin:0 0 12px;color:var(--navy)}
-h3 {font-size:16px;color:var(--navy);margin:0 0 6px}
-label {display:block;font-weight:bold;font-size:13px;margin-bottom:5px}
+header h1 {margin:0;font-size:26px}
+header p {margin:6px 0 0;color:#cbd8e5;max-width:760px}
+.container {max-width:1100px;margin:auto;padding:22px}
+.panel {background:#fff;border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px;box-shadow:0 2px 6px #10243a0a}
+h2 {font-size:20px;margin:0 0 12px;color:var(--navy)}
+h3 {font-size:17px;color:var(--navy);margin:0}
+h4 {font-size:14px;color:var(--navy);margin:14px 0 4px}
+label {display:block;font-weight:bold;font-size:14px;margin-bottom:6px}
 input,select,button {font:inherit;border-radius:6px}
-input,select {width:100%;border:1px solid #cbd5df;padding:10px;background:#fff}
-button {border:0;padding:11px 16px;cursor:pointer;font-weight:bold}
-button:disabled {opacity:.55;cursor:not-allowed}
+input,select {width:100%;border:1px solid #9fb0c2;padding:11px;background:#fff}
+button {border:0;padding:12px 18px;cursor:pointer;font-weight:bold}
+button:disabled {opacity:.5;cursor:not-allowed}
 .primary {background:var(--blue);color:#fff}
 .secondary {background:#e8eef5;color:var(--navy)}
-.teal {background:var(--teal);color:#fff}
-.search-row {display:flex;gap:9px}
-.search-row input {flex:1}
-.grid {display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;margin-top:14px}
-.field {min-width:0}
-.actions {display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
-#map {height:420px;width:100%;border-radius:8px;border:1px solid var(--border);margin-top:12px}
-.help {font-size:12px;color:var(--muted);margin-top:5px}
-.status {padding:11px 13px;border-radius:6px;background:#edf3f8;margin:12px 0;font-size:13px}
-.status.success {background:var(--low-bg);color:var(--low)}
-.status.warning {background:var(--med-bg);color:var(--med)}
-.status.error {background:var(--high-bg);color:var(--high)}
-.hidden {display:none}
+.big {background:var(--teal);color:#fff;font-size:18px;padding:15px 26px}
+.help {font-size:13px;color:var(--muted);margin-top:6px}
+.hidden {display:none!important}
+a {color:var(--blue);overflow-wrap:anywhere}
+abbr[title] {text-decoration:underline dotted;cursor:help}
 
-.cards {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.metric {border-radius:8px;padding:14px;border:1px solid var(--border)}
-.metric strong {display:block;font-size:26px}
-.metric span {font-size:13px}
-.metric.high {background:var(--high-bg);color:var(--high)}
-.metric.medium {background:var(--med-bg);color:var(--med)}
-.metric.low {background:var(--low-bg);color:var(--low)}
-.metric.manual {background:var(--manual-bg);color:var(--manual)}
-
-.chip {
-  display:inline-block;padding:3px 9px;border-radius:20px;
-  font-size:12px;font-weight:bold;white-space:nowrap;
+/* ---------- search ---------- */
+.step-label {font-size:13px;font-weight:bold;color:var(--teal);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.search-box {position:relative}
+.search-row {display:flex;gap:8px}
+.search-row input {flex:1;font-size:18px;padding:14px}
+#suggestions {
+  position:absolute;z-index:1000;left:0;right:0;top:100%;margin:4px 0 0;padding:4px 0;list-style:none;
+  background:#fff;border:1px solid #9fb0c2;border-radius:8px;box-shadow:0 8px 20px #10243a26;max-height:320px;overflow:auto;
 }
+#suggestions li {padding:10px 14px;cursor:pointer}
+#suggestions li small {color:var(--muted)}
+#suggestions li[aria-selected="true"],#suggestions li:hover {background:#e8f1fa}
+#suggestions li.address-search {border-top:1px solid var(--border);color:var(--blue)}
+#map {height:400px;width:100%;border-radius:8px;border:1px solid var(--border);margin-top:14px}
+.map-legend {background:#fff;padding:8px 10px;border-radius:6px;font-size:12px;line-height:1.7;box-shadow:0 1px 4px #0003}
+.map-legend .dot {display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #0003;margin-right:6px;vertical-align:-1px}
+.confirm {margin-top:14px;padding:16px;border-radius:8px;background:#eef6f7;border:1px solid #bfe0e3}
+.confirm p {margin:0 0 10px}
+details.advanced {margin-top:14px;font-size:14px}
+details.advanced summary {cursor:pointer;color:var(--blue)}
+.adv-grid {display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;margin-top:10px}
+.status {padding:11px 13px;border-radius:6px;background:#edf3f8;margin:12px 0 0;font-size:14px}
+.status.error {background:var(--high-bg);color:var(--high)}
+
+/* ---------- progress ---------- */
+#progress ul {list-style:none;padding:0;margin:8px 0 0;columns:2;font-size:14px}
+#progress li {padding:3px 0;break-inside:avoid}
+#progress li::before {content:"○";display:inline-block;width:22px;color:var(--muted)}
+#progress li.done::before {content:"✓";color:var(--low);font-weight:bold}
+#progress li.fail::before {content:"✕";color:var(--high);font-weight:bold}
+
+/* ---------- report ---------- */
+.toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:14px}
+.toolbar button {padding:9px 14px;font-size:14px}
+.cover h1 {font-size:26px;color:var(--navy);margin:0}
+.cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
+#reportMap {height:260px;border-radius:8px;border:1px solid var(--border);margin:14px 0}
+.verdict {font-size:18px;margin:14px 0 10px}
+.counts {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0 16px}
+.count {border-radius:8px;padding:10px 12px}
+.count strong {display:block;font-size:24px}
+.count span {font-size:13px}
+.count.high {background:var(--high-bg);color:var(--high)}
+.count.medium {background:var(--med-bg);color:var(--med)}
+.count.low {background:var(--low-bg);color:var(--low)}
+.count.info {background:var(--info-bg);color:var(--info)}
+.priority {list-style:none;padding:0;margin:0}
+.priority li {margin:6px 0;padding:10px 12px;border-radius:8px;border:1px solid var(--border);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.priority li a {font-weight:bold}
+.chip {display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:bold;white-space:nowrap}
 .chip.high {background:var(--high-bg);color:var(--high)}
 .chip.medium {background:var(--med-bg);color:var(--med)}
 .chip.low {background:var(--low-bg);color:var(--low)}
 .chip.info {background:var(--info-bg);color:var(--info)}
 .chip.manual,.chip.error {background:var(--manual-bg);color:var(--manual)}
-
-table {width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:13px}
-th,td {text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical-align:top}
+.notice {padding:12px 14px;background:#fff6e5;border-left:4px solid #d99a26;font-size:14px;margin:14px 0}
+.group {margin-top:26px}
+.group > h2 {border-bottom:2px solid var(--border);padding-bottom:6px}
+details.check {border:1px solid var(--border);border-left:6px solid var(--border);border-radius:8px;margin:10px 0;background:#fff}
+details.check.high {border-left-color:var(--high)}
+details.check.medium {border-left-color:#d99a26}
+details.check.low {border-left-color:var(--low)}
+details.check.info {border-left-color:var(--info)}
+details.check.manual,details.check.error {border-left-color:#9a9aae}
+details.check > summary {cursor:pointer;padding:12px 14px;list-style:none;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+details.check > summary::-webkit-details-marker {display:none}
+details.check > summary .found {grid-column:1 / -1;font-size:14px}
+details.check > summary h3::before {content:"▸ ";color:var(--muted)}
+details.check[open] > summary h3::before {content:"▾ "}
+.check-body {padding:0 16px 14px;font-size:14px}
+.check-body p {margin:4px 0 8px}
+.check-body ul {margin:4px 0 8px;padding-left:20px}
+.source {font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;margin-top:10px}
+table {width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:13px}
+th,td {text-align:left;padding:7px;border-bottom:1px solid var(--border);vertical-align:top}
 th {background:#f1f5f9;color:var(--navy)}
 .table-wrap {overflow-x:auto}
-a {color:var(--blue);overflow-wrap:anywhere}
-
-#report {background:#fff}
-.report-header {border-bottom:3px solid var(--blue);padding-bottom:14px;margin-bottom:18px}
-.report-header h1 {font-size:24px;color:var(--navy);margin:0}
-.report-meta {font-size:13px;color:var(--muted);margin-top:8px}
-.notice {padding:12px;background:#fff6e5;border-left:4px solid #d99a26;font-size:13px;margin:12px 0}
-.check {
-  border:1px solid var(--border);border-left:6px solid var(--border);
-  border-radius:8px;padding:14px 16px;margin:12px 0;break-inside:avoid;
-}
-.check.high {border-left-color:var(--high)}
-.check.medium {border-left-color:#d99a26}
-.check.low {border-left-color:var(--low)}
-.check.info {border-left-color:var(--info)}
-.check.manual,.check.error {border-left-color:#9a9aae}
-.check-head {display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
-.check p,.check li {font-size:14px}
-.check .headline {font-weight:bold;margin:6px 0}
-.check .source {font-size:12px;color:var(--muted)}
-.check ul {margin:6px 0;padding-left:20px}
-.legend-list {font-size:13px;padding-left:18px}
+.checklist h3 {margin-top:16px}
+.checklist ul {list-style:none;padding:0}
+.checklist li {padding:6px 0 6px 30px;position:relative;font-size:14px;border-bottom:1px solid #eef1f4}
+.checklist li::before {content:"";position:absolute;left:4px;top:9px;width:14px;height:14px;border:2px solid #7b8a9a;border-radius:3px}
+.legend-list {font-size:14px;padding-left:0;list-style:none}
+.legend-list li {margin:6px 0}
 footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 
-@media(max-width:900px) {
-  .grid {grid-template-columns:1fr 1fr}
-  .cards {grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:800px) {
+  .adv-grid {grid-template-columns:1fr 1fr}
+  .counts {grid-template-columns:repeat(2,minmax(0,1fr))}
+  #progress ul {columns:1}
 }
-@media(max-width:550px) {
-  .grid,.cards {grid-template-columns:1fr}
+@media(max-width:520px) {
+  .container {padding:10px}
+  .panel {padding:16px}
   .search-row {flex-direction:column}
-  .container {padding:12px}
-  #map {height:330px}
+  .adv-grid {grid-template-columns:1fr}
+  #map {height:320px}
+  .big {width:100%}
 }
 @media print {
-  body {background:#fff}
-  header,.no-print,footer {display:none!important}
+  body {background:#fff;font-size:12px}
+  header,footer,.no-print,#searchPanel,#progressPanel {display:none!important}
   .container {padding:0;max-width:none}
-  .panel {border:0;box-shadow:none;padding:0}
+  .panel {border:0;box-shadow:none;padding:0;margin:0}
   a {color:#222;text-decoration:none}
+  .details-start {break-before:page}
+  details.check,.checklist li,.priority li {break-inside:avoid}
+  .leaflet-control-zoom {display:none}
   @page {size:A4;margin:14mm}
 }
 </style>
@@ -138,100 +164,107 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 
 <header>
   <h1>Property Location Check</h1>
-  <p>Free checks for anyone buying a house or land in England: flooding, radon,
-     coal mining, noise, air quality, landfill, planning restrictions and more,
-     using official government and open data.</p>
+  <p>Thinking of buying a house or land in England? Check flooding, radon, coal mining, noise,
+     air quality, old landfill, planning restrictions and more, free, using official data.</p>
 </header>
 
-<div class="container">
+<main class="container">
 
-  <section class="panel no-print" id="setup">
-    <h2>1. Choose the location</h2>
+  <!-- ===================== FIND THE PROPERTY ===================== -->
+  <section class="panel" id="searchPanel" aria-labelledby="searchTitle">
+    <div class="step-label">Step 1 of 2</div>
+    <h2 id="searchTitle">Find the property</h2>
 
-    <label for="placeSearch">Search by postcode or address</label>
-    <div class="search-row">
-      <input id="placeSearch" placeholder="e.g. S70 2TA or 10 High Street, Barnsley">
-      <button class="primary" id="searchPlace">Find</button>
-      <button class="secondary" id="locateMe">Use my location</button>
+    <div class="search-box">
+      <label for="q">Enter a postcode, address or place</label>
+      <div class="search-row">
+        <input id="q" type="search" autocomplete="off" spellcheck="false"
+               placeholder="e.g. S70 2TA"
+               role="combobox" aria-autocomplete="list" aria-expanded="false"
+               aria-controls="suggestions" aria-describedby="qHelp">
+        <button class="primary" id="searchBtn" type="button">Search</button>
+      </div>
+      <ul id="suggestions" role="listbox" class="hidden" aria-label="Suggestions"></ul>
     </div>
-    <div class="help">Or click the map, or drag the pin, to the exact house or plot.</div>
+    <div class="help" id="qHelp">Start typing to see suggestions. You can also click the map to drop a pin.</div>
+    <div id="searchStatus" class="status hidden" role="status" aria-live="polite"></div>
 
-    <div id="map"></div>
+    <div id="map" role="application" aria-label="Map. Click to choose the property location."></div>
 
-    <div class="grid">
-      <div class="field">
-        <label for="siteName">Property name (for the report)</label>
-        <input id="siteName" value="Barnsley Town Centre">
-      </div>
-      <div class="field">
-        <label for="latitude">Latitude</label>
-        <input id="latitude" type="number" step="any" value="53.5526">
-      </div>
-      <div class="field">
-        <label for="longitude">Longitude</label>
-        <input id="longitude" type="number" step="any" value="-1.4797">
-      </div>
-      <div class="field">
-        <label for="radius">Look for things nearby within</label>
-        <select id="radius">
-          <option value="250">250 metres</option>
-          <option value="500">500 metres</option>
-          <option value="1000" selected>1 kilometre</option>
-          <option value="2000">2 kilometres</option>
-        </select>
-      </div>
+    <div id="confirm" class="confirm hidden" aria-live="polite">
+      <div class="step-label">Step 2 of 2</div>
+      <p><strong>Is the pin on the right property?</strong>
+         <span id="confirmText"></span><br>
+         If not, drag the pin, or click the exact spot on the map.</p>
+      <button class="big" id="runBtn" type="button">Check this property</button>
     </div>
 
-    <div class="status" id="locationStatus">Default location: Barnsley Town Centre.</div>
-
-    <div class="actions">
-      <button class="teal" id="generate">Run the checks</button>
-      <button class="secondary" id="updatePin">Move pin to typed coordinates</button>
-    </div>
-    <div id="loading" class="status hidden">Checking official data sources… this usually takes 5–15 seconds.</div>
+    <details class="advanced">
+      <summary>Advanced options</summary>
+      <div class="adv-grid">
+        <div>
+          <label for="siteName">Name shown on the report</label>
+          <input id="siteName" placeholder="Filled in automatically">
+        </div>
+        <div>
+          <label for="latitude">Latitude</label>
+          <input id="latitude" type="number" step="any" inputmode="decimal">
+        </div>
+        <div>
+          <label for="longitude">Longitude</label>
+          <input id="longitude" type="number" step="any" inputmode="decimal">
+        </div>
+        <div>
+          <label for="radius">Look for things nearby within</label>
+          <select id="radius">
+            <option value="250">250 metres</option>
+            <option value="500">500 metres</option>
+            <option value="1000" selected>1 kilometre</option>
+            <option value="2000">2 kilometres</option>
+          </select>
+        </div>
+      </div>
+      <p><button class="secondary" id="usePinBtn" type="button">Put pin at these coordinates</button>
+         <button class="secondary" id="locateMe" type="button">Use my current location</button></p>
+    </details>
   </section>
 
-  <section class="panel no-print" id="overview">
-    <h2>2. At a glance</h2>
-    <div class="cards">
-      <div class="metric high"><strong id="countHigh">—</strong><span>Look into this</span></div>
-      <div class="metric medium"><strong id="countMedium">—</strong><span>Worth checking</span></div>
-      <div class="metric low"><strong id="countLow">—</strong><span>No issue found</span></div>
-      <div class="metric manual"><strong id="countManual">—</strong><span>Check yourself / not available</span></div>
-    </div>
+  <!-- ===================== PROGRESS ===================== -->
+  <section class="panel hidden" id="progressPanel" aria-live="polite">
+    <h2>Checking official data…</h2>
+    <div id="progress"><ul></ul></div>
   </section>
 
+  <!-- ===================== REPORT ===================== -->
   <section class="panel" id="reportPanel">
-    <div class="no-print actions" style="justify-content:flex-end;margin-top:0">
-      <button class="secondary" id="downloadJson">Download data (JSON)</button>
-      <button class="secondary" id="downloadHtml">Download report (HTML)</button>
-      <button class="primary" id="printReport">Print / Save as PDF</button>
+    <div class="toolbar no-print hidden" id="toolbar">
+      <button class="secondary" id="copyLink" type="button">Copy link to this report</button>
+      <button class="secondary" id="downloadHtml" type="button">Download report</button>
+      <button class="secondary" id="downloadJson" type="button">Download data (JSON)</button>
+      <button class="primary" id="printReport" type="button">Print / Save as PDF</button>
     </div>
 
     <div id="report">
-      <div class="report-header">
-        <h1>Property Location Report</h1>
-        <div class="report-meta">Choose a location and press “Run the checks”.</div>
-      </div>
-      <p>The report will list each check with a plain-English result,
-         what it means for a buyer, and what to do next.</p>
+      <h2>What you will get</h2>
+      <p>A report for the exact spot you choose, grouped into <strong>Flooding</strong>, <strong>Ground and land</strong>,
+         <strong>Living environment</strong> and <strong>Planning and surroundings</strong>. It ends with a checklist of
+         questions for the seller and searches to ask your conveyancer for.</p>
       <h3>How to read the results</h3>
       <ul class="legend-list">
-        <li><span class="chip high">Look into this</span> Something was found that could affect value, insurance, health or safety. Investigate before you commit.</li>
-        <li><span class="chip medium">Worth checking</span> Something was found nearby or at a moderate level. Ask questions or order a specialist search.</li>
-        <li><span class="chip low">No issue found</span> Nothing was found in the data checked. This is not a guarantee.</li>
+        <li><span class="chip high">Look into this</span> Something that could affect value, insurance, health or safety. Investigate before you commit.</li>
+        <li><span class="chip medium">Worth checking</span> Something nearby or at a moderate level. Ask questions or order a specialist search.</li>
+        <li><span class="chip low">No issue found</span> Nothing found in the data checked. This is not a guarantee.</li>
         <li><span class="chip info">For information</span> Useful local facts, for example planning restrictions.</li>
-        <li><span class="chip manual">Check yourself</span> No free live data is available. A link to the official checker is given.</li>
       </ul>
     </div>
   </section>
 
-</div>
+</main>
 
 <footer>
-  Property Location Check · Contains public sector information licensed under the
-  Open Government Licence v3.0 · © OpenStreetMap contributors ·
-  Air quality model: Copernicus Atmosphere Monitoring Service via Open-Meteo.
+  Property Location Check · Contains public sector information licensed under the Open Government Licence v3.0 ·
+  © OpenStreetMap contributors · Air quality model: Copernicus Atmosphere Monitoring Service via Open-Meteo ·
+  Postcode data: Office for National Statistics via postcodes.io
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -240,12 +273,13 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 "use strict";
 
 /* =========================================================
-   CONFIGURATION – data sources
+   DATA SOURCES
 ========================================================= */
 
 const API = {
-  geocoder: "https://nominatim.openstreetmap.org/search",
+  nominatim: "https://nominatim.openstreetmap.org/search",
   postcodes: "https://api.postcodes.io/postcodes",
+  places: "https://api.postcodes.io/places",
   planning: "https://www.planning.data.gov.uk/entity.json",
   floodWarnings: "https://environment.data.gov.uk/flood-monitoring/id/floods",
   radon: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/radon/MapServer/0/query",
@@ -260,7 +294,6 @@ const API = {
 
 const LINKS = {
   floodLongTerm: "https://www.gov.uk/check-long-term-flood-risk",
-  floodWarnings: "https://check-for-flooding.service.gov.uk/",
   floodMapPlanning: "https://flood-map-for-planning.service.gov.uk/",
   floodRe: "https://www.floodre.co.uk/",
   ukradon: "https://www.ukradon.org/",
@@ -268,23 +301,19 @@ const LINKS = {
   coalInfo: "https://www.gov.uk/guidance/using-coal-mining-information",
   coalMap: "https://datamine-cauk.hub.arcgis.com/",
   noise: "https://www.gov.uk/government/publications/strategic-noise-mapping-2022",
-  who: "https://www.who.int/europe/publications/i/item/9789289053563",
   ukair: "https://uk-air.defra.gov.uk/aqma/",
-  openMeteo: "https://open-meteo.com/en/docs/air-quality-api",
-  whoAir: "https://www.who.int/publications/i/item/9789240034228",
   landfill: "https://www.data.gov.uk/dataset/17edf94f-6de3-4034-b66b-004ebd0dd010/historic-landfill-sites",
-  contaminated: "https://www.gov.uk/government/publications/contaminated-land-statutory-guidance",
   planningData: "https://www.planning.data.gov.uk/",
-  bgsGeohazards: "https://www.bgs.ac.uk/datasets/national-landslide-database/",
+  landslides: "https://www.bgs.ac.uk/datasets/national-landslide-database/",
   geosure: "https://www.bgs.ac.uk/datasets/geosure/",
   police: "https://www.police.uk/",
+  policeData: "https://data.police.uk/",
   epc: "https://www.gov.uk/find-energy-certificate",
   ofcom: "https://www.ofcom.org.uk/mobile-coverage-checker",
   historicEngland: "https://historicengland.org.uk/listing/the-list/",
   magic: "https://magic.defra.gov.uk/"
 };
 
-// Planning datasets checked AT the exact point.
 const PLANNING_AT_POINT = [
   "flood-risk-zone", "air-quality-management-area", "conservation-area",
   "article-4-direction-area", "tree-preservation-zone", "green-belt",
@@ -294,7 +323,6 @@ const PLANNING_AT_POINT = [
   "scheduled-monument"
 ];
 
-// Planning datasets searched WITHIN the chosen distance.
 const PLANNING_NEARBY = [
   "flood-risk-zone", "main-river", "air-quality-management-area",
   "contaminated-land", "brownfield-land", "control-of-major-accident-hazards-site",
@@ -310,12 +338,16 @@ const STATUS_LABEL = {
   low: "No issue found",
   info: "For information",
   manual: "Check yourself",
-  error: "Data not available"
+  error: "Not available"
 };
+const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 };
+
+const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
 
-let map, marker, radiusCircle, featureLayer, noiseLayer;
+let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
+let selected = null;      // {lat, lon, label}
 let reportData = null;
 
 const $ = id => document.getElementById(id);
@@ -323,20 +355,6 @@ const $ = id => document.getElementById(id);
 /* =========================================================
    HELPERS
 ========================================================= */
-
-function getLocation() {
-  return {
-    name: $("siteName").value.trim() || "Unnamed location",
-    lat: Number($("latitude").value),
-    lon: Number($("longitude").value),
-    radius: Number($("radius").value)
-  };
-}
-
-function validLocation(loc) {
-  return Number.isFinite(loc.lat) && Number.isFinite(loc.lon) &&
-    loc.lat >= -90 && loc.lat <= 90 && loc.lon >= -180 && loc.lon <= 180;
-}
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, c => ({
@@ -348,18 +366,30 @@ function link(url, text) {
   return `<a href="${escapeHTML(url)}" target="_blank" rel="noopener">${escapeHTML(text)}</a>`;
 }
 
-function formatDate(value) {
-  if (!value) return "Not supplied";
+// A plain word with the technical meaning shown on hover.
+function term(text, explanation) {
+  return `<abbr title="${escapeHTML(explanation)}">${escapeHTML(text)}</abbr>`;
+}
+
+function today() {
+  return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function formatDateTime(value) {
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString("en-GB");
+  return Number.isNaN(d.getTime()) ? String(value || "") : d.toLocaleString("en-GB");
+}
+
+function monthName(yyyyMm) {
+  if (!yyyyMm) return "the latest month";
+  return new Date(yyyyMm + "-01").toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 }
 
 function distanceKm(a, b) {
   const rad = x => x * Math.PI / 180;
   const dLat = rad(b.lat - a.lat);
   const dLon = rad(b.lon - a.lon);
-  const x = Math.sin(dLat/2)**2 +
-    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon/2)**2;
+  const x = Math.sin(dLat/2)**2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon/2)**2;
   return 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
 }
 
@@ -372,7 +402,10 @@ function formatRadius(m) {
   return m >= 1000 ? (m / 1000) + " km" : m + " m";
 }
 
-// Circle as a WKT polygon (lon lat order), used for "nearby" searches.
+function plural(n, one, many) {
+  return n + " " + (n === 1 ? one : (many || one + "s"));
+}
+
 function circleWkt(lat, lon, radiusM, steps = 24) {
   const pts = [];
   for (let i = 0; i <= steps; i++) {
@@ -387,16 +420,14 @@ function circleWkt(lat, lon, radiusM, steps = 24) {
 function boundingBox(lat, lon, radiusM) {
   const dLat = radiusM / 110540;
   const dLon = radiusM / (111320 * Math.cos(lat * Math.PI / 180));
-  return { minLat: lat - dLat, maxLat: lat + dLat, minLon: lon - dLon, maxLon: lon + dLon };
+  return [lon - dLon, lat - dLat, lon + dLon, lat + dLat];
 }
 
-// "POINT (-1.47 53.56)" -> {lat, lon}
 function parseWktPoint(wkt) {
   const m = /POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i.exec(wkt || "");
   return m ? { lon: Number(m[1]), lat: Number(m[2]) } : null;
 }
 
-// Rough centre of any GeoJSON geometry.
 function geometryCentre(geometry) {
   if (!geometry) return null;
   let sumLat = 0, sumLon = 0, n = 0;
@@ -407,24 +438,16 @@ function geometryCentre(geometry) {
   return n ? { lat: sumLat / n, lon: sumLon / n } : null;
 }
 
-function setStatus(id, message, type = "") {
-  $(id).className = "status " + type;
-  $(id).textContent = message;
-}
-
 async function fetchJSON(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { "Accept": "application/json" }
-    });
-    if (!response.ok) throw new Error("HTTP " + response.status);
+    const response = await fetch(url, { signal: controller.signal, headers: { "Accept": "application/json" } });
+    if (!response.ok) throw new Error("the data service replied with error " + response.status);
     return await response.json();
   } catch (error) {
-    if (error.name === "AbortError") throw new Error("The data service took too long to respond");
-    if (error instanceof TypeError) throw new Error("The data service could not be reached");
+    if (error.name === "AbortError") throw new Error("the data service took too long to respond");
+    if (error instanceof TypeError) throw new Error("the data service could not be reached");
     throw error;
   } finally {
     clearTimeout(timer);
@@ -433,23 +456,20 @@ async function fetchJSON(url) {
 
 function arcgisQuery(base, loc, distanceM, extra = {}) {
   const params = new URLSearchParams({
-    geometry: loc.lon + "," + loc.lat,
-    geometryType: "esriGeometryPoint",
-    inSR: "4326",
-    spatialRel: "esriSpatialRelIntersects",
-    outFields: "*",
-    returnGeometry: "false",
-    f: "json",
-    ...extra
+    geometry: loc.lon + "," + loc.lat, geometryType: "esriGeometryPoint", inSR: "4326",
+    spatialRel: "esriSpatialRelIntersects", outFields: "*", returnGeometry: "false", f: "json", ...extra
   });
-  if (distanceM) {
-    params.set("distance", distanceM);
-    params.set("units", "esriSRUnit_Meter");
-  }
+  if (distanceM) { params.set("distance", distanceM); params.set("units", "esriSRUnit_Meter"); }
   return fetchJSON(base + "?" + params).then(d => {
-    if (d.error) throw new Error(d.error.message || "Query failed");
+    if (d.error) throw new Error(d.error.message || "query failed");
     return d.features || [];
   });
+}
+
+function showSearchStatus(message, isError) {
+  const el = $("searchStatus");
+  el.textContent = message || "";
+  el.className = "status" + (isError ? " error" : "") + (message ? "" : " hidden");
 }
 
 /* =========================================================
@@ -457,8 +477,7 @@ function arcgisQuery(base, loc, distanceM, extra = {}) {
 ========================================================= */
 
 function initMap() {
-  const loc = getLocation();
-  map = L.map("map").setView([loc.lat, loc.lon], 14);
+  map = L.map("map").setView([52.8, -1.6], 6);
 
   const streets = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -466,133 +485,285 @@ function initMap() {
   }).addTo(map);
 
   noiseLayer = L.tileLayer.wms(API.roadNoise, {
-    layers: "Road_Noise_Lden_England_Round_4_All",
-    format: "image/png",
-    transparent: true,
-    opacity: 0.55,
-    attribution: "Road noise: Defra (OGL)"
+    layers: "Road_Noise_Lden_England_Round_4_All", format: "image/png",
+    transparent: true, opacity: 0.55, attribution: "Road noise: Defra (OGL)"
   });
 
-  L.control.layers({ "Street map": streets }, { "Road noise (day–evening–night)": noiseLayer }).addTo(map);
+  L.control.layers({ "Street map": streets }, { "Show road noise": noiseLayer }, { collapsed: false }).addTo(map);
+
+  const legend = L.control({ position: "bottomleft" });
+  legend.onAdd = () => {
+    const div = L.DomUtil.create("div", "map-legend");
+    div.innerHTML =
+      `<strong>Map key</strong><br>
+       <span class="dot" style="background:#2a81cb"></span>The property (pin)<br>
+       <span class="dot" style="background:transparent;box-shadow:0 0 0 2px #087f8c"></span>Search area<br>
+       <span class="dot" style="background:${MAP_COLOURS.landfill}"></span>Old landfill site<br>
+       <span class="dot" style="background:${MAP_COLOURS.contaminated}"></span>Contaminated land<br>
+       <span class="dot" style="background:${MAP_COLOURS.hazard}"></span>Major hazard site<br>
+       <span class="dot" style="background:${MAP_COLOURS.landslide}"></span>Recorded landslide`;
+    return div;
+  };
+  legend.addTo(map);
 
   featureLayer = L.layerGroup().addTo(map);
 
-  marker = L.marker([loc.lat, loc.lon], { draggable: true }).addTo(map);
-  marker.bindPopup("Selected property");
-  marker.on("dragend", () => {
-    const p = marker.getLatLng();
-    updateCoordinates(p.lat, p.lng);
-  });
-  map.on("click", e => updateCoordinates(e.latlng.lat, e.latlng.lng));
-
-  updateRadiusCircle();
+  map.on("click", e => setLocation(e.latlng.lat, e.latlng.lng, null, { keepZoom: true }));
 }
 
-function updateCoordinates(lat, lon, zoom) {
-  lat = Number(lat);
-  lon = Number(lon);
+function setLocation(lat, lon, label, options = {}) {
+  lat = Number(lat); lon = Number(lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+  selected = { lat, lon, label: label || null };
   $("latitude").value = lat.toFixed(6);
   $("longitude").value = lon.toFixed(6);
-  marker.setLatLng([lat, lon]);
-  map.setView([lat, lon], zoom || Math.max(map.getZoom(), 14));
+  $("siteName").value = label || "";
+
+  if (!marker) {
+    marker = L.marker([lat, lon], { draggable: true, title: "Property location", keyboard: true }).addTo(map);
+    marker.on("dragend", () => {
+      const p = marker.getLatLng();
+      setLocation(p.lat, p.lng, null, { keepZoom: true });
+    });
+  } else {
+    marker.setLatLng([lat, lon]);
+  }
+
+  if (!options.keepZoom || map.getZoom() < 15) map.setView([lat, lon], options.zoom || 17);
+  else map.panTo([lat, lon]);
+
   featureLayer.clearLayers();
-  updateRadiusCircle();
-  setStatus("locationStatus",
-    "Selected location: " + lat.toFixed(6) + ", " + lon.toFixed(6) +
-    ". Press “Run the checks” when ready.", "success");
+  drawRadius();
+
+  $("confirm").classList.remove("hidden");
+  $("confirmText").textContent = label ? "We found: " + label + "." : "Pin placed on the map.";
+
+  // When the pin is placed by hand, name it after the nearest postcode.
+  if (!label) {
+    fetchJSON(API.postcodes + "?lon=" + lon + "&lat=" + lat + "&radius=500&limit=1")
+      .then(d => {
+        const pc = d.result && d.result[0];
+        if (pc && selected && selected.lat === lat && selected.lon === lon) {
+          selected.label = "Near " + pc.postcode;
+          $("siteName").value = selected.label;
+          $("confirmText").textContent = "Pin placed near " + pc.postcode + ", " + pc.admin_district + ".";
+        }
+      })
+      .catch(() => {});
+  }
 }
 
-function updateRadiusCircle() {
-  const loc = getLocation();
-  if (!validLocation(loc) || !map) return;
+function drawRadius() {
+  if (!selected) return;
   if (radiusCircle) map.removeLayer(radiusCircle);
-  radiusCircle = L.circle([loc.lat, loc.lon], {
-    radius: loc.radius, color: "#087f8c", weight: 2,
-    fillColor: "#087f8c", fillOpacity: 0.06, interactive: false
+  radiusCircle = L.circle([selected.lat, selected.lon], {
+    radius: Number($("radius").value), color: "#087f8c", weight: 2,
+    fillColor: "#087f8c", fillOpacity: 0.05, interactive: false
   }).addTo(map);
 }
 
-function addMapPoint(lat, lon, colour, popup) {
-  L.circleMarker([lat, lon], {
-    radius: 7, color: "#fff", weight: 2, fillColor: colour, fillOpacity: 0.95
-  }).bindPopup(popup).addTo(featureLayer);
+function addMapPoint(layer, lat, lon, colour, popup) {
+  L.circleMarker([lat, lon], { radius: 7, color: "#fff", weight: 2, fillColor: colour, fillOpacity: 0.95 })
+    .bindPopup(popup).addTo(layer);
 }
 
-$("updatePin").addEventListener("click", () => {
-  const loc = getLocation();
-  if (!validLocation(loc)) {
-    alert("Please enter valid latitude and longitude values.");
+$("radius").addEventListener("change", drawRadius);
+
+$("usePinBtn").addEventListener("click", () => {
+  const lat = Number($("latitude").value), lon = Number($("longitude").value);
+  if (!$("latitude").value || !$("longitude").value || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+    alert("Please enter a valid latitude and longitude.");
     return;
   }
-  updateCoordinates(loc.lat, loc.lon);
+  setLocation(lat, lon, $("siteName").value.trim() || null);
 });
 
-$("radius").addEventListener("change", updateRadiusCircle);
-
-/* =========================================================
-   FIND A PLACE
-========================================================= */
-
-$("searchPlace").addEventListener("click", searchPlace);
-$("placeSearch").addEventListener("keydown", e => { if (e.key === "Enter") searchPlace(); });
-
-async function searchPlace() {
-  const query = $("placeSearch").value.trim();
-  if (!query) return;
-  setStatus("locationStatus", "Searching…");
-  try {
-    const results = await fetchJSON(API.geocoder +
-      "?format=json&limit=1&countrycodes=gb&q=" + encodeURIComponent(query));
-    if (!results.length) throw new Error("No matching place found. Try a full postcode.");
-    const r = results[0];
-    $("siteName").value = query;
-    updateCoordinates(Number(r.lat), Number(r.lon), 17);
-    setStatus("locationStatus",
-      "Found: " + r.display_name + ". Move the pin to the exact property if needed, then press “Run the checks”.",
-      "success");
-  } catch (error) {
-    setStatus("locationStatus", "Search failed: " + error.message, "error");
-  }
-}
-
 $("locateMe").addEventListener("click", () => {
-  if (!navigator.geolocation) {
-    alert("Your browser cannot share its location.");
-    return;
-  }
-  setStatus("locationStatus", "Requesting your location…");
+  if (!navigator.geolocation) return alert("Your browser cannot share its location.");
+  showSearchStatus("Requesting your location…");
   navigator.geolocation.getCurrentPosition(
-    p => updateCoordinates(p.coords.latitude, p.coords.longitude, 17),
-    e => setStatus("locationStatus", "Location unavailable: " + e.message, "error"),
+    p => { showSearchStatus(""); setLocation(p.coords.latitude, p.coords.longitude, null); },
+    e => showSearchStatus("Your location is not available: " + e.message, true),
     { enableHighAccuracy: true, timeout: 12000 }
   );
 });
+
+/* =========================================================
+   SEARCH WITH SUGGESTIONS
+   - Postcodes and place names are suggested as you type (postcodes.io).
+   - Full addresses are searched when you press Enter or Search
+     (OpenStreetMap Nominatim does not allow search-as-you-type).
+========================================================= */
+
+const POSTCODE_START = /^[A-Za-z]{1,2}\d/;
+const FULL_POSTCODE = /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s*\d[A-Za-z]{2}$/;
+let suggestTimer = null;
+let suggestItems = [];
+let activeIndex = -1;
+let suggestRequest = 0;
+
+$("q").addEventListener("input", () => {
+  clearTimeout(suggestTimer);
+  const q = $("q").value.trim();
+  if (q.length < 2) return hideSuggestions();
+  suggestTimer = setTimeout(() => loadSuggestions(q), 250);
+});
+
+$("q").addEventListener("keydown", e => {
+  const open = !$("suggestions").classList.contains("hidden");
+  if (e.key === "ArrowDown" && open) { e.preventDefault(); moveActive(1); }
+  else if (e.key === "ArrowUp" && open) { e.preventDefault(); moveActive(-1); }
+  else if (e.key === "Escape") hideSuggestions();
+  else if (e.key === "Enter") {
+    e.preventDefault();
+    if (open && activeIndex >= 0) chooseSuggestion(suggestItems[activeIndex]);
+    else runSearch();
+  }
+});
+
+$("searchBtn").addEventListener("click", runSearch);
+
+document.addEventListener("click", e => {
+  if (!e.target.closest(".search-box")) hideSuggestions();
+});
+
+async function loadSuggestions(q) {
+  const requestId = ++suggestRequest;
+  let items = [];
+  try {
+    if (POSTCODE_START.test(q)) {
+      const d = await fetchJSON(API.postcodes + "/" + encodeURIComponent(q) + "/autocomplete?limit=6");
+      items = (d.result || []).map(pc => ({ type: "postcode", label: pc, hint: "Postcode" }));
+    } else {
+      const d = await fetchJSON(API.places + "?q=" + encodeURIComponent(q) + "&limit=6");
+      items = (d.result || [])
+        .filter(p => !p.country || p.country === "England" || p.country === "Wales")
+        .map(p => ({
+          type: "place", label: p.name_1,
+          hint: [p.local_type, p.district_borough || p.county_unitary, p.region].filter(Boolean).join(", "),
+          lat: p.latitude, lon: p.longitude
+        }));
+    }
+  } catch (e) {
+    items = [];
+  }
+  if (requestId !== suggestRequest || $("q").value.trim() !== q) return;   // a newer search has started
+  if (!FULL_POSTCODE.test(q)) items.push({ type: "address", label: q });
+  showSuggestions(items);
+}
+
+function showSuggestions(items) {
+  suggestItems = items;
+  activeIndex = -1;
+  const list = $("suggestions");
+  if (!items.length) return hideSuggestions();
+  list.innerHTML = items.map((it, i) => `
+    <li role="option" id="sug-${i}" aria-selected="false" class="${it.type === "address" ? "address-search" : ""}" data-i="${i}">
+      ${it.type === "address"
+        ? "Search for “" + escapeHTML(it.label) + "” as an address"
+        : escapeHTML(it.label) + `<br><small>${escapeHTML(it.hint)}</small>`}
+    </li>`).join("");
+  list.querySelectorAll("li").forEach(li =>
+    li.addEventListener("click", () => chooseSuggestion(suggestItems[Number(li.dataset.i)])));
+  list.classList.remove("hidden");
+  $("q").setAttribute("aria-expanded", "true");
+}
+
+function hideSuggestions() {
+  $("suggestions").classList.add("hidden");
+  $("q").setAttribute("aria-expanded", "false");
+  $("q").removeAttribute("aria-activedescendant");
+  activeIndex = -1;
+}
+
+function moveActive(step) {
+  const lis = $("suggestions").querySelectorAll("li");
+  if (!lis.length) return;
+  activeIndex = (activeIndex + step + lis.length) % lis.length;
+  lis.forEach((li, i) => li.setAttribute("aria-selected", i === activeIndex ? "true" : "false"));
+  $("q").setAttribute("aria-activedescendant", "sug-" + activeIndex);
+  lis[activeIndex].scrollIntoView({ block: "nearest" });
+}
+
+function chooseSuggestion(item) {
+  hideSuggestions();
+  if (!item) return;
+  if (item.type === "postcode") return lookupPostcode(item.label);
+  if (item.type === "place") {
+    $("q").value = item.label;
+    showSearchStatus("");
+    setLocation(item.lat, item.lon, item.label, { zoom: item.isAddress ? 18 : 15 });
+    $("confirmText").textContent = item.isAddress
+      ? "We found: " + item.label + "."
+      : "We found " + item.label + ". This is the centre of the area, so move the pin to the exact property.";
+    return;
+  }
+  return addressSearch(item.label);
+}
+
+function runSearch() {
+  const q = $("q").value.trim();
+  hideSuggestions();
+  if (!q) { $("q").focus(); return; }
+  if (FULL_POSTCODE.test(q)) return lookupPostcode(q);
+  return addressSearch(q);
+}
+
+async function lookupPostcode(pc) {
+  showSearchStatus("Finding " + pc.toUpperCase() + "…");
+  try {
+    const r = (await fetchJSON(API.postcodes + "/" + encodeURIComponent(pc))).result;
+    $("q").value = r.postcode;
+    showSearchStatus("");
+    setLocation(r.latitude, r.longitude, r.postcode + ", " + r.admin_district);
+    $("confirmText").textContent = "We found postcode " + r.postcode + " in " + r.admin_district +
+      ". A postcode covers several homes, so check the pin is on the right one.";
+  } catch (e) {
+    showSearchStatus("We couldn't find that postcode. Check it, or try the full address.", true);
+  }
+}
+
+async function addressSearch(q) {
+  showSearchStatus("Searching for “" + q + "”…");
+  try {
+    const results = await fetchJSON(API.nominatim + "?format=json&limit=5&countrycodes=gb&q=" + encodeURIComponent(q));
+    if (!results.length) {
+      showSearchStatus("No match found. Try a postcode, or click the map to drop a pin.", true);
+      return;
+    }
+    const items = results.map(r => {
+      const parts = r.display_name.split(",").map(s => s.trim());
+      return { type: "place", isAddress: true, label: parts.slice(0, 3).join(", "),
+        hint: parts.slice(3, 6).join(", "), lat: Number(r.lat), lon: Number(r.lon) };
+    });
+    if (items.length === 1) return chooseSuggestion(items[0]);
+    showSearchStatus("Several matches found. Pick the right one from the list.");
+    showSuggestions(items);
+  } catch (e) {
+    showSearchStatus("Search failed: " + e.message + ". Try again, or click the map.", true);
+  }
+}
 
 /* =========================================================
    DATA RETRIEVAL
 ========================================================= */
 
 async function getPlace(loc) {
-  const d = await fetchJSON(API.postcodes +
-    "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=2000&limit=1");
+  const d = await fetchJSON(API.postcodes + "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=2000&limit=1");
   return (d.result && d.result[0]) || null;
 }
 
 async function getPlanningAtPoint(loc) {
-  const params = new URLSearchParams({
-    latitude: loc.lat, longitude: loc.lon, limit: 200, exclude_field: "geometry"
-  });
+  const params = new URLSearchParams({ latitude: loc.lat, longitude: loc.lon, limit: 200, exclude_field: "geometry" });
   PLANNING_AT_POINT.forEach(d => params.append("dataset", d));
-  const data = await fetchJSON(API.planning + "?" + params);
-  return data.entities || [];
+  return (await fetchJSON(API.planning + "?" + params)).entities || [];
 }
 
 async function getPlanningNearby(loc) {
   const params = new URLSearchParams({
-    geometry: circleWkt(loc.lat, loc.lon, loc.radius),
-    geometry_relation: "intersects",
-    limit: 500,
-    exclude_field: "geometry"
+    geometry: circleWkt(loc.lat, loc.lon, loc.radius), geometry_relation: "intersects",
+    limit: 500, exclude_field: "geometry"
   });
   PLANNING_NEARBY.forEach(d => params.append("dataset", d));
   const data = await fetchJSON(API.planning + "?" + params);
@@ -603,11 +774,8 @@ async function getPlanningNearby(loc) {
 }
 
 async function getFloodWarnings(loc) {
-  // The Environment Agency API takes the distance in kilometres.
-  const km = Math.max(loc.radius / 1000, 1);
-  const d = await fetchJSON(API.floodWarnings +
-    "?lat=" + loc.lat + "&long=" + loc.lon + "&dist=" + km);
-  return d.items || [];
+  const km = Math.max(loc.radius / 1000, 1);   // this API takes kilometres
+  return (await fetchJSON(API.floodWarnings + "?lat=" + loc.lat + "&long=" + loc.lon + "&dist=" + km)).items || [];
 }
 
 async function getRadon(loc) {
@@ -621,26 +789,18 @@ async function getCoal(loc) {
     arcgisQuery(API.coalLow, loc, 0),
     arcgisQuery(API.coalHigh, loc, loc.radius)
   ]);
-  return {
-    highAtPoint: highAtPoint.length > 0,
-    lowAtPoint: lowAtPoint.length > 0,
-    highNearby: highNearby.length > 0
-  };
+  return { highAtPoint: highAtPoint.length > 0, lowAtPoint: lowAtPoint.length > 0, highNearby: highNearby.length > 0 };
 }
 
 async function getNoiseValue(loc, layer) {
   const d = 0.0005;
   const params = new URLSearchParams({
-    service: "WMS", version: "1.3.0", request: "GetFeatureInfo",
-    layers: layer, query_layers: layer, styles: "",
-    crs: "EPSG:4326",
-    bbox: [loc.lat - d, loc.lon - d, loc.lat + d, loc.lon + d].join(","),
-    width: 11, height: 11, i: 5, j: 5,
-    info_format: "application/json"
+    service: "WMS", version: "1.3.0", request: "GetFeatureInfo", layers: layer, query_layers: layer, styles: "",
+    crs: "EPSG:4326", bbox: [loc.lat - d, loc.lon - d, loc.lat + d, loc.lon + d].join(","),
+    width: 11, height: 11, i: 5, j: 5, info_format: "application/json"
   });
-  const data = await fetchJSON(API.roadNoise + "?" + params);
-  const value = data.features?.[0]?.properties?.GRAY_INDEX;
-  return Number.isFinite(value) && value > 0 ? Math.round(value * 10) / 10 : null;
+  const value = (await fetchJSON(API.roadNoise + "?" + params)).features?.[0]?.properties?.GRAY_INDEX;
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : null;
 }
 
 async function getRoadNoise(loc) {
@@ -652,25 +812,18 @@ async function getRoadNoise(loc) {
 }
 
 async function getAirModel(loc) {
-  const d = await fetchJSON(API.airModel +
-    "?latitude=" + loc.lat + "&longitude=" + loc.lon +
+  const d = await fetchJSON(API.airModel + "?latitude=" + loc.lat + "&longitude=" + loc.lon +
     "&hourly=pm2_5,nitrogen_dioxide&past_days=92&forecast_days=1&timezone=Europe%2FLondon");
   const avg = arr => {
     const v = (arr || []).filter(Number.isFinite);
     return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null;
   };
-  return {
-    pm25: avg(d.hourly?.pm2_5),
-    no2: avg(d.hourly?.nitrogen_dioxide),
-    from: d.hourly?.time?.[0],
-    to: d.hourly?.time?.[d.hourly.time.length - 1]
-  };
+  const times = d.hourly?.time || [];
+  return { pm25: avg(d.hourly?.pm2_5), no2: avg(d.hourly?.nitrogen_dioxide), from: times[0], to: times[times.length - 1] };
 }
 
 async function getLandfill(loc) {
-  const b = boundingBox(loc.lat, loc.lon, loc.radius);
-  const d = await fetchJSON(API.landfill +
-    "?f=json&limit=100&bbox=" + [b.minLon, b.minLat, b.maxLon, b.maxLat].join(","));
+  const d = await fetchJSON(API.landfill + "?f=json&limit=100&bbox=" + boundingBox(loc.lat, loc.lon, loc.radius).join(","));
   return (d.features || [])
     .map(f => {
       const c = geometryCentre(f.geometry);
@@ -682,16 +835,13 @@ async function getLandfill(loc) {
 
 async function getLandslides(loc) {
   const f = await arcgisQuery(API.landslides, loc, loc.radius, {
-    outFields: "LANDSLIDE_NAME,LOCALITY_DETAILS",
-    returnGeometry: "true",
-    outSR: "4326"
+    outFields: "LANDSLIDE_NAME,LOCALITY_DETAILS", returnGeometry: "true", outSR: "4326"
   });
   return f.map(x => {
     const p = x.geometry && Number.isFinite(x.geometry.y) ? { lat: x.geometry.y, lon: x.geometry.x } : null;
     return {
       name: x.attributes.LANDSLIDE_NAME || x.attributes.LOCALITY_DETAILS || "Recorded landslide",
-      lat: p?.lat, lon: p?.lon,
-      distanceKm: p ? distanceKm(loc, p) : null
+      lat: p?.lat, lon: p?.lon, distanceKm: p ? distanceKm(loc, p) : null
     };
   }).sort((a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99));
 }
@@ -700,674 +850,755 @@ async function getCrime(loc) {
   const items = await fetchJSON(API.crime + "?lat=" + loc.lat + "&lng=" + loc.lon);
   const byType = {};
   items.forEach(c => { byType[c.category] = (byType[c.category] || 0) + 1; });
-  return {
-    total: items.length,
-    month: items[0]?.month || null,
-    byType: Object.entries(byType).sort((a, b) => b[1] - a[1])
-  };
+  return { total: items.length, month: items[0]?.month || null, byType };
 }
+
+const TASKS = [
+  ["place", "Nearest postcode and council", getPlace],
+  ["planningPoint", "Flood zone and planning rules at the property", getPlanningAtPoint],
+  ["planningNearby", "Things nearby: flood zones, contaminated land, heritage, nature", getPlanningNearby],
+  ["floodWarnings", "Current flood warnings", getFloodWarnings],
+  ["radon", "Radon gas", getRadon],
+  ["coal", "Coal mining", getCoal],
+  ["noise", "Road noise", getRoadNoise],
+  ["air", "Air quality", getAirModel],
+  ["landfill", "Old landfill sites", getLandfill],
+  ["landslides", "Landslides", getLandslides],
+  ["crime", "Reported crime", getCrime]
+];
 
 /* =========================================================
-   CHECKS – turn raw data into plain-English results
+   CHECKS – each turns raw data into a plain-English result:
+   { id, group, title, status, found, details, meaning, actions[],
+     seller[], conveyancer[], source:{name,url}, dataDate }
 ========================================================= */
-
-function sourceLine(name, url) {
-  return `<p class="source">Source: ${link(url, name)}</p>`;
-}
-
-function nextSteps(items) {
-  return items.length
-    ? `<p><strong>What to do next</strong></p><ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>`
-    : "";
-}
-
-function failed(title, topic, error, url, name) {
-  return {
-    topic, title, status: "error",
-    headline: "This check could not be completed right now.",
-    body: `<p>${escapeHTML(error)}. Try again later, or use the official service below.</p>` +
-      sourceLine(name, url)
-  };
-}
 
 function byDataset(list, dataset) {
   return (list || []).filter(e => e.dataset === dataset);
 }
 
-function checkFloodZone(R) {
-  const title = "Flooding from rivers and the sea";
-  if (!R.planningPoint.ok) return failed(title, "flood", R.planningPoint.error, LINKS.floodMapPlanning, "Flood map for planning (GOV.UK)");
-
-  const levels = byDataset(R.planningPoint.value, "flood-risk-zone")
-    .map(e => Number(e["flood-risk-level"])).filter(Number.isFinite);
-  const zone = levels.length ? Math.max(...levels) : 1;
-
-  const nearbyZones = R.planningNearby.ok ? byDataset(R.planningNearby.value, "flood-risk-zone") : [];
-  const rivers = R.planningNearby.ok ? byDataset(R.planningNearby.value, "main-river") : [];
-  const riverNames = [...new Set(rivers.map(r => r.name).filter(Boolean))].slice(0, 5);
-
-  let status, headline, meaning;
-  if (zone >= 3) {
-    status = "high";
-    headline = "The location is in Flood Zone 3: high probability of flooding from rivers or the sea.";
-    meaning = "Land with a 1% or greater chance of river flooding each year, or 0.5% or greater from the sea, ignoring flood defences. Insurance may cost more, and lenders may ask questions.";
-  } else if (zone === 2) {
-    status = "medium";
-    headline = "The location is in Flood Zone 2: medium probability of flooding from rivers or the sea.";
-    meaning = "Land with between a 0.1% and 1% chance of river flooding each year (0.1% to 0.5% from the sea), ignoring flood defences.";
-  } else {
-    status = "low";
-    headline = "The location is in Flood Zone 1: low probability of flooding from rivers or the sea.";
-    meaning = "Less than a 0.1% chance of flooding from rivers or the sea each year. This does not cover flooding from heavy rain (surface water) or groundwater.";
-  }
-
-  let nearbyText = "";
-  if (zone < 2 && nearbyZones.length) {
-    nearbyText = `<p>Flood Zone 2 or 3 land lies within ${formatRadius(R.loc.radius)} of the location.
-      Check how close it is on the official map, especially if the plot is large or low-lying.</p>`;
-  }
-  if (riverNames.length) {
-    nearbyText += `<p>Main rivers within ${formatRadius(R.loc.radius)}: ${escapeHTML(riverNames.join(", "))}.</p>`;
-  }
-
+function unavailable(base, R, key) {
   return {
-    topic: "flood", title, status, headline,
-    body: `<p>${meaning}</p>${nearbyText}` +
-      nextSteps([
-        `Check flooding from surface water, groundwater and reservoirs on the ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk service")} (not covered here).`,
-        "Ask the seller whether the property has ever flooded, and whether they have had trouble getting insurance (this should be on the property information form).",
-        zone >= 2 ? `Get a buildings insurance quote before exchange. Homes built before 2009 may be covered by ${link(LINKS.floodRe, "Flood Re")}.` : "Get a buildings insurance quote early as a quick sense-check."
-      ]) +
-      sourceLine("Environment Agency Flood Map for Planning, via planning.data.gov.uk", LINKS.floodMapPlanning)
+    ...base, status: "error",
+    found: "This check could not be completed right now: " + R[key].error + ".",
+    meaning: "<p>The official data service did not respond. Try again later, or use the official service linked below.</p>",
+    actions: [], seller: [], conveyancer: []
   };
 }
 
-function checkFloodWarnings(R) {
-  const title = "Current flood warnings";
-  if (!R.floodWarnings.ok) return failed(title, "flood", R.floodWarnings.error, LINKS.floodWarnings, "Check for flooding (GOV.UK)");
-  const active = R.floodWarnings.value.filter(f => Number(f.severityLevel) <= 3);
-  const severe = active.filter(f => Number(f.severityLevel) <= 2);
+function checkFlood(R) {
+  const base = {
+    id: "flood", group: "flood", title: "Flooding from rivers and the sea",
+    source: { name: "Environment Agency Flood Map for Planning (via planning.data.gov.uk) and real-time flood warnings", url: LINKS.floodMapPlanning },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.planningPoint.ok) return unavailable(base, R, "planningPoint");
 
-  let status = "low";
-  let headline = "There are no flood warnings or alerts in force nearby right now.";
-  if (severe.length) {
+  const levels = byDataset(R.planningPoint.value, "flood-risk-zone").map(e => Number(e["flood-risk-level"])).filter(Number.isFinite);
+  const zone = levels.length ? Math.max(...levels) : 1;
+  const nearbyZones = R.planningNearby.ok ? byDataset(R.planningNearby.value, "flood-risk-zone") : [];
+  const rivers = R.planningNearby.ok ? [...new Set(byDataset(R.planningNearby.value, "main-river").map(r => r.name).filter(Boolean))].slice(0, 5) : [];
+  const warnings = R.floodWarnings.ok ? R.floodWarnings.value.filter(f => Number(f.severityLevel) <= 3) : [];
+  const severe = warnings.filter(f => Number(f.severityLevel) <= 2);
+
+  let status, found, meaning;
+  if (zone >= 3) {
     status = "high";
-    headline = severe.length + " flood warning(s) are in force nearby right now.";
-  } else if (active.length) {
+    found = "High chance of flooding from rivers or the sea (Flood Zone 3).";
+    meaning = "In any one year there is a 1 in 100 or greater chance of flooding from rivers, or 1 in 200 or greater from the sea, if there were no flood defences. Buildings insurance may cost more, and some lenders ask extra questions.";
+  } else if (zone === 2) {
     status = "medium";
-    headline = active.length + " flood alert(s) are in force nearby right now.";
+    found = "Medium chance of flooding from rivers or the sea (Flood Zone 2).";
+    meaning = "In any one year there is between a 1 in 1,000 and a 1 in 100 chance of flooding from rivers (1 in 1,000 to 1 in 200 from the sea), if there were no flood defences.";
+  } else {
+    status = "low";
+    found = "Low chance of flooding from rivers or the sea (Flood Zone 1).";
+    meaning = "Less than a 1 in 1,000 chance of flooding from rivers or the sea in any one year. This does not cover flooding from heavy rain (surface water) or groundwater, so check those separately.";
   }
+  if (severe.length) { status = "high"; found += " A flood warning is in force nearby today."; }
+  else if (warnings.length) { if (status === "low") status = "medium"; found += " A flood alert is in force nearby today."; }
 
-  const rows = active.map(f => `<tr>
-      <td>${escapeHTML(f.description || f.eaAreaName || "Flood area")}</td>
-      <td>${escapeHTML(f.severity || "")}</td>
-      <td>${escapeHTML(formatDate(f.timeMessageChanged))}</td></tr>`).join("");
+  let details = "";
+  if (zone < 2 && nearbyZones.length) details += `<p>Land in Flood Zone 2 or 3 lies within ${formatRadius(R.loc.radius)}. Check how close it is on the ${link(LINKS.floodMapPlanning, "official flood map")}, especially for low-lying plots.</p>`;
+  if (rivers.length) details += `<p>Main rivers within ${formatRadius(R.loc.radius)}: ${escapeHTML(rivers.join(", "))}.</p>`;
+  if (!R.floodWarnings.ok) details += "<p>Current flood warnings could not be checked.</p>";
+  else if (!warnings.length) details += "<p>No flood warnings or alerts are in force nearby today.</p>";
+  else details += `<p><strong>${plural(warnings.length, "flood warning or alert", "flood warnings or alerts")} in force nearby today:</strong></p>
+    <div class="table-wrap"><table><thead><tr><th>Area</th><th>Level</th><th>Updated</th></tr></thead><tbody>${
+      warnings.map(f => `<tr><td>${escapeHTML(f.description || f.eaAreaName || "")}</td><td>${escapeHTML(f.severity || "")}</td><td>${escapeHTML(formatDateTime(f.timeMessageChanged))}</td></tr>`).join("")
+    }</tbody></table></div>`;
 
   return {
-    topic: "flood", title, status, headline,
-    body: (rows ? `<div class="table-wrap"><table><thead><tr><th>Area</th><th>Level</th><th>Updated</th></tr></thead><tbody>${rows}</tbody></table></div>` : "") +
-      `<p>This is a snapshot of today only. It does not tell you about long-term risk.</p>` +
-      sourceLine("Environment Agency real-time flood monitoring", LINKS.floodWarnings)
+    ...base, status, found, details, meaning: `<p>${meaning}</p>`,
+    actions: [
+      `Check flooding from surface water, groundwater and reservoirs on ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.`,
+      zone >= 2
+        ? `Get a buildings insurance quote before you exchange contracts. Homes built before 2009 may be covered by ${link(LINKS.floodRe, "Flood Re")}, which helps keep insurance affordable.`
+        : "Get a buildings insurance quote early, as a quick check."
+    ],
+    seller: ["Has the property ever flooded, and has there been any flood insurance claim?"],
+    conveyancer: zone >= 2 ? ["A flood risk report (often part of the environmental search)."] : []
   };
 }
 
 function checkRadon(R) {
-  const title = "Radon gas";
-  if (!R.radon.ok) return failed(title, "radon", R.radon.error, LINKS.ukradon, "UKradon");
+  const base = {
+    id: "radon", group: "ground", title: "Radon gas",
+    source: { name: "British Geological Survey and UK Health Security Agency, Radon Indicative Atlas", url: LINKS.bgsRadon },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.radon.ok) return unavailable(base, R, "radon");
   const r = R.radon.value;
   if (!r) {
-    return {
-      topic: "radon", title, status: "manual",
-      headline: "No radon data was found for this point (data covers Great Britain only).",
-      body: nextSteps([`Check the address on ${link(LINKS.ukradon, "UKradon")}.`]) +
-        sourceLine("BGS / UKHSA Radon Indicative Atlas", LINKS.bgsRadon)
-    };
+    return { ...base, status: "manual", found: "No radon data for this point (the data covers Great Britain only).",
+      meaning: "", actions: [`Check the address on ${link(LINKS.ukradon, "UKradon")}.`], seller: [], conveyancer: [] };
   }
+  if (r.VERSION) base.dataDate = r.VERSION + ", checked " + today();
   const cls = Number(r.CLASS_MAX);
+  const bands = { 1: "fewer than 1", 2: "1 to 3", 3: "3 to 5", 4: "5 to 10", 5: "10 to 30", 6: "more than 30" };
   const status = cls <= 1 ? "low" : cls <= 3 ? "medium" : "high";
-  const headline = cls <= 1
-    ? "Low radon area: fewer than 1 in 100 homes are expected to have high radon levels."
-    : "Raised radon potential: " + (r.Description || "").split(".").slice(0, 2).join(".") + ".";
+  const found = cls <= 1
+    ? "Low radon area: fewer than 1 in every 100 homes are estimated to have high radon."
+    : `Raised radon area: in parts of this area, ${bands[cls] || "some"} in every 100 homes are estimated to have high radon.`;
 
   return {
-    topic: "radon", title, status, headline,
-    body: `<p>Radon is a natural radioactive gas from the ground. It has no smell or colour, and long-term
-      exposure is the second biggest cause of lung cancer in the UK after smoking. It is easy to test for,
-      and high levels can usually be fixed at modest cost.</p>
-      <p>This result is the <em>highest</em> level anywhere in the 1 km grid square, so the property itself may be lower.</p>` +
-      (cls > 1 ? nextSteps([
-        `Buy an address-level radon risk report from ${link(LINKS.ukradon, "UKradon")} (run by the UK Health Security Agency) for a small fee.`,
-        "Ask the seller whether the home has been tested for radon, and whether radon protection was fitted.",
-        "If you buy, test with a 3-month radon detector."
-      ]) : "") +
-      sourceLine(r.VERSION ? "BGS / UKHSA " + r.VERSION : "BGS / UKHSA Radon Indicative Atlas", LINKS.bgsRadon)
+    ...base, status, found,
+    meaning: `<p>Radon is a natural radioactive gas that comes up from the ground. You cannot see or smell it. Long-term exposure
+      is the second biggest cause of lung cancer in the UK after smoking. It is easy to test for, and high levels can
+      usually be reduced at modest cost, for example with a small fan under the floor.</p>
+      <p>This is the <em>highest</em> level anywhere in the surrounding 1 km square, so the property itself may be lower.</p>`,
+    actions: cls > 1 ? [
+      `Buy an address-level radon report from ${link(LINKS.ukradon, "UKradon")} (run by the UK Health Security Agency) for a small fee.`,
+      "After you move in, test with a 3-month radon detector."
+    ] : [],
+    seller: cls > 1 ? ["Has the property been tested for radon? Were radon protection measures fitted?"] : [],
+    conveyancer: []
   };
 }
 
 function checkCoal(R) {
-  const title = "Coal mining";
-  if (!R.coal.ok) return failed(title, "coal", R.coal.error, LINKS.coalMap, "Mining Remediation Authority interactive map");
+  const base = {
+    id: "coal", group: "ground", title: "Coal mining",
+    source: { name: "Mining Remediation Authority (formerly the Coal Authority)", url: LINKS.coalInfo },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.coal.ok) return unavailable(base, R, "coal");
   const c = R.coal.value;
-
-  let status, headline, meaning;
+  let status, found, meaning;
   if (c.highAtPoint) {
     status = "high";
-    headline = "The location is in a Development High Risk Area for coal mining.";
-    meaning = "Recorded coal mining features are at or close to the surface here, such as old mine shafts or shallow workings. These can cause ground movement.";
+    found = "In a coal mining high-risk area: old mine workings are recorded at or near the surface.";
+    meaning = "Features such as old mine shafts or shallow workings are recorded here. They can cause the ground to move or collapse. The official term is a “Development High Risk Area”.";
   } else if (c.lowAtPoint) {
     status = "medium";
-    headline = "The location is on the coalfield (Development Low Risk Area).";
-    meaning = "Coal mining has taken place at depth in this area, or may have. It is unlikely to affect the surface, but a coal mining search is normally ordered for properties here.";
+    found = "On the coalfield: coal was, or may have been, mined deep underground here.";
+    meaning = "Deep mining is unlikely to affect the surface today, but a coal mining search is normally ordered for homes here. The official term is a “Development Low Risk Area”.";
   } else {
     status = "low";
-    headline = "The location is outside the coal mining reporting area.";
-    meaning = "There is no recorded coal mining that requires a coal mining search here. Other types of mining (for example tin, lead, salt or chalk) are not covered by this check.";
+    found = "Outside the coalfield: no recorded coal mining here.";
+    meaning = "No coal mining search is needed. Other kinds of mining (for example tin, lead, salt or chalk) are not covered by this check.";
   }
-
   return {
-    topic: "coal", title, status, headline,
-    body: `<p>${meaning}</p>` +
-      (!c.highAtPoint && c.highNearby ? `<p>A Development High Risk Area lies within ${formatRadius(R.loc.radius)} of the location.</p>` : "") +
-      nextSteps(status === "low" ? [] : [
-        "Ask your conveyancer to order a CON29M coal mining report. It shows recorded mine entries, past claims for subsidence damage and future mining plans.",
-        `View mine shafts and shallow workings on the ${link(LINKS.coalMap, "Mining Remediation Authority interactive map")}.`,
-        "Tell your surveyor so they can look for signs of ground movement."
-      ]) +
-      sourceLine("Mining Remediation Authority (formerly the Coal Authority)", LINKS.coalInfo)
-  };
-}
-
-function checkNoise(R) {
-  const title = "Road traffic noise";
-  if (!R.noise.ok) return failed(title, "noise", R.noise.error, LINKS.noise, "Defra strategic noise mapping");
-  const { lden, lnight } = R.noise.value;
-
-  let status, headline;
-  if (lden == null && lnight == null) {
-    status = "low";
-    headline = "No modelled road noise at this point: it is away from busy roads, or quieter than the map shows.";
-  } else if ((lden ?? 0) >= 65 || (lnight ?? 0) >= 55) {
-    status = "high";
-    headline = `High road noise: about ${lden ?? "–"} dB averaged over day and night, and ${lnight ?? "–"} dB at night.`;
-  } else if ((lden ?? 0) >= 53 || (lnight ?? 0) >= 45) {
-    status = "medium";
-    headline = `Moderate road noise: about ${lden ?? "–"} dB averaged over day and night, and ${lnight ?? "–"} dB at night.`;
-  } else {
-    status = "low";
-    headline = `Low road noise: about ${lden ?? "–"} dB averaged over day and night, and ${lnight ?? "–"} dB at night.`;
-  }
-
-  return {
-    topic: "noise", title, status, headline,
-    body: `<p>The World Health Organization recommends road traffic noise below <strong>53 dB</strong>
-      averaged over day and night, and below <strong>45 dB</strong> at night, to avoid health effects.
-      Values are modelled at 4 m above ground for 2021 traffic, so they may differ from what you hear on a visit.</p>
-      <p>Tip: turn on the “Road noise” layer on the map to see how noise changes along the street.</p>` +
-      nextSteps([
-        `Railway and aircraft noise are not included here. See the ${link(LINKS.noise, "Defra 2022 noise maps")}.`,
-        "Visit at different times, including rush hour and late evening."
-      ]) +
-      sourceLine("Defra strategic noise mapping, Round 4 (2022)", LINKS.noise)
-  };
-}
-
-function checkAir(R) {
-  const title = "Air quality";
-  const aqmaHere = R.planningPoint.ok ? byDataset(R.planningPoint.value, "air-quality-management-area") : [];
-  const aqmaNear = R.planningNearby.ok ? byDataset(R.planningNearby.value, "air-quality-management-area") : [];
-  const model = R.air.ok ? R.air.value : null;
-
-  if (!R.planningPoint.ok && !R.air.ok) return failed(title, "air", R.air.error, LINKS.ukair, "UK-AIR");
-
-  let status = "low";
-  let headline = "The location is not in an Air Quality Management Area.";
-  if (aqmaHere.length) {
-    status = "medium";
-    headline = "The location is inside an Air Quality Management Area declared by the council.";
-  } else if (aqmaNear.length) {
-    headline += ` One or more lie within ${formatRadius(R.loc.radius)}.`;
-  }
-  if (model && ((model.no2 ?? 0) > 40 || (model.pm25 ?? 0) > 20)) status = "high";
-
-  const names = [...new Set([...aqmaHere, ...aqmaNear].map(a => a.name).filter(Boolean))].slice(0, 4);
-
-  let modelText = "<p>Modelled pollution levels could not be retrieved.</p>";
-  if (model) {
-    modelText = `<div class="table-wrap"><table>
-      <thead><tr><th>Pollutant</th><th>Average, last ~3 months</th><th>WHO guideline (annual)</th><th>UK legal limit (annual)</th></tr></thead>
-      <tbody>
-        <tr><td>Fine particles (PM2.5)</td><td>${model.pm25 ?? "–"} µg/m³</td><td>5 µg/m³</td><td>20 µg/m³</td></tr>
-        <tr><td>Nitrogen dioxide (NO₂)</td><td>${model.no2 ?? "–"} µg/m³</td><td>10 µg/m³</td><td>40 µg/m³</td></tr>
-      </tbody></table></div>
-      <p>These figures come from a regional computer model (about 10 km squares), so they show the general area,
-      not your street. Levels beside busy roads are usually higher.</p>`;
-  }
-
-  return {
-    topic: "air", title, status, headline,
-    body: `<p>Councils declare an Air Quality Management Area where pollution, usually from traffic, is above legal limits.</p>` +
-      (names.length ? `<p>Nearby areas: ${escapeHTML(names.join("; "))}.</p>` : "") +
-      modelText +
-      nextSteps([`See local monitoring and Air Quality Management Areas on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`]) +
-      sourceLine("Council AQMAs via planning.data.gov.uk; Copernicus CAMS model via Open-Meteo", LINKS.openMeteo)
+    ...base, status, found,
+    details: !c.highAtPoint && c.highNearby ? `<p>A coal mining high-risk area lies within ${formatRadius(R.loc.radius)}.</p>` : "",
+    meaning: `<p>${meaning}</p>`,
+    actions: status === "low" ? [] : [
+      `See old mine shafts and shallow workings on the ${link(LINKS.coalMap, "Mining Remediation Authority map")}.`,
+      "Tell your surveyor, so they can look for signs of ground movement."
+    ],
+    seller: status === "low" ? [] : ["Have there been any subsidence or mining damage claims?"],
+    conveyancer: status === "low" ? [] : ["A coal mining report (CON29M). It lists mine shafts, past subsidence claims and future mining plans."]
   };
 }
 
 function checkLandfill(R) {
-  const title = "Historic landfill sites";
-  if (!R.landfill.ok) return failed(title, "landfill", R.landfill.error, LINKS.landfill, "Environment Agency historic landfill sites");
+  const base = {
+    id: "landfill", group: "ground", title: "Old landfill sites",
+    source: { name: "Environment Agency, Historic Landfill Sites", url: LINKS.landfill },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.landfill.ok) return unavailable(base, R, "landfill");
   const sites = R.landfill.value;
   const nearest = sites[0];
-
   let status = "low";
-  let headline = `No historic landfill sites are recorded within ${formatRadius(R.loc.radius)}.`;
+  let found = `No old landfill sites recorded within ${formatRadius(R.loc.radius)}.`;
   if (sites.length) {
     status = nearest.distanceKm != null && nearest.distanceKm <= 0.25 ? "high" : "medium";
-    headline = `${sites.length} historic landfill site(s) recorded within ${formatRadius(R.loc.radius)}. The nearest is about ${formatDistance(nearest.distanceKm)} away.`;
+    found = `${plural(sites.length, "old landfill site")} within ${formatRadius(R.loc.radius)}. The nearest is about ${formatDistance(nearest.distanceKm)} away.`;
   }
-
-  const rows = sites.slice(0, 10).map(s => `<tr>
-      <td>${escapeHTML(s.site_name || "Unnamed site")}</td>
-      <td>${escapeHTML(formatDistance(s.distanceKm))}</td>
-      <td>${escapeHTML([s.inert && "inert", s.industrial && "industrial", s.commercial && "commercial", s.household && "household", s.special && "special"].filter(Boolean).join(", ") || "not recorded")}</td>
-      <td>${escapeHTML((s.firstinput || "").slice(0, 4) || "?")}–${escapeHTML((s.lastinput || "").slice(0, 4) || "?")}</td>
-    </tr>`).join("");
+  const wasteTypes = s => [s.household && "household", s.special && "hazardous (“special”)", s.industrial && "industrial",
+    s.commercial && "commercial", s.inert && "inert (soil, rubble)"].filter(Boolean).join(", ") || "not recorded";
+  const years = s => (s.firstinput || s.lastinput) ? `${(s.firstinput || "").slice(0, 4) || "?"}–${(s.lastinput || "").slice(0, 4) || "?"}` : "not recorded";
 
   return {
-    topic: "landfill", title, status, headline,
-    body: (rows ? `<div class="table-wrap"><table><thead><tr><th>Site</th><th>Distance</th><th>Waste types</th><th>Years used</th></tr></thead><tbody>${rows}</tbody></table></div>` : "") +
-      `<p>Old landfill can give off gas or affect the ground. Sites within 250 m are usually looked at more closely.
-       Household and “special” waste carry more risk than inert waste such as soil and rubble.</p>` +
-      nextSteps(sites.length ? [
-        "Ask your conveyancer for an environmental search (a desktop report on contamination and landfill).",
-        "If a site is very close, ask the council whether it has been investigated."
-      ] : []) +
-      sourceLine("Environment Agency Historic Landfill Sites", LINKS.landfill)
+    ...base, status, found,
+    details: sites.length ? `<div class="table-wrap"><table><thead><tr><th>Site</th><th>Distance</th><th>Waste</th><th>Years used</th></tr></thead><tbody>${
+      sites.slice(0, 10).map(s => `<tr><td>${escapeHTML(s.site_name || "Unnamed site")}</td><td>${escapeHTML(formatDistance(s.distanceKm))}</td><td>${escapeHTML(wasteTypes(s))}</td><td>${escapeHTML(years(s))}</td></tr>`).join("")
+    }</tbody></table></div><p>The orange dots on the map show where they are.</p>` : "",
+    meaning: `<p>Old landfill can give off gas or affect the ground. Sites within 250 m usually get a closer look.
+      Household and hazardous waste carry more risk than inert waste such as soil and rubble.</p>`,
+    actions: sites.length ? ["If a site is very close, ask the council whether it has been investigated."] : [],
+    seller: [],
+    conveyancer: sites.length ? ["An environmental search. It covers landfill, contaminated land and former industrial uses of the land."] : []
   };
 }
 
 function checkContamination(R) {
-  const title = "Contaminated land, brownfield and hazardous sites";
-  if (!R.planningNearby.ok) return failed(title, "contamination", R.planningNearby.error, LINKS.planningData, "planning.data.gov.uk");
+  const base = {
+    id: "contamination", group: "ground", title: "Contaminated land and hazardous sites",
+    source: { name: "Council and Health and Safety Executive data published on planning.data.gov.uk", url: LINKS.planningData },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.planningNearby.ok) return unavailable(base, R, "planningNearby");
 
-  const contamHere = R.planningPoint.ok ? byDataset(R.planningPoint.value, "contaminated-land") : [];
-  const contamNear = byDataset(R.planningNearby.value, "contaminated-land");
-  const brownfield = byDataset(R.planningNearby.value, "brownfield-land");
+  const here = R.planningPoint.ok ? byDataset(R.planningPoint.value, "contaminated-land") : [];
+  const near = byDataset(R.planningNearby.value, "contaminated-land");
   const comah = byDataset(R.planningNearby.value, "control-of-major-accident-hazards-site");
+  const brownfield = byDataset(R.planningNearby.value, "brownfield-land");
+  const council = R.place.ok && R.place.value ? R.place.value.admin_district + " Council" : "the local council";
 
   let status = "low";
-  const found = [];
-  if (contamHere.length) { status = "high"; found.push("The location is on land the council has recorded as contaminated."); }
-  else if (contamNear.length) { status = "medium"; found.push(`${contamNear.length} recorded contaminated land site(s) within ${formatRadius(R.loc.radius)}.`); }
-  if (comah.length) {
-    if (status === "low") status = "medium";
-    found.push(`${comah.length} major hazard site(s) (COMAH, for example chemical or fuel storage) within ${formatRadius(R.loc.radius)}: ${escapeHTML(comah.map(c => c.name).filter(Boolean).slice(0, 4).join("; "))}.`);
-  }
-  if (brownfield.length) found.push(`${brownfield.length} brownfield site(s) (previously developed land, often earmarked for new housing) within ${formatRadius(R.loc.radius)}.`);
+  let found = `No contaminated land or major hazard sites recorded within ${formatRadius(R.loc.radius)}.`;
+  if (here.length) { status = "high"; found = "The property is on land the council has recorded as contaminated."; }
+  else if (near.length) { status = "medium"; found = `${plural(near.length, "contaminated land site")} recorded within ${formatRadius(R.loc.radius)}.`; }
+  else if (comah.length) { status = "medium"; found = `${plural(comah.length, "major hazard site")} within ${formatRadius(R.loc.radius)}.`; }
 
-  const council = R.place.ok && R.place.value ? R.place.value.admin_district : "the local council";
+  const lines = [];
+  if (comah.length) lines.push(`<li>Major hazard sites (${term("COMAH", "Control of Major Accident Hazards: sites storing large amounts of dangerous substances, such as chemicals or fuel")}): ${escapeHTML(comah.map(c => c.name).filter(Boolean).slice(0, 4).join("; ") || plural(comah.length, "site"))}.</li>`);
+  if (brownfield.length) lines.push(`<li>${plural(brownfield.length, "brownfield site")} within ${formatRadius(R.loc.radius)}. These are previously developed plots, often earmarked for new homes, which may mean building work nearby.</li>`);
 
   return {
-    topic: "contamination", title, status,
-    headline: found.length ? found[0] : `Nothing recorded within ${formatRadius(R.loc.radius)} in the published data.`,
-    body: (found.length > 1 ? `<ul>${found.slice(1).map(f => `<li>${f}</li>`).join("")}</ul>` : "") +
-      `<p>Not every council publishes its contaminated land register online, so “nothing recorded” is not proof the land is clean.
-       Former uses such as petrol stations, factories, railways and gasworks are common sources of contamination.</p>` +
-      nextSteps([
-        `Ask ${escapeHTML(council)} for an extract of its contaminated land register (it must keep one by law).`,
-        "Your conveyancer's environmental search will cover former industrial uses in more detail.",
-        brownfield.length ? "Brownfield sites may be built on in future. Check the council's planning applications." : null
-      ].filter(Boolean)) +
-      sourceLine("Council data published on planning.data.gov.uk", LINKS.planningData)
+    ...base, status, found,
+    details: lines.length ? `<ul>${lines.join("")}</ul>` : "",
+    meaning: `<p>Not every council publishes its contaminated land register online, so “none recorded” does not prove the
+      land is clean. Former petrol stations, factories, railways and gasworks are common sources of contamination.</p>`,
+    actions: [`Ask ${escapeHTML(council)} for its contaminated land register entry for the area. Councils must keep one by law.`],
+    seller: ["Do you know of any previous industrial use of the land, or any underground fuel or oil tanks?"],
+    conveyancer: ["An environmental search. It covers landfill, contaminated land and former industrial uses of the land."]
   };
 }
 
-function checkGround(R) {
-  const title = "Ground stability (landslides)";
-  if (!R.landslides.ok) return failed(title, "ground", R.landslides.error, LINKS.bgsGeohazards, "British Geological Survey");
-  const slides = R.landslides.value;
-  const status = slides.length ? "medium" : "low";
+function checkLandslides(R) {
+  const base = {
+    id: "landslides", group: "ground", title: "Landslides and ground movement",
+    source: { name: "British Geological Survey, National Landslide Database", url: LINKS.landslides },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.landslides.ok) return unavailable(base, R, "landslides");
+  const s = R.landslides.value;
   return {
-    topic: "ground", title, status,
-    headline: slides.length
-      ? `${slides.length} recorded landslide(s) within ${formatRadius(R.loc.radius)}. The nearest is about ${formatDistance(slides[0].distanceKm)} away.`
+    ...base, status: s.length ? "medium" : "low",
+    found: s.length
+      ? `${plural(s.length, "recorded landslide")} within ${formatRadius(R.loc.radius)}. The nearest is about ${formatDistance(s[0].distanceKm)} away.`
       : `No recorded landslides within ${formatRadius(R.loc.radius)}.`,
-    body: (slides.length ? `<ul>${slides.slice(0, 5).map(s => `<li>${escapeHTML(s.name)} (${escapeHTML(formatDistance(s.distanceKm))})</li>`).join("")}</ul>` : "") +
-      `<p>This check uses the British Geological Survey's National Landslide Database. It does not cover
-       shrinking and swelling clay, the most common cause of subsidence in England.</p>` +
-      nextSteps([
-        "Ask your surveyor about cracks, nearby trees and the type of soil.",
-        "Ask the seller whether there have been any subsidence claims.",
-        `For clay shrink-swell, sinkholes and other ground hazards, an environmental search or ${link(LINKS.geosure, "BGS GeoSure")} report can help.`
-      ]) +
-      sourceLine("British Geological Survey National Landslide Database", LINKS.bgsGeohazards)
+    details: s.length ? `<ul>${s.slice(0, 5).map(x => `<li>${escapeHTML(x.name)} (${escapeHTML(formatDistance(x.distanceKm))})</li>`).join("")}</ul>` : "",
+    meaning: `<p>This check does not cover clay soil that shrinks and swells in dry and wet weather. That is the most common
+      cause of subsidence in England, especially in the South East.</p>`,
+    actions: [`For clay soil, sinkholes and other ground hazards, the environmental search or a ${link(LINKS.geosure, "BGS GeoSure")} report can help.`],
+    seller: ["Has there been any subsidence, cracking or underpinning?"],
+    conveyancer: []
   };
 }
 
-function checkPlanning(R) {
-  const title = "Planning restrictions and heritage";
-  if (!R.planningPoint.ok) return failed(title, "planning", R.planningPoint.error, LINKS.planningData, "planning.data.gov.uk");
+function noiseComparison(db) {
+  if (db < 45) return "very quiet, like a quiet village at night";
+  if (db < 55) return "like a quiet residential street";
+  if (db < 65) return "like a busy town street";
+  if (db < 75) return "like standing beside a busy main road";
+  return "like standing beside a motorway";
+}
 
-  const here = R.planningPoint.value;
-  const has = ds => byDataset(here, ds);
-  const items = [];
-  const add = (ds, text) => {
-    const e = has(ds);
-    if (e.length) items.push(text + (e[0].name ? ` (${escapeHTML(e[0].name)})` : ""));
+function checkNoise(R) {
+  const base = {
+    id: "noise", group: "living", title: "Road traffic noise",
+    source: { name: "Defra strategic noise mapping (Round 4)", url: LINKS.noise },
+    dataDate: "Noise maps published by Defra in 2022"
   };
-  add("conservation-area", "In a <strong>conservation area</strong>: extra permission is needed for demolition, some extensions and work on trees");
-  add("listed-building-outline", "On a <strong>listed building</strong>: listed building consent is needed for most changes, inside and out");
-  add("article-4-direction-area", "In an <strong>Article 4 direction area</strong>: some normal home improvements need planning permission");
-  add("tree-preservation-zone", "In a <strong>tree preservation order</strong> area: you need consent to cut or remove protected trees");
-  add("green-belt", "In the <strong>Green Belt</strong>: new building is strictly limited");
-  add("area-of-outstanding-natural-beauty", "In a <strong>National Landscape</strong> (Area of Outstanding Natural Beauty)");
-  add("national-park", "In a <strong>National Park</strong>: the park authority handles planning");
-  add("world-heritage-site", "In a <strong>World Heritage Site</strong>");
-  add("scheduled-monument", "On a <strong>scheduled monument</strong>");
-  add("hs2-safeguarded-area", "In an <strong>HS2 safeguarded area</strong>");
+  if (!R.noise.ok) return unavailable(base, R, "noise");
+  const { lden, lnight } = R.noise.value;
 
-  const near = R.planningNearby.ok ? R.planningNearby.value : [];
-  const listedNear = byDataset(near, "listed-building").filter(e => e.distanceKm != null && e.distanceKm <= 0.2);
+  let status, found;
+  if (lden == null && lnight == null) {
+    status = "low";
+    found = "Quiet: no significant road noise is modelled here.";
+  } else {
+    status = (lden ?? 0) >= 65 || (lnight ?? 0) >= 55 ? "high"
+      : (lden ?? 0) >= 53 || (lnight ?? 0) >= 45 ? "medium" : "low";
+    const word = { high: "Loud", medium: "Moderate", low: "Low" }[status];
+    found = `${word} road noise: roughly ${noiseComparison(lden ?? lnight)}.`;
+  }
+
+  const rows = [
+    ["Average over day, evening and night", lden, 53],
+    ["At night (11pm to 7am)", lnight, 45]
+  ].map(([label, v, who]) => `<tr><td>${label}</td><td>${v == null ? "Below mapped level" : v + " dB"}</td><td>${who} dB</td><td>${v == null || v <= who ? "Below" : "Above"}</td></tr>`).join("");
 
   return {
-    topic: "planning", title, status: items.length ? "info" : "low",
-    headline: items.length
-      ? items.length + " planning restriction(s) apply at this location."
-      : "No conservation area, listed building, Green Belt or similar restriction was found at this point.",
-    body: (items.length ? `<ul>${items.map(i => `<li>${i}.</li>`).join("")}</ul>` : "") +
-      (listedNear.length ? `<p>${listedNear.length} listed building(s) within 200 m.</p>` : "") +
-      `<p>Not all councils publish this data yet, and tree preservation orders on single trees may be missing.</p>` +
-      nextSteps([
-        "Check the council's planning website for applications on and around the property (for example new housing or extensions next door).",
-        `Check listed buildings on the ${link(LINKS.historicEngland, "National Heritage List for England")}.`,
-        "Your conveyancer's local authority search will confirm these restrictions."
-      ]) +
-      sourceLine("planning.data.gov.uk (Ministry of Housing, Communities and Local Government)", LINKS.planningData)
+    ...base, status, found,
+    details: `<div class="table-wrap"><table><thead><tr><th>Time</th><th>Modelled level</th><th>World Health Organization guideline</th><th>Compared with guideline</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p>Tip: tick “Show road noise” on the map to see how noise changes along the street.</p>`,
+    meaning: `<p>Long-term road noise above the World Health Organization guidelines is linked to disturbed sleep and stress.
+      Every 10 dB sounds roughly twice as loud. These are computer-modelled values at first-floor height, so a room
+      at the back of a house can be much quieter.</p>`,
+    actions: [
+      `Railway and aircraft noise are not included. Check them on the ${link(LINKS.noise, "Defra 2022 noise maps")}.`,
+      "Visit at different times, including rush hour and late evening."
+    ],
+    seller: [], conveyancer: []
   };
 }
 
-function checkNature(R) {
-  const title = "Protected nature sites";
-  if (!R.planningNearby.ok) return failed(title, "nature", R.planningNearby.error, LINKS.magic, "MAGIC map");
-  const sets = {
-    "site-of-special-scientific-interest": "Site of Special Scientific Interest",
-    "special-area-of-conservation": "Special Area of Conservation",
-    "special-protection-area": "Special Protection Area",
-    "ancient-woodland": "Ancient woodland",
-    "local-nature-reserve": "Local Nature Reserve"
+function checkAir(R) {
+  const base = {
+    id: "air", group: "living", title: "Air quality",
+    source: { name: "Council Air Quality Management Areas (via planning.data.gov.uk); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.ukair },
+    dataDate: "Checked live on " + today()
   };
-  const found = R.planningNearby.value.filter(e => sets[e.dataset]);
-  const hereSssi = R.planningPoint.ok ? byDataset(R.planningPoint.value, "site-of-special-scientific-interest") : [];
+  if (!R.planningPoint.ok && !R.air.ok) return unavailable(base, R, "air");
+
+  const here = R.planningPoint.ok ? byDataset(R.planningPoint.value, "air-quality-management-area") : [];
+  const near = R.planningNearby.ok ? byDataset(R.planningNearby.value, "air-quality-management-area") : [];
+  const m = R.air.ok ? R.air.value : null;
+  const overLegal = m && ((m.no2 ?? 0) > 40 || (m.pm25 ?? 0) > 20);
+
+  let status = "low";
+  let found = "Not in an air pollution hotspot declared by the council.";
+  if (here.length) { status = "medium"; found = "Inside an air pollution hotspot declared by the council (an Air Quality Management Area)."; }
+  else if (near.length) found += ` There is one within ${formatRadius(R.loc.radius)}.`;
+  if (overLegal) { status = "high"; found += " Area pollution levels are estimated to be above UK legal limits."; }
+
+  let details = "";
+  const names = [...new Set([...here, ...near].map(a => a.name).filter(Boolean))].slice(0, 3);
+  if (names.length) details += `<p>Nearby hotspots: ${escapeHTML(names.join("; "))}.</p>`;
+  if (m) {
+    if (m.from) base.dataDate = `Model average ${new Date(m.from).toLocaleDateString("en-GB")} to ${new Date(m.to).toLocaleDateString("en-GB")}`;
+    const verdict = (v, who, legal) => v == null ? "Not available"
+      : v > legal ? "Above UK legal limit"
+      : v > who ? "Within UK legal limit, above health guideline"
+      : "Within health guideline";
+    details += `<p><strong>Area estimate</strong> (average over the last 3 months):</p>
+      <div class="table-wrap"><table><thead><tr><th>Pollutant</th><th>Level</th><th>Result</th></tr></thead><tbody>
+        <tr><td>Fine particles (PM2.5)</td><td>${m.pm25 ?? "–"} µg/m³</td><td>${verdict(m.pm25, 5, 20)}</td></tr>
+        <tr><td>Nitrogen dioxide (NO₂), mainly from traffic</td><td>${m.no2 ?? "–"} µg/m³</td><td>${verdict(m.no2, 10, 40)}</td></tr>
+      </tbody></table></div>
+      <p>Compared with the World Health Organization health guidelines (PM2.5: 5, NO₂: 10) and UK legal limits (PM2.5: 20, NO₂: 40).
+      Most of England is above the health guideline. The model works on squares about 10 km across, so it describes the
+      wider area, not your street. Levels beside busy roads are usually higher.</p>`;
+  } else {
+    details += "<p>The area pollution estimate could not be retrieved.</p>";
+  }
 
   return {
-    topic: "nature", title, status: found.length ? "info" : "low",
-    headline: found.length
-      ? `${found.length} protected nature site(s) within ${formatRadius(R.loc.radius)}.`
-      : `No protected nature sites within ${formatRadius(R.loc.radius)}.`,
-    body: (found.length ? `<ul>${found.slice(0, 8).map(e => `<li>${escapeHTML(sets[e.dataset])}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}</ul>` : "") +
-      (hereSssi.length ? "<p><strong>The location is inside an SSSI.</strong> Many activities need consent from Natural England.</p>" : "") +
-      "<p>Nature sites are usually a plus for buyers, but they can limit building work or land use nearby.</p>" +
-      sourceLine("Natural England data via planning.data.gov.uk; full map on MAGIC", LINKS.magic)
+    ...base, status, found, details,
+    meaning: "<p>Councils declare an Air Quality Management Area where pollution, usually from traffic, is above legal limits. They must then have a plan to reduce it.</p>",
+    actions: [`See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`],
+    seller: [], conveyancer: []
   };
 }
 
 function checkCrime(R) {
-  const title = "Reported crime";
-  if (!R.crime.ok) return failed(title, "crime", R.crime.error, LINKS.police, "police.uk");
+  const base = {
+    id: "crime", group: "living", title: "Reported crime",
+    source: { name: "data.police.uk (Home Office)", url: LINKS.policeData },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.crime.ok) return unavailable(base, R, "crime");
   const c = R.crime.value;
-  const label = s => s.replace(/-/g, " ").replace(/^./, x => x.toUpperCase());
+  base.dataDate = "Crimes reported in " + monthName(c.month);
+  const key = [
+    ["burglary", "Burglary"], ["vehicle-crime", "Vehicle crime"],
+    ["anti-social-behaviour", "Antisocial behaviour"], ["violent-crime", "Violence and sexual offences"]
+  ];
+  const keyTotal = key.reduce((n, [k]) => n + (c.byType[k] || 0), 0);
   return {
-    topic: "crime", title, status: "info",
-    headline: `${c.total} crime(s) reported within about 1 mile in ${c.month ? new Date(c.month + "-01").toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "the latest month"}.`,
-    body: (c.byType.length ? `<div class="table-wrap"><table><thead><tr><th>Type</th><th>Number</th></tr></thead><tbody>${
-      c.byType.slice(0, 8).map(([t, n]) => `<tr><td>${escapeHTML(label(t))}</td><td>${n}</td></tr>`).join("")}</tbody></table></div>` : "") +
-      `<p>Town centres usually show higher numbers because of shops and nightlife. Compare with a few nearby
-       streets on ${link(LINKS.police, "police.uk")} rather than reading the number on its own.</p>` +
-      sourceLine("data.police.uk (Home Office)", "https://data.police.uk/")
+    ...base, status: "info",
+    found: `${c.total} crimes reported within about 1 mile in ${monthName(c.month)}, including ${plural(c.byType["burglary"] || 0, "burglary", "burglaries")}.`,
+    details: `<div class="table-wrap"><table><thead><tr><th>Types most relevant to residents</th><th>Number</th></tr></thead><tbody>${
+      key.map(([k, label]) => `<tr><td>${label}</td><td>${c.byType[k] || 0}</td></tr>`).join("")
+    }<tr><td>All other types</td><td>${c.total - keyTotal}</td></tr></tbody></table></div>`,
+    meaning: `<p>Town and city centres show higher numbers because of shops, transport hubs and nightlife. The figures are
+      most useful when you compare a few streets or areas you are considering.</p>`,
+    actions: [`Compare nearby areas, and find the local policing team, on ${link(LINKS.police, "police.uk")}.`],
+    seller: [], conveyancer: []
   };
 }
 
-function manualChecks() {
+function checkPlanning(R) {
+  const base = {
+    id: "planning", group: "planning", title: "Planning restrictions and heritage",
+    source: { name: "planning.data.gov.uk (Ministry of Housing, Communities and Local Government)", url: LINKS.planningData },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.planningPoint.ok) return unavailable(base, R, "planningPoint");
+
+  const here = R.planningPoint.value;
+  const rules = [
+    ["conservation-area", "Conservation area", "Extra permission is needed for demolition, some extensions, and work on trees."],
+    ["listed-building-outline", "Listed building", "Listed building consent is needed for most changes, inside and out."],
+    ["article-4-direction-area", "Article 4 area", "Some normal home improvements, such as new windows or porches, need planning permission."],
+    ["tree-preservation-zone", "Tree preservation order", "You need consent to cut back or remove protected trees."],
+    ["green-belt", "Green Belt", "New building is strictly limited."],
+    ["area-of-outstanding-natural-beauty", "National Landscape", "Stricter planning rules apply to protect the landscape."],
+    ["national-park", "National Park", "The National Park authority deals with planning, with stricter rules."],
+    ["world-heritage-site", "World Heritage Site", "Development must protect the site's heritage value."],
+    ["scheduled-monument", "Scheduled monument", "Works need consent from Historic England."],
+    ["hs2-safeguarded-area", "HS2 safeguarded area", "Land may be affected by the HS2 railway project."]
+  ];
+  const applies = rules.filter(([ds]) => byDataset(here, ds).length)
+    .map(([ds, name, what]) => ({ name, what, detail: byDataset(here, ds)[0].name }));
+  const listedNear = R.planningNearby.ok
+    ? byDataset(R.planningNearby.value, "listed-building").filter(e => e.distanceKm != null && e.distanceKm <= 0.2) : [];
+
   return {
-    topic: "manual", title: "Other checks to do yourself", status: "manual",
-    headline: "These topics have no free live data, but matter when buying.",
-    body: `<ul>
-      <li><strong>Surface water, groundwater and reservoir flooding:</strong> ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.</li>
-      <li><strong>Railway and aircraft noise:</strong> ${link(LINKS.noise, "Defra 2022 noise maps")}.</li>
-      <li><strong>Energy performance:</strong> ${link(LINKS.epc, "find the EPC")}. Rental properties need at least band E.</li>
-      <li><strong>Mobile and broadband coverage:</strong> ${link(LINKS.ofcom, "Ofcom coverage checker")}.</li>
-      <li><strong>Japanese knotweed:</strong> ask the seller, as it is on the property information form, and ask your surveyor to look.</li>
-      <li><strong>Planning applications nearby:</strong> search the council's planning website by postcode.</li>
-      <li><strong>Conveyancing searches:</strong> local authority search, drainage and water search, and environmental search.
-          Add a coal mining (CON29M) report if the coal check above is not green.</li>
-      <li><strong>A building survey</strong> (RICS Level 2 or 3), especially for older homes.</li>
-    </ul>`
+    ...base, status: applies.length ? "info" : "low",
+    found: applies.length
+      ? "Planning restrictions here: " + applies.map(a => a.name).join(", ") + "."
+      : "No conservation area, listed building, Green Belt or similar restriction found here.",
+    details: (applies.length ? `<ul>${applies.map(a => `<li><strong>${escapeHTML(a.name)}</strong>${a.detail ? " (" + escapeHTML(a.detail) + ")" : ""}: ${escapeHTML(a.what)}</li>`).join("")}</ul>` : "") +
+      (listedNear.length ? `<p>${plural(listedNear.length, "listed building")} within 200 m.</p>` : ""),
+    meaning: "<p>These rules mainly matter if you plan to extend, alter or build. Not every council publishes this data yet, and protection orders on single trees may be missing.</p>",
+    actions: [
+      "Search the council's planning website by postcode for applications on and next to the property.",
+      `Check listed buildings on the ${link(LINKS.historicEngland, "National Heritage List for England")}.`
+    ],
+    seller: ["Have any extensions or alterations been made? Are there planning permissions and building regulations sign-offs for them?"],
+    conveyancer: []
   };
 }
+
+function checkNature(R) {
+  const base = {
+    id: "nature", group: "planning", title: "Protected nature sites",
+    source: { name: "Natural England data via planning.data.gov.uk; full map on MAGIC", url: LINKS.magic },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.planningNearby.ok) return unavailable(base, R, "planningNearby");
+  const sets = {
+    "site-of-special-scientific-interest": "Site of Special Scientific Interest",
+    "special-area-of-conservation": "Special Area of Conservation",
+    "special-protection-area": "Special Protection Area (birds)",
+    "ancient-woodland": "Ancient woodland",
+    "local-nature-reserve": "Local Nature Reserve"
+  };
+  const found = R.planningNearby.value.filter(e => sets[e.dataset]);
+  const inSssi = R.planningPoint.ok && byDataset(R.planningPoint.value, "site-of-special-scientific-interest").length;
+  return {
+    ...base, status: found.length ? "info" : "low",
+    found: inSssi
+      ? "The property is inside a Site of Special Scientific Interest."
+      : found.length ? `${plural(found.length, "protected nature site")} within ${formatRadius(R.loc.radius)}.` : `No protected nature sites within ${formatRadius(R.loc.radius)}.`,
+    details: found.length ? `<ul>${found.slice(0, 8).map(e => `<li>${escapeHTML(sets[e.dataset])}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}</ul>` : "",
+    meaning: "<p>Nature sites are usually a plus for buyers, but they can limit building work or land use nearby." +
+      (inSssi ? " Inside a Site of Special Scientific Interest, many activities need consent from Natural England." : "") + "</p>",
+    actions: [], seller: [], conveyancer: []
+  };
+}
+
+const GROUPS = [
+  { id: "flood", title: "Flooding", intro: "Flood risk from rivers and the sea, and any warnings in force today." },
+  { id: "ground", title: "Ground and land", intro: "What is in or under the ground: mining, radon, landfill, contamination and ground movement." },
+  { id: "living", title: "Living environment", intro: "What it is like to live here: noise, air quality and crime." },
+  { id: "planning", title: "Planning and surroundings", intro: "Rules that affect changes to the property, and protected places nearby." }
+];
+
+const BUILDERS = [checkFlood, checkCoal, checkRadon, checkLandfill, checkContamination, checkLandslides,
+  checkNoise, checkAir, checkCrime, checkPlanning, checkNature];
 
 /* =========================================================
    RUN THE CHECKS
 ========================================================= */
 
-$("generate").addEventListener("click", runChecks);
+$("runBtn").addEventListener("click", () => runChecks());
 
 async function runChecks() {
-  const loc = getLocation();
-  if (!validLocation(loc)) {
-    alert("Please choose a valid location first.");
-    return;
-  }
-
-  $("loading").classList.remove("hidden");
-  $("generate").disabled = true;
-  featureLayer.clearLayers();
-
-  const tasks = {
-    place: getPlace(loc),
-    planningPoint: getPlanningAtPoint(loc),
-    planningNearby: getPlanningNearby(loc),
-    floodWarnings: getFloodWarnings(loc),
-    radon: getRadon(loc),
-    coal: getCoal(loc),
-    noise: getRoadNoise(loc),
-    air: getAirModel(loc),
-    landfill: getLandfill(loc),
-    landslides: getLandslides(loc),
-    crime: getCrime(loc)
+  if (!selected) { $("q").focus(); return; }
+  const loc = {
+    name: $("siteName").value.trim() || selected.label || "Selected location",
+    lat: selected.lat, lon: selected.lon, radius: Number($("radius").value)
   };
 
-  const keys = Object.keys(tasks);
-  const settled = await Promise.allSettled(Object.values(tasks));
-  const R = { loc };
-  keys.forEach((k, i) => {
-    const s = settled[i];
-    R[k] = s.status === "fulfilled"
-      ? { ok: true, value: s.value }
-      : { ok: false, error: s.reason?.message || "Unknown error" };
-  });
+  $("runBtn").disabled = true;
+  $("progressPanel").classList.remove("hidden");
+  $("progress").querySelector("ul").innerHTML = TASKS.map(([k, label]) => `<li id="p-${k}">${escapeHTML(label)}</li>`).join("");
+  $("progressPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  featureLayer.clearLayers();
 
-  const builders = [
-    checkFloodZone, checkFloodWarnings, checkRadon, checkCoal, checkNoise,
-    checkAir, checkLandfill, checkContamination, checkGround,
-    checkPlanning, checkNature, checkCrime
-  ];
-  const checks = builders.map(fn => {
+  const R = { loc };
+  await Promise.all(TASKS.map(([key, , fn]) =>
+    fn(loc).then(
+      value => { R[key] = { ok: true, value }; $("p-" + key).classList.add("done"); },
+      error => { R[key] = { ok: false, error: error.message || "unknown error" }; $("p-" + key).classList.add("fail"); }
+    )
+  ));
+
+  const checks = BUILDERS.map(fn => {
     try { return fn(R); }
-    catch (e) { return { title: fn.name, status: "error", headline: "This check failed: " + e.message, body: "" }; }
+    catch (e) {
+      return { id: fn.name, group: "planning", title: fn.name, status: "error",
+        found: "This check failed: " + e.message, meaning: "", actions: [], seller: [], conveyancer: [], source: { name: "", url: "" } };
+    }
   });
-  checks.push(manualChecks());
 
   reportData = {
     title: "Property Location Report",
     generatedAt: new Date().toISOString(),
     location: loc,
     place: R.place.ok ? R.place.value : null,
-    checks: checks.map(c => ({ title: c.title, status: STATUS_LABEL[c.status], headline: c.headline })),
-    rawData: Object.fromEntries(keys.map(k => [k, R[k]]))
+    checks: checks.map(c => ({ group: c.group, title: c.title, result: STATUS_LABEL[c.status], found: c.found, dataDate: c.dataDate })),
+    rawData: Object.fromEntries(TASKS.map(([k]) => [k, R[k]]))
   };
 
-  plotFeatures(R);
-  updateCounts(checks);
+  plotFeatures(featureLayer, R);
   renderReport(loc, R, checks);
+  updateShareUrl(loc);
 
-  $("loading").classList.add("hidden");
-  $("generate").disabled = false;
-
-  const failures = checks.filter(c => c.status === "error").length;
-  setStatus("locationStatus",
-    failures
-      ? `Report ready. ${failures} check(s) could not be completed. See below.`
-      : "Report ready. Scroll down to read it.",
-    failures ? "warning" : "success");
-
-  $("reportPanel").scrollIntoView({ behavior: "smooth" });
+  $("runBtn").disabled = false;
+  $("progressPanel").classList.add("hidden");
+  $("toolbar").classList.remove("hidden");
+  $("reportPanel").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function plotFeatures(R) {
-  if (R.landfill.ok) {
-    R.landfill.value.forEach(s => {
-      if (s.lat != null) addMapPoint(s.lat, s.lon, "#b45309",
-        "<strong>Historic landfill</strong><br>" + escapeHTML(s.site_name || "Unnamed site"));
-    });
-  }
-  if (R.landslides.ok) {
-    R.landslides.value.forEach(s => {
-      if (s.lat != null) addMapPoint(s.lat, s.lon, "#7c3aed",
-        "<strong>Recorded landslide</strong><br>" + escapeHTML(s.name));
-    });
-  }
+function plotFeatures(layer, R) {
+  if (R.landfill.ok) R.landfill.value.forEach(s => s.lat != null &&
+    addMapPoint(layer, s.lat, s.lon, MAP_COLOURS.landfill, "<strong>Old landfill site</strong><br>" + escapeHTML(s.site_name || "Unnamed")));
+  if (R.landslides.ok) R.landslides.value.forEach(s => s.lat != null &&
+    addMapPoint(layer, s.lat, s.lon, MAP_COLOURS.landslide, "<strong>Recorded landslide</strong><br>" + escapeHTML(s.name)));
   if (R.planningNearby.ok) {
-    byDataset(R.planningNearby.value, "control-of-major-accident-hazards-site").forEach(s => {
-      if (s.lat != null) addMapPoint(s.lat, s.lon, "#b42318",
-        "<strong>Major hazard site (COMAH)</strong><br>" + escapeHTML(s.name || ""));
-    });
-    byDataset(R.planningNearby.value, "contaminated-land").forEach(s => {
-      if (s.lat != null) addMapPoint(s.lat, s.lon, "#4b5563",
-        "<strong>Contaminated land</strong><br>" + escapeHTML(s.name || ""));
-    });
+    byDataset(R.planningNearby.value, "control-of-major-accident-hazards-site").forEach(s => s.lat != null &&
+      addMapPoint(layer, s.lat, s.lon, MAP_COLOURS.hazard, "<strong>Major hazard site</strong><br>" + escapeHTML(s.name || "")));
+    byDataset(R.planningNearby.value, "contaminated-land").forEach(s => s.lat != null &&
+      addMapPoint(layer, s.lat, s.lon, MAP_COLOURS.contaminated, "<strong>Contaminated land</strong><br>" + escapeHTML(s.name || "")));
   }
-}
-
-function updateCounts(checks) {
-  const count = s => checks.filter(c => s.includes(c.status)).length;
-  $("countHigh").textContent = count(["high"]);
-  $("countMedium").textContent = count(["medium"]);
-  $("countLow").textContent = count(["low"]);
-  $("countManual").textContent = count(["manual", "error"]);
 }
 
 /* =========================================================
    REPORT
 ========================================================= */
 
+function chip(status) {
+  return `<span class="chip ${status}">${STATUS_LABEL[status]}</span>`;
+}
+
+function renderCheck(c) {
+  const open = ["high", "medium", "error"].includes(c.status);
+  const actions = c.actions && c.actions.length
+    ? `<ul>${c.actions.map(a => `<li>${a}</li>`).join("")}</ul>`
+    : "<p>Nothing more is needed for this topic.</p>";
+  return `
+    <details class="check ${c.status}" id="check-${c.id}" ${open ? "open" : ""}>
+      <summary>
+        <h3>${escapeHTML(c.title)}</h3>${chip(c.status)}
+        <span class="found">${escapeHTML(c.found)}</span>
+      </summary>
+      <div class="check-body">
+        ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
+        ${c.meaning ? `<h4>What it means for you</h4>${c.meaning}` : ""}
+        <h4>What to do</h4>${actions}
+        <p class="source">Source: ${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}${c.dataDate ? " · " + escapeHTML(c.dataDate) : ""}</p>
+      </div>
+    </details>`;
+}
+
+function buildChecklist(checks) {
+  const uniq = arr => [...new Set(arr)];
+  const seller = uniq([
+    ...checks.flatMap(c => c.seller || []),
+    "Is there, or has there ever been, Japanese knotweed on or near the property?",
+    "Are there any disputes with neighbours, or shared access or drainage arrangements?"
+  ]);
+  const conveyancer = uniq([
+    "A local authority search (planning history, road schemes, building control).",
+    "A drainage and water search.",
+    ...checks.flatMap(c => c.conveyancer || [])
+  ]);
+  const yourself = [
+    `Check flooding from surface water and groundwater: ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.`,
+    `Check railway and aircraft noise: ${link(LINKS.noise, "Defra noise maps")}.`,
+    `Find the energy performance certificate (EPC): ${link(LINKS.epc, "GOV.UK")}.`,
+    `Check mobile and broadband coverage: ${link(LINKS.ofcom, "Ofcom")}.`,
+    "Search the council's planning website for applications nearby.",
+    "Visit at different times of day, including rush hour and evening.",
+    "Get a building survey (RICS Level 2 or 3), especially for older homes."
+  ];
+  const list = items => `<ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>`;
+  return `
+    <section class="group checklist" id="checklist">
+      <h2>Your checklist</h2>
+      <p>Everything to follow up, gathered from the checks above. Tick items off as you go.</p>
+      <h3>Questions to ask the seller or estate agent</h3>${list(seller.map(escapeHTML))}
+      <h3>Searches and reports to ask your conveyancer for</h3>${list(conveyancer.map(escapeHTML))}
+      <h3>Things to check yourself</h3>${list(yourself)}
+    </section>`;
+}
+
 function renderReport(loc, R, checks) {
   const p = R.place.ok ? R.place.value : null;
   const outsideEngland = p && p.country && p.country !== "England";
+  const n = s => checks.filter(c => c.status === s).length;
+  const priority = checks.filter(c => ["high", "medium", "error"].includes(c.status))
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
 
-  const placeRows = p ? `
-    <strong>Nearest postcode:</strong> ${escapeHTML(p.postcode)}<br>
-    <strong>Council:</strong> ${escapeHTML(p.admin_district || "Not known")}<br>
-    <strong>Ward:</strong> ${escapeHTML(p.admin_ward || "Not known")}<br>` : "";
+  const verdictText = n("high") || n("medium")
+    ? `We found <strong>${plural(n("high"), "thing")} to look into</strong> and <strong>${n("medium")} worth checking</strong>.
+       ${plural(n("low"), "check")} found no issue.`
+    : `<strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran. Still go through the checklist at the end.`;
 
-  const summaryRows = checks.map((c, i) => `
-    <tr>
-      <td><a href="#check-${i}">${escapeHTML(c.title)}</a></td>
-      <td><span class="chip ${c.status}">${STATUS_LABEL[c.status]}</span></td>
-      <td>${escapeHTML(c.headline)}</td>
-    </tr>`).join("");
-
-  const details = checks.map((c, i) => `
-    <div class="check ${c.status}" id="check-${i}">
-      <div class="check-head">
-        <h3>${escapeHTML(c.title)}</h3>
-        <span class="chip ${c.status}">${STATUS_LABEL[c.status]}</span>
-      </div>
-      <p class="headline">${escapeHTML(c.headline)}</p>
-      ${c.body}
-    </div>`).join("");
+  const groupsHtml = GROUPS.map(g => {
+    const items = checks.filter(c => c.group === g.id).sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+    return items.length ? `
+      <section class="group" id="group-${g.id}">
+        <h2>${escapeHTML(g.title)}</h2>
+        <p class="help">${escapeHTML(g.intro)}</p>
+        ${items.map(renderCheck).join("")}
+      </section>` : "";
+  }).join("");
 
   $("report").innerHTML = `
-    <div class="report-header">
+    <div class="cover">
       <h1>Property Location Report</h1>
-      <div class="report-meta">
-        <strong>Property:</strong> ${escapeHTML(loc.name)}<br>
-        <strong>Coordinates:</strong> ${loc.lat.toFixed(6)}, ${loc.lon.toFixed(6)}<br>
-        ${placeRows}
-        <strong>Nearby search distance:</strong> ${formatRadius(loc.radius)}<br>
-        <strong>Created:</strong> ${escapeHTML(formatDate(reportData.generatedAt))}
+      <p class="meta">
+        <strong>${escapeHTML(loc.name)}</strong><br>
+        ${p ? `Nearest postcode ${escapeHTML(p.postcode)} · ${escapeHTML(p.admin_district || "")}${p.admin_ward ? " · " + escapeHTML(p.admin_ward) + " ward" : ""}<br>` : ""}
+        Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}
+      </p>
+
+      <div id="reportMap" aria-label="Map of the property and nearby features"></div>
+
+      <p class="verdict">${verdictText}</p>
+      <div class="counts">
+        <div class="count high"><strong>${n("high")}</strong><span>Look into this</span></div>
+        <div class="count medium"><strong>${n("medium")}</strong><span>Worth checking</span></div>
+        <div class="count low"><strong>${n("low")}</strong><span>No issue found</span></div>
+        <div class="count info"><strong>${n("info")}</strong><span>For information</span></div>
       </div>
+
+      ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
+        <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
+            <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul>` : ""}
+
+      ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
+        Most checks use England-only data, so many results will be missing or incomplete.</div>` : ""}
+
+      <div class="notice"><strong>Please note:</strong> this is a free first look using public data. It does not replace a
+        building survey or the searches your conveyancer orders. “No issue found” means nothing was found in the data we
+        checked, not that there is no risk. Results are for the pin location.</div>
     </div>
 
-    ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
-      Most checks in this report use England-only data, so many results will be missing or incomplete.</div>` : ""}
+    <div class="details-start">${groupsHtml}</div>
+    ${buildChecklist(checks)}
 
-    <div class="notice">
-      <strong>Please note:</strong> this is a free first look using public data. It is not a substitute for a
-      survey or for the searches your conveyancer orders. “No issue found” means nothing was found in the
-      data checked, not that there is no risk. Results are for the pinned point, so check that the pin is on the property.
-    </div>
+    <p class="help">Created with Property Location Check. Contains public sector information licensed under the Open Government
+      Licence v3.0; data © OpenStreetMap contributors; Copernicus Atmosphere Monitoring Service.</p>`;
 
-    <h2>Summary</h2>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Check</th><th>Result</th><th>What we found</th></tr></thead>
-      <tbody>${summaryRows}</tbody>
-    </table></div>
+  // "Start here" links open the matching section.
+  $("report").querySelectorAll("[data-open]").forEach(a => a.addEventListener("click", () => {
+    const d = $(a.dataset.open);
+    if (d) d.open = true;
+  }));
 
-    <h2>Details</h2>
-    ${details}
+  drawReportMap(loc, R);
+}
 
-    <p class="report-meta">Created with Property Location Check. Contains public sector information licensed under the
-      Open Government Licence v3.0, and data © OpenStreetMap contributors and Copernicus Atmosphere Monitoring Service.</p>
-  `;
+function drawReportMap(loc, R) {
+  if (reportMap) { reportMap.remove(); reportMap = null; }
+  reportMap = L.map("reportMap", {
+    zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+    boxZoom: false, keyboard: false, touchZoom: false
+  });
+  // Set the view first: layers need a map view before they can be drawn.
+  reportMap.fitBounds(L.latLng(loc.lat, loc.lon).toBounds(loc.radius * 2), { padding: [10, 10] });
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap", maxZoom: 19 }).addTo(reportMap);
+  L.circle([loc.lat, loc.lon], { radius: loc.radius, color: "#087f8c", weight: 2, fillOpacity: 0.05 }).addTo(reportMap);
+  L.marker([loc.lat, loc.lon]).addTo(reportMap);
+  plotFeatures(L.layerGroup().addTo(reportMap), R);
 }
 
 /* =========================================================
-   EXPORT
+   SHARE, EXPORT AND PRINT
 ========================================================= */
+
+function updateShareUrl(loc) {
+  const params = new URLSearchParams({ lat: loc.lat.toFixed(6), lon: loc.lon.toFixed(6), name: loc.name, r: loc.radius });
+  history.replaceState(null, "", location.pathname + "?" + params);
+}
+
+$("copyLink").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(location.href);
+    $("copyLink").textContent = "Link copied ✓";
+  } catch (e) {
+    prompt("Copy this link:", location.href);
+  }
+  setTimeout(() => { $("copyLink").textContent = "Copy link to this report"; }, 2500);
+});
 
 function downloadFile(filename, content, type) {
   const url = URL.createObjectURL(new Blob([content], { type }));
   const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function safeFileName() {
-  return (getLocation().name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "property") + "-report";
+function fileBase() {
+  return (reportData.location.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "property") + "-report";
 }
 
 $("downloadJson").addEventListener("click", () => {
-  if (!reportData) return alert("Run the checks first.");
-  downloadFile(safeFileName() + ".json", JSON.stringify(reportData, null, 2), "application/json");
+  if (reportData) downloadFile(fileBase() + ".json", JSON.stringify(reportData, null, 2), "application/json");
 });
 
 $("downloadHtml").addEventListener("click", () => {
-  if (!reportData) return alert("Run the checks first.");
+  if (!reportData) return;
+  const copy = $("report").cloneNode(true);
+  copy.querySelectorAll("details").forEach(d => d.setAttribute("open", ""));
+  const loc = reportData.location;
+  const mapBox = copy.querySelector("#reportMap");
+  if (mapBox) mapBox.outerHTML = `<p><a href="https://www.openstreetmap.org/?mlat=${loc.lat}&amp;mlon=${loc.lon}#map=16/${loc.lat}/${loc.lon}">View the location on a map</a></p>`;
   const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
   const html = `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Property Location Report – ${escapeHTML(getLocation().name)}</title>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Property Location Report – ${escapeHTML(loc.name)}</title>
 <style>${css}
-body{background:#fff;max-width:1000px;margin:30px auto;padding:0 20px}</style>
-</head><body>${$("report").innerHTML}</body></html>`;
-  downloadFile(safeFileName() + ".html", html, "text/html");
+body{background:#fff;max-width:960px;margin:24px auto;padding:0 18px}</style>
+</head><body>${copy.innerHTML}<p class="help">Live version: <a href="${escapeHTML(location.href)}">${escapeHTML(location.href)}</a></p></body></html>`;
+  downloadFile(fileBase() + ".html", html, "text/html");
 });
 
-$("printReport").addEventListener("click", () => {
-  if (!reportData) return alert("Run the checks first.");
-  window.print();
+// Open every section when printing, then restore.
+let closedBeforePrint = [];
+window.addEventListener("beforeprint", () => {
+  closedBeforePrint = [...document.querySelectorAll("#report details:not([open])")];
+  closedBeforePrint.forEach(d => { d.open = true; });
+  if (reportMap) reportMap.invalidateSize();
 });
+window.addEventListener("afterprint", () => {
+  closedBeforePrint.forEach(d => { d.open = false; });
+});
+
+$("printReport").addEventListener("click", () => window.print());
 
 /* =========================================================
-   START
+   START – supports shared links:
+   ?lat=..&lon=..&name=..&r=..   or   ?postcode=S70%202TA
 ========================================================= */
 
-window.addEventListener("load", initMap);
+window.addEventListener("load", async () => {
+  initMap();
+  const params = new URLSearchParams(location.search);
+  const r = params.get("r");
+  if (r && [...$("radius").options].some(o => o.value === r)) $("radius").value = r;
+
+  if (params.has("lat") && params.has("lon")) {
+    setLocation(params.get("lat"), params.get("lon"), params.get("name") || null);
+    runChecks();
+  } else if (params.has("postcode")) {
+    await lookupPostcode(params.get("postcode"));
+    if (selected) runChecks();
+  } else {
+    $("q").focus();
+  }
+});
 </script>
 
 </body>

@@ -26,8 +26,21 @@ official checkers.
 
 ## How to use
 
-Open the live page: https://andyseremet.github.io/reports-examles/
-or open `index.html` in any browser. No installation or server is needed.
+1. Open the live page: https://andyseremet.github.io/reports-examles/
+   (or open `index.html` in any browser; no installation needed).
+2. Type a postcode, address or place. Pick a suggestion, or press Enter.
+3. Check the pin is on the right property (drag it if not), then press
+   **Check this property**.
+4. Read the report: a verdict and "Start here" list, then results grouped into
+   Flooding, Ground and land, Living environment, and Planning and
+   surroundings, ending with a checklist for the seller and conveyancer.
+5. Copy the link, download the report, or print / save it as a PDF.
+
+### Shareable links
+
+- `?postcode=S70%202TA` runs the report for a postcode.
+- `?lat=53.5542&lon=-1.4827&name=My%20house&r=1000` runs it for an exact
+  point (`r` is the nearby search distance in metres: 250, 500, 1000 or 2000).
 
 ## Limits
 
