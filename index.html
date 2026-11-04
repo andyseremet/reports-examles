@@ -280,6 +280,30 @@ label.tick input:checked + span {text-decoration:line-through;color:var(--muted)
   border-radius:50%;background:var(--accent-bg);color:#fff;font-size:22px;box-shadow:0 2px 10px #0006;border:2px solid #ffffffaa;
 }
 footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
+/* ---------- batch 2 ---------- */
+.star-btn {background:none;padding:4px 6px;font-size:22px;line-height:1;color:#c58a00}
+.star-btn[aria-pressed="false"] {color:var(--muted)}
+.note-mark {font-size:13px}
+.notes textarea {width:100%;border:1px solid var(--input-border);border-radius:8px;padding:10px;font:inherit;
+  background:var(--surface);color:var(--text);resize:vertical}
+.notes-print {display:none;white-space:pre-wrap}
+.notes-download {display:block;padding:10px;border:1px solid var(--border);border-radius:8px}
+.saved-note {display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.print-only {display:none}
+.qr-box {text-align:center;margin:10px 0}
+.qr-box svg {width:120px;height:120px}
+.qr-box p {font-size:11px;margin:4px 0 0}
+@media print {
+  .print-only {display:block!important}
+  .notes textarea {display:none}
+  .notes-print {display:block;border:1px solid #999;border-radius:6px;padding:8px;min-height:30px}
+  .notes-print:empty::before {content:"(No notes)";color:#666}
+  .saved-note button,#refreshBtn {display:none!important}
+  body.print-summary .details-start,body.print-summary #sourcesBox,body.print-summary .topic-strip {display:none!important}
+  body.print-summary #reportMap {height:200px}
+  body.print-summary .checklist {break-before:page}
+}
+
 
 /* ---------- topic strip ---------- */
 .topic-strip {display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px;margin:4px 0 16px;padding:0;list-style:none}
@@ -452,6 +476,12 @@ body.has-sticky footer {padding-bottom:100px}
       <button class="primary small-btn" id="compareBtn" type="button" disabled>Compare</button>
       <span class="help" id="compareHelp">Tick two properties to compare them.</span>
     </div>
+    <div class="saved-actions">
+      <button class="secondary small-btn" id="exportBtn" type="button">Export list</button>
+      <button class="secondary small-btn" id="importBtn" type="button">Import list</button>
+      <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+      <span class="help" id="transferHelp">Move your saved properties, notes and ticks to another device.</span>
+    </div>
   </section>
 
   <!-- ===================== COMPARE ===================== -->
@@ -469,7 +499,8 @@ body.has-sticky footer {padding-bottom:100px}
       <button class="primary" id="shareBtn" type="button">Share</button>
       <button class="secondary" id="downloadHtml" type="button" disabled>Download report</button>
       <button class="secondary" id="downloadJson" type="button" disabled>Download data</button>
-      <button class="secondary" id="printReport" type="button" disabled>Print / Save as PDF</button>
+      <button class="secondary" id="printSummary" type="button" disabled>Print summary</button>
+      <button class="secondary" id="printReport" type="button" disabled>Print full report</button>
     </div>
 
     <nav class="report-nav no-print hidden" id="reportNav" aria-label="Report sections">
@@ -509,7 +540,8 @@ body.has-sticky footer {padding-bottom:100px}
 <footer class="zoomable">
   Property Location Check · Contains public sector information licensed under the Open Government Licence v3.0 ·
   Map data © OpenStreetMap contributors, © Esri and © CARTO · Air quality model: Copernicus Atmosphere Monitoring Service via Open-Meteo ·
-  Postcode data: Office for National Statistics via postcodes.io
+  Postcode data: Office for National Statistics via postcodes.io · Places: OpenStreetMap contributors ·
+  Flood maps for Scotland and Wales: SEPA and Natural Resources Wales · Census 2021 via Nomis
   <p><button class="link-btn" type="button" data-info aria-expanded="false" aria-controls="info-privacy">Privacy: what is sent where</button>
      · <span id="appVersion"></span></p>
   <div class="info-body" id="info-privacy" hidden style="text-align:left;max-width:760px;margin:8px auto">
@@ -518,7 +550,9 @@ body.has-sticky footer {padding-bottom:100px}
     <ul>
       <li><strong>What you type in the search</strong> goes to OpenStreetMap Nominatim (addresses) and postcodes.io (postcodes and places).</li>
       <li><strong>The pin's location</strong> (latitude and longitude) goes to postcodes.io, planning.data.gov.uk, the Environment Agency,
-          the British Geological Survey, the Mining Remediation Authority, Open-Meteo and data.police.uk, to get the results.</li>
+          the British Geological Survey, the Mining Remediation Authority, Open-Meteo, data.police.uk, OpenStreetMap (Overpass),
+          the Office for National Statistics (boundaries and Nomis census figures), and for Scotland and Wales, SEPA and Natural
+          Resources Wales, to get the results.</li>
       <li><strong>The map pictures</strong> come from Esri, OpenStreetMap or CARTO, which see which area of the map is shown.</li>
       <li><strong>Your device's location</strong> is used only when you press the location button, to place the pin.</li>
       <li><strong>Saved properties, checklist ticks and settings</strong> stay in this browser only. Remove them with “Remove”, or by clearing
@@ -528,6 +562,7 @@ body.has-sticky footer {padding-bottom:100px}
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 
 <script>
 "use strict";
@@ -550,7 +585,14 @@ const API = {
   railNoise: "https://environment.data.gov.uk/spatialdata/rail-noise-england-round-4-all/wms",
   landfill: "https://environment.data.gov.uk/spatialdata/historic-landfill/ogc/features/v1/collections/Historic_Landfill_Sites/items",
   airModel: "https://air-quality-api.open-meteo.com/v1/air-quality",
-  crime: "https://data.police.uk/api/crimes-street/all-crime"
+  crime: "https://data.police.uk/api/crimes-street/all-crime",
+  surfaceWater: "https://environment.data.gov.uk/spatialdata/nafra2-risk-of-flooding-from-surface-water/wms",
+  sepaFlood: "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer",
+  nrwFlood: "https://datamap.gov.wales/geoserver/ows",
+  overpass: ["https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+             "https://overpass.private.coffee/api/interpreter"],
+  nomis: "https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.json",
+  msoaBoundary: "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query"
 };
 
 const LINKS = {
@@ -573,6 +615,12 @@ const LINKS = {
   ofcom: "https://www.ofcom.org.uk/mobile-coverage-checker",
   historicEngland: "https://historicengland.org.uk/listing/the-list/",
   magic: "https://magic.defra.gov.uk/",
+  sepaMaps: "https://map.sepa.org.uk/floodmaps",
+  nrwMaps: "https://flood-risk-maps.naturalresources.wales/",
+  osm: "https://www.openstreetmap.org/copyright",
+  onsCrime: "https://www.ons.gov.uk/peoplepopulationandcommunity/crimeandjustice/bulletins/crimeinenglandandwales/yearendingmarch2025",
+  onsPopulation: "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/bulletins/populationestimatesforenglandandwales/mid2024",
+  nomisCensus: "https://www.nomisweb.co.uk/sources/census_2021",
   whoNoise: "https://www.who.int/europe/publications/i/item/9789289053563",
   whoAir: "https://www.who.int/publications/i/item/9789240034228",
   whoRadon: "https://www.who.int/publications/i/item/9789241547673",
@@ -610,7 +658,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.7.0";
 const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -1309,9 +1357,148 @@ async function addressSearch(q) {
    DATA RETRIEVAL
 ========================================================= */
 
-async function getPlace(loc) {
-  const d = await fetchJSON(API.postcodes + "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=2000&limit=1");
-  return (d.result && d.result[0]) || null;
+const placeCache = new Map();
+function getPlace(loc) {
+  const key = Number(loc.lat).toFixed(5) + "," + Number(loc.lon).toFixed(5);
+  if (!placeCache.has(key)) {
+    const promise = fetchJSON(API.postcodes + "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=2000&limit=1")
+      .then(d => (d.result && d.result[0]) || null);
+    promise.catch(() => placeCache.delete(key));   // try again next time if it failed
+    placeCache.set(key, promise);
+  }
+  return placeCache.get(key);
+}
+
+// Read the features of a map layer at the pin (vector layers: attributes, not pixel values).
+async function wmsFeaturesAt(service, layer, loc) {
+  const d = 0.00005;   // about 5 m around the pin
+  const params = new URLSearchParams({
+    service: "WMS", version: "1.3.0", request: "GetFeatureInfo", layers: layer, query_layers: layer, styles: "",
+    crs: "EPSG:4326", bbox: [loc.lat - d, loc.lon - d, loc.lat + d, loc.lon + d].join(","),
+    width: 11, height: 11, i: 5, j: 5, info_format: "application/json", feature_count: 10, buffer: 0
+  });
+  return ((await fetchJSON(service + "?" + params)).features || []).map(f => f.properties || {});
+}
+
+// England: Environment Agency "Risk of flooding from surface water" (2025 national assessment).
+async function getSurfaceWater(loc) {
+  const props = await wmsFeaturesAt(API.surfaceWater, "rofsw", loc);
+  const order = ["High", "Medium", "Low"];
+  const bands = props.map(x => x.risk_band).filter(b => order.includes(b));
+  return { band: bands.sort((a, b) => order.indexOf(a) - order.indexOf(b))[0] || null };
+}
+
+// Scotland (SEPA) and Wales (Natural Resources Wales) flood maps. England returns null.
+async function getFloodNational(loc) {
+  const place = await getPlace(loc);
+  const country = place && place.country;
+  if (country === "Scotland") {
+    const count = layer => fetchJSON(`${API.sepaFlood}/${layer}/query?` + new URLSearchParams({
+      geometry: loc.lon + "," + loc.lat, geometryType: "esriGeometryPoint", inSR: "4326",
+      spatialRel: "esriSpatialRelIntersects", returnCountOnly: "true", f: "json"
+    })).then(d => { if (d.error) throw new Error(d.error.message || "query failed"); return d.count > 0; });
+    // Layers 0-2 river, 3-5 surface water, 6-8 coastal; each High, Medium, Low likelihood.
+    const hits = await Promise.all([0, 1, 2, 3, 4, 5, 6, 7, 8].map(count));
+    const level = start => hits[start] ? "High" : hits[start + 1] ? "Medium" : hits[start + 2] ? "Low" : null;
+    return { country, river: level(0), surface: level(3), coastal: level(6) };
+  }
+  if (country === "Wales") {
+    const [riversSea, surface] = await Promise.all([
+      wmsFeaturesAt(API.nrwFlood, "inspire-nrw:NRW_FLOODZONE_RIVERS_SEAS_MERGED", loc),
+      wmsFeaturesAt(API.nrwFlood, "inspire-nrw:NRW_FLOODZONE_SURFACE_WATER_AND_SMALL_WATERCOURSES", loc)
+    ]);
+    const zone = list => {
+      const zones = list.map(x => x.risk).filter(Boolean);
+      return zones.find(z => /3/.test(z)) || zones.find(z => /2/.test(z)) || null;
+    };
+    const dates = [...riversSea, ...surface].map(x => x.pub_date).filter(Boolean).sort();
+    return { country, zone: zone(riversSea), surface: zone(surface), published: dates[dates.length - 1] || null };
+  }
+  return { country: country || null };
+}
+
+// Everyday places nearby, from OpenStreetMap (Overpass API), with a backup server.
+const AMENITY_TYPES = [
+  { key: "school", label: "School", short: "school", query: 'nwr(around:2000,LAT,LON)[amenity=school];' },
+  { key: "doctors", label: "GP surgery or doctors", short: "GP", query: 'nwr(around:3000,LAT,LON)[amenity~"^(doctors|clinic)$"];' },
+  { key: "pharmacy", label: "Pharmacy", short: "pharmacy", query: 'nwr(around:3000,LAT,LON)[amenity=pharmacy];' },
+  { key: "supermarket", label: "Supermarket", short: "supermarket", query: 'nwr(around:3000,LAT,LON)[shop=supermarket];' },
+  { key: "station", label: "Train station", short: "station", query: 'nwr(around:5000,LAT,LON)[railway=station][!disused];' },
+  { key: "bus_stop", label: "Bus stop", short: "bus stop", query: 'node(around:800,LAT,LON)[highway=bus_stop];' }
+];
+
+async function getAmenities(loc) {
+  const body = "[out:json][timeout:20];(" +
+    AMENITY_TYPES.map(t => t.query.replace(/LAT/g, loc.lat).replace(/LON/g, loc.lon)).join("") + ");out center 300;";
+  let data = null, lastError = null;
+  // Overpass servers are often busy: try each server, and a busy one twice.
+  const attempts = API.overpass.flatMap(server => [server, server]);
+  const started = Date.now();
+  for (let i = 0; i < attempts.length && !data; i++) {
+    if (Date.now() - started > 25000) break;                     // give up after 25 seconds in total
+    const server = attempts[i];
+    if (i % 2 === 1 && !(lastError && lastError.busy)) continue;   // only retry a server that said "busy"
+    if (i % 2 === 1) await new Promise(resolve => setTimeout(resolve, 1200));
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), Math.max(3000, Math.min(12000, 25000 - (Date.now() - started))));
+      const res = await fetch(server, { method: "POST", body: "data=" + encodeURIComponent(body),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, signal: controller.signal });
+      clearTimeout(timer);
+      if (!res.ok) {
+        const err = new Error("the map data service replied with error " + res.status);
+        err.busy = res.status === 429 || res.status === 504 || res.status === 503;
+        throw err;
+      }
+      data = await res.json();
+    } catch (e) {
+      lastError = e.name === "AbortError" ? new Error("the map data service took too long to respond") : e;
+    }
+  }
+  if (!data) throw lastError || new Error("the map data service could not be reached");
+  const typeOf = tags => tags.amenity === "school" ? "school"
+    : (tags.amenity === "doctors" || tags.amenity === "clinic") ? "doctors"
+    : tags.amenity === "pharmacy" ? "pharmacy" : tags.shop === "supermarket" ? "supermarket"
+    : tags.railway === "station" ? "station" : tags.highway === "bus_stop" ? "bus_stop" : null;
+  const groups = {};
+  (data.elements || []).forEach(el => {
+    const tags = el.tags || {};
+    const type = typeOf(tags);
+    const lat = el.lat ?? el.center?.lat, lon = el.lon ?? el.center?.lon;
+    if (!type || lat == null) return;
+    (groups[type] = groups[type] || []).push({ name: tags.name || "", lat, lon, distanceKm: distanceKm(loc, { lat, lon }) });
+  });
+  Object.values(groups).forEach(list => list.sort((a, b) => a.distanceKm - b.distanceKm));
+  return groups;
+}
+
+// Crime in the local neighbourhood (census "MSOA", about 8,000 residents) per 1,000 residents.
+async function getCrimeArea(loc) {
+  const place = await getPlace(loc);
+  const code = place && place.codes && place.codes.msoa;
+  if (!code || !/^[EW]02/.test(code)) return null;     // England and Wales only
+  const [boundary, population] = await Promise.all([
+    fetchJSON(API.msoaBoundary + "?" + new URLSearchParams({
+      where: `MSOA21CD='${code}'`, outFields: "MSOA21CD,MSOA21NM", returnGeometry: "true",
+      outSR: "4326", geometryPrecision: "5", maxAllowableOffset: "0.0005", f: "json"
+    })),
+    fetchJSON(API.nomis + "?" + new URLSearchParams({
+      date: "latest", geography: code, c2021_restype_3: "0", measures: "20100", select: "geography_name,obs_value"
+    }))
+  ]);
+  const feature = boundary.features && boundary.features[0];
+  const ring = feature && feature.geometry && feature.geometry.rings && feature.geometry.rings[0];
+  const residents = population.obs && population.obs[0] && population.obs[0].obs_value && population.obs[0].obs_value.value;
+  if (!ring || !residents) return null;
+  const step = Math.max(1, Math.ceil(ring.length / 90));          // keep the area outline short
+  const poly = ring.filter((_, i) => i % step === 0).map(([x, y]) => `${y.toFixed(5)},${x.toFixed(5)}`).join(":");
+  const crimes = await fetchJSON(API.crime + "?poly=" + poly);
+  const notASB = crimes.filter(c => c.category !== "anti-social-behaviour").length;
+  return {
+    code, name: feature.attributes.MSOA21NM, residents,
+    month: crimes[0] ? crimes[0].month : null, total: crimes.length, crimes: notASB,
+    perThousand: Math.round(notASB / residents * 1000 * 10) / 10
+  };
 }
 
 async function getPlanningAtPoint(loc) {
@@ -1493,7 +1680,11 @@ const TASKS = [
   ["air", "Air quality", getAirModel],
   ["landfill", "Old landfill sites", getLandfill],
   ["landslides", "Landslides", getLandslides],
-  ["crime", "Reported crime", getCrime]
+  ["crime", "Reported crime", getCrime],
+  ["surfaceWater", "Flooding from heavy rain", getSurfaceWater],
+  ["floodNational", "Scotland and Wales flood maps", getFloodNational],
+  ["amenities", "Schools, doctors, shops and transport", getAmenities],
+  ["crimeArea", "Crime compared with England and Wales", getCrimeArea]
 ];
 
 /* =========================================================
@@ -1521,6 +1712,11 @@ function checkFlood(R) {
     source: { name: "Environment Agency Flood Map for Planning (via planning.data.gov.uk) and real-time flood warnings", url: LINKS.floodMapPlanning },
     dataDate: "Checked live on " + today()
   };
+  const country = R.place && R.place.ok && R.place.value ? R.place.value.country : null;
+  if (country === "Scotland" || country === "Wales") {
+    if (!R.floodNational.ok) return unavailable(base, R, "floodNational");
+    return country === "Scotland" ? floodScotland(base, R.floodNational.value) : floodWales(base, R.floodNational.value);
+  }
   if (!R.planningPoint.ok) return unavailable(base, R, "planningPoint");
 
   const levels = byDataset(R.planningPoint.value, "flood-risk-zone").map(e => Number(e["flood-risk-level"])).filter(Number.isFinite);
@@ -1560,13 +1756,142 @@ function checkFlood(R) {
   return {
     ...base, status, found, details, meaning: `<p>${meaning}</p>`,
     actions: [
-      `Check flooding from surface water, groundwater and reservoirs on ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.`,
+      `Check flooding from groundwater and reservoirs on ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.`,
       zone >= 2
         ? `Get a buildings insurance quote before you exchange contracts. Homes built before 2009 may be covered by ${link(LINKS.floodRe, "Flood Re")}, which helps keep insurance affordable.`
         : "Get a buildings insurance quote early, as a quick check."
     ],
     seller: ["Has the property ever flooded, and has there been any flood insurance claim?"],
     conveyancer: zone >= 2 ? ["A flood risk report (often part of the environmental search)."] : []
+  };
+}
+
+// SEPA likelihoods: high about 10% each year, medium 0.5%, low 0.1%.
+const SEPA_CHANCE = { High: "about a 1 in 10 chance each year", Medium: "about a 1 in 200 chance each year", Low: "about a 1 in 1,000 chance each year" };
+const LEVEL_STATUS = { High: "high", Medium: "medium", Low: "low" };
+
+function floodScotland(base, f) {
+  const worst = ["High", "Medium", "Low"].find(l => f.river === l || f.coastal === l) || null;
+  // One source: "High likelihood of flooding from rivers." Two: "... from rivers (high) and the sea (low)."
+  const sources = f.river && f.coastal
+    ? [`rivers (${f.river.toLowerCase()})`, `the sea (${f.coastal.toLowerCase()})`]
+    : [f.river ? "rivers" : "the sea"];
+  return {
+    ...base, title: "Flooding from rivers and the sea",
+    source: { name: "SEPA flood maps (Scottish Environment Protection Agency)", url: LINKS.sepaMaps },
+    status: worst ? LEVEL_STATUS[worst] : "low",
+    found: worst ? `${worst} likelihood of flooding from ${sources.join(" and ")}.` : "Not in an area SEPA maps as at risk of flooding from rivers or the sea.",
+    details: worst ? `<p>${worst} likelihood means ${SEPA_CHANCE[worst]}.</p>` : "",
+    meaning: `<p>SEPA's maps show areas that could flood, with high (about 1 in 10 each year), medium (1 in 200) and low
+      (1 in 1,000) likelihood. They do not account for every local defence.</p>`,
+    actions: [`Look at the property on the ${link(LINKS.sepaMaps, "SEPA flood maps")}.`, "Get a buildings insurance quote early."],
+    seller: ["Has the property ever flooded, and has there been any flood insurance claim?"],
+    conveyancer: worst ? ["A flood risk report (often part of the environmental search)."] : []
+  };
+}
+
+function floodWales(base, f) {
+  const z = f.zone ? Number((f.zone.match(/\d/) || [1])[0]) : 1;
+  return {
+    ...base, title: "Flooding from rivers and the sea",
+    source: { name: "Natural Resources Wales, Flood Map for Planning", url: LINKS.nrwMaps },
+    dataDate: f.published ? "Published " + new Date(f.published).toLocaleDateString("en-GB") : base.dataDate,
+    status: z >= 3 ? "high" : z === 2 ? "medium" : "low",
+    found: z >= 3 ? "High chance of flooding from rivers or the sea (Flood Zone 3)."
+      : z === 2 ? "Medium chance of flooding from rivers or the sea (Flood Zone 2)."
+      : "Low chance of flooding from rivers or the sea (Flood Zone 1).",
+    meaning: `<p>Natural Resources Wales maps Flood Zone 3 (1% or more chance each year from rivers, 0.5% from the sea) and
+      Flood Zone 2 (0.1% to 1%), without flood defences. The map's official planning status depends on Welsh Government
+      planning guidance (TAN 15).</p>`,
+    actions: [`Look at the property on the ${link(LINKS.nrwMaps, "Natural Resources Wales flood risk maps")}.`, "Get a buildings insurance quote early."],
+    seller: ["Has the property ever flooded, and has there been any flood insurance claim?"],
+    conveyancer: z >= 2 ? ["A flood risk report (often part of the environmental search)."] : []
+  };
+}
+
+// Flooding from heavy rain: England (Environment Agency), Scotland (SEPA), Wales (NRW).
+function checkSurfaceWater(R) {
+  const base = {
+    id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)",
+    source: { name: "Environment Agency, Risk of Flooding from Surface Water (2025)", url: LINKS.floodLongTerm },
+    dataDate: "Checked live on " + today()
+  };
+  const country = R.place && R.place.ok && R.place.value ? R.place.value.country : null;
+  const actions = ["Ask the seller whether water has ever collected around the house or garden after heavy rain."];
+  if (country === "Scotland" || country === "Wales") {
+    if (!R.floodNational.ok) return unavailable(base, R, "floodNational");
+    const f = R.floodNational.value;
+    if (country === "Scotland") {
+      const l = f.surface;
+      return {
+        ...base, source: { name: "SEPA surface water and small watercourses flood map", url: LINKS.sepaMaps },
+        status: l ? LEVEL_STATUS[l] : "low",
+        found: l ? `${l} likelihood of flooding from heavy rain or small watercourses (${SEPA_CHANCE[l]}).`
+          : "Not in an area SEPA maps as at risk of flooding from heavy rain.",
+        meaning: "<p>Surface water flooding happens when heavy rain cannot drain away, even far from rivers.</p>",
+        actions: [`Check the street on the ${link(LINKS.sepaMaps, "SEPA flood maps")}.`, ...actions], seller: [], conveyancer: []
+      };
+    }
+    const z = f.surface ? Number((f.surface.match(/\d/) || [1])[0]) : 1;
+    return {
+      ...base, source: { name: "Natural Resources Wales, Flood Map for Planning (surface water)", url: LINKS.nrwMaps },
+      status: z >= 3 ? "high" : z === 2 ? "medium" : "low",
+      found: z >= 3 ? "High chance of flooding from heavy rain or small watercourses (Flood Zone 3)."
+        : z === 2 ? "Medium chance of flooding from heavy rain or small watercourses (Flood Zone 2)."
+        : "Low chance of flooding from heavy rain or small watercourses.",
+      meaning: "<p>Surface water flooding happens when heavy rain cannot drain away, even far from rivers.</p>",
+      actions: [`Check the street on the ${link(LINKS.nrwMaps, "Natural Resources Wales flood risk maps")}.`, ...actions], seller: [], conveyancer: []
+    };
+  }
+  if (!R.surfaceWater.ok) return unavailable(base, R, "surfaceWater");
+  const band = R.surfaceWater.value.band;
+  const text = {
+    High: "High chance of flooding from heavy rain: more than 3.3% (1 in 30) each year.",
+    Medium: "Medium chance of flooding from heavy rain: between 1% and 3.3% each year.",
+    Low: "Low chance of flooding from heavy rain: between 0.1% and 1% each year."
+  };
+  return {
+    ...base, status: band ? LEVEL_STATUS[band] : "low",
+    found: band ? text[band] : "Very low chance of flooding from heavy rain: less than 0.1% (1 in 1,000) each year.",
+    meaning: `<p>Surface water flooding happens when heavy rain cannot drain away, even far from rivers. It is the most
+      common type of flooding in England. The result is for the exact pin location: a garden or road can be at higher risk
+      than the house itself, so check the map around the property.</p>`,
+    actions: [`See the surface water map around the property on ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.`, ...actions],
+    seller: band ? ["Has water ever come into the house or collected in the garden after heavy rain?"] : [],
+    conveyancer: band === "High" ? ["A flood risk report (often part of the environmental search)."] : []
+  };
+}
+
+// Everyday places nearby.
+function checkAmenities(R) {
+  const base = {
+    id: "amenities", group: "living", title: "Schools, doctors, shops and transport",
+    source: { name: "OpenStreetMap contributors (Overpass API)", url: LINKS.osm },
+    dataDate: "Checked live on " + today()
+  };
+  if (!R.amenities.ok) return unavailable(base, R, "amenities");
+  const g = R.amenities.value;
+  const rows = AMENITY_TYPES.map(t => {
+    const list = g[t.key] || [];
+    const near = list[0];
+    const within = t.key === "bus_stop" ? 0.8 : 1;
+    const count = list.filter(x => x.distanceKm <= within).length;
+    return { t, near, count, within };
+  });
+  const summary = rows.filter(x => x.near && x.t.key !== "bus_stop").slice(0, 5)
+    .map(x => `${x.t.short} ${formatDistance(x.near.distanceKm)}`);
+  return {
+    ...base, status: "info",
+    found: summary.length ? "Nearest: " + summary.join(", ") + "." : "No schools, doctors, shops or stations found nearby in OpenStreetMap.",
+    details: `<div class="table-wrap"><table><thead><tr><th>Place</th><th>Nearest</th><th>Distance</th><th>Number nearby</th></tr></thead><tbody>${
+      rows.map(x => `<tr><td>${escapeHTML(x.t.label)}</td><td>${x.near ? escapeHTML(x.near.name || "Unnamed") : "None found"}</td>
+        <td>${x.near ? formatDistance(x.near.distanceKm) : "–"}</td><td>${x.count} within ${formatRadius(x.within * 1000)}</td></tr>`).join("")
+    }</tbody></table></div>`,
+    meaning: `<p>Straight-line distances from the pin, from OpenStreetMap, a map made by volunteers. It is usually complete
+      in towns but may miss some places. School catchment areas and Ofsted ratings are not shown: check them with the council
+      and on the Ofsted website.</p>`,
+    actions: ["Check school admission areas with the council before relying on a nearby school.", "Try the journey to work or school at rush hour."],
+    seller: [], conveyancer: []
   };
 }
 
@@ -1906,14 +2231,34 @@ function checkCrime(R) {
     ["anti-social-behaviour", "Antisocial behaviour"], ["violent-crime", "Violence and sexual offences"]
   ];
   const keyTotal = key.reduce((n, [k]) => n + (c.byType[k] || 0), 0);
+  // Compare the neighbourhood with England and Wales: 6.6 million police-recorded crimes in the year
+  // to March 2025 (ONS) for 61.8 million people (ONS mid-2024) = about 8.9 per 1,000 people per month.
+  const AVERAGE = 6.6e6 / 61.8e6 * 1000 / 12;
+  const area = R.crimeArea && R.crimeArea.ok ? R.crimeArea.value : null;
+  let compare = "", compareFound = "";
+  if (area) {
+    const ratio = area.perThousand / AVERAGE;
+    const word = ratio < 0.75 ? "below" : ratio <= 1.25 ? "around" : ratio <= 2 ? "above" : "well above";
+    compareFound = ` In this neighbourhood, crime is ${word} the England and Wales average.`;
+    compare = `<p><strong>Compared with England and Wales:</strong> in ${escapeHTML(area.name)} (${area.residents.toLocaleString("en-GB")} residents,
+      the census neighbourhood around the pin), police recorded ${area.crimes} crimes in ${monthName(area.month)}, not counting antisocial
+      behaviour. That is about <strong>${area.perThousand} per 1,000 residents</strong>, compared with an average of about
+      <strong>${AVERAGE.toFixed(1)}</strong> per 1,000 per month across England and Wales: <strong>${word} average</strong>.</p>`;
+  } else if (R.crimeArea && !R.crimeArea.ok) {
+    compare = "<p>The comparison with England and Wales could not be worked out right now.</p>";
+  }
   return {
     ...base, status: "info",
-    found: `${c.total} crimes reported within about 1 mile in ${monthName(c.month)}, including ${plural(c.byType["burglary"] || 0, "burglary", "burglaries")}.`,
-    details: `<div class="table-wrap"><table><thead><tr><th>Types most relevant to residents</th><th>Number</th></tr></thead><tbody>${
+    found: `${c.total} crimes reported within about 1 mile in ${monthName(c.month)}, including ${plural(c.byType["burglary"] || 0, "burglary", "burglaries")}.${compareFound}`,
+    details: `${compare}<div class="table-wrap"><table><thead><tr><th>Types most relevant to residents</th><th>Number</th></tr></thead><tbody>${
       key.map(([k, label]) => `<tr><td>${label}</td><td>${c.byType[k] || 0}</td></tr>`).join("")
     }<tr><td>All other types</td><td>${c.total - keyTotal}</td></tr></tbody></table></div>`,
     meaning: `<p>Town and city centres show higher numbers because of shops, transport hubs and nightlife. The figures are
-      most useful when you compare a few streets or areas you are considering.</p>`,
+      most useful when you compare a few streets or areas you are considering.</p>
+      <p>The comparison uses one month of street-level police data for the census neighbourhood (MSOA), its population from
+      the ${link(LINKS.nomisCensus, "2021 Census")}, and the national average from ${link(LINKS.onsCrime, "ONS crime figures")}
+      (6.6 million crimes, year to March 2025) and ${link(LINKS.onsPopulation, "ONS population estimates")} (61.8 million, mid-2024).
+      One month can vary, so treat it as a rough guide.</p>`,
     actions: [`Compare nearby areas, and find the local policing team, on ${link(LINKS.police, "police.uk")}.`],
     seller: [], conveyancer: []
   };
@@ -1991,15 +2336,16 @@ function checkNature(R) {
 }
 
 const GROUPS = [
-  { id: "flood", title: "Flooding", intro: "Flood risk from rivers and the sea, and any warnings in force today." },
+  { id: "flood", title: "Flooding", intro: "Flood risk from rivers, the sea and heavy rain, and any warnings in force today." },
   { id: "ground", title: "Ground and land", intro: "What is in or under the ground: mining, radon, landfill, contamination and ground movement." },
-  { id: "living", title: "Living environment", intro: "What it is like to live here: noise, air quality and crime." },
+  { id: "living", title: "Living environment", intro: "What it is like to live here: noise, air quality, nearby schools, doctors, shops and transport, and crime." },
   { id: "planning", title: "Planning and surroundings", intro: "Rules that affect changes to the property, and protected places nearby." }
 ];
 
 // Each check, the data it needs, and where it appears in the report.
 const CHECKS = [
-  { id: "flood", group: "flood", title: "Flooding from rivers and the sea", deps: ["planningPoint", "planningNearby", "floodWarnings"], build: checkFlood },
+  { id: "flood", group: "flood", title: "Flooding from rivers and the sea", deps: ["planningPoint", "planningNearby", "floodWarnings", "floodNational"], build: checkFlood },
+  { id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)", deps: ["surfaceWater", "floodNational"], build: checkSurfaceWater },
   { id: "coal", group: "ground", title: "Coal mining", deps: ["coal"], build: checkCoal },
   { id: "radon", group: "ground", title: "Radon gas", deps: ["radon"], build: checkRadon },
   { id: "landfill", group: "ground", title: "Old landfill sites", deps: ["landfill"], build: checkLandfill },
@@ -2007,7 +2353,8 @@ const CHECKS = [
   { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },
   { id: "noise", group: "living", title: "Noise: road, railway and aircraft", deps: ["noise", "railNoise"], build: checkNoise },
   { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air"], build: checkAir },
-  { id: "crime", group: "living", title: "Reported crime", deps: ["crime"], build: checkCrime },
+  { id: "amenities", group: "living", title: "Schools, doctors, shops and transport", deps: ["amenities"], build: checkAmenities },
+  { id: "crime", group: "living", title: "Reported crime", deps: ["crime", "crimeArea"], build: checkCrime },
   { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby"], build: checkPlanning },
   { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby"], build: checkNature }
 ];
@@ -2018,7 +2365,8 @@ const TASK_FN = Object.fromEntries(TASKS.map(([key, , fn]) => [key, fn]));
 const TOPIC_ICONS = {
   flood: ["🌊", "Flood"], coal: ["⛏️", "Coal"], radon: ["☢️", "Radon"], landfill: ["🗑️", "Landfill"],
   contamination: ["🧪", "Contamination"], landslides: ["⛰️", "Ground"], noise: ["🔊", "Noise"],
-  air: ["💨", "Air"], crime: ["🚓", "Crime"], planning: ["🏛️", "Planning"], nature: ["🌳", "Nature"]
+  air: ["💨", "Air"], crime: ["🚓", "Crime"], planning: ["🏛️", "Planning"], nature: ["🌳", "Nature"],
+  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"]
 };
 
 // Every check waits for the nearest-postcode lookup, which tells us the country.
@@ -2028,7 +2376,7 @@ CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
 // "Check yourself" and links to the right national service, instead of a
 // misleading "No issue found".
 const COVERAGE = {
-  flood: ["England"], landfill: ["England"], contamination: ["England"], noise: ["England"],
+  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landfill: ["England"], contamination: ["England"], noise: ["England"],
   air: ["England"], planning: ["England"], nature: ["England"],
   crime: ["England", "Wales", "Northern Ireland"],
   coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"]
@@ -2165,7 +2513,8 @@ window.addEventListener("popstate", () => {
     const r = params.get("r");
     if (r && [...$("radius").options].some(o => o.value === r)) $("radius").value = r;
     setLocation(params.get("lat"), params.get("lon"), params.get("name") || null);
-    runChecks({ fromHistory: true });
+    const snap = selected && findSnapshot({ lat: selected.lat, lon: selected.lon, radius: Number($("radius").value) });
+    if (snap) showSnapshot(snap, { fromHistory: true }); else runChecks({ fromHistory: true });
   } else {
     showSearchView();
   }
@@ -2213,9 +2562,108 @@ function finishRun() {
   $("checklistBox").innerHTML = buildChecklist(orderedResults());
   restoreTicks();
   renderSources();
+  renderNotes();
+  renderQr();
   reportData = buildReportData();
-  saveCurrentReport();
+  if (!run.snapshot) { saveCurrentReport(); saveSnapshot(); }
   setExportEnabled(true);
+}
+
+/* ---------- saved results, so a saved property reopens instantly ---------- */
+const snapKey = key => "plc-snap:" + key;
+
+function saveSnapshot() {
+  const R = run.R;
+  const nearby = R.planningNearby && R.planningNearby.ok
+    ? { ok: true, value: R.planningNearby.value.filter(e => ["control-of-major-accident-hazards-site", "contaminated-land"].includes(e.dataset)) }
+    : null;
+  store.set(snapKey(reportKey(run.loc)), {
+    savedAt: new Date().toISOString(), loc: run.loc,
+    results: orderedResults(),
+    R: { place: R.place, landfill: R.landfill, landslides: R.landslides, planningNearby: nearby }
+  });
+}
+
+// Show a saved report straight away, without asking the data services again.
+function showSnapshot(snap, options = {}) {
+  const loc = snap.loc;
+  run = { loc, R: { loc, ...snap.R }, results: {}, done: false, snapshot: snap };
+  snap.results.forEach(c => { run.results[c.id] = c; });
+  reportData = null;
+  featureLayer.clearLayers();
+  const url = reportUrl(loc);
+  if (!options.fromHistory) history.replaceState({ view: "report" }, "", url);
+  shownSearch = location.search;
+  lastRunKey = reportKey(loc);
+  updateStickyRun();
+  renderSkeleton(loc);
+  CHECKS.forEach(c => {
+    const slot = $("slot-" + c.id);
+    const res = run.results[c.id];
+    if (!slot) return;
+    // Topics added to the app after this property was saved.
+    const shown = res || { id: c.id, group: c.group, title: c.title, status: "manual",
+      found: "Not included in these saved results. Press “Refresh with the latest data” to check it.",
+      actions: [], seller: [], conveyancer: [], source: { name: "", url: "" } };
+    if (!res) run.results[c.id] = shown;
+    slot.innerHTML = renderCheck(shown);
+    prepareTables(slot, c.title);
+  });
+  replotFeatures();
+  $("toolbar").classList.remove("hidden");
+  $("reportNav").classList.remove("hidden");
+  finishRun();
+}
+
+function findSnapshot(loc) {
+  return store.get(snapKey(reportKey(loc)), null);
+}
+
+$("report").addEventListener("click", e => {
+  if (e.target.closest("#refreshBtn") && run) runChecks({ fromHistory: true });
+});
+
+/* ---------- private notes ---------- */
+const notesKey = () => "plc-notes:" + reportKey(run.loc);
+
+function renderNotes() {
+  const text = store.get(notesKey(), "");
+  $("notesBox").innerHTML = `
+    <section class="group notes" id="notes">
+      <h2><label for="notesText" style="display:inline;font-size:inherit">Your notes</label>${infoButton("info-notes", "About notes")}</h2>
+      ${infoBox("info-notes", "<p>Private notes for this property, for example viewing times or questions. Saved only on this device, and included when you print or download the report.</p>")}
+      <textarea id="notesText" rows="4" placeholder="e.g. Viewing on Saturday at 10am. Ask about the damp patch in the back bedroom."></textarea>
+      <div class="notes-print" aria-hidden="true"></div>
+    </section>`;
+  $("notesText").value = text;
+  $("notesBox").querySelector(".notes-print").textContent = text;
+}
+
+let notesTimer = null;
+document.addEventListener("input", e => {
+  if (e.target.id !== "notesText" || !run) return;
+  const text = e.target.value;
+  $("notesBox").querySelector(".notes-print").textContent = text;
+  clearTimeout(notesTimer);
+  notesTimer = setTimeout(() => { store.set(notesKey(), text); renderSaved(); }, 400);
+});
+
+/* ---------- QR code on printouts ---------- */
+function renderQr() {
+  const box = $("qrBox");
+  if (!box) return;
+  const url = location.origin + location.pathname + "?" + new URLSearchParams({
+    lat: Number(run.loc.lat).toFixed(6), lon: Number(run.loc.lon).toFixed(6), r: run.loc.radius
+  });
+  try {
+    const qr = qrcode(0, "M");
+    qr.addData(url);
+    qr.make();
+    box.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true }) +
+      "<p>Scan to open the live report with the latest data.</p>";
+  } catch (e) {
+    box.innerHTML = "";   // the QR library did not load (for example offline); the printout works without it
+  }
 }
 
 // Where each result came from, and how current the data is.
@@ -2237,7 +2685,7 @@ function orderedResults() {
 }
 
 function setExportEnabled(on) {
-  ["downloadHtml", "downloadJson", "printReport"].forEach(id => { $(id).disabled = !on; });
+  ["downloadHtml", "downloadJson", "printReport", "printSummary"].forEach(id => { $(id).disabled = !on; });
 }
 
 // Phones: keep "Check this property" at the bottom of the screen until it is pressed,
@@ -2383,6 +2831,7 @@ function renderSkeleton(loc) {
           is no risk. Results are for the pin location. Tap a heading to open or close a topic, and the
           <strong>i</strong> buttons for explanations.</p>`)}
       <div id="summaryBox" aria-live="polite"></div>
+      <div id="qrBox" class="qr-box print-only"></div>
     </div>
 
     <div class="details-start">
@@ -2393,6 +2842,8 @@ function renderSkeleton(loc) {
           ${CHECKS.filter(c => c.group === g.id).map(c => `<div class="slot" id="slot-${c.id}">${loadingCard(c)}</div>`).join("")}
         </section>`).join("")}
     </div>
+
+    <div id="notesBox"></div>
 
     <div id="checklistBox">
       <section class="group checklist" id="checklist">
@@ -2444,7 +2895,11 @@ function renderSummary() {
       Still go through the checklist at the end.</p>`;
   }
 
+  const savedNote = run.snapshot ? `<div class="notice saved-note">Saved results from
+      <strong>${escapeHTML(new Date(run.snapshot.savedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }))}</strong>.
+      <button class="primary small-btn" type="button" id="refreshBtn">Refresh with the latest data</button></div>` : "";
   $("summaryBox").innerHTML = `
+    ${savedNote}
     ${verdict}
     <div class="counts">
       <div class="count high"><strong>${n("high")}</strong><span>Look into this</span></div>
@@ -2501,7 +2956,7 @@ function buildChecklist(checks) {
     ...checks.flatMap(c => c.conveyancer || [])
   ]).map(escapeHTML);
   const yourself = [
-    `Check flooding from surface water and groundwater: ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.`,
+    `Check flooding from groundwater and reservoirs: ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.`,
     `See the full noise maps for your street: ${link(LINKS.noise, "Defra noise maps")}.`,
     `Find the energy performance certificate (EPC): ${link(LINKS.epc, "GOV.UK")}.`,
     `Check mobile and broadband coverage: ${link(LINKS.ofcom, "Ofcom")}.`,
@@ -2602,10 +3057,21 @@ function saveCurrentReport() {
     postcode: p ? p.postcode : "", district: p ? p.admin_district : "",
     checks: orderedResults().map(c => ({ id: c.id, title: c.title, status: c.status, found: c.found }))
   };
-  const saved = store.get(SAVED_KEY, []).filter(s => s.key !== entry.key);
-  saved.unshift(entry);
-  store.set(SAVED_KEY, saved.slice(0, MAX_SAVED));
+  const all = store.get(SAVED_KEY, []);
+  const old = all.find(s => s.key === entry.key);
+  if (old) { entry.starred = !!old.starred; if (old.name && old.renamed) { entry.name = old.name; entry.renamed = true; } }
+  const saved = [entry, ...all.filter(s => s.key !== entry.key)];
+  store.set(SAVED_KEY, trimSaved(saved));
   renderSaved();
+}
+
+// Keep every starred property; keep the most recent others up to MAX_SAVED in total.
+function trimSaved(list) {
+  const starred = list.filter(s => s.starred);
+  const others = list.filter(s => !s.starred).slice(0, Math.max(0, MAX_SAVED - starred.length));
+  const keep = new Set([...starred, ...others].map(s => s.key));
+  list.filter(s => !keep.has(s.key)).forEach(s => { try { localStorage.removeItem(snapKey(s.key)); } catch (e) {} });
+  return list.filter(s => keep.has(s.key));
 }
 
 function countChips(checks) {
@@ -2614,13 +3080,16 @@ function countChips(checks) {
 }
 
 function renderSaved() {
-  const saved = store.get(SAVED_KEY, []);
+  const raw = store.get(SAVED_KEY, []);
+  const saved = Array.isArray(raw) ? [...raw].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)) : [];
   $("savedPanel").classList.toggle("hidden", !saved.length);
   $("savedList").innerHTML = saved.map(s => `
     <li>
       <label class="cmp" title="Select to compare"><input type="checkbox" data-compare="${escapeHTML(s.key)}" aria-label="Compare ${escapeHTML(s.name)}"></label>
+      <button class="star-btn" type="button" data-star="${escapeHTML(s.key)}" aria-pressed="${s.starred ? "true" : "false"}"
+        title="${s.starred ? "Remove from shortlist" : "Add to shortlist"}" aria-label="Shortlist ${escapeHTML(s.name)}">${s.starred ? "★" : "☆"}</button>
       <div class="saved-main">
-        <a href="${escapeHTML(reportUrl(s))}">${escapeHTML(s.name)}</a>
+        <a href="${escapeHTML(reportUrl(s))}">${escapeHTML(s.name)}</a>${store.get("plc-notes:" + s.key, "") ? ' <span class="note-mark" title="Has notes">📝</span>' : ""}
         <small>${s.postcode ? escapeHTML(s.postcode) + " · " : ""}${s.district ? escapeHTML(s.district) + " · " : ""}checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}</small>
         <div class="mini-counts">${countChips(s.checks)}</div>
       </div>
@@ -2649,6 +3118,7 @@ function renameSaved(key, newName) {
   const item = saved.find(s => s.key === key);
   if (!item) return;
   item.name = name;
+  item.renamed = true;
   store.set(SAVED_KEY, saved);
   // If this property's report is open, update it too.
   if (run && reportKey(run.loc) === key) {
@@ -2686,10 +3156,61 @@ $("savedList").addEventListener("click", e => {
     input.addEventListener("blur", () => finish(true));
     return;
   }
+  const star = e.target.closest("[data-star]");
+  if (star) {
+    const saved = store.get(SAVED_KEY, []);
+    const item = saved.find(s => s.key === star.dataset.star);
+    if (item) { item.starred = !item.starred; store.set(SAVED_KEY, saved); renderSaved(); }
+    return;
+  }
   const btn = e.target.closest("[data-remove]");
   if (!btn) return;
   store.set(SAVED_KEY, store.get(SAVED_KEY, []).filter(s => s.key !== btn.dataset.remove));
+  try { localStorage.removeItem(snapKey(btn.dataset.remove)); } catch (err) {}
   renderSaved();
+});
+
+/* ---------- move the saved list to another device (a small file; no account) ---------- */
+$("exportBtn").addEventListener("click", () => {
+  const saved = store.get(SAVED_KEY, []);
+  const pick = prefix => Object.fromEntries(saved.map(s => [s.key, store.get(prefix + s.key, null)]).filter(([, v]) => v != null && v !== ""));
+  const data = {
+    app: "property-location-check", format: 1, exportedAt: new Date().toISOString(),
+    saved, snapshots: pick("plc-snap:"), notes: pick("plc-notes:"), ticks: pick("plc-ticks:")
+  };
+  downloadFile("property-check-saved-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify(data), "application/json");
+  $("transferHelp").textContent = `Exported ${plural(saved.length, "property", "properties")}. Open the file on the other device with “Import list”.`;
+});
+
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", async e => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || data.app !== "property-location-check" || !Array.isArray(data.saved)) throw new Error("not a Property Location Check file");
+    const mine = store.get(SAVED_KEY, []);
+    let added = 0;
+    data.saved.forEach(item => {
+      if (!item || typeof item.key !== "string" || !Number.isFinite(Number(item.lat))) return;
+      const i = mine.findIndex(s => s.key === item.key);
+      if (i < 0) { mine.push(item); added++; }
+      else if (new Date(item.savedAt) > new Date(mine[i].savedAt)) mine[i] = { ...item, starred: item.starred || mine[i].starred };
+      const snap = data.snapshots && data.snapshots[item.key];
+      const mySnap = store.get(snapKey(item.key), null);
+      if (snap && (!mySnap || new Date(snap.savedAt) > new Date(mySnap.savedAt))) store.set(snapKey(item.key), snap);
+      const note = data.notes && data.notes[item.key];
+      if (note && !store.get("plc-notes:" + item.key, "")) store.set("plc-notes:" + item.key, String(note));
+      const ticks = data.ticks && data.ticks[item.key];
+      if (Array.isArray(ticks)) store.set("plc-ticks:" + item.key, [...new Set([...store.get("plc-ticks:" + item.key, []), ...ticks])]);
+    });
+    store.set(SAVED_KEY, trimSaved(mine.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))));
+    renderSaved();
+    $("transferHelp").textContent = `Imported: ${plural(added, "new property", "new properties")}; others were updated where the file was newer.`;
+  } catch (err) {
+    $("transferHelp").textContent = "That file could not be imported: " + err.message + ".";
+  }
 });
 
 $("compareBtn").addEventListener("click", () => {
@@ -2758,7 +3279,9 @@ $("downloadHtml").addEventListener("click", () => {
   const copy = $("report").cloneNode(true);
   copy.querySelectorAll("details").forEach(d => d.setAttribute("open", ""));
   copy.querySelectorAll(".info-body").forEach(d => d.removeAttribute("hidden"));
-  copy.querySelectorAll(".info-btn, .info-row, [data-retry]").forEach(b => b.remove());
+  copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button").forEach(b => b.remove());
+  copy.querySelectorAll("#notesText").forEach(t => t.remove());
+  copy.querySelectorAll(".notes-print").forEach(d => { d.removeAttribute("aria-hidden"); d.classList.add("notes-download"); });
   copy.querySelectorAll("input[data-tick]").forEach(b => { if (b.checked) b.setAttribute("checked", ""); });
   const loc = reportData.location;
   const mapBox = copy.querySelector("#reportMap");
@@ -2797,6 +3320,13 @@ window.addEventListener("afterprint", () => {
 });
 
 $("printReport").addEventListener("click", () => window.print());
+
+// Short printout: cover, summary, notes and checklist only.
+$("printSummary").addEventListener("click", () => {
+  document.body.classList.add("print-summary");
+  window.print();
+});
+window.addEventListener("afterprint", () => document.body.classList.remove("print-summary"));
 
 /* =========================================================
    COMFORT: larger text, install as an app
@@ -2847,7 +3377,8 @@ window.addEventListener("load", async () => {
 
   if (params.has("lat") && params.has("lon")) {
     setLocation(params.get("lat"), params.get("lon"), params.get("name") || null);
-    runChecks({ fromLoad: true });
+    const snap = selected && findSnapshot({ lat: selected.lat, lon: selected.lon, radius: Number($("radius").value) });
+    if (snap) showSnapshot(snap); else runChecks({ fromLoad: true });
   } else if (params.has("postcode")) {
     await lookupPostcode(params.get("postcode"));
     if (selected) runChecks({ fromLoad: true });

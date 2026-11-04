@@ -5,7 +5,8 @@ England. Pick a location on the map and it checks official data for:
 
 | Check | Source |
 |---|---|
-| Flooding from rivers and the sea (Flood Zones 1–3) | Environment Agency, via planning.data.gov.uk |
+| Flooding from rivers and the sea (Flood Zones 1–3) | Environment Agency, via planning.data.gov.uk; SEPA (Scotland); Natural Resources Wales |
+| Flooding from heavy rain (surface water) | Environment Agency (2025); SEPA (Scotland); Natural Resources Wales |
 | Current flood warnings | Environment Agency real-time flood monitoring |
 | Radon gas | BGS / UKHSA Radon Indicative Atlas |
 | Coal mining | Mining Remediation Authority (formerly the Coal Authority) |
@@ -16,7 +17,8 @@ England. Pick a location on the map and it checks official data for:
 | Landslides | BGS National Landslide Database |
 | Planning restrictions and heritage | planning.data.gov.uk |
 | Protected nature sites | Natural England, via planning.data.gov.uk |
-| Reported crime | data.police.uk |
+| Reported crime, and crime per 1,000 residents compared with England and Wales | data.police.uk; ONS boundaries; Census 2021 via Nomis; ONS crime and population figures |
+| Schools, GP surgeries, pharmacies, supermarkets, stations, bus stops | OpenStreetMap (Overpass API) |
 
 Each result is given a plain-English rating (Look into this / Worth checking /
 No issue found / For information / Check yourself), with what it means and what
@@ -49,6 +51,9 @@ official checkers.
 - **Back button:** returns from a report to the search and map, and closes the full-screen map.
 - **Fair ratings:** old landfill and landslides are rated by distance (very close sites stand out; distant ones are for information).
 - **Privacy:** no account, cookies or tracking; see "Privacy: what is sent where" at the bottom of the page.
+- **Saved properties:** reopen instantly from saved results (with a refresh button), private notes, a starred shortlist,
+  and export/import to move the list to another device.
+- **Printouts:** a short "Print summary" option, and a QR code that opens the live report.
 - **Comfort:** dark mode follows your device setting; **A+** makes text larger; **install as an app** on your phone's
   home screen (on iPhone: Share, then Add to Home Screen).
 
