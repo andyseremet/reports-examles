@@ -364,7 +364,11 @@ const LINKS = {
   epc: "https://www.gov.uk/find-energy-certificate",
   ofcom: "https://www.ofcom.org.uk/mobile-coverage-checker",
   historicEngland: "https://historicengland.org.uk/listing/the-list/",
-  magic: "https://magic.defra.gov.uk/"
+  magic: "https://magic.defra.gov.uk/",
+  whoNoise: "https://www.who.int/europe/publications/i/item/9789289053563",
+  whoAir: "https://www.who.int/publications/i/item/9789240034228",
+  whoRadon: "https://www.who.int/publications/i/item/9789241547673",
+  ukRadonLevels: "https://www.ukradon.org/information/level"
 };
 
 const PLANNING_AT_POINT = [
@@ -1206,7 +1210,20 @@ function checkRadon(R) {
 
   return {
     ...base, status, found,
-    meaning: `<p>Radon is a natural radioactive gas that comes up from the ground. You cannot see or smell it. Long-term exposure
+    details: `<div class="table-wrap"><table>
+        <thead><tr><th>Measure</th><th>This area</th><th>WHO recommendation</th><th>UK guidance</th></tr></thead>
+        <tbody><tr>
+          <td>Radon level inside homes</td>
+          <td>Not measured for this home. ${cls <= 1 ? "Fewer than 1" : (bands[cls] || "Some")} in every 100 homes nearby are estimated to be above the UK Action Level.</td>
+          <td>Below 100 Bq/m³</td>
+          <td>Action Level 200 Bq/m³; Target Level 100 Bq/m³</td>
+        </tr></tbody>
+      </table></div>`,
+    meaning: `<p>Bq/m³ (becquerels per cubic metre) measures how much radon is in the air. The
+      ${link(LINKS.whoRadon, "WHO Handbook on Indoor Radon")} recommends homes stay below 100 Bq/m³. In the UK, the
+      ${link(LINKS.ukRadonLevels, "UK Health Security Agency")} advises fixing homes at or above 200 Bq/m³ (the Action Level),
+      and aiming for below 100 Bq/m³ (the Target Level). Only a test inside the home can measure its level.</p>
+      <p>Radon is a natural radioactive gas that comes up from the ground. You cannot see or smell it. Long-term exposure
       is the second biggest cause of lung cancer in the UK after smoking. It is easy to test for, and high levels can
       usually be reduced at modest cost, for example with a small fan under the floor.</p>
       <p>This is the <em>highest</em> level anywhere in the surrounding 1 km square, so the property itself may be lower.</p>`,
@@ -1364,7 +1381,7 @@ function noiseLevelStatus(v, who) {
 function checkNoise(R) {
   const base = {
     id: "noise", group: "living", title: "Noise: road, railway and aircraft",
-    source: { name: "Defra strategic noise mapping 2022 (Round 4) for road and rail; airport locations for aircraft", url: LINKS.noise },
+    source: { name: "Defra strategic noise mapping 2022 (Round 4) for road and rail; airport locations for aircraft; WHO Environmental Noise Guidelines (2018)", url: LINKS.noise },
     dataDate: "Noise maps published by Defra in 2022"
   };
   if (!R.noise.ok && !R.railNoise.ok) return unavailable(base, R, "noise");
@@ -1391,25 +1408,33 @@ function checkNoise(R) {
     nearAirports.length ? `Aircraft: ${nearAirports[0].name} Airport is ${formatDistance(nearAirports[0].distanceKm)} away` : "Aircraft: no major airport nearby"
   ].join(" · ") + ".";
 
-  const cell = (src, key) => {
+  const cell = (src, key, who) => {
     if (!src || (src.unavailable || []).includes(key)) return "Not available";
     const v = src[key];
-    return v == null ? "Quiet" : `${v} dB <small>(${noiseComparison(v)})</small>`;
+    if (v == null) return "Quiet";
+    const limit = who[key];
+    const flag = limit != null ? (v > limit ? " <strong>· above WHO</strong>" : " · within WHO") : "";
+    return `${v} dB <small>(${noiseComparison(v)}${flag})</small>`;
   };
+  const whoCell = key => WHO_NOISE.road[key] != null
+    ? `Below ${WHO_NOISE.road[key]} dB (road)<br>Below ${WHO_NOISE.rail[key]} dB (railway)`
+    : "<small>No separate WHO figure</small>";
   const row = period => `<tr><td><strong>${period.name}</strong><br><small>${period.when}</small></td>
-      <td>${cell(road, period.key)}</td>
-      <td>${cell(rail, period.key)}</td></tr>`;
+      <td>${cell(road, period.key, WHO_NOISE.road)}</td>
+      <td>${cell(rail, period.key, WHO_NOISE.rail)}</td>
+      <td>${whoCell(period.key)}</td></tr>`;
 
   const airportText = nearAirports.length
     ? `<p><strong>Aircraft:</strong> ${nearAirports.map(a => `${escapeHTML(a.name)} Airport is about ${formatDistance(a.distanceKm)} away`).join("; ")}.
-        Whether you hear aircraft depends mostly on the flight paths. Check the airport's noise maps and night-flight rules.</p>`
+        Whether you hear aircraft depends mostly on the flight paths. Check the airport's noise maps and night-flight rules.
+        The WHO recommends aircraft noise below ${WHO_NOISE.aircraft.lden} dB (24-hour average) and ${WHO_NOISE.aircraft.lnight} dB at night.</p>`
     : `<p><strong>Aircraft:</strong> no major airport within its usual noise area. The nearest is ${escapeHTML(airports[0].name)}
         Airport, about ${formatDistance(airports[0].distanceKm)} away.</p>`;
 
   return {
     ...base, status, found,
     details: `<div class="table-wrap"><table>
-        <thead><tr><th>Time of day</th><th>Road</th><th>Railway</th></tr></thead>
+        <thead><tr><th>Time of day</th><th>Road</th><th>Railway</th><th>WHO recommendation</th></tr></thead>
         <tbody>${NOISE_PERIODS.map(p => row(p)).join("")}</tbody>
       </table></div>${airportText}`,
     meaning: `<p>The levels are Defra's computer-modelled averages for 2021 traffic, at first-floor height on the side of the building
@@ -1458,12 +1483,12 @@ function checkAir(R) {
     if (m.from) base.dataDate = `Model average ${new Date(m.from).toLocaleDateString("en-GB")} to ${new Date(m.to).toLocaleDateString("en-GB")}`;
     const verdict = (v, who, legal) => v == null ? "Not available"
       : v > legal ? "Above UK legal limit"
-      : v > who ? "Within UK legal limit, above health guideline"
-      : "Within health guideline";
+      : v > who ? "Within UK limit, above WHO"
+      : "Within WHO";
     details += `<p><strong>Area estimate</strong> (average over the last 3 months):</p>
-      <div class="table-wrap"><table><thead><tr><th>Pollutant</th><th>Level</th><th>Result</th></tr></thead><tbody>
-        <tr><td>Fine particles (PM2.5)</td><td>${m.pm25 ?? "–"} µg/m³</td><td>${verdict(m.pm25, 5, 20)}</td></tr>
-        <tr><td>Nitrogen dioxide (NO₂), mainly from traffic</td><td>${m.no2 ?? "–"} µg/m³</td><td>${verdict(m.no2, 10, 40)}</td></tr>
+      <div class="table-wrap"><table><thead><tr><th>Pollutant</th><th>Level here</th><th>WHO recommendation</th><th>UK legal limit</th><th>Result</th></tr></thead><tbody>
+        <tr><td>Fine particles (PM2.5)</td><td>${m.pm25 ?? "–"} µg/m³</td><td>Below 5 µg/m³</td><td>20 µg/m³</td><td>${verdict(m.pm25, 5, 20)}</td></tr>
+        <tr><td>Nitrogen dioxide (NO₂), mainly from traffic</td><td>${m.no2 ?? "–"} µg/m³</td><td>Below 10 µg/m³</td><td>40 µg/m³</td><td>${verdict(m.no2, 10, 40)}</td></tr>
       </tbody></table></div>`;
   } else {
     details += "<p>The area pollution estimate could not be retrieved.</p>";
@@ -1472,8 +1497,8 @@ function checkAir(R) {
   return {
     ...base, status, found, details,
     meaning: `<p>Councils declare an Air Quality Management Area where pollution, usually from traffic, is above legal limits. They must then have a plan to reduce it.</p>
-      <p>The area estimate is compared with the World Health Organization health guidelines (PM2.5: 5, NO₂: 10 µg/m³) and UK legal
-      limits (PM2.5: 20, NO₂: 40 µg/m³). Most of England is above the health guideline. The model works on squares about 10 km
+      <p>The WHO recommendations are the yearly averages in the ${link(LINKS.whoAir, "WHO Global Air Quality Guidelines (2021)")}.
+      UK legal limits are higher. Most of England is above the WHO level. The model works on squares about 10 km
       across, so it describes the wider area, not your street. Levels beside busy roads are usually higher.</p>`,
     actions: [`See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`],
     seller: [], conveyancer: []
