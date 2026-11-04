@@ -29,7 +29,21 @@ body {margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);backgrou
 :focus-visible {outline:3px solid var(--focus);outline-offset:2px}
 header {background:var(--navy);color:#fff;padding:22px 5%}
 header h1 {margin:0;font-size:26px}
-header p {margin:6px 0 0;color:#cbd8e5;max-width:760px}
+header .info-body {color:#dce6f0;background:#1b3550;border:0;max-width:760px}
+.title-row {display:flex;align-items:center;gap:10px}
+/* "i" buttons: explanations stay hidden until the user asks */
+.info-btn {
+  width:24px;height:24px;padding:0;border-radius:50%;flex:none;
+  border:2px solid var(--blue);background:#fff;color:var(--blue);
+  font:bold 14px/20px Georgia,"Times New Roman",serif;font-style:italic;text-align:center;vertical-align:middle;
+}
+.info-btn[aria-expanded="true"] {background:var(--blue);color:#fff}
+header .info-btn {border-color:#cbd8e5;background:transparent;color:#fff}
+header .info-btn[aria-expanded="true"] {background:#fff;color:var(--navy)}
+.info-body {font-size:14px;background:#f3f7fb;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:8px 0 12px}
+.info-body p {margin:4px 0}
+.info-row {display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted)}
+h2 .info-btn,h3 .info-btn,p .info-btn {margin-left:6px}
 .container {max-width:1100px;margin:auto;padding:22px}
 .panel {background:#fff;border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px;box-shadow:0 2px 6px #10243a0a}
 h2 {font-size:20px;margin:0 0 12px;color:var(--navy)}
@@ -80,7 +94,8 @@ abbr[title] {text-decoration:underline dotted;cursor:help}
 .map-ctrl.open .map-pop {display:block}
 .leaflet-left .map-pop {width:min(400px, calc(100vw - 80px))}
 .leaflet-right .map-ctrl {display:flex;flex-direction:column;align-items:flex-end}
-.leaflet-right .map-pop {width:230px}
+.leaflet-right .map-pop {width:250px;max-height:330px;overflow:auto}
+.map-pop .switch input[type=radio] {width:16px;height:16px}
 .map-pop h3 {font-size:14px;margin:0 0 6px}
 .map-pop .switch {display:flex;gap:8px;align-items:center;font-weight:normal;font-size:14px;margin:0 0 10px;cursor:pointer}
 .map-pop .switch input {width:18px;height:18px;margin:0}
@@ -175,6 +190,8 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
   a {color:#222;text-decoration:none}
   .details-start {break-before:page}
   details.check,.checklist li,.priority li {break-inside:avoid}
+  .info-btn {display:none}
+  .info-body[hidden] {display:block!important}
   .leaflet-control-zoom {display:none}
   @page {size:A4;margin:14mm}
 }
@@ -184,9 +201,13 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 <body>
 
 <header>
-  <h1>Property Location Check</h1>
-  <p>Thinking of buying a house or land in England? Check flooding, radon, coal mining, noise,
-     air quality, old landfill, planning restrictions and more, free, using official data.</p>
+  <div class="title-row">
+    <h1>Property Location Check</h1>
+    <button class="info-btn" type="button" aria-expanded="false" aria-controls="info-about" aria-label="About this tool">i</button>
+  </div>
+  <div class="info-body" id="info-about" hidden>Thinking of buying a house or land in England? Check flooding, radon,
+     coal mining, noise, air quality, old landfill, planning restrictions and more, free, using official government
+     and open data.</div>
 </header>
 
 <main class="container">
@@ -194,10 +215,13 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
   <!-- ===================== FIND THE PROPERTY ===================== -->
   <section class="panel" id="searchPanel" aria-labelledby="searchTitle">
     <div class="step-label">Step 1 of 2</div>
-    <h2 id="searchTitle">Find the property</h2>
-
-    <p class="help" id="qHelp" style="margin-top:0">Use the search <span aria-hidden="true">🔍</span> at the top left of the map to find a
-       postcode, address or place, or tap the map to drop a pin. The layers button at the top right shows road noise and the map key.</p>
+    <h2 id="searchTitle">Find the property<button class="info-btn" type="button" aria-expanded="false" aria-controls="qHelp" aria-label="How to find the property">i</button></h2>
+    <div class="info-body" id="qHelp" hidden>
+      <p>Use the search button <span aria-hidden="true">🔍</span> at the top left of the map to find a postcode, address or place,
+         or tap the map to drop a pin.</p>
+      <p>The layers button at the top right changes the background map (satellite, street, topographic), shows road noise,
+         and explains the map symbols.</p>
+    </div>
 
     <!-- Moved into the map's top-left search button when the page loads. -->
     <div class="search-box" id="searchBox">
@@ -217,9 +241,11 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 
     <div id="confirm" class="confirm hidden" aria-live="polite">
       <div class="step-label">Step 2 of 2</div>
-      <p><strong>Is the pin on the right property?</strong>
-         <span id="confirmText"></span><br>
-         If not, drag the pin, or click the exact spot on the map.</p>
+      <p><strong>Is the pin on the right property?</strong><button class="info-btn" type="button" aria-expanded="false" aria-controls="info-confirm" aria-label="Why check the pin">i</button><br>
+         <span id="confirmText"></span></p>
+      <div class="info-body" id="info-confirm" hidden>If not, drag the pin, or tap the exact spot on the map. A postcode covers
+        several homes, and a place name puts the pin in the middle of the area, so always check the pin is on the right building
+        or plot. All results are for the pin location.</div>
       <button class="big" id="runBtn" type="button">Check this property</button>
     </div>
 
@@ -269,17 +295,19 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
     </div>
 
     <div id="report">
-      <h2>What you will get</h2>
+      <h2>Your report<button class="info-btn" type="button" aria-expanded="false" aria-controls="info-howto" aria-label="What the report includes">i</button></h2>
+      <p>Your report will appear here.</p>
+      <div class="info-body" id="info-howto" hidden>
       <p>A report for the exact spot you choose, grouped into <strong>Flooding</strong>, <strong>Ground and land</strong>,
          <strong>Living environment</strong> and <strong>Planning and surroundings</strong>. It ends with a checklist of
          questions for the seller and searches to ask your conveyancer for.</p>
-      <h3>How to read the results</h3>
       <ul class="legend-list">
         <li><span class="chip high">Look into this</span> Something that could affect value, insurance, health or safety. Investigate before you commit.</li>
         <li><span class="chip medium">Worth checking</span> Something nearby or at a moderate level. Ask questions or order a specialist search.</li>
         <li><span class="chip low">No issue found</span> Nothing found in the data checked. This is not a guarantee.</li>
         <li><span class="chip info">For information</span> Useful local facts, for example planning restrictions.</li>
       </ul>
+      </div>
     </div>
   </section>
 
@@ -287,7 +315,7 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 
 <footer>
   Property Location Check · Contains public sector information licensed under the Open Government Licence v3.0 ·
-  © OpenStreetMap contributors · Air quality model: Copernicus Atmosphere Monitoring Service via Open-Meteo ·
+  Map data © OpenStreetMap contributors, © Esri and © CARTO · Air quality model: Copernicus Atmosphere Monitoring Service via Open-Meteo ·
   Postcode data: Office for National Statistics via postcodes.io
 </footer>
 
@@ -507,6 +535,67 @@ const ICONS = {
 
 let mapControls = [];
 
+/* ---------- Background maps ----------
+   Satellite is the default. If a provider stops serving tiles, the map
+   switches to the next one automatically. */
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+const ESRI_CREDIT = 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>';
+const BASEMAPS = [
+  { id: "satellite", name: "Satellite (with roads and names)",
+    url: ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}", maxNativeZoom: 19,
+    attribution: ESRI_CREDIT + ", Maxar, Earthstar Geographics",
+    labels: [ESRI + "Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+             ESRI + "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"] },
+  { id: "osm", name: "Street map (OpenStreetMap)",
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", maxNativeZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' },
+  { id: "esriStreets", name: "Street map (Esri)",
+    url: ESRI + "World_Street_Map/MapServer/tile/{z}/{y}/{x}", maxNativeZoom: 19,
+    attribution: ESRI_CREDIT + " — Source: Esri, HERE, Garmin, OpenStreetMap contributors and others" },
+  { id: "topo", name: "Topographic (Esri)",
+    url: ESRI + "World_Topo_Map/MapServer/tile/{z}/{y}/{x}", maxNativeZoom: 19,
+    attribution: ESRI_CREDIT + " — Source: Esri, HERE, Garmin, OpenStreetMap contributors and others" },
+  { id: "light", name: "Light map (CARTO)",
+    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", maxNativeZoom: 20,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' }
+];
+let currentBasemap = null;
+let basemapLayers = [];
+
+// Build the tile layers for one background map (plus labels for satellite).
+function makeBasemapLayers(bm) {
+  const opts = { maxZoom: 20, maxNativeZoom: bm.maxNativeZoom, attribution: bm.attribution, crossOrigin: true };
+  const layers = [L.tileLayer(bm.url, opts)];
+  (bm.labels || []).forEach(u => layers.push(L.tileLayer(u, { maxZoom: 20, maxNativeZoom: 19 })));
+  return layers;
+}
+
+function setBasemap(id, isAutomatic) {
+  const bm = BASEMAPS.find(b => b.id === id) || BASEMAPS[0];
+  basemapLayers.forEach(l => map.removeLayer(l));
+  basemapLayers = makeBasemapLayers(bm);
+  basemapLayers.forEach(l => l.addTo(map));
+  basemapLayers[0].bringToBack();
+  currentBasemap = bm;
+  const radio = document.querySelector(`input[name="basemap"][value="${bm.id}"]`);
+  if (radio) radio.checked = true;
+  watchBasemap(basemapLayers[0], bm);
+  if (isAutomatic) showSearchStatus("The previous background map was not loading, so we switched to: " + bm.name + ".");
+}
+
+// If a provider fails (many tile errors and none loaded), move to the next one.
+function watchBasemap(layer, bm) {
+  let loaded = 0, failed = 0;
+  layer.on("tileload", () => { loaded++; });
+  layer.on("tileerror", () => {
+    failed++;
+    if (failed >= 6 && loaded === 0 && currentBasemap === bm) {
+      const next = BASEMAPS[(BASEMAPS.indexOf(bm) + 1) % BASEMAPS.length];
+      if (next !== bm) setBasemap(next.id, true);
+    }
+  });
+}
+
 // A map button (top-left or top-right) that opens a small panel.
 function iconControl(position, icon, label, buildPanel) {
   const ctrl = L.control({ position });
@@ -546,12 +635,7 @@ function anyControlOpen() {
 let searchControl, layersControl;
 
 function initMap() {
-  map = L.map("map", { zoomControl: false }).setView([52.8, -1.6], 6);
-
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 19
-  }).addTo(map);
+  map = L.map("map", { zoomControl: false, maxZoom: 20 }).setView([52.8, -1.6], 6);
 
   noiseLayer = L.tileLayer.wms(API.roadNoise, {
     layers: "Road_Noise_Lden_England_Round_4_All", format: "image/png",
@@ -566,7 +650,9 @@ function initMap() {
   // Top right: layers and map key.
   layersControl = iconControl("topright", ICONS.layers, "Map layers and key", pop => {
     pop.innerHTML = `
-      <h3>Layers</h3>
+      <h3>Background map</h3>
+      ${BASEMAPS.map((b, i) => `<label class="switch"><input type="radio" name="basemap" value="${b.id}" ${i === 0 ? "checked" : ""}> ${escapeHTML(b.name)}</label>`).join("")}
+      <h3>Extra layers</h3>
       <label class="switch"><input type="checkbox" id="noiseToggle"> Show road noise</label>
       <h3>Map key</h3>
       <ul class="map-key">
@@ -577,11 +663,15 @@ function initMap() {
         <li><span class="dot" style="background:${MAP_COLOURS.hazard}"></span>Major hazard site</li>
         <li><span class="dot" style="background:${MAP_COLOURS.landslide}"></span>Recorded landslide</li>
       </ul>`;
+    pop.querySelectorAll('input[name="basemap"]').forEach(radio =>
+      radio.addEventListener("change", () => setBasemap(radio.value)));
     pop.querySelector("#noiseToggle").addEventListener("change", e => {
       if (e.target.checked) noiseLayer.addTo(map); else map.removeLayer(noiseLayer);
     });
   });
   layersControl.addTo(map);
+
+  setBasemap(BASEMAPS[0].id);   // satellite by default
 
   // Bottom right: zoom buttons.
   L.control.zoom({ position: "bottomright" }).addTo(map);
@@ -625,7 +715,7 @@ function setLocation(lat, lon, label, options = {}) {
   if (searchControl) setControlOpen(searchControl, false);   // show the pin, not the search panel
 
   $("confirm").classList.remove("hidden");
-  $("confirmText").textContent = label ? "We found: " + label + "." : "Pin placed on the map.";
+  $("confirmText").textContent = label || "Pin placed on the map";
 
   // When the pin is placed by hand, name it after the nearest postcode.
   if (!label) {
@@ -635,7 +725,7 @@ function setLocation(lat, lon, label, options = {}) {
         if (pc && selected && selected.lat === lat && selected.lon === lon) {
           selected.label = "Near " + pc.postcode;
           $("siteName").value = selected.label;
-          $("confirmText").textContent = "Pin placed near " + pc.postcode + ", " + pc.admin_district + ".";
+          $("confirmText").textContent = "Near " + pc.postcode + ", " + pc.admin_district;
         }
       })
       .catch(() => {});
@@ -785,9 +875,7 @@ function chooseSuggestion(item) {
     $("q").value = item.label;
     showSearchStatus("");
     setLocation(item.lat, item.lon, item.label, { zoom: item.isAddress ? 18 : 15 });
-    $("confirmText").textContent = item.isAddress
-      ? "We found: " + item.label + "."
-      : "We found " + item.label + ". This is the centre of the area, so move the pin to the exact property.";
+    if (!item.isAddress) $("confirmText").textContent = item.label + " (centre of the area)";
     return;
   }
   return addressSearch(item.label);
@@ -808,8 +896,6 @@ async function lookupPostcode(pc) {
     $("q").value = r.postcode;
     showSearchStatus("");
     setLocation(r.latitude, r.longitude, r.postcode + ", " + r.admin_district);
-    $("confirmText").textContent = "We found postcode " + r.postcode + " in " + r.admin_district +
-      ". A postcode covers several homes, so check the pin is on the right one.";
   } catch (e) {
     showSearchStatus("We couldn't find that postcode. Check it, or try the full address.", true);
   }
@@ -1125,8 +1211,8 @@ function checkLandfill(R) {
     ...base, status, found,
     details: sites.length ? `<div class="table-wrap"><table><thead><tr><th>Site</th><th>Distance</th><th>Waste</th><th>Years used</th></tr></thead><tbody>${
       sites.slice(0, 10).map(s => `<tr><td>${escapeHTML(s.site_name || "Unnamed site")}</td><td>${escapeHTML(formatDistance(s.distanceKm))}</td><td>${escapeHTML(wasteTypes(s))}</td><td>${escapeHTML(years(s))}</td></tr>`).join("")
-    }</tbody></table></div><p>The orange dots on the map show where they are.</p>` : "",
-    meaning: `<p>Old landfill can give off gas or affect the ground. Sites within 250 m usually get a closer look.
+    }</tbody></table></div>` : "",
+    meaning: `<p>The orange dots on the map show where the sites are.</p><p>Old landfill can give off gas or affect the ground. Sites within 250 m usually get a closer look.
       Household and hazardous waste carry more risk than inert waste such as soil and rubble.</p>`,
     actions: sites.length ? ["If a site is very close, ask the council whether it has been investigated."] : [],
     seller: [],
@@ -1226,9 +1312,9 @@ function checkNoise(R) {
 
   return {
     ...base, status, found,
-    details: `<div class="table-wrap"><table><thead><tr><th>Time</th><th>Modelled level</th><th>World Health Organization guideline</th><th>Compared with guideline</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <p>Tip: tick “Show road noise” on the map to see how noise changes along the street.</p>`,
-    meaning: `<p>Long-term road noise above the World Health Organization guidelines is linked to disturbed sleep and stress.
+    details: `<div class="table-wrap"><table><thead><tr><th>Time</th><th>Modelled level</th><th>World Health Organization guideline</th><th>Compared with guideline</th></tr></thead><tbody>${rows}</tbody></table></div>`,
+    meaning: `<p>Tip: open the layers button on the map and turn on “Show road noise” to see how noise changes along the street.</p>
+      <p>Long-term road noise above the World Health Organization guidelines is linked to disturbed sleep and stress.
       Every 10 dB sounds roughly twice as loud. These are computer-modelled values at first-floor height, so a room
       at the back of a house can be much quieter.</p>`,
     actions: [
@@ -1271,17 +1357,17 @@ function checkAir(R) {
       <div class="table-wrap"><table><thead><tr><th>Pollutant</th><th>Level</th><th>Result</th></tr></thead><tbody>
         <tr><td>Fine particles (PM2.5)</td><td>${m.pm25 ?? "–"} µg/m³</td><td>${verdict(m.pm25, 5, 20)}</td></tr>
         <tr><td>Nitrogen dioxide (NO₂), mainly from traffic</td><td>${m.no2 ?? "–"} µg/m³</td><td>${verdict(m.no2, 10, 40)}</td></tr>
-      </tbody></table></div>
-      <p>Compared with the World Health Organization health guidelines (PM2.5: 5, NO₂: 10) and UK legal limits (PM2.5: 20, NO₂: 40).
-      Most of England is above the health guideline. The model works on squares about 10 km across, so it describes the
-      wider area, not your street. Levels beside busy roads are usually higher.</p>`;
+      </tbody></table></div>`;
   } else {
     details += "<p>The area pollution estimate could not be retrieved.</p>";
   }
 
   return {
     ...base, status, found, details,
-    meaning: "<p>Councils declare an Air Quality Management Area where pollution, usually from traffic, is above legal limits. They must then have a plan to reduce it.</p>",
+    meaning: `<p>Councils declare an Air Quality Management Area where pollution, usually from traffic, is above legal limits. They must then have a plan to reduce it.</p>
+      <p>The area estimate is compared with the World Health Organization health guidelines (PM2.5: 5, NO₂: 10 µg/m³) and UK legal
+      limits (PM2.5: 20, NO₂: 40 µg/m³). Most of England is above the health guideline. The model works on squares about 10 km
+      across, so it describes the wider area, not your street. Levels beside busy roads are usually higher.</p>`,
     actions: [`See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`],
     seller: [], conveyancer: []
   };
@@ -1470,6 +1556,14 @@ function chip(status) {
   return `<span class="chip ${status}">${STATUS_LABEL[status]}</span>`;
 }
 
+function infoButton(targetId, label) {
+  return `<button class="info-btn" type="button" aria-expanded="false" aria-controls="${targetId}" aria-label="${escapeHTML(label)}">i</button>`;
+}
+
+function infoBox(targetId, html) {
+  return `<div class="info-body" id="${targetId}" hidden>${html}</div>`;
+}
+
 function renderCheck(c) {
   const open = ["high", "medium", "error"].includes(c.status);
   const actions = c.actions && c.actions.length
@@ -1483,9 +1577,12 @@ function renderCheck(c) {
       </summary>
       <div class="check-body">
         ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
-        ${c.meaning ? `<h4>What it means for you</h4>${c.meaning}` : ""}
         <h4>What to do</h4>${actions}
-        <p class="source">Source: ${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}${c.dataDate ? " · " + escapeHTML(c.dataDate) : ""}</p>
+        <div class="info-row">${infoButton("about-" + c.id, "What this means and where the data comes from")}<span>What this means, and the data source</span></div>
+        <div class="info-body" id="about-${c.id}" hidden>
+          ${c.meaning || ""}
+          <p class="source">Source: ${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}${c.dataDate ? " · " + escapeHTML(c.dataDate) : ""}</p>
+        </div>
       </div>
     </details>`;
 }
@@ -1514,8 +1611,8 @@ function buildChecklist(checks) {
   const list = items => `<ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>`;
   return `
     <section class="group checklist" id="checklist">
-      <h2>Your checklist</h2>
-      <p>Everything to follow up, gathered from the checks above. Tick items off as you go.</p>
+      <h2>Your checklist${infoButton("info-checklist", "About the checklist")}</h2>
+      ${infoBox("info-checklist", "<p>Everything to follow up, gathered from the checks above. Print the report and tick items off as you go.</p>")}
       <h3>Questions to ask the seller or estate agent</h3>${list(seller.map(escapeHTML))}
       <h3>Searches and reports to ask your conveyancer for</h3>${list(conveyancer.map(escapeHTML))}
       <h3>Things to check yourself</h3>${list(yourself)}
@@ -1538,8 +1635,8 @@ function renderReport(loc, R, checks) {
     const items = checks.filter(c => c.group === g.id).sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
     return items.length ? `
       <section class="group" id="group-${g.id}">
-        <h2>${escapeHTML(g.title)}</h2>
-        <p class="help">${escapeHTML(g.intro)}</p>
+        <h2>${escapeHTML(g.title)}${infoButton("info-group-" + g.id, "About " + g.title)}</h2>
+        ${infoBox("info-group-" + g.id, "<p>" + escapeHTML(g.intro) + "</p>")}
         ${items.map(renderCheck).join("")}
       </section>` : "";
   }).join("");
@@ -1555,7 +1652,18 @@ function renderReport(loc, R, checks) {
 
       <div id="reportMap" aria-label="Map of the property and nearby features"></div>
 
-      <p class="verdict">${verdictText}</p>
+      <p class="verdict">${verdictText}${infoButton("info-read", "How to read this report")}</p>
+      ${infoBox("info-read", `
+        <ul class="legend-list">
+          <li><span class="chip high">Look into this</span> Something that could affect value, insurance, health or safety. Investigate before you commit.</li>
+          <li><span class="chip medium">Worth checking</span> Something nearby or at a moderate level. Ask questions or order a specialist search.</li>
+          <li><span class="chip low">No issue found</span> Nothing found in the data checked. This is not a guarantee.</li>
+          <li><span class="chip info">For information</span> Useful local facts, for example planning restrictions.</li>
+        </ul>
+        <p><strong>Please note:</strong> this is a free first look using public data. It does not replace a building survey or
+          the searches your conveyancer orders. “No issue found” means nothing was found in the data we checked, not that there
+          is no risk. Results are for the pin location. Tap a heading to open or close a topic, and the
+          <strong>i</strong> buttons for explanations.</p>`)}
       <div class="counts">
         <div class="count high"><strong>${n("high")}</strong><span>Look into this</span></div>
         <div class="count medium"><strong>${n("medium")}</strong><span>Worth checking</span></div>
@@ -1570,16 +1678,13 @@ function renderReport(loc, R, checks) {
       ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
         Most checks use England-only data, so many results will be missing or incomplete.</div>` : ""}
 
-      <div class="notice"><strong>Please note:</strong> this is a free first look using public data. It does not replace a
-        building survey or the searches your conveyancer orders. “No issue found” means nothing was found in the data we
-        checked, not that there is no risk. Results are for the pin location.</div>
     </div>
 
     <div class="details-start">${groupsHtml}</div>
     ${buildChecklist(checks)}
 
     <p class="help">Created with Property Location Check. Contains public sector information licensed under the Open Government
-      Licence v3.0; data © OpenStreetMap contributors; Copernicus Atmosphere Monitoring Service.</p>`;
+      Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
   // "Start here" links open the matching section.
   $("report").querySelectorAll("[data-open]").forEach(a => a.addEventListener("click", () => {
@@ -1598,7 +1703,7 @@ function drawReportMap(loc, R) {
   });
   // Set the view first: layers need a map view before they can be drawn.
   reportMap.fitBounds(L.latLng(loc.lat, loc.lon).toBounds(loc.radius * 2), { padding: [10, 10] });
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap", maxZoom: 19 }).addTo(reportMap);
+  makeBasemapLayers(currentBasemap || BASEMAPS[0]).forEach(l => l.addTo(reportMap));   // same background as the main map
   L.circle([loc.lat, loc.lon], { radius: loc.radius, color: "#087f8c", weight: 2, fillOpacity: 0.05 }).addTo(reportMap);
   L.marker([loc.lat, loc.lon]).addTo(reportMap);
   plotFeatures(L.layerGroup().addTo(reportMap), R);
@@ -1643,6 +1748,8 @@ $("downloadHtml").addEventListener("click", () => {
   if (!reportData) return;
   const copy = $("report").cloneNode(true);
   copy.querySelectorAll("details").forEach(d => d.setAttribute("open", ""));
+  copy.querySelectorAll(".info-body").forEach(d => d.removeAttribute("hidden"));
+  copy.querySelectorAll(".info-btn, .info-row").forEach(b => b.remove());
   const loc = reportData.location;
   const mapBox = copy.querySelector("#reportMap");
   if (mapBox) mapBox.outerHTML = `<p><a href="https://www.openstreetmap.org/?mlat=${loc.lat}&amp;mlon=${loc.lon}#map=16/${loc.lat}/${loc.lon}">View the location on a map</a></p>`;
@@ -1654,6 +1761,18 @@ $("downloadHtml").addEventListener("click", () => {
 body{background:#fff;max-width:960px;margin:24px auto;padding:0 18px}</style>
 </head><body>${copy.innerHTML}<p class="help">Live version: <a href="${escapeHTML(location.href)}">${escapeHTML(location.href)}</a></p></body></html>`;
   downloadFile(fileBase() + ".html", html, "text/html");
+});
+
+// "i" buttons: show or hide the explanation they point to.
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".info-btn");
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const box = document.getElementById(btn.getAttribute("aria-controls"));
+  if (!box) return;
+  box.hidden = !box.hidden;
+  btn.setAttribute("aria-expanded", String(!box.hidden));
 });
 
 // Open every section when printing, then restore.
