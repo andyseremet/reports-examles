@@ -13,6 +13,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Property Check">
 
+<!-- Start connecting to the map picture server early; it is otherwise only found once the map library has run. -->
+<link rel="preconnect" href="https://server.arcgisonline.com">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
@@ -188,7 +190,7 @@ button:disabled {opacity:.5;cursor:not-allowed}
 .confirm {margin-top:14px;padding:16px;border-radius:8px;background:var(--confirm-bg);border:1px solid var(--confirm-border)}
 .confirm p {margin:0 0 10px}
 details.advanced {margin-top:14px;font-size:14px}
-details.advanced summary {cursor:pointer;color:var(--link)}
+details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .adv-grid {display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;margin-top:10px}
 
 /* ---------- saved properties and compare ---------- */
@@ -273,6 +275,7 @@ details.check[open] > summary h3::before {content:"▾ "}
 .check-body {padding:0 16px 14px;font-size:14px}
 .check-body p {margin:4px 0 8px}
 .check-body ul {margin:4px 0 8px;padding-left:20px}
+.data-date {font-size:13px;color:var(--muted);margin:10px 0 0}
 .source {font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;margin-top:10px}
 table {width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:13px}
 th,td {text-align:left;padding:7px;border-bottom:1px solid var(--border);vertical-align:top}
@@ -282,7 +285,7 @@ th {background:var(--surface-2);color:var(--heading)}
 .checklist ul {list-style:none;padding:0}
 .checklist li {border-bottom:1px solid var(--border)}
 label.tick {display:flex;gap:10px;align-items:flex-start;font-weight:normal;font-size:14px;margin:0;padding:8px 2px;cursor:pointer}
-label.tick input {width:20px;height:20px;margin:1px 0 0;flex:none}
+label.tick input {width:24px;height:24px;margin:0;flex:none}
 label.tick input:checked + span {text-decoration:line-through;color:var(--muted)}
 .legend-list {font-size:14px;padding-left:0;list-style:none}
 .legend-list li {margin:6px 0}
@@ -300,6 +303,8 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 .notes-print {display:none;white-space:pre-wrap}
 .notes-download {display:block;padding:10px;border:1px solid var(--border);border-radius:8px}
 .saved-note {display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.saved-note.old {border-left-color:var(--high)}
+.old-mark {color:var(--high);font-weight:bold}
 .print-only {display:none}
 .qr-box {text-align:center;margin:10px 0}
 .qr-box svg {width:120px;height:120px}
@@ -589,7 +594,7 @@ body.has-sticky footer {padding-bottom:100px}
       <li><strong>What you type in the search</strong> goes to OpenStreetMap Nominatim (addresses) and postcodes.io (postcodes and places).</li>
       <li><strong>The pin's location</strong> (latitude and longitude) goes to postcodes.io, planning.data.gov.uk, the Environment Agency,
           the British Geological Survey, the Mining Remediation Authority, Open-Meteo, data.police.uk, the NHS Organisation Data Service,
-          the Office for National Statistics (boundaries and Nomis census figures), and for Scotland and Wales, SEPA and Natural
+          the Office for National Statistics (local area boundaries), and for Scotland and Wales, SEPA and Natural
           Resources Wales, to get the results.</li>
       <li><strong>The map pictures</strong> come from Esri, OpenStreetMap or CARTO, which see which area of the map is shown.</li>
       <li><strong>Your device's location</strong> is used only when you press the location button, to place the pin.</li>
@@ -600,7 +605,6 @@ body.has-sticky footer {padding-bottom:100px}
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 
 <script>
 "use strict";
@@ -628,7 +632,6 @@ const API = {
   sepaFlood: "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer",
   nrwFlood: "https://datamap.gov.wales/geoserver/ows",
   ods: "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations",
-  nomis: "https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.json",
   msoaBoundary: "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query"
 };
 
@@ -695,7 +698,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "1.10.0";
 const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -1519,6 +1522,18 @@ const AMENITY_TYPES = [
 const titleCase = text => String(text || "").toLowerCase()
   .replace(/\b([a-z])/g, c => c.toUpperCase()).replace(/\b(Pms|Nhs|Gp|Uk)\b/g, w => w.toUpperCase());
 
+// Census 2021 residents per local area (MSOA). A census is never re-counted, so these
+// fixed figures are saved with the app (data/census2021-msoa-residents.json) instead of
+// being asked for each time.
+let censusPromise = null;
+function getCensusResidents() {
+  if (!censusPromise) {
+    censusPromise = fetchJSON("data/census2021-msoa-residents.json").then(d => d.residents);
+    censusPromise.catch(() => { censusPromise = null; });
+  }
+  return censusPromise;
+}
+
 let stationListPromise = null;
 function getStationList() {
   if (!stationListPromise) {
@@ -1596,13 +1611,11 @@ async function getCrimeArea(loc) {
       where: `MSOA21CD='${code}'`, outFields: "MSOA21CD,MSOA21NM", returnGeometry: "true",
       outSR: "4326", geometryPrecision: "5", maxAllowableOffset: "0.0005", f: "json"
     })),
-    fetchJSON(API.nomis + "?" + new URLSearchParams({
-      date: "latest", geography: code, c2021_restype_3: "0", measures: "20100", select: "geography_name,obs_value"
-    }))
+    getCensusResidents()
   ]);
   const feature = boundary.features && boundary.features[0];
   const ring = feature && feature.geometry && feature.geometry.rings && feature.geometry.rings[0];
-  const residents = population.obs && population.obs[0] && population.obs[0].obs_value && population.obs[0].obs_value.value;
+  const residents = population[code];
   if (!ring || !residents) return null;
   const step = Math.max(1, Math.ceil(ring.length / 90));          // keep the area outline short
   const poly = ring.filter((_, i) => i % step === 0).map(([x, y]) => `${y.toFixed(5)},${x.toFixed(5)}`).join(":");
@@ -1928,7 +1941,7 @@ function checkSurfaceWater(R) {
   const base = {
     id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)",
     source: { name: "Environment Agency, Risk of Flooding from Surface Water (2025)", url: LINKS.floodLongTerm },
-    dataDate: "Checked live on " + today()
+    dataDate: "Surface water flood map published in 2025; checked live on " + today()
   };
   const country = R.place && R.place.ok && R.place.value ? R.place.value.country : null;
   const actions = ["Ask the seller whether water has ever collected around the house or garden after heavy rain."];
@@ -2346,7 +2359,8 @@ function checkCrime(R) {
   };
   if (!R.crime.ok) return unavailable(base, R, "crime");
   const c = R.crime.value;
-  base.dataDate = "Crimes reported in " + monthName(c.month);
+  base.dataDate = "Crimes reported in " + monthName(c.month)
+    + (R.crimeArea && R.crimeArea.ok && R.crimeArea.value ? "; residents from the 2021 Census" : "");
   const key = [
     ["burglary", "Burglary"], ["vehicle-crime", "Vehicle crime"],
     ["anti-social-behaviour", "Antisocial behaviour"], ["violent-crime", "Violence and sexual offences"]
@@ -2832,9 +2846,30 @@ document.addEventListener("input", e => {
 });
 
 /* ---------- QR code on printouts ---------- */
-function renderQr() {
+// The QR code library is only needed once a report is finished, so it is loaded then,
+// not with the page.
+const QR_LIBRARY = "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js";
+let qrLibraryPromise = null;
+function loadQrLibrary() {
+  if (typeof qrcode === "function") return Promise.resolve();
+  if (!qrLibraryPromise) {
+    qrLibraryPromise = new Promise((resolve, reject) => {
+      const tag = document.createElement("script");
+      tag.src = QR_LIBRARY;
+      tag.onload = resolve;
+      tag.onerror = () => { qrLibraryPromise = null; tag.remove(); reject(new Error("QR library did not load")); };
+      document.head.appendChild(tag);
+    });
+  }
+  return qrLibraryPromise;
+}
+
+async function renderQr() {
   const box = $("qrBox");
   if (!box) return;
+  const forRun = run;
+  try { await loadQrLibrary(); } catch (e) { box.innerHTML = ""; return; }   // offline: the printout works without it
+  if (run !== forRun || !$("qrBox")) return;
   const url = location.origin + location.pathname + "?" + new URLSearchParams({
     lat: Number(run.loc.lat).toFixed(6), lon: Number(run.loc.lon).toFixed(6), r: run.loc.radius
   });
@@ -2986,6 +3021,7 @@ function renderCheck(c) {
         ${c.status === "error" ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
         ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
         <h4>What to do</h4>${actions}
+        ${c.dataDate ? `<p class="data-date"><strong>Data:</strong> ${escapeHTML(c.dataDate)}</p>` : ""}
         <div class="info-row">${infoButton("about-" + c.id, "What this means and where the data comes from")}<span>What this means, and the data source</span></div>
         <div class="info-body" id="about-${c.id}" hidden>
           ${c.meaning || ""}
@@ -3055,6 +3091,14 @@ function renderMeta() {
     Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}`;
 }
 
+// Saved results older than this are flagged, with a suggestion to refresh them.
+const OLD_MONTHS = 3;
+function isOld(savedAt) {
+  const limit = new Date();
+  limit.setMonth(limit.getMonth() - OLD_MONTHS);
+  return new Date(savedAt) < limit;
+}
+
 function renderSummary() {
   const results = orderedResults();
   const n = s => results.filter(c => c.status === s).length;
@@ -3078,8 +3122,10 @@ function renderSummary() {
       Still go through the checklist at the end.</p>`;
   }
 
-  const savedNote = run.snapshot ? `<div class="notice saved-note">Saved results from
+  const old = run.snapshot && isOld(run.snapshot.savedAt);
+  const savedNote = run.snapshot ? `<div class="notice saved-note${old ? " old" : ""}">Saved results from
       <strong>${escapeHTML(new Date(run.snapshot.savedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }))}</strong>.
+      ${old ? `<span><strong>These results are over ${OLD_MONTHS} months old.</strong> Official data may have changed since; refresh before relying on them.</span>` : ""}
       <button class="primary small-btn" type="button" id="refreshBtn">Refresh with the latest data</button></div>` : "";
   $("summaryBox").innerHTML = `
     ${savedNote}
@@ -3298,7 +3344,7 @@ function renderSaved() {
         title="${s.starred ? "Remove from shortlist" : "Add to shortlist"}" aria-label="Shortlist ${escapeHTML(s.name)}">${s.starred ? "★" : "☆"}</button>
       <div class="saved-main">
         <a href="${escapeHTML(reportUrl(s))}">${escapeHTML(s.name)}</a>${store.get("plc-notes:" + s.key, "") ? ' <span class="note-mark" title="Has notes">📝</span>' : ""}
-        <small>${s.postcode ? escapeHTML(s.postcode) + " · " : ""}${s.district ? escapeHTML(s.district) + " · " : ""}checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}</small>
+        <small>${s.postcode ? escapeHTML(s.postcode) + " · " : ""}${s.district ? escapeHTML(s.district) + " · " : ""}checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}${isOld(s.savedAt) ? ` <span class="old-mark">· over ${OLD_MONTHS} months ago</span>` : ""}</small>
         <div class="mini-counts">${countChips(s.checks)}</div>
       </div>
       <div class="saved-btns">

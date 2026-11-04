@@ -59,7 +59,6 @@ const SERVICES = [
   ["Historic landfill (Environment Agency)", `https://environment.data.gov.uk/spatialdata/historic-landfill/ogc/features/v1/collections/Historic_Landfill_Sites/items?f=json&limit=5&bbox=${LON - 0.02},${LAT - 0.02},${LON + 0.02},${LAT + 0.02}`, d => Array.isArray(d.features)],
   ["Air quality model (Open-Meteo)", `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&hourly=pm2_5&past_days=1&forecast_days=0&timeformat=unixtime`, d => d.hourly && d.hourly.pm2_5.length > 0],
   ["Crime (data.police.uk)", `https://data.police.uk/api/crimes-street/all-crime?lat=${LAT}&lng=${LON}`, d => Array.isArray(d) && d.length > 0],
-  ["Census population (Nomis)", "https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.json?date=latest&geography=E02001521&c2021_restype_3=0&measures=20100&select=obs_value", d => d.obs && d.obs[0].obs_value.value > 0],
   ["Census boundaries (ONS)", "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query?where=MSOA21CD%3D%27E02001521%27&outFields=MSOA21CD&returnGeometry=false&f=json", d => d.features && d.features.length === 1],
   ["Scotland flood maps (SEPA)", "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer/2/query?geometry=-3.43,56.404&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnCountOnly=true&f=json", d => Number.isFinite(d.count)],
   ["Wales flood maps (Natural Resources Wales)", wms("https://datamap.gov.wales/geoserver/ows", "inspire-nrw:NRW_FLOODZONE_RIVERS_SEAS_MERGED", 51.47, -3.188, 0.00005), d => Array.isArray(d.features) && d.features.length > 0],
@@ -68,7 +67,8 @@ const SERVICES = [
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
   ["Postcode lookup for many postcodes (postcodes.io)", "https://api.postcodes.io/postcodes", d => Array.isArray(d.result) && d.result[0].result,
     { method: "POST", body: JSON.stringify({ postcodes: ["S70 2TA"] }), headers: { "Content-Type": "application/json" } }],
-  ["Railway station list (saved with the app)", new URL("data/rail-stations.json", BASE).href, d => Array.isArray(d.stations) && d.stations.length > 2000, { sameSite: true }]
+  ["Railway station list (saved with the app)", new URL("data/rail-stations.json", BASE).href, d => Array.isArray(d.stations) && d.stations.length > 2000, { sameSite: true }],
+  ["Census 2021 residents (saved with the app)", new URL("data/census2021-msoa-residents.json", BASE).href, d => Object.keys(d.residents || {}).length === 7264 && d.residents.E02001521 > 0, { sameSite: true }]
 ];
 
 async function checkService([name, url, expect, options = {}]) {
@@ -247,6 +247,15 @@ async function testDevice(device, [postcode, place]) {
     await page.waitForTimeout(300);
     const closed = await page.$eval("#whyBox", x => x.hidden);
     return text.startsWith("Radon") && text.length > 25 && expanded === "true" && closed ? text.slice(0, 70) + "…" : false;
+  });
+
+  await step("Each topic says how current its data is", async () => {
+    const missing = await page.evaluate(() => orderedResults()
+      .filter(c => !["manual", "error"].includes(c.status))
+      .filter(c => { const d = document.querySelector(`#check-${c.id} .data-date`); return !d || d.textContent.trim().length < 12; })
+      .map(c => c.id));
+    if (missing.length) throw new Error("no data date on: " + missing.join(", "));
+    return await page.$eval("#check-crime .data-date", x => x.textContent.trim()).catch(() => "ok");
   });
 
   await step("Back returns to the search, Forward reopens the report", async () => {
