@@ -77,7 +77,9 @@ async function checkService([name, url, expect, options = {}]) {
       return record("Data services", name, true, `${Date.now() - started} ms`);
     } catch (e) {
       if (attempt === 2) return record("Data services", name, false, e.message);
-      await new Promise(r => setTimeout(r, 3000));
+      // A refusal (403) from the Environment Agency map server is its short block on
+      // busy addresses (it lasts up to about 40 s), so wait it out before trying again.
+      await new Promise(r => setTimeout(r, e.message === "HTTP 403" ? 45000 : 3000));
     }
   }
 }
@@ -85,6 +87,8 @@ async function checkService([name, url, expect, options = {}]) {
 /* ---------------------------------------------------------------
    2. The page in a browser
 --------------------------------------------------------------- */
+const PAUSE_BEFORE_REPORT_MS = Number(process.env.PAUSE_MS ?? 60000);
+
 const DEVICES = [
   { name: "Desktop", options: { viewport: { width: 1366, height: 900 } } },
   { name: "Phone (iPhone 13)", options: { ...devices["iPhone 13"] } },
@@ -232,6 +236,10 @@ try {
   const randomPlace = await randomEnglishPostcode();
   const places = [FIXED[0], FIXED[1], randomPlace];
   for (let i = 0; i < DEVICES.length; i++) {
+    // The Environment Agency map server allows only about 15 requests a minute from
+    // one address, and one report sends about 7. Pausing before each report keeps
+    // the test within that limit, like a person checking one property at a time.
+    await new Promise(r => setTimeout(r, PAUSE_BEFORE_REPORT_MS));
     const topics = await testDevice(DEVICES[i], places[i]);
     reports[`${DEVICES[i].name}: ${places[i].join(", ")}`] = topics;
   }
