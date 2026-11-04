@@ -18,7 +18,7 @@ England. Pick a location on the map and it checks official data for:
 | Planning restrictions and heritage | planning.data.gov.uk |
 | Protected nature sites | Natural England, via planning.data.gov.uk |
 | Reported crime, and crime per 1,000 residents compared with England and Wales | data.police.uk; ONS boundaries; Census 2021 via Nomis; ONS crime and population figures |
-| Schools, GP surgeries, pharmacies, supermarkets, stations, bus stops | OpenStreetMap (Overpass API) |
+| Schools, GP surgeries, pharmacies, railway stations, tram and bus stops | Department for Education and NaPTAN (via planning.data.gov.uk); NHS Organisation Data Service; NaPTAN rail stations (saved in `data/rail-stations.json`) |
 
 Each result is given a plain-English rating (Look into this / Worth checking /
 No issue found / For information / Check yourself), with what it means and what
@@ -77,11 +77,18 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 - **On every pull request** that changes the page, against the proposed version, before it is merged.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
-It checks that all 18 data services still answer and allow web pages to read them, then opens the page on a
+It checks that all 21 data services still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the section bar, Back and Forward, saved reports and notes, printing and downloads. Results,
 screenshots and sample reports are kept for 14 days with each run.
 
 Run it yourself: `npm install playwright@1.49.1 && npx playwright install chromium && node tests/live-check.mjs`
 (set `BASE` to test another address, for example a local copy).
+
+### Updating the railway station list
+
+`data/rail-stations.json` is the Department for Transport's NaPTAN list of railway stations (Open Government Licence),
+saved with the app because the NaPTAN service cannot be read directly by web pages. Stations rarely change; to refresh it,
+download `https://naptan.api.dft.gov.uk/v1/access-nodes?dataFormat=csv&atcoAreaCodes=910` and keep the active `RLY` rows
+(name, latitude, longitude).
 
