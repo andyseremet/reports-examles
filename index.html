@@ -146,7 +146,8 @@ button:disabled {opacity:.5;cursor:not-allowed}
 
 /* ---------- map ---------- */
 #map {height:440px;width:100%;border-radius:8px;border:1px solid var(--border);margin-top:14px;isolation:isolate}
-#map.map-full {position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;margin:0;border:0;border-radius:0;z-index:3000}
+/* Leaflet puts an inline position:relative on the map, so these rules need !important to win. */
+#map.map-full {position:fixed!important;top:0!important;left:0!important;right:0;bottom:0;width:100%;height:100vh;height:100dvh;margin:0;border:0;border-radius:0;z-index:3000}
 .leaflet-marker-draggable {touch-action:none}
 .map-hint {
   position:absolute;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;
@@ -154,6 +155,11 @@ button:disabled {opacity:.5;cursor:not-allowed}
   opacity:0;transition:opacity .25s;pointer-events:none;
 }
 .map-hint.show {opacity:1}
+.map-run {
+  display:none;position:absolute;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:1050;
+  background:var(--teal);color:#fff;font-size:17px;padding:14px 24px;border-radius:30px;box-shadow:0 3px 12px #0007;white-space:nowrap;
+}
+.map-run.show {display:block}
 .map-ctrl {font:14px/1.5 Arial,Helvetica,sans-serif;color:var(--text)}
 .map-btn {
   width:44px;height:44px;padding:0;border-radius:8px;background:var(--surface);color:var(--heading);
@@ -640,16 +646,38 @@ function geometryCentre(geometry) {
   return n ? { lat: sumLat / n, lon: sumLon / n } : null;
 }
 
-async function fetchJSON(url) {
+// Fetch JSON, trying once more after a short pause if the service is briefly busy
+// (network blip, "too many requests" or a server error).
+async function fetchJSON(url, attempt = 1) {
+  try {
+    return await fetchJSONOnce(url);
+  } catch (error) {
+    if (attempt < 2 && error.retryable) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      return fetchJSON(url, attempt + 1);
+    }
+    throw error;
+  }
+}
+
+async function fetchJSONOnce(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   try {
     const response = await fetch(url, { signal: controller.signal, headers: { "Accept": "application/json" } });
-    if (!response.ok) throw new Error("the data service replied with error " + response.status);
+    if (!response.ok) {
+      const err = new Error("the data service replied with error " + response.status);
+      err.retryable = response.status === 429 || response.status >= 500;
+      throw err;
+    }
     return await response.json();
   } catch (error) {
     if (error.name === "AbortError") throw new Error("the data service took too long to respond");
-    if (error instanceof TypeError) throw new Error("the data service could not be reached");
+    if (error instanceof TypeError) {
+      const err = new Error("the data service could not be reached");
+      err.retryable = true;
+      throw err;
+    }
     throw error;
   } finally {
     clearTimeout(timer);
@@ -864,6 +892,14 @@ function initMap() {
   featureLayer = L.layerGroup().addTo(map);
   setupGestureHandling();
 
+  // In full screen the page's "Check this property" button is hidden, so show one on the map.
+  const mapRun = L.DomUtil.create("button", "map-run", map.getContainer());
+  mapRun.id = "mapRunBtn";
+  mapRun.type = "button";
+  mapRun.textContent = "Check this property";
+  L.DomEvent.disableClickPropagation(mapRun);
+  mapRun.addEventListener("click", () => { setMapFull(false); runChecks(); });
+
   // A tap on the map closes an open panel first, so the pin is not moved by accident.
   map.on("click", e => {
     if (anyControlOpen()) {
@@ -925,12 +961,18 @@ function setMapFull(on) {
   fullControl.btn.title = on ? "Exit full screen" : "Full-screen map";
   fullControl.btn.setAttribute("aria-label", fullControl.btn.title);
   fullControl.btn.classList.toggle("active", on);
+  updateMapRunButton();
   setTimeout(() => map.invalidateSize(), 60);
 }
 
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && mapIsFull) setMapFull(false);
 });
+
+function updateMapRunButton() {
+  const btn = $("mapRunBtn");
+  if (btn) btn.classList.toggle("show", mapIsFull && !!selected);
+}
 
 function locateMe(btn) {
   if (!navigator.geolocation) return showSearchStatus("Your browser cannot share its location.", true);
@@ -952,7 +994,12 @@ function locateMe(btn) {
 
 function setLocation(lat, lon, label, options = {}) {
   lat = Number(lat); lon = Number(lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+    showSearchStatus("That location is not valid. Search for a postcode, or tap the map.", true);
+    return;
+  }
+  const inUK = lat >= 49.8 && lat <= 61 && lon >= -8.7 && lon <= 2;
+  showSearchStatus(inUK ? "" : "This location is outside the UK. The checks cover England, and some cover Scotland, Wales and Northern Ireland.", !inUK);
 
   selected = { lat, lon, label: label || null };
   $("latitude").value = lat.toFixed(6);
@@ -975,6 +1022,7 @@ function setLocation(lat, lon, label, options = {}) {
   featureLayer.clearLayers();
   drawRadius();
   if (searchControl) setControlOpen(searchControl, false);   // show the pin, not the search panel
+  updateMapRunButton();
 
   $("confirm").classList.remove("hidden");
   $("confirmText").textContent = label || "Pin placed on the map";
@@ -1066,7 +1114,7 @@ async function loadSuggestions(q) {
   let items = [];
   try {
     if (POSTCODE_START.test(q)) {
-      const d = await fetchJSON(API.postcodes + "/" + encodeURIComponent(q) + "/autocomplete?limit=6");
+      const d = await fetchJSON(API.postcodes + "/" + encodeURIComponent(q) + "/autocomplete?limit=10");
       items = (d.result || []).map(pc => ({ type: "postcode", label: pc, hint: "Postcode" }));
     } else {
       const d = await fetchJSON(API.places + "?q=" + encodeURIComponent(q) + "&limit=6");
@@ -1874,6 +1922,56 @@ const CHECKS = [
 
 const TASK_FN = Object.fromEntries(TASKS.map(([key, , fn]) => [key, fn]));
 
+// Every check waits for the nearest-postcode lookup, which tells us the country.
+CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
+
+// Which countries each check's data covers. Outside these, the check says
+// "Check yourself" and links to the right national service, instead of a
+// misleading "No issue found".
+const COVERAGE = {
+  flood: ["England"], landfill: ["England"], contamination: ["England"], noise: ["England"],
+  air: ["England"], planning: ["England"], nature: ["England"],
+  crime: ["England", "Wales", "Northern Ireland"],
+  coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"]
+};
+
+const NATIONAL = {
+  "Scotland": {
+    env: ["SEPA (Scottish Environment Protection Agency)", "https://www.sepa.org.uk/"],
+    flood: ["SEPA flood maps", "https://map.sepa.org.uk/floodmaps"],
+    police: ["Police Scotland", "https://www.scotland.police.uk/"]
+  },
+  "Wales": {
+    env: ["Natural Resources Wales", "https://naturalresources.wales/"],
+    flood: ["Natural Resources Wales flood maps", "https://flood-risk-maps.naturalresources.wales/"]
+  },
+  "Northern Ireland": {
+    env: ["DAERA (Department of Agriculture, Environment and Rural Affairs)", "https://www.daera-ni.gov.uk/"],
+    flood: ["nidirect: flooding", "https://www.nidirect.gov.uk/"],
+    gov: ["nidirect", "https://www.nidirect.gov.uk/"]
+  }
+};
+
+function notCovered(c, country, place) {
+  const n = NATIONAL[country] || {};
+  const council = place && place.admin_district ? place.admin_district + " council" : "the local council";
+  let service = n.env || n.gov;
+  if (c.id === "flood" && n.flood) service = n.flood;
+  if (c.id === "crime" && n.police) service = n.police;
+  const covered = COVERAGE[c.id].join(", ").replace(/, ([^,]*)$/, " and $1");
+  const actions = (c.id === "planning" || c.id === "nature")
+    ? [`Ask ${escapeHTML(council)}'s planning service about restrictions and protected sites.`]
+    : service ? [`Check this on ${link(service[1], service[0])}.`] : [];
+  return {
+    id: c.id, group: c.group, title: c.title, status: "manual",
+    found: `Not covered in ${country}: the data we use covers ${covered} only.`,
+    meaning: `<p>This check uses official data that only covers ${covered}, so we cannot give a result for a property in ${escapeHTML(country)}.
+      Use the national service instead.</p>`,
+    actions, seller: [], conveyancer: [],
+    source: service ? { name: service[0], url: service[1] } : { name: "", url: "" }
+  };
+}
+
 /* =========================================================
    STORAGE – only on this device
 ========================================================= */
@@ -1943,6 +2041,9 @@ function startTask(r, key) {
 const depsReady = c => c.deps.every(k => run.R[k]);
 
 function buildCheck(c) {
+  const place = run.R.place && run.R.place.ok ? run.R.place.value : null;
+  const country = place && place.country;
+  if (country && COVERAGE[c.id] && !COVERAGE[c.id].includes(country)) return notCovered(c, country, place);
   try { return { ...c.build(run.R), id: c.id, group: c.group }; }
   catch (e) {
     return { id: c.id, group: c.group, title: c.title, status: "error",
@@ -2135,8 +2236,9 @@ function renderSummary() {
   const ready = results.length;
   const p = run.R.place && run.R.place.ok ? run.R.place.value : null;
   const outsideEngland = p && p.country && p.country !== "England";
-  const priority = results.filter(c => ["high", "medium", "error"].includes(c.status))
+  const priority = results.filter(c => ["high", "medium", "error", "manual"].includes(c.status))
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+  const notCoveredText = n("manual") ? ` <strong>${plural(n("manual"), "topic")}</strong> need checking yourself (see below).` : "";
 
   let verdict;
   if (!run.done) {
@@ -2145,9 +2247,9 @@ function renderSummary() {
         <span style="width:${Math.round(ready / CHECKS.length * 100)}%"></span></div>`;
   } else if (n("high") || n("medium")) {
     verdict = `<p class="verdict">We found <strong>${plural(n("high"), "thing")} to look into</strong> and
-      <strong>${n("medium")} worth checking</strong>. ${plural(n("low"), "check")} found no issue.</p>`;
+      <strong>${n("medium")} worth checking</strong>. ${plural(n("low"), "check")} found no issue.${notCoveredText}</p>`;
   } else {
-    verdict = `<p class="verdict"><strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran.
+    verdict = `<p class="verdict"><strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran.${notCoveredText}
       Still go through the checklist at the end.</p>`;
   }
 
@@ -2163,7 +2265,7 @@ function renderSummary() {
       <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
           <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul>` : ""}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
-      Most checks use England-only data, so many results will be missing or incomplete.</div>` : ""}`;
+      Some official data only covers England. Those topics are marked “Check yourself”, with a link to the right national service.</div>` : ""}`;
 }
 
 function drawReportMap(loc) {
