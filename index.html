@@ -168,6 +168,7 @@ button:disabled {opacity:.5;cursor:not-allowed}
   box-shadow:0 1px 5px #10243a66;display:flex;align-items:center;justify-content:center;
 }
 .map-btn:hover {background:var(--surface-2)}
+.map-btn svg {pointer-events:none}   /* the button, not its icon, receives the click */
 .leaflet-bar a,.leaflet-bar a:hover {background:var(--surface);color:var(--heading);border-bottom-color:var(--border)}
 .leaflet-touch .leaflet-bar a {width:44px;height:44px;line-height:44px}
 .map-ctrl.open .map-btn,.map-btn.active {background:#10243a;color:#fff}
@@ -658,7 +659,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.7.1";
 const APP_UPDATED = "4 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -909,6 +910,7 @@ function iconControl(position, icon, label, buildPanel) {
     buildPanel(pop);
     L.DomEvent.disableClickPropagation(box);
     L.DomEvent.disableScrollPropagation(box);
+    L.DomEvent.on(box, "click", L.DomEvent.stopPropagation);
     btn.addEventListener("click", () => setControlOpen(ctrl, !box.classList.contains("open")));
     ctrl.box = box;
     ctrl.btn = btn;
@@ -929,6 +931,9 @@ function buttonControl(position, icon, label, onClick) {
     btn.setAttribute("aria-label", label);
     btn.innerHTML = icon;
     L.DomEvent.disableClickPropagation(box);
+    // Stop the click reaching the map too: the icon is swapped during the click, so the map
+    // could not otherwise tell the click came from a button (and would move the pin).
+    L.DomEvent.on(box, "click", L.DomEvent.stopPropagation);
     btn.addEventListener("click", () => onClick(btn));
     ctrl.btn = btn;
     return box;
