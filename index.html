@@ -2,65 +2,130 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Property Location Check</title>
 <meta name="description" content="Free checks for anyone buying a house or land in England: flooding, radon, coal mining, noise, air quality, landfill, planning and more, from official data.">
+<meta name="theme-color" content="#10243a">
+<meta name="color-scheme" content="light dark">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Property Check">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
+/* ---------- colours (light) ---------- */
 :root {
   --navy:#10243a;
   --blue:#1769aa;
+  --link:#1769aa;
   --teal:#087f8c;
   --bg:#f2f5f8;
+  --surface:#ffffff;
+  --surface-2:#f1f5f9;
+  --surface-3:#f3f7fb;
   --text:#263445;
+  --heading:#10243a;
   --muted:#5f6f81;
   --border:#dce3ea;
+  --input-border:#9fb0c2;
   --focus:#f2a900;
+  --btn2-bg:#e8eef5;   --btn2-text:#10243a;
+  --notice-bg:#fff6e5;
+  --confirm-bg:#eef6f7; --confirm-border:#bfe0e3;
+  --hover:#e8f1fa;
   --high-bg:#fdecea;   --high:#a3261d;
   --med-bg:#fff2d6;    --med:#7a4f00;
   --low-bg:#e5f4ea;    --low:#17653b;
   --info-bg:#e6f0fa;   --info:#1d4f80;
   --manual-bg:#eeeef3; --manual:#4a4a5e;
+  --shadow:0 2px 6px #10243a14;
 }
+/* ---------- colours (dark): follows the phone or computer setting ---------- */
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    --navy:#0b1826;
+    --link:#7cbcf0;
+    --teal:#0f9aa8;
+    --bg:#0e161f;
+    --surface:#16212d;
+    --surface-2:#1e2b39;
+    --surface-3:#1a2633;
+    --text:#e2e9f0;
+    --heading:#d6e6f7;
+    --muted:#a3b2c2;
+    --border:#2c3b4b;
+    --input-border:#4a5d72;
+    --btn2-bg:#24364a;   --btn2-text:#e2e9f0;
+    --notice-bg:#3a2f17;
+    --confirm-bg:#123033; --confirm-border:#25575b;
+    --hover:#22364b;
+    --high-bg:#4a201c;   --high:#ffb4a9;
+    --med-bg:#45360f;    --med:#ffd479;
+    --low-bg:#163a26;    --low:#94dcae;
+    --info-bg:#173149;   --info:#a5cdf2;
+    --manual-bg:#2a2b37; --manual:#cfd0dd;
+    --shadow:0 2px 8px #0008;
+  }
+  input,select {color-scheme:dark}
+}
+
 * {box-sizing:border-box}
+html {scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce) {html {scroll-behavior:auto} *{transition:none!important;animation:none!important}}
 body {margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:var(--bg);line-height:1.5}
+body.no-scroll {overflow:hidden}
 :focus-visible {outline:3px solid var(--focus);outline-offset:2px}
-header {background:var(--navy);color:#fff;padding:22px 5%}
-header h1 {margin:0;font-size:26px}
+a {color:var(--link);overflow-wrap:anywhere}
+abbr[title] {text-decoration:underline dotted;cursor:help}
+.hidden {display:none!important}
+
+/* Larger text option (the map itself is not enlarged, so it stays accurate) */
+html.large-text .zoomable {zoom:1.18}
+
+/* ---------- header ---------- */
+header {background:var(--navy);color:#fff;padding:18px 5%}
+header h1 {margin:0;font-size:24px}
+.title-row {display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header-tools {margin-left:auto;display:flex;gap:8px}
+.header-tools button {background:#ffffff1f;color:#fff;border:1px solid #ffffff40;padding:7px 12px;font-size:14px}
+.header-tools button[aria-pressed="true"] {background:#fff;color:#10243a}
 header .info-body {color:#dce6f0;background:#1b3550;border:0;max-width:760px}
-.title-row {display:flex;align-items:center;gap:10px}
-/* "i" buttons: explanations stay hidden until the user asks */
+
+/* ---------- "i" buttons ---------- */
 .info-btn {
   width:24px;height:24px;padding:0;border-radius:50%;flex:none;
-  border:2px solid var(--blue);background:#fff;color:var(--blue);
+  border:2px solid var(--link);background:var(--surface);color:var(--link);
   font:bold 14px/20px Georgia,"Times New Roman",serif;font-style:italic;text-align:center;vertical-align:middle;
 }
-.info-btn[aria-expanded="true"] {background:var(--blue);color:#fff}
+.info-btn[aria-expanded="true"] {background:var(--link);color:var(--surface)}
 header .info-btn {border-color:#cbd8e5;background:transparent;color:#fff}
-header .info-btn[aria-expanded="true"] {background:#fff;color:var(--navy)}
-.info-body {font-size:14px;background:#f3f7fb;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:8px 0 12px}
+header .info-btn[aria-expanded="true"] {background:#fff;color:#10243a}
+.info-body {font-size:14px;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:8px 0 12px}
 .info-body p {margin:4px 0}
 .info-row {display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted)}
 h2 .info-btn,h3 .info-btn,p .info-btn {margin-left:6px}
+
+/* ---------- layout ---------- */
 .container {max-width:1100px;margin:auto;padding:22px}
-.panel {background:#fff;border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px;box-shadow:0 2px 6px #10243a0a}
-h2 {font-size:20px;margin:0 0 12px;color:var(--navy)}
-h3 {font-size:17px;color:var(--navy);margin:0}
-h4 {font-size:14px;color:var(--navy);margin:14px 0 4px}
+.panel {background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px;box-shadow:var(--shadow)}
+h2 {font-size:20px;margin:0 0 12px;color:var(--heading)}
+h3 {font-size:17px;color:var(--heading);margin:0}
+h4 {font-size:14px;color:var(--heading);margin:14px 0 4px}
 label {display:block;font-weight:bold;font-size:14px;margin-bottom:6px}
 input,select,button {font:inherit;border-radius:6px}
-input,select {width:100%;border:1px solid #9fb0c2;padding:11px;background:#fff}
+input,select {width:100%;border:1px solid var(--input-border);padding:11px;background:var(--surface);color:var(--text)}
 button {border:0;padding:12px 18px;cursor:pointer;font-weight:bold}
 button:disabled {opacity:.5;cursor:not-allowed}
-.primary {background:var(--blue);color:#fff}
-.secondary {background:#e8eef5;color:var(--navy)}
+.primary {background:#1769aa;color:#fff}
+.secondary {background:var(--btn2-bg);color:var(--btn2-text)}
 .big {background:var(--teal);color:#fff;font-size:18px;padding:15px 26px}
+.small-btn {padding:7px 12px;font-size:14px}
 .help {font-size:13px;color:var(--muted);margin-top:6px}
-.hidden {display:none!important}
-a {color:var(--blue);overflow-wrap:anywhere}
-abbr[title] {text-decoration:underline dotted;cursor:help}
+.status {padding:11px 13px;border-radius:6px;background:var(--surface-2);margin:12px 0 0;font-size:14px}
+.status.error {background:var(--high-bg);color:var(--high)}
 
 /* ---------- search ---------- */
 .step-label {font-size:13px;font-weight:bold;color:var(--teal);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
@@ -71,58 +136,86 @@ abbr[title] {text-decoration:underline dotted;cursor:help}
 .search-row button {padding:10px 14px}
 #suggestions {
   position:absolute;z-index:1000;left:0;right:0;top:100%;margin:4px 0 0;padding:4px 0;list-style:none;
-  background:#fff;border:1px solid #9fb0c2;border-radius:8px;box-shadow:0 8px 20px #10243a26;max-height:230px;overflow:auto;
+  background:var(--surface);border:1px solid var(--input-border);border-radius:8px;box-shadow:0 8px 20px #10243a40;max-height:230px;overflow:auto;
   font-size:14px;line-height:1.4;
 }
 #suggestions li {padding:9px 12px;cursor:pointer}
 #suggestions li small {color:var(--muted)}
-#suggestions li[aria-selected="true"],#suggestions li:hover {background:#e8f1fa}
-#suggestions li.address-search {border-top:1px solid var(--border);color:var(--blue)}
-#map {height:440px;width:100%;border-radius:8px;border:1px solid var(--border);margin-top:14px}
+#suggestions li[aria-selected="true"],#suggestions li:hover {background:var(--hover)}
+#suggestions li.address-search {border-top:1px solid var(--border);color:var(--link)}
 
-/* ---------- map controls: icon buttons that open small panels ---------- */
+/* ---------- map ---------- */
+#map {height:440px;width:100%;border-radius:8px;border:1px solid var(--border);margin-top:14px;isolation:isolate}
+#map.map-full {position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;margin:0;border:0;border-radius:0;z-index:3000}
+.leaflet-marker-draggable {touch-action:none}
+.map-hint {
+  position:absolute;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;
+  background:#10243a8c;color:#fff;font-size:18px;font-weight:bold;text-align:center;padding:24px;
+  opacity:0;transition:opacity .25s;pointer-events:none;
+}
+.map-hint.show {opacity:1}
 .map-ctrl {font:14px/1.5 Arial,Helvetica,sans-serif;color:var(--text)}
 .map-btn {
-  width:44px;height:44px;padding:0;border-radius:8px;background:#fff;color:var(--navy);
-  box-shadow:0 1px 5px #10243a55;display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;padding:0;border-radius:8px;background:var(--surface);color:var(--heading);
+  box-shadow:0 1px 5px #10243a66;display:flex;align-items:center;justify-content:center;
 }
-.map-btn:hover {background:#f1f5f9}
-.map-ctrl.open .map-btn {background:var(--navy);color:#fff}
-.map-pop {
-  display:none;margin-top:6px;background:#fff;border-radius:8px;box-shadow:0 2px 10px #10243a55;padding:12px;
-}
+.map-btn:hover {background:var(--surface-2)}
+.leaflet-bar a,.leaflet-bar a:hover {background:var(--surface);color:var(--heading);border-bottom-color:var(--border)}
+.leaflet-touch .leaflet-bar a {width:44px;height:44px;line-height:44px}
+.map-ctrl.open .map-btn,.map-btn.active {background:#10243a;color:#fff}
+.map-btn.busy svg {animation:spin 1s linear infinite}
+@keyframes spin {to {transform:rotate(360deg)}}
+.map-pop {display:none;margin-top:6px;background:var(--surface);border-radius:8px;box-shadow:0 2px 10px #10243a66;padding:12px}
 .map-ctrl.open .map-pop {display:block}
 .leaflet-left .map-pop {width:min(400px, calc(100vw - 80px))}
 .leaflet-right .map-ctrl {display:flex;flex-direction:column;align-items:flex-end}
 .leaflet-right .map-pop {width:250px;max-height:330px;overflow:auto}
-.map-pop .switch input[type=radio] {width:16px;height:16px}
 .map-pop h3 {font-size:14px;margin:0 0 6px}
 .map-pop .switch {display:flex;gap:8px;align-items:center;font-weight:normal;font-size:14px;margin:0 0 10px;cursor:pointer}
 .map-pop .switch input {width:18px;height:18px;margin:0}
+.map-pop .switch input[type=radio] {width:16px;height:16px}
 .map-key {list-style:none;padding:0;margin:0;font-size:13px;line-height:1.9}
 .map-key .dot {display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #0003;margin-right:8px;vertical-align:-1px}
-.confirm {margin-top:14px;padding:16px;border-radius:8px;background:#eef6f7;border:1px solid #bfe0e3}
+.confirm {margin-top:14px;padding:16px;border-radius:8px;background:var(--confirm-bg);border:1px solid var(--confirm-border)}
 .confirm p {margin:0 0 10px}
 details.advanced {margin-top:14px;font-size:14px}
-details.advanced summary {cursor:pointer;color:var(--blue)}
+details.advanced summary {cursor:pointer;color:var(--link)}
 .adv-grid {display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;margin-top:10px}
-.status {padding:11px 13px;border-radius:6px;background:#edf3f8;margin:12px 0 0;font-size:14px}
-.status.error {background:var(--high-bg);color:var(--high)}
 
-/* ---------- progress ---------- */
-#progress ul {list-style:none;padding:0;margin:8px 0 0;columns:2;font-size:14px}
-#progress li {padding:3px 0;break-inside:avoid}
-#progress li::before {content:"○";display:inline-block;width:22px;color:var(--muted)}
-#progress li.done::before {content:"✓";color:var(--low);font-weight:bold}
-#progress li.fail::before {content:"✕";color:var(--high);font-weight:bold}
+/* ---------- saved properties and compare ---------- */
+.saved-list {list-style:none;padding:0;margin:0}
+.saved-list li {display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.saved-list .cmp {margin:0;display:flex;align-items:center}
+.saved-list .cmp input {width:20px;height:20px;margin:0}
+.saved-main {flex:1;min-width:0}
+.saved-main a {font-weight:bold}
+.saved-main small {display:block;color:var(--muted)}
+.mini-counts {display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+.mini-counts .chip {font-size:11px;padding:1px 7px}
+.link-btn {background:none;color:var(--link);padding:6px;font-weight:normal;text-decoration:underline}
+.saved-actions {display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.compare-table td {min-width:160px}
+.compare-table td:first-child {min-width:120px;font-weight:bold;color:var(--heading)}
 
 /* ---------- report ---------- */
-.toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:14px}
+.toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:10px}
 .toolbar button {padding:9px 14px;font-size:14px}
-.cover h1 {font-size:26px;color:var(--navy);margin:0}
+.report-nav {
+  position:sticky;top:0;z-index:1100;display:flex;gap:4px;align-items:center;overflow-x:auto;white-space:nowrap;
+  background:var(--surface);border-bottom:1px solid var(--border);margin:0 -22px 10px;padding:8px 22px;scrollbar-width:none;
+}
+.report-nav::-webkit-scrollbar {display:none}
+.report-nav a {padding:6px 10px;border-radius:20px;text-decoration:none;color:var(--text);font-size:14px}
+.report-nav a.active {background:var(--teal);color:#fff}
+.report-nav .spacer {flex:1}
+.report-nav button {padding:6px 10px;font-size:13px}
+.cover,.group,#checklist {scroll-margin-top:60px}
+.cover h1 {font-size:26px;color:var(--heading);margin:0}
 .cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
-#reportMap {height:260px;border-radius:8px;border:1px solid var(--border);margin:14px 0}
-.verdict {font-size:18px;margin:14px 0 10px}
+#reportMap {height:260px;border-radius:8px;border:1px solid var(--border);margin:14px 0;isolation:isolate}
+.verdict {font-size:18px;margin:10px 0}
+.progress-bar {height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin:8px 0 14px}
+.progress-bar span {display:block;height:100%;background:var(--teal);transition:width .3s}
 .counts {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0 16px}
 .count {border-radius:8px;padding:10px 12px}
 .count strong {display:block;font-size:24px}
@@ -139,16 +232,20 @@ details.advanced summary {cursor:pointer;color:var(--blue)}
 .chip.medium {background:var(--med-bg);color:var(--med)}
 .chip.low {background:var(--low-bg);color:var(--low)}
 .chip.info {background:var(--info-bg);color:var(--info)}
-.chip.manual,.chip.error {background:var(--manual-bg);color:var(--manual)}
-.notice {padding:12px 14px;background:#fff6e5;border-left:4px solid #d99a26;font-size:14px;margin:14px 0}
+.chip.manual,.chip.error,.chip.loading {background:var(--manual-bg);color:var(--manual)}
+.notice {padding:12px 14px;background:var(--notice-bg);border-left:4px solid #d99a26;font-size:14px;margin:14px 0}
 .group {margin-top:26px}
 .group > h2 {border-bottom:2px solid var(--border);padding-bottom:6px}
-details.check {border:1px solid var(--border);border-left:6px solid var(--border);border-radius:8px;margin:10px 0;background:#fff}
-details.check.high {border-left-color:var(--high)}
-details.check.medium {border-left-color:#d99a26}
-details.check.low {border-left-color:var(--low)}
-details.check.info {border-left-color:var(--info)}
-details.check.manual,details.check.error {border-left-color:#9a9aae}
+.check {border:1px solid var(--border);border-left:6px solid var(--border);border-radius:8px;margin:10px 0;background:var(--surface)}
+.check.high {border-left-color:var(--high)}
+.check.medium {border-left-color:#d99a26}
+.check.low {border-left-color:var(--low)}
+.check.info {border-left-color:var(--info)}
+.check.manual,.check.error {border-left-color:#9a9aae}
+.check.loading {padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.check.loading .skeleton {height:10px;border-radius:6px;margin-top:8px;width:min(420px,60vw);
+  background:linear-gradient(90deg,var(--surface-2) 25%,var(--border) 50%,var(--surface-2) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
+@keyframes shimmer {to {background-position:-200% 0}}
 details.check > summary {cursor:pointer;padding:12px 14px;list-style:none;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
 details.check > summary::-webkit-details-marker {display:none}
 details.check > summary .found {grid-column:1 / -1;font-size:14px}
@@ -160,37 +257,44 @@ details.check[open] > summary h3::before {content:"▾ "}
 .source {font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;margin-top:10px}
 table {width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:13px}
 th,td {text-align:left;padding:7px;border-bottom:1px solid var(--border);vertical-align:top}
-th {background:#f1f5f9;color:var(--navy)}
+th {background:var(--surface-2);color:var(--heading)}
 .table-wrap {overflow-x:auto}
 .checklist h3 {margin-top:16px}
 .checklist ul {list-style:none;padding:0}
-.checklist li {padding:6px 0 6px 30px;position:relative;font-size:14px;border-bottom:1px solid #eef1f4}
-.checklist li::before {content:"";position:absolute;left:4px;top:9px;width:14px;height:14px;border:2px solid #7b8a9a;border-radius:3px}
+.checklist li {border-bottom:1px solid var(--border)}
+label.tick {display:flex;gap:10px;align-items:flex-start;font-weight:normal;font-size:14px;margin:0;padding:8px 2px;cursor:pointer}
+label.tick input {width:20px;height:20px;margin:1px 0 0;flex:none}
+label.tick input:checked + span {text-decoration:line-through;color:var(--muted)}
 .legend-list {font-size:14px;padding-left:0;list-style:none}
 .legend-list li {margin:6px 0}
+.to-top {
+  position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:1500;width:48px;height:48px;padding:0;
+  border-radius:50%;background:var(--teal);color:#fff;font-size:22px;box-shadow:0 2px 10px #0006;border:2px solid #ffffffaa;
+}
 footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 
 @media(max-width:800px) {
   .adv-grid {grid-template-columns:1fr 1fr}
   .counts {grid-template-columns:repeat(2,minmax(0,1fr))}
-  #progress ul {columns:1}
 }
 @media(max-width:520px) {
   .container {padding:10px}
   .panel {padding:16px}
+  .report-nav {margin:0 -16px 10px;padding:8px 16px}
   .adv-grid {grid-template-columns:1fr}
   #map {height:420px}
   .big {width:100%}
+  header h1 {font-size:21px}
 }
 @media print {
   body {background:#fff;font-size:12px}
-  header,footer,.no-print,#searchPanel,#progressPanel {display:none!important}
+  header,footer,.no-print,#searchPanel,#savedPanel,#comparePanel {display:none!important}
   .container {padding:0;max-width:none}
   .panel {border:0;box-shadow:none;padding:0;margin:0}
   a {color:#222;text-decoration:none}
   .details-start {break-before:page}
-  details.check,.checklist li,.priority li {break-inside:avoid}
-  .info-btn {display:none}
+  .check,.checklist li,.priority li {break-inside:avoid}
+  .info-btn,[data-retry] {display:none!important}
   .info-body[hidden] {display:block!important}
   .leaflet-control-zoom {display:none}
   @page {size:A4;margin:14mm}
@@ -200,14 +304,22 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 
 <body>
 
-<header>
+<header class="zoomable">
   <div class="title-row">
     <h1>Property Location Check</h1>
     <button class="info-btn" type="button" aria-expanded="false" aria-controls="info-about" aria-label="About this tool">i</button>
+    <div class="header-tools">
+      <button type="button" id="installBtn" class="hidden">Install app</button>
+      <button type="button" id="textSizeBtn" aria-pressed="false" title="Larger text">A+ <span class="hidden">Larger text</span></button>
+    </div>
   </div>
-  <div class="info-body" id="info-about" hidden>Thinking of buying a house or land in England? Check flooding, radon,
-     coal mining, noise, air quality, old landfill, planning restrictions and more, free, using official government
-     and open data.</div>
+  <div class="info-body" id="info-about" hidden>
+    <p>Thinking of buying a house or land in England? Check flooding, radon, coal mining, noise, air quality, old landfill,
+       planning restrictions and more, free, using official government and open data.</p>
+    <p>Use <strong>A+</strong> for larger text. The page follows your device's dark mode. To add it to your home screen:
+       on Android, use <strong>Install app</strong> (or the browser menu); on iPhone, tap <strong>Share</strong> then
+       <strong>Add to Home Screen</strong>.</p>
+  </div>
 </header>
 
 <main class="container">
@@ -216,11 +328,13 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
   <section class="panel" id="searchPanel" aria-labelledby="searchTitle">
     <div class="step-label">Step 1 of 2</div>
     <h2 id="searchTitle">Find the property<button class="info-btn" type="button" aria-expanded="false" aria-controls="qHelp" aria-label="How to find the property">i</button></h2>
-    <div class="info-body" id="qHelp" hidden>
+    <div class="info-body zoomable" id="qHelp" hidden>
       <p>Use the search button <span aria-hidden="true">🔍</span> at the top left of the map to find a postcode, address or place,
          or tap the map to drop a pin.</p>
-      <p>The layers button at the top right changes the background map (satellite, street, topographic), shows road noise,
-         and explains the map symbols.</p>
+      <p>On a phone, scroll the page with one finger and move the map with two. On a computer, hold Ctrl (⌘ on Mac) while
+         scrolling to zoom the map. The <strong>full-screen</strong> button makes the map fill the screen, where one finger moves it.</p>
+      <p>The layers button changes the background map and shows road noise and the map key. The location button puts the pin
+         where you are.</p>
     </div>
 
     <!-- Moved into the map's top-left search button when the page loads. -->
@@ -235,11 +349,11 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
       </div>
       <ul id="suggestions" role="listbox" class="hidden" aria-label="Suggestions"></ul>
     </div>
-    <div id="searchStatus" class="status hidden" role="status" aria-live="polite"></div>
+    <div id="searchStatus" class="status hidden zoomable" role="status" aria-live="polite"></div>
 
-    <div id="map" role="application" aria-label="Map. Click to choose the property location."></div>
+    <div id="map" role="application" aria-label="Map. Tap to choose the property location."></div>
 
-    <div id="confirm" class="confirm hidden" aria-live="polite">
+    <div id="confirm" class="confirm hidden zoomable" aria-live="polite">
       <div class="step-label">Step 2 of 2</div>
       <p><strong>Is the pin on the right property?</strong><button class="info-btn" type="button" aria-expanded="false" aria-controls="info-confirm" aria-label="Why check the pin">i</button><br>
          <span id="confirmText"></span></p>
@@ -249,7 +363,7 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
       <button class="big" id="runBtn" type="button">Check this property</button>
     </div>
 
-    <details class="advanced">
+    <details class="advanced zoomable">
       <summary>Advanced options</summary>
       <div class="adv-grid">
         <div>
@@ -274,25 +388,54 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
           </select>
         </div>
       </div>
-      <p><button class="secondary" id="usePinBtn" type="button">Put pin at these coordinates</button>
-         <button class="secondary" id="locateMe" type="button">Use my current location</button></p>
+      <p><button class="secondary" id="usePinBtn" type="button">Put pin at these coordinates</button></p>
     </details>
   </section>
 
-  <!-- ===================== PROGRESS ===================== -->
-  <section class="panel hidden" id="progressPanel" aria-live="polite">
-    <h2>Checking official data…</h2>
-    <div id="progress"><ul></ul></div>
+  <!-- ===================== SAVED PROPERTIES ===================== -->
+  <section class="panel hidden zoomable" id="savedPanel" aria-labelledby="savedTitle">
+    <h2 id="savedTitle">Your saved properties<button class="info-btn" type="button" aria-expanded="false" aria-controls="info-saved" aria-label="About saved properties">i</button></h2>
+    <div class="info-body" id="info-saved" hidden>
+      <p>Every report you run is saved automatically, <strong>only on this device</strong> (nothing is sent anywhere).
+         Tap a name to run its checks again with the latest data. Tick two properties and press
+         <strong>Compare</strong> to see them side by side.</p>
+    </div>
+    <ul class="saved-list" id="savedList"></ul>
+    <div class="saved-actions">
+      <button class="primary small-btn" id="compareBtn" type="button" disabled>Compare</button>
+      <span class="help" id="compareHelp">Tick two properties to compare them.</span>
+    </div>
+  </section>
+
+  <!-- ===================== COMPARE ===================== -->
+  <section class="panel hidden zoomable" id="comparePanel" aria-labelledby="compareTitle">
+    <div class="title-row">
+      <h2 id="compareTitle" style="margin:0">Comparing two properties</h2>
+      <button class="secondary small-btn" id="closeCompare" type="button" style="margin-left:auto">Close</button>
+    </div>
+    <div id="compareBody"></div>
   </section>
 
   <!-- ===================== REPORT ===================== -->
-  <section class="panel" id="reportPanel">
+  <section class="panel zoomable" id="reportPanel">
     <div class="toolbar no-print hidden" id="toolbar">
-      <button class="secondary" id="copyLink" type="button">Copy link to this report</button>
-      <button class="secondary" id="downloadHtml" type="button">Download report</button>
-      <button class="secondary" id="downloadJson" type="button">Download data (JSON)</button>
-      <button class="primary" id="printReport" type="button">Print / Save as PDF</button>
+      <button class="primary" id="shareBtn" type="button">Share</button>
+      <button class="secondary" id="downloadHtml" type="button" disabled>Download report</button>
+      <button class="secondary" id="downloadJson" type="button" disabled>Download data</button>
+      <button class="secondary" id="printReport" type="button" disabled>Print / Save as PDF</button>
     </div>
+
+    <nav class="report-nav no-print hidden" id="reportNav" aria-label="Report sections">
+      <a href="#reportTop" data-nav="reportTop">Summary</a>
+      <a href="#group-flood" data-nav="group-flood">Flooding</a>
+      <a href="#group-ground" data-nav="group-ground">Ground</a>
+      <a href="#group-living" data-nav="group-living">Living</a>
+      <a href="#group-planning" data-nav="group-planning">Planning</a>
+      <a href="#checklist" data-nav="checklist">Checklist</a>
+      <span class="spacer"></span>
+      <button class="secondary" id="openAll" type="button">Open all</button>
+      <button class="secondary" id="closeAll" type="button">Close all</button>
+    </nav>
 
     <div id="report">
       <h2>Your report<button class="info-btn" type="button" aria-expanded="false" aria-controls="info-howto" aria-label="What the report includes">i</button></h2>
@@ -313,7 +456,9 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 
 </main>
 
-<footer>
+<button class="to-top no-print hidden" id="toTop" type="button" aria-label="Back to top">↑</button>
+
+<footer class="zoomable">
   Property Location Check · Contains public sector information licensed under the Open Government Licence v3.0 ·
   Map data © OpenStreetMap contributors, © Esri and © CARTO · Air quality model: Copernicus Atmosphere Monitoring Service via Open-Meteo ·
   Postcode data: Office for National Statistics via postcodes.io
@@ -535,8 +680,16 @@ function showSearchStatus(message, isError) {
 
 const ICONS = {
   search: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>`,
-  layers: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 8.5 12 14l10-5.5L12 3Z"/><path d="m2 13 10 5.5L22 13"/><path d="m2 17.5 10 5.5 10-5.5" opacity=".55"/></svg>`
+  layers: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 8.5 12 14l10-5.5L12 3Z"/><path d="m2 13 10 5.5L22 13"/><path d="m2 17.5 10 5.5 10-5.5" opacity=".55"/></svg>`,
+  expand: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`,
+  collapse: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>`,
+  locate: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>`
 };
+
+// Touch screens: one finger scrolls the page, two fingers move the map.
+const COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
+const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+let mapIsFull = false;
 
 let mapControls = [];
 
@@ -601,7 +754,7 @@ function watchBasemap(layer, bm) {
   });
 }
 
-// A map button (top-left or top-right) that opens a small panel.
+// A map button that opens a small panel.
 function iconControl(position, icon, label, buildPanel) {
   const ctrl = L.control({ position });
   ctrl.onAdd = () => {
@@ -625,6 +778,24 @@ function iconControl(position, icon, label, buildPanel) {
   return ctrl;
 }
 
+// A single map button that does something when pressed.
+function buttonControl(position, icon, label, onClick) {
+  const ctrl = L.control({ position });
+  ctrl.onAdd = () => {
+    const box = L.DomUtil.create("div", "map-ctrl leaflet-control");
+    const btn = L.DomUtil.create("button", "map-btn", box);
+    btn.type = "button";
+    btn.title = label;
+    btn.setAttribute("aria-label", label);
+    btn.innerHTML = icon;
+    L.DomEvent.disableClickPropagation(box);
+    btn.addEventListener("click", () => onClick(btn));
+    ctrl.btn = btn;
+    return box;
+  };
+  return ctrl;
+}
+
 function setControlOpen(ctrl, open) {
   if (open) mapControls.forEach(c => c !== ctrl && setControlOpen(c, false));   // one panel at a time
   ctrl.box.classList.toggle("open", open);
@@ -637,10 +808,14 @@ function anyControlOpen() {
   return mapControls.some(c => c.box && c.box.classList.contains("open"));
 }
 
-let searchControl, layersControl;
+let searchControl, layersControl, fullControl, locateControl;
 
 function initMap() {
-  map = L.map("map", { zoomControl: false, maxZoom: 20 }).setView([52.8, -1.6], 6);
+  map = L.map("map", {
+    zoomControl: false, maxZoom: 20,
+    scrollWheelZoom: false,          // zoom with Ctrl/⌘ + scroll instead (see setupGestureHandling)
+    dragging: !COARSE_POINTER        // on touch screens, two fingers move the map
+  }).setView([52.8, -1.6], 6);
 
   noiseLayer = L.tileLayer.wms(API.roadNoise, {
     layers: "Road_Noise_Lden_England_Round_4_All", format: "image/png",
@@ -652,7 +827,7 @@ function initMap() {
     pop => pop.appendChild($("searchBox")));
   searchControl.addTo(map);
 
-  // Top right: layers and map key.
+  // Top right: layers and map key, then full screen.
   layersControl = iconControl("topright", ICONS.layers, "Map layers and key", pop => {
     pop.innerHTML = `
       <h3>Background map</h3>
@@ -676,12 +851,18 @@ function initMap() {
   });
   layersControl.addTo(map);
 
+  fullControl = buttonControl("topright", ICONS.expand, "Full-screen map", () => setMapFull(!mapIsFull));
+  fullControl.addTo(map);
+
   setBasemap(BASEMAPS[0].id);   // satellite by default
 
-  // Bottom right: zoom buttons.
+  // Bottom right: zoom buttons, with "my location" above them.
   L.control.zoom({ position: "bottomright" }).addTo(map);
+  locateControl = buttonControl("bottomright", ICONS.locate, "Put the pin where I am", locateMe);
+  locateControl.addTo(map);
 
   featureLayer = L.layerGroup().addTo(map);
+  setupGestureHandling();
 
   // A tap on the map closes an open panel first, so the pin is not moved by accident.
   map.on("click", e => {
@@ -691,6 +872,82 @@ function initMap() {
     }
     setLocation(e.latlng.lat, e.latlng.lng, null, { keepZoom: true });
   });
+}
+
+// Show a short hint when someone tries to move the map with one finger,
+// or scroll-zoom without Ctrl/⌘, so the page can scroll normally.
+function setupGestureHandling() {
+  const el = map.getContainer();
+  const hint = L.DomUtil.create("div", "map-hint", el);
+  hint.setAttribute("aria-hidden", "true");
+  let hideTimer;
+  const showHint = text => {
+    if (mapIsFull) return;
+    hint.textContent = text;
+    hint.classList.add("show");
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => hint.classList.remove("show"), 1300);
+  };
+
+  el.addEventListener("touchmove", e => {
+    if (!COARSE_POINTER || mapIsFull) return;
+    if (e.touches.length === 1 && !e.target.closest(".leaflet-marker-icon, .leaflet-control")) {
+      showHint("Use two fingers to move the map");
+    } else {
+      hint.classList.remove("show");
+    }
+  }, { passive: true });
+
+  let wheelTotal = 0, lastZoomAt = 0;
+  el.addEventListener("wheel", e => {
+    if (!(e.ctrlKey || e.metaKey || mapIsFull)) {
+      showHint(IS_MAC ? "Use ⌘ + scroll to zoom the map" : "Use Ctrl + scroll to zoom the map");
+      return;                       // let the page scroll
+    }
+    e.preventDefault();
+    wheelTotal += e.deltaY;
+    const now = Date.now();
+    if (Math.abs(wheelTotal) >= 40 && now - lastZoomAt > 180) {
+      map.setZoomAround(map.mouseEventToContainerPoint(e), map.getZoom() + (wheelTotal < 0 ? 1 : -1));
+      wheelTotal = 0;
+      lastZoomAt = now;
+    }
+  }, { passive: false });
+}
+
+// Full-screen map: one finger moves the map, the wheel zooms.
+function setMapFull(on) {
+  mapIsFull = on;
+  $("map").classList.toggle("map-full", on);
+  document.body.classList.toggle("no-scroll", on);
+  if (COARSE_POINTER) { if (on) map.dragging.enable(); else map.dragging.disable(); }
+  fullControl.btn.innerHTML = on ? ICONS.collapse : ICONS.expand;
+  fullControl.btn.title = on ? "Exit full screen" : "Full-screen map";
+  fullControl.btn.setAttribute("aria-label", fullControl.btn.title);
+  fullControl.btn.classList.toggle("active", on);
+  setTimeout(() => map.invalidateSize(), 60);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && mapIsFull) setMapFull(false);
+});
+
+function locateMe(btn) {
+  if (!navigator.geolocation) return showSearchStatus("Your browser cannot share its location.", true);
+  if (btn) btn.classList.add("busy");
+  showSearchStatus("Finding your location…");
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      if (btn) btn.classList.remove("busy");
+      showSearchStatus("");
+      setLocation(p.coords.latitude, p.coords.longitude, null);
+    },
+    e => {
+      if (btn) btn.classList.remove("busy");
+      showSearchStatus("Your location is not available: " + e.message + ". Check that location access is allowed.", true);
+    },
+    { enableHighAccuracy: true, timeout: 12000 }
+  );
 }
 
 function setLocation(lat, lon, label, options = {}) {
@@ -760,16 +1017,6 @@ $("usePinBtn").addEventListener("click", () => {
     return;
   }
   setLocation(lat, lon, $("siteName").value.trim() || null);
-});
-
-$("locateMe").addEventListener("click", () => {
-  if (!navigator.geolocation) return alert("Your browser cannot share its location.");
-  showSearchStatus("Requesting your location…");
-  navigator.geolocation.getCurrentPosition(
-    p => { showSearchStatus(""); setLocation(p.coords.latitude, p.coords.longitude, null); },
-    e => showSearchStatus("Your location is not available: " + e.message, true),
-    { enableHighAccuracy: true, timeout: 12000 }
-  );
 });
 
 /* =========================================================
@@ -1610,73 +1857,173 @@ const GROUPS = [
   { id: "planning", title: "Planning and surroundings", intro: "Rules that affect changes to the property, and protected places nearby." }
 ];
 
-const BUILDERS = [checkFlood, checkCoal, checkRadon, checkLandfill, checkContamination, checkLandslides,
-  checkNoise, checkAir, checkCrime, checkPlanning, checkNature];
+// Each check, the data it needs, and where it appears in the report.
+const CHECKS = [
+  { id: "flood", group: "flood", title: "Flooding from rivers and the sea", deps: ["planningPoint", "planningNearby", "floodWarnings"], build: checkFlood },
+  { id: "coal", group: "ground", title: "Coal mining", deps: ["coal"], build: checkCoal },
+  { id: "radon", group: "ground", title: "Radon gas", deps: ["radon"], build: checkRadon },
+  { id: "landfill", group: "ground", title: "Old landfill sites", deps: ["landfill"], build: checkLandfill },
+  { id: "contamination", group: "ground", title: "Contaminated land and hazardous sites", deps: ["planningPoint", "planningNearby", "place"], build: checkContamination },
+  { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },
+  { id: "noise", group: "living", title: "Noise: road, railway and aircraft", deps: ["noise", "railNoise"], build: checkNoise },
+  { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air"], build: checkAir },
+  { id: "crime", group: "living", title: "Reported crime", deps: ["crime"], build: checkCrime },
+  { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby"], build: checkPlanning },
+  { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby"], build: checkNature }
+];
+
+const TASK_FN = Object.fromEntries(TASKS.map(([key, , fn]) => [key, fn]));
 
 /* =========================================================
-   RUN THE CHECKS
+   STORAGE – only on this device
 ========================================================= */
+
+const store = {
+  get(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch (e) { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage full or blocked */ }
+  }
+};
+const SAVED_KEY = "plc-saved-v1";
+const MAX_SAVED = 20;
+
+function reportKey(loc) {
+  return `${Number(loc.lat).toFixed(5)},${Number(loc.lon).toFixed(5)},${loc.radius}`;
+}
+
+function reportUrl(loc) {
+  const params = new URLSearchParams({ lat: Number(loc.lat).toFixed(6), lon: Number(loc.lon).toFixed(6), name: loc.name, r: loc.radius });
+  return location.pathname + "?" + params;
+}
+
+/* =========================================================
+   RUN THE CHECKS – results appear as soon as their data arrives
+========================================================= */
+
+let run = null;                 // the report being built
+let reportFeatureLayer = null;  // dots on the report map
 
 $("runBtn").addEventListener("click", () => runChecks());
 
-async function runChecks() {
-  if (!selected) { $("q").focus(); return; }
+function runChecks() {
+  if (!selected) { setControlOpen(searchControl, true); return; }
+  if (mapIsFull) setMapFull(false);
   const loc = {
     name: $("siteName").value.trim() || selected.label || "Selected location",
     lat: selected.lat, lon: selected.lon, radius: Number($("radius").value)
   };
 
+  run = { loc, R: { loc }, results: {}, done: false };
+  reportData = null;
   $("runBtn").disabled = true;
-  $("progressPanel").classList.remove("hidden");
-  $("progress").querySelector("ul").innerHTML = TASKS.map(([k, label]) => `<li id="p-${k}">${escapeHTML(label)}</li>`).join("");
-  $("progressPanel").scrollIntoView({ behavior: "smooth", block: "start" });
   featureLayer.clearLayers();
+  history.replaceState(null, "", reportUrl(loc));
 
-  const R = { loc };
-  await Promise.all(TASKS.map(([key, , fn]) =>
-    fn(loc).then(
-      value => { R[key] = { ok: true, value }; $("p-" + key).classList.add("done"); },
-      error => { R[key] = { ok: false, error: error.message || "unknown error" }; $("p-" + key).classList.add("fail"); }
-    )
-  ));
-
-  const checks = BUILDERS.map(fn => {
-    try { return fn(R); }
-    catch (e) {
-      return { id: fn.name, group: "planning", title: fn.name, status: "error",
-        found: "This check failed: " + e.message, meaning: "", actions: [], seller: [], conveyancer: [], source: { name: "", url: "" } };
-    }
-  });
-
-  reportData = {
-    title: "Property Location Report",
-    generatedAt: new Date().toISOString(),
-    location: loc,
-    place: R.place.ok ? R.place.value : null,
-    checks: checks.map(c => ({ group: c.group, title: c.title, result: STATUS_LABEL[c.status], found: c.found, dataDate: c.dataDate })),
-    rawData: Object.fromEntries(TASKS.map(([k]) => [k, R[k]]))
-  };
-
-  plotFeatures(featureLayer, R);
-  renderReport(loc, R, checks);
-  updateShareUrl(loc);
-
-  $("runBtn").disabled = false;
-  $("progressPanel").classList.add("hidden");
+  renderSkeleton(loc);
+  setExportEnabled(false);
   $("toolbar").classList.remove("hidden");
+  $("reportNav").classList.remove("hidden");
+  $("comparePanel").classList.add("hidden");
   $("reportPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+
+  TASKS.forEach(([key]) => startTask(run, key));
 }
 
+function startTask(r, key) {
+  delete r.R[key];
+  TASK_FN[key](r.loc).then(
+    value => { r.R[key] = { ok: true, value }; },
+    error => { r.R[key] = { ok: false, error: error.message || "unknown error" }; }
+  ).then(() => { if (r === run) onTaskSettled(key); });
+}
+
+const depsReady = c => c.deps.every(k => run.R[k]);
+
+function buildCheck(c) {
+  try { return { ...c.build(run.R), id: c.id, group: c.group }; }
+  catch (e) {
+    return { id: c.id, group: c.group, title: c.title, status: "error",
+      found: "This check failed: " + e.message, meaning: "", actions: [], seller: [], conveyancer: [],
+      source: { name: "", url: "" } };
+  }
+}
+
+function onTaskSettled(key) {
+  CHECKS.filter(c => c.deps.includes(key) && depsReady(c)).forEach(c => {
+    const result = buildCheck(c);
+    run.results[c.id] = result;
+    const slot = $("slot-" + c.id);
+    if (slot) slot.innerHTML = renderCheck(result);
+  });
+  if (key === "place") renderMeta();
+  if (["landfill", "landslides", "planningNearby"].includes(key)) replotFeatures();
+  if (TASKS.every(([k]) => run.R[k])) finishRun();
+  else renderSummary();
+}
+
+function finishRun() {
+  run.done = true;
+  $("runBtn").disabled = false;
+  renderSummary();
+  $("checklistBox").innerHTML = buildChecklist(orderedResults());
+  restoreTicks();
+  reportData = buildReportData();
+  saveCurrentReport();
+  setExportEnabled(true);
+}
+
+function orderedResults() {
+  return CHECKS.map(c => run.results[c.id]).filter(Boolean);
+}
+
+function setExportEnabled(on) {
+  ["downloadHtml", "downloadJson", "printReport"].forEach(id => { $(id).disabled = !on; });
+}
+
+// "Try again" on a check that could not load: re-fetch only the data it is missing.
+document.addEventListener("click", e => {
+  const btn = e.target.closest("[data-retry]");
+  if (!btn || !run) return;
+  const c = CHECKS.find(x => x.id === btn.dataset.retry);
+  if (!c) return;
+  let keys = c.deps.filter(k => !run.R[k] || !run.R[k].ok);
+  if (!keys.length) keys = c.deps.slice();
+  keys.forEach(k => {
+    delete run.R[k];
+    CHECKS.filter(x => x.deps.includes(k)).forEach(x => {
+      delete run.results[x.id];
+      const slot = $("slot-" + x.id);
+      if (slot) slot.innerHTML = loadingCard(x);
+    });
+  });
+  run.done = false;            // the report is being completed again
+  setExportEnabled(false);
+  renderSummary();
+  keys.forEach(k => startTask(run, k));
+});
+
 function plotFeatures(layer, R) {
-  if (R.landfill.ok) R.landfill.value.forEach(s => s.lat != null &&
+  if (R.landfill && R.landfill.ok) R.landfill.value.forEach(s => s.lat != null &&
     addMapPoint(layer, s.lat, s.lon, MAP_COLOURS.landfill, "<strong>Old landfill site</strong><br>" + escapeHTML(s.site_name || "Unnamed")));
-  if (R.landslides.ok) R.landslides.value.forEach(s => s.lat != null &&
+  if (R.landslides && R.landslides.ok) R.landslides.value.forEach(s => s.lat != null &&
     addMapPoint(layer, s.lat, s.lon, MAP_COLOURS.landslide, "<strong>Recorded landslide</strong><br>" + escapeHTML(s.name)));
-  if (R.planningNearby.ok) {
+  if (R.planningNearby && R.planningNearby.ok) {
     byDataset(R.planningNearby.value, "control-of-major-accident-hazards-site").forEach(s => s.lat != null &&
       addMapPoint(layer, s.lat, s.lon, MAP_COLOURS.hazard, "<strong>Major hazard site</strong><br>" + escapeHTML(s.name || "")));
     byDataset(R.planningNearby.value, "contaminated-land").forEach(s => s.lat != null &&
       addMapPoint(layer, s.lat, s.lon, MAP_COLOURS.contaminated, "<strong>Contaminated land</strong><br>" + escapeHTML(s.name || "")));
+  }
+}
+
+function replotFeatures() {
+  featureLayer.clearLayers();
+  plotFeatures(featureLayer, run.R);
+  if (reportFeatureLayer) {
+    reportFeatureLayer.clearLayers();
+    plotFeatures(reportFeatureLayer, run.R);
   }
 }
 
@@ -1685,7 +2032,7 @@ function plotFeatures(layer, R) {
 ========================================================= */
 
 function chip(status) {
-  return `<span class="chip ${status}">${STATUS_LABEL[status]}</span>`;
+  return `<span class="chip ${status}">${STATUS_LABEL[status] || "Checking…"}</span>`;
 }
 
 function infoButton(targetId, label) {
@@ -1694,6 +2041,13 @@ function infoButton(targetId, label) {
 
 function infoBox(targetId, html) {
   return `<div class="info-body" id="${targetId}" hidden>${html}</div>`;
+}
+
+function loadingCard(c) {
+  return `<div class="check loading" aria-busy="true">
+      <div><h3>${escapeHTML(c.title)}</h3><div class="skeleton"></div></div>
+      <span class="chip loading">Checking…</span>
+    </div>`;
 }
 
 function renderCheck(c) {
@@ -1708,6 +2062,7 @@ function renderCheck(c) {
         <span class="found">${escapeHTML(c.found)}</span>
       </summary>
       <div class="check-body">
+        ${c.status === "error" ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
         ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
         <h4>What to do</h4>${actions}
         <div class="info-row">${infoButton("about-" + c.id, "What this means and where the data comes from")}<span>What this means, and the data source</span></div>
@@ -1719,72 +2074,13 @@ function renderCheck(c) {
     </details>`;
 }
 
-function buildChecklist(checks) {
-  const uniq = arr => [...new Set(arr)];
-  const seller = uniq([
-    ...checks.flatMap(c => c.seller || []),
-    "Is there, or has there ever been, Japanese knotweed on or near the property?",
-    "Are there any disputes with neighbours, or shared access or drainage arrangements?"
-  ]);
-  const conveyancer = uniq([
-    "A local authority search (planning history, road schemes, building control).",
-    "A drainage and water search.",
-    ...checks.flatMap(c => c.conveyancer || [])
-  ]);
-  const yourself = [
-    `Check flooding from surface water and groundwater: ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.`,
-    `See the full noise maps for your street: ${link(LINKS.noise, "Defra noise maps")}.`,
-    `Find the energy performance certificate (EPC): ${link(LINKS.epc, "GOV.UK")}.`,
-    `Check mobile and broadband coverage: ${link(LINKS.ofcom, "Ofcom")}.`,
-    "Search the council's planning website for applications nearby.",
-    "Visit at different times of day, including rush hour and evening.",
-    "Get a building survey (RICS Level 2 or 3), especially for older homes."
-  ];
-  const list = items => `<ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>`;
-  return `
-    <section class="group checklist" id="checklist">
-      <h2>Your checklist${infoButton("info-checklist", "About the checklist")}</h2>
-      ${infoBox("info-checklist", "<p>Everything to follow up, gathered from the checks above. Print the report and tick items off as you go.</p>")}
-      <h3>Questions to ask the seller or estate agent</h3>${list(seller.map(escapeHTML))}
-      <h3>Searches and reports to ask your conveyancer for</h3>${list(conveyancer.map(escapeHTML))}
-      <h3>Things to check yourself</h3>${list(yourself)}
-    </section>`;
-}
-
-function renderReport(loc, R, checks) {
-  const p = R.place.ok ? R.place.value : null;
-  const outsideEngland = p && p.country && p.country !== "England";
-  const n = s => checks.filter(c => c.status === s).length;
-  const priority = checks.filter(c => ["high", "medium", "error"].includes(c.status))
-    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
-
-  const verdictText = n("high") || n("medium")
-    ? `We found <strong>${plural(n("high"), "thing")} to look into</strong> and <strong>${n("medium")} worth checking</strong>.
-       ${plural(n("low"), "check")} found no issue.`
-    : `<strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran. Still go through the checklist at the end.`;
-
-  const groupsHtml = GROUPS.map(g => {
-    const items = checks.filter(c => c.group === g.id).sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
-    return items.length ? `
-      <section class="group" id="group-${g.id}">
-        <h2>${escapeHTML(g.title)}${infoButton("info-group-" + g.id, "About " + g.title)}</h2>
-        ${infoBox("info-group-" + g.id, "<p>" + escapeHTML(g.intro) + "</p>")}
-        ${items.map(renderCheck).join("")}
-      </section>` : "";
-  }).join("");
-
+function renderSkeleton(loc) {
   $("report").innerHTML = `
-    <div class="cover">
+    <div class="cover" id="reportTop">
       <h1>Property Location Report</h1>
-      <p class="meta">
-        <strong>${escapeHTML(loc.name)}</strong><br>
-        ${p ? `Nearest postcode ${escapeHTML(p.postcode)} · ${escapeHTML(p.admin_district || "")}${p.admin_ward ? " · " + escapeHTML(p.admin_ward) + " ward" : ""}<br>` : ""}
-        Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}
-      </p>
-
+      <p class="meta" id="reportMeta"></p>
       <div id="reportMap" aria-label="Map of the property and nearby features"></div>
-
-      <p class="verdict">${verdictText}${infoButton("info-read", "How to read this report")}</p>
+      <h3>Summary${infoButton("info-read", "How to read this report")}</h3>
       ${infoBox("info-read", `
         <ul class="legend-list">
           <li><span class="chip high">Look into this</span> Something that could affect value, insurance, health or safety. Investigate before you commit.</li>
@@ -1796,38 +2092,81 @@ function renderReport(loc, R, checks) {
           the searches your conveyancer orders. “No issue found” means nothing was found in the data we checked, not that there
           is no risk. Results are for the pin location. Tap a heading to open or close a topic, and the
           <strong>i</strong> buttons for explanations.</p>`)}
-      <div class="counts">
-        <div class="count high"><strong>${n("high")}</strong><span>Look into this</span></div>
-        <div class="count medium"><strong>${n("medium")}</strong><span>Worth checking</span></div>
-        <div class="count low"><strong>${n("low")}</strong><span>No issue found</span></div>
-        <div class="count info"><strong>${n("info")}</strong><span>For information</span></div>
-      </div>
-
-      ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
-        <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
-            <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul>` : ""}
-
-      ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
-        Most checks use England-only data, so many results will be missing or incomplete.</div>` : ""}
-
+      <div id="summaryBox" aria-live="polite"></div>
     </div>
 
-    <div class="details-start">${groupsHtml}</div>
-    ${buildChecklist(checks)}
+    <div class="details-start">
+      ${GROUPS.map(g => `
+        <section class="group" id="group-${g.id}">
+          <h2>${escapeHTML(g.title)}${infoButton("info-group-" + g.id, "About " + g.title)}</h2>
+          ${infoBox("info-group-" + g.id, "<p>" + escapeHTML(g.intro) + "</p>")}
+          ${CHECKS.filter(c => c.group === g.id).map(c => `<div class="slot" id="slot-${c.id}">${loadingCard(c)}</div>`).join("")}
+        </section>`).join("")}
+    </div>
+
+    <div id="checklistBox">
+      <section class="group checklist" id="checklist">
+        <h2>Your checklist</h2>
+        <p class="help">Your checklist appears here when all the checks are finished.</p>
+      </section>
+    </div>
 
     <p class="help">Created with Property Location Check. Contains public sector information licensed under the Open Government
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
-  // "Start here" links open the matching section.
-  $("report").querySelectorAll("[data-open]").forEach(a => a.addEventListener("click", () => {
-    const d = $(a.dataset.open);
-    if (d) d.open = true;
-  }));
-
-  drawReportMap(loc, R);
+  renderMeta();
+  drawReportMap(loc);
+  renderSummary();
+  watchSections();
 }
 
-function drawReportMap(loc, R) {
+function renderMeta() {
+  const loc = run.loc;
+  const p = run.R.place && run.R.place.ok ? run.R.place.value : null;
+  $("reportMeta").innerHTML = `
+    <strong>${escapeHTML(loc.name)}</strong><br>
+    ${p ? `Nearest postcode ${escapeHTML(p.postcode)} · ${escapeHTML(p.admin_district || "")}${p.admin_ward ? " · " + escapeHTML(p.admin_ward) + " ward" : ""}<br>` : ""}
+    Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}`;
+}
+
+function renderSummary() {
+  const results = orderedResults();
+  const n = s => results.filter(c => c.status === s).length;
+  const ready = results.length;
+  const p = run.R.place && run.R.place.ok ? run.R.place.value : null;
+  const outsideEngland = p && p.country && p.country !== "England";
+  const priority = results.filter(c => ["high", "medium", "error"].includes(c.status))
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+
+  let verdict;
+  if (!run.done) {
+    verdict = `<p class="verdict">Checking official data… <strong>${ready} of ${CHECKS.length}</strong> topics ready.</p>
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${CHECKS.length}" aria-valuenow="${ready}">
+        <span style="width:${Math.round(ready / CHECKS.length * 100)}%"></span></div>`;
+  } else if (n("high") || n("medium")) {
+    verdict = `<p class="verdict">We found <strong>${plural(n("high"), "thing")} to look into</strong> and
+      <strong>${n("medium")} worth checking</strong>. ${plural(n("low"), "check")} found no issue.</p>`;
+  } else {
+    verdict = `<p class="verdict"><strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran.
+      Still go through the checklist at the end.</p>`;
+  }
+
+  $("summaryBox").innerHTML = `
+    ${verdict}
+    <div class="counts">
+      <div class="count high"><strong>${n("high")}</strong><span>Look into this</span></div>
+      <div class="count medium"><strong>${n("medium")}</strong><span>Worth checking</span></div>
+      <div class="count low"><strong>${n("low")}</strong><span>No issue found</span></div>
+      <div class="count info"><strong>${n("info")}</strong><span>For information</span></div>
+    </div>
+    ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
+      <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
+          <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul>` : ""}
+    ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
+      Most checks use England-only data, so many results will be missing or incomplete.</div>` : ""}`;
+}
+
+function drawReportMap(loc) {
   if (reportMap) { reportMap.remove(); reportMap = null; }
   reportMap = L.map("reportMap", {
     zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
@@ -1838,26 +2177,211 @@ function drawReportMap(loc, R) {
   makeBasemapLayers(currentBasemap || BASEMAPS[0]).forEach(l => l.addTo(reportMap));   // same background as the main map
   L.circle([loc.lat, loc.lon], { radius: loc.radius, color: "#087f8c", weight: 2, fillOpacity: 0.05 }).addTo(reportMap);
   L.marker([loc.lat, loc.lon]).addTo(reportMap);
-  plotFeatures(L.layerGroup().addTo(reportMap), R);
+  reportFeatureLayer = L.layerGroup().addTo(reportMap);
 }
+
+/* ---------- checklist with ticks remembered on this device ---------- */
+
+const plainText = html => String(html).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+
+function buildChecklist(checks) {
+  const uniq = arr => [...new Set(arr)];
+  const seller = uniq([
+    ...checks.flatMap(c => c.seller || []),
+    "Is there, or has there ever been, Japanese knotweed on or near the property?",
+    "Are there any disputes with neighbours, or shared access or drainage arrangements?"
+  ]).map(escapeHTML);
+  const conveyancer = uniq([
+    "A local authority search (planning history, road schemes, building control).",
+    "A drainage and water search.",
+    ...checks.flatMap(c => c.conveyancer || [])
+  ]).map(escapeHTML);
+  const yourself = [
+    `Check flooding from surface water and groundwater: ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.`,
+    `See the full noise maps for your street: ${link(LINKS.noise, "Defra noise maps")}.`,
+    `Find the energy performance certificate (EPC): ${link(LINKS.epc, "GOV.UK")}.`,
+    `Check mobile and broadband coverage: ${link(LINKS.ofcom, "Ofcom")}.`,
+    "Search the council's planning website for applications nearby.",
+    "Visit at different times of day, including rush hour and evening.",
+    "Get a building survey (RICS Level 2 or 3), especially for older homes."
+  ];
+  const list = items => `<ul>${items.map(i =>
+    `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(plainText(i))}"><span>${i}</span></label></li>`).join("")}</ul>`;
+  return `
+    <section class="group checklist" id="checklist">
+      <h2>Your checklist${infoButton("info-checklist", "About the checklist")}</h2>
+      ${infoBox("info-checklist", "<p>Everything to follow up, gathered from the checks above. Tick items as you go: your ticks are remembered on this device for this property.</p>")}
+      <h3>Questions to ask the seller or estate agent</h3>${list(seller)}
+      <h3>Searches and reports to ask your conveyancer for</h3>${list(conveyancer)}
+      <h3>Things to check yourself</h3>${list(yourself)}
+    </section>`;
+}
+
+const ticksKey = () => "plc-ticks:" + reportKey(run.loc);
+
+function restoreTicks() {
+  const ticked = new Set(store.get(ticksKey(), []));
+  document.querySelectorAll("#checklist input[data-tick]").forEach(box => { box.checked = ticked.has(box.dataset.tick); });
+}
+
+document.addEventListener("change", e => {
+  const box = e.target.closest("#checklist input[data-tick]");
+  if (!box || !run) return;
+  const ticked = new Set(store.get(ticksKey(), []));
+  if (box.checked) ticked.add(box.dataset.tick); else ticked.delete(box.dataset.tick);
+  store.set(ticksKey(), [...ticked]);
+});
+
+/* ---------- section bar, open/close all, back to top ---------- */
+
+let sectionObserver = null;
+function watchSections() {
+  if (sectionObserver) sectionObserver.disconnect();
+  if (!("IntersectionObserver" in window)) return;
+  sectionObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const id = entry.target.id;
+      document.querySelectorAll("#reportNav a").forEach(a => a.classList.toggle("active", a.dataset.nav === id));
+      const active = document.querySelector(`#reportNav a[data-nav="${id}"]`);
+      if (active) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+    });
+  }, { rootMargin: "-20% 0px -70% 0px" });
+  ["reportTop", "group-flood", "group-ground", "group-living", "group-planning", "checklist"].forEach(id => {
+    const el = $(id);
+    if (el) sectionObserver.observe(el);
+  });
+}
+
+$("openAll").addEventListener("click", () => document.querySelectorAll("#report details.check").forEach(d => { d.open = true; }));
+$("closeAll").addEventListener("click", () => document.querySelectorAll("#report details.check").forEach(d => { d.open = false; }));
+
+// "Start here" links open the topic they point to.
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-open]");
+  if (!a) return;
+  const d = $(a.dataset.open);
+  if (d) d.open = true;
+});
+
+window.addEventListener("scroll", () => {
+  $("toTop").classList.toggle("hidden", window.scrollY < 700);
+}, { passive: true });
+$("toTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+/* =========================================================
+   SAVED PROPERTIES AND COMPARE
+========================================================= */
+
+function buildReportData() {
+  const loc = run.loc;
+  return {
+    title: "Property Location Report",
+    generatedAt: new Date().toISOString(),
+    location: loc,
+    place: run.R.place && run.R.place.ok ? run.R.place.value : null,
+    checks: orderedResults().map(c => ({ id: c.id, group: c.group, title: c.title, result: STATUS_LABEL[c.status], found: c.found, dataDate: c.dataDate })),
+    rawData: Object.fromEntries(TASKS.map(([k]) => [k, run.R[k]]))
+  };
+}
+
+function saveCurrentReport() {
+  const loc = run.loc;
+  const p = run.R.place && run.R.place.ok ? run.R.place.value : null;
+  const entry = {
+    key: reportKey(loc), name: loc.name, lat: loc.lat, lon: loc.lon, radius: loc.radius,
+    savedAt: new Date().toISOString(),
+    postcode: p ? p.postcode : "", district: p ? p.admin_district : "",
+    checks: orderedResults().map(c => ({ id: c.id, title: c.title, status: c.status, found: c.found }))
+  };
+  const saved = store.get(SAVED_KEY, []).filter(s => s.key !== entry.key);
+  saved.unshift(entry);
+  store.set(SAVED_KEY, saved.slice(0, MAX_SAVED));
+  renderSaved();
+}
+
+function countChips(checks) {
+  const n = s => checks.filter(c => c.status === s).length;
+  return ["high", "medium", "low"].filter(s => n(s)).map(s => `<span class="chip ${s}">${n(s)} ${STATUS_LABEL[s].toLowerCase()}</span>`).join("");
+}
+
+function renderSaved() {
+  const saved = store.get(SAVED_KEY, []);
+  $("savedPanel").classList.toggle("hidden", !saved.length);
+  $("savedList").innerHTML = saved.map(s => `
+    <li>
+      <label class="cmp" title="Select to compare"><input type="checkbox" data-compare="${escapeHTML(s.key)}" aria-label="Compare ${escapeHTML(s.name)}"></label>
+      <div class="saved-main">
+        <a href="${escapeHTML(reportUrl(s))}">${escapeHTML(s.name)}</a>
+        <small>${s.postcode ? escapeHTML(s.postcode) + " · " : ""}${s.district ? escapeHTML(s.district) + " · " : ""}checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}</small>
+        <div class="mini-counts">${countChips(s.checks)}</div>
+      </div>
+      <button class="link-btn" type="button" data-remove="${escapeHTML(s.key)}">Remove</button>
+    </li>`).join("");
+  updateCompareButton();
+}
+
+function selectedForCompare() {
+  return [...document.querySelectorAll("#savedList input[data-compare]:checked")].map(b => b.dataset.compare);
+}
+
+function updateCompareButton() {
+  const chosen = selectedForCompare();
+  $("compareBtn").disabled = chosen.length !== 2;
+  document.querySelectorAll("#savedList input[data-compare]").forEach(b => { b.disabled = !b.checked && chosen.length >= 2; });
+  $("compareHelp").textContent = chosen.length === 2 ? "Ready to compare." : `Tick two properties to compare them (${chosen.length} of 2 chosen).`;
+}
+
+$("savedList").addEventListener("change", updateCompareButton);
+$("savedList").addEventListener("click", e => {
+  const btn = e.target.closest("[data-remove]");
+  if (!btn) return;
+  store.set(SAVED_KEY, store.get(SAVED_KEY, []).filter(s => s.key !== btn.dataset.remove));
+  renderSaved();
+});
+
+$("compareBtn").addEventListener("click", () => {
+  const saved = store.get(SAVED_KEY, []);
+  const [a, b] = selectedForCompare().map(k => saved.find(s => s.key === k));
+  if (!a || !b) return;
+  const cell = (s, id) => {
+    const c = s.checks.find(x => x.id === id);
+    return c ? `${chip(c.status)}<br><small>${escapeHTML(c.found)}</small>` : "<small>Not checked</small>";
+  };
+  const head = s => `<a href="${escapeHTML(reportUrl(s))}">${escapeHTML(s.name)}</a><br><small>${escapeHTML(s.postcode || "")} · checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}</small>`;
+  $("compareBody").innerHTML = `
+    <div class="table-wrap"><table class="compare-table">
+      <thead><tr><th>Topic</th><th>${head(a)}</th><th>${head(b)}</th></tr></thead>
+      <tbody>
+        <tr><td>Overall</td><td>${countChips(a.checks)}</td><td>${countChips(b.checks)}</td></tr>
+        ${CHECKS.map(c => `<tr><td>${escapeHTML(c.title)}</td><td>${cell(a, c.id)}</td><td>${cell(b, c.id)}</td></tr>`).join("")}
+      </tbody>
+    </table></div>
+    <p class="help">Saved results from the day each property was checked. Open a property to run its checks again with the latest data.</p>`;
+  $("comparePanel").classList.remove("hidden");
+  $("comparePanel").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+$("closeCompare").addEventListener("click", () => $("comparePanel").classList.add("hidden"));
 
 /* =========================================================
    SHARE, EXPORT AND PRINT
 ========================================================= */
 
-function updateShareUrl(loc) {
-  const params = new URLSearchParams({ lat: loc.lat.toFixed(6), lon: loc.lon.toFixed(6), name: loc.name, r: loc.radius });
-  history.replaceState(null, "", location.pathname + "?" + params);
-}
-
-$("copyLink").addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(location.href);
-    $("copyLink").textContent = "Link copied ✓";
-  } catch (e) {
-    prompt("Copy this link:", location.href);
+$("shareBtn").addEventListener("click", async () => {
+  const url = location.href;
+  const title = "Property Location Report" + (run ? " – " + run.loc.name : "");
+  if (navigator.share) {
+    try { await navigator.share({ title, text: title, url }); return; }
+    catch (e) { if (e.name === "AbortError") return; }
   }
-  setTimeout(() => { $("copyLink").textContent = "Copy link to this report"; }, 2500);
+  try {
+    await navigator.clipboard.writeText(url);
+    $("shareBtn").textContent = "Link copied ✓";
+  } catch (e) {
+    prompt("Copy this link:", url);
+  }
+  setTimeout(() => { $("shareBtn").textContent = "Share"; }, 2500);
 });
 
 function downloadFile(filename, content, type) {
@@ -1881,7 +2405,8 @@ $("downloadHtml").addEventListener("click", () => {
   const copy = $("report").cloneNode(true);
   copy.querySelectorAll("details").forEach(d => d.setAttribute("open", ""));
   copy.querySelectorAll(".info-body").forEach(d => d.removeAttribute("hidden"));
-  copy.querySelectorAll(".info-btn, .info-row").forEach(b => b.remove());
+  copy.querySelectorAll(".info-btn, .info-row, [data-retry]").forEach(b => b.remove());
+  copy.querySelectorAll("input[data-tick]").forEach(b => { if (b.checked) b.setAttribute("checked", ""); });
   const loc = reportData.location;
   const mapBox = copy.querySelector("#reportMap");
   if (mapBox) mapBox.outerHTML = `<p><a href="https://www.openstreetmap.org/?mlat=${loc.lat}&amp;mlon=${loc.lon}#map=16/${loc.lat}/${loc.lon}">View the location on a map</a></p>`;
@@ -1890,7 +2415,7 @@ $("downloadHtml").addEventListener("click", () => {
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Property Location Report – ${escapeHTML(loc.name)}</title>
 <style>${css}
-body{background:#fff;max-width:960px;margin:24px auto;padding:0 18px}</style>
+body{max-width:960px;margin:24px auto;padding:0 18px}</style>
 </head><body>${copy.innerHTML}<p class="help">Live version: <a href="${escapeHTML(location.href)}">${escapeHTML(location.href)}</a></p></body></html>`;
   downloadFile(fileBase() + ".html", html, "text/html");
 });
@@ -1921,12 +2446,46 @@ window.addEventListener("afterprint", () => {
 $("printReport").addEventListener("click", () => window.print());
 
 /* =========================================================
+   COMFORT: larger text, install as an app
+========================================================= */
+
+function setLargeText(on) {
+  document.documentElement.classList.toggle("large-text", on);
+  $("textSizeBtn").setAttribute("aria-pressed", String(on));
+  $("textSizeBtn").title = on ? "Normal text size" : "Larger text";
+  store.set("plc-large-text", on);
+  if (reportMap) setTimeout(() => reportMap.invalidateSize(), 50);
+}
+$("textSizeBtn").addEventListener("click", () => setLargeText(!document.documentElement.classList.contains("large-text")));
+setLargeText(store.get("plc-large-text", false));
+
+let installPrompt = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  installPrompt = e;
+  $("installBtn").classList.remove("hidden");
+});
+$("installBtn").addEventListener("click", async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice.catch(() => {});
+  installPrompt = null;
+  $("installBtn").classList.add("hidden");
+});
+window.addEventListener("appinstalled", () => $("installBtn").classList.add("hidden"));
+
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  navigator.serviceWorker.register("sw.js").catch(() => { /* the page still works without it */ });
+}
+
+/* =========================================================
    START – supports shared links:
    ?lat=..&lon=..&name=..&r=..   or   ?postcode=S70%202TA
 ========================================================= */
 
 window.addEventListener("load", async () => {
   initMap();
+  renderSaved();
   const params = new URLSearchParams(location.search);
   const r = params.get("r");
   if (r && [...$("radius").options].some(o => o.value === r)) $("radius").value = r;
