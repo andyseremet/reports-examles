@@ -32,7 +32,7 @@ const record = (group, name, pass, info = "") => {
 // refusal, and only that, is recorded as a warning instead of a failure. Anything
 // else from this server (slow, wrong content, other errors) still fails.
 const EA_MAP_SERVER = "environment.data.gov.uk/spatialdata/";
-const EA_TOPICS = ["surfacewater", "landfill", "noise"];
+const EA_TOPICS = ["surfacewater", "landuse", "noise"];
 const EA_REFUSAL_NOTE = "the Environment Agency map server refused GitHub's test machine (403), as it often does with GitHub's shared machines; if this repeats for days, check the live site by hand";
 
 /* ---------------------------------------------------------------
@@ -49,7 +49,6 @@ const arcgis = (base, extra = "") => `${base}?geometry=${LON},${LAT}&geometryTyp
 const SERVICES = [
   ["Postcodes (postcodes.io)", `https://api.postcodes.io/postcodes?lon=${LON}&lat=${LAT}&limit=1`, d => d.result && d.result[0].postcode],
   ["Planning data (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?latitude=${LAT}&longitude=${LON}&limit=5`, d => Array.isArray(d.entities)],
-  ["Flood warnings (Environment Agency)", `https://environment.data.gov.uk/flood-monitoring/id/floods?lat=${LAT}&long=${LON}&dist=1`, d => Array.isArray(d.items)],
   ["Surface water (Environment Agency)", wms("https://environment.data.gov.uk/spatialdata/nafra2-risk-of-flooding-from-surface-water/wms", "rofsw"), d => Array.isArray(d.features)],
   ["Radon (British Geological Survey)", arcgis("https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/radon/MapServer/0/query"), d => d.features && d.features.length === 1],
   ["Landslides (British Geological Survey)", arcgis("https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hazards/MapServer/2/query", "&distance=1000&units=esriSRUnit_Meter"), d => Array.isArray(d.features)],
@@ -59,6 +58,7 @@ const SERVICES = [
   ["Historic landfill (Environment Agency)", `https://environment.data.gov.uk/spatialdata/historic-landfill/ogc/features/v1/collections/Historic_Landfill_Sites/items?f=json&limit=5&bbox=${LON - 0.02},${LAT - 0.02},${LON + 0.02},${LAT + 0.02}`, d => Array.isArray(d.features)],
   ["Air quality model (Open-Meteo)", `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&hourly=pm2_5&past_days=1&forecast_days=0&timeformat=unixtime`, d => d.hourly && d.hourly.pm2_5.length > 0],
   ["Crime (data.police.uk)", `https://data.police.uk/api/crimes-street/all-crime?lat=${LAT}&lng=${LON}`, d => Array.isArray(d) && d.length > 0],
+  ["Police force for a place (data.police.uk)", `https://data.police.uk/api/locate-neighbourhood?q=${LAT},${LON}`, d => d.force === "south-yorkshire"],
   ["Census boundaries (ONS)", "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query?where=MSOA21CD%3D%27E02001521%27&outFields=MSOA21CD&returnGeometry=false&f=json", d => d.features && d.features.length === 1],
   ["Scotland flood maps (SEPA)", "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer/2/query?geometry=-3.43,56.404&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnCountOnly=true&f=json", d => Number.isFinite(d.count)],
   ["Wales flood maps (Natural Resources Wales)", wms("https://datamap.gov.wales/geoserver/ows", "inspire-nrw:NRW_FLOODZONE_RIVERS_SEAS_MERGED", 51.47, -3.188, 0.00005), d => Array.isArray(d.features) && d.features.length > 0],
@@ -259,6 +259,19 @@ async function testDevice(device, [postcode, place]) {
       .map(c => c.id));
     if (missing.length) throw new Error("no data date on: " + missing.join(", "));
     return await page.$eval("#check-crime .data-date", x => x.textContent.trim()).catch(() => "ok");
+  });
+
+  await step("Crime where the police publish no data", async () => {
+    // Central Manchester: Greater Manchester Police has published no data since March 2025. Whatever the
+    // police data says on the day, the report must not show a near-empty count as a real, low crime level.
+    const r = await page.evaluate(async () => {
+      const loc = { name: "Manchester test", lat: 53.4835, lon: -2.2312, radius: 1000 };
+      const [crime, area] = await Promise.all([getCrime(loc), getCrimeArea(loc)]);
+      const c = checkCrime({ loc, crime: { ok: true, value: crime }, crimeArea: { ok: true, value: area } });
+      return { status: c.status, found: c.found, total: crime.total };
+    });
+    if (r.total <= 5 && r.status !== "manual") throw new Error(`only ${r.total} crimes, but rated "${r.status}": ${r.found}`);
+    return `${r.total} crimes within a mile → ${r.status === "manual" ? "Check yourself" : "shown"}: ${r.found.slice(0, 70)}…`;
   });
 
   await step("Send to my conveyancer", async () => {

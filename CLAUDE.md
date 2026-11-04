@@ -39,8 +39,7 @@ behaviour, write a short Playwright script in a scratch folder, and route
 
 All app code is in `index.html` (HTML, CSS and one `<script>`), split into banner-commented sections: DATA
 SOURCES, HELPERS, MAP, SEARCH, DATA RETRIEVAL, CHECKS, STORAGE, RUN THE CHECKS, REPORT, SAVED PROPERTIES AND
-COMPARE, SHARE/EXPORT/PRINT, COMFORT, START. Leaflet 1.9.4 (unpkg) is the only library loaded at page start. The QR
-library (cdnjs) is loaded on demand.
+COMPARE, SHARE/EXPORT/PRINT, COMFORT, START. Leaflet 1.9.4 (unpkg) is the only outside library.
 
 **The report pipeline is a two-stage dependency graph:**
 - `API` holds every outside endpoint. `LINKS` holds human-facing links.
@@ -84,15 +83,19 @@ The owner's rule: store outside data locally only when it is certain never to ch
 radon, coal, landfill, landslides, noise, crime, air, planning) stays a live request. The README explains how each
 file was made.
 
+Never turn missing outside data into good news. A police force that publishes nothing, or a council that has not
+published a dataset, must show as "Check yourself", not "No issue found" (see `policeDataMissing`, `checkTrees` and
+`checkLanduse`).
+
 **Service worker (`sw.js`):**
-- The page is network-first. The `SHELL` files (page, icons, Leaflet, QR library, rail stations) are cache-first.
+- The page is network-first. The `SHELL` files (page, icons, Leaflet, rail stations) are cache-first.
 - `FIXED_DATA` (the census file) is cached the first time it is used.
 - Live data and map tiles are never cached.
 
 ## Release conventions
 
 Every user-visible change bumps two things together:
-- `APP_VERSION` in `index.html`, shown in the footer, for example `1.10.0`.
+- `APP_VERSION` in `index.html`, shown in the footer, for example `1.12.0`.
 - `CACHE` in `sw.js` (`plc-vN`), so phones pick up the new page.
 
 Update `README.md` (feature list and "Automatic testing") in the same change.
