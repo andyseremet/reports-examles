@@ -36,6 +36,17 @@ official checkers.
    surroundings, ending with a checklist for the seller and conveyancer.
 5. Copy the link, download the report, or print / save it as a PDF.
 
+## Features for easy use
+
+- **Map:** on phones, scroll the page with one finger and move the map with two; on computers, use Ctrl (⌘ on Mac)
+  + scroll to zoom. Full-screen map button, "my location" button, satellite and street backgrounds.
+- **Report:** results appear topic by topic as the data arrives; any topic that fails has a **Try again** button.
+  A section bar stays at the top while scrolling, with **Open all / Close all** and a back-to-top button.
+- **Save and share:** every report is saved on your device (nothing is sent anywhere). Reopen saved properties,
+  **compare two side by side**, tick off the checklist (remembered per property), and share with the phone's share menu.
+- **Comfort:** dark mode follows your device setting; **A+** makes text larger; **install as an app** on your phone's
+  home screen (on iPhone: Share, then Add to Home Screen).
+
 ### Shareable links
 
 - `?postcode=S70%202TA` runs the report for a postcode.
