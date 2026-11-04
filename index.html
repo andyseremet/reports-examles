@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Environmental Data Report Generator</title>
+
+<link rel="stylesheet"
+ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root {
+  --navy:#10243a;
+  --blue:#1769aa;
+  --teal:#087f8c;
+  --bg:#f2f5f8;
+  --white:#fff;
+  --text:#263445;
+  --muted:#687789;
+  --border:#dce3ea;
+  --green:#16834a;
+  --amber:#a96a00;
+  --red:#b42318;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--text);
+  background:var(--bg);
+  line-height:1.5;
+}
+header {
+  background:var(--navy);
+  color:white;
+  padding:22px 5%;
+}
+header h1 {margin:0;font-size:25px}
+header p {margin:6px 0 0;color:#cbd8e5}
+.container {max-width:1450px;margin:auto;padding:22px}
+.panel {
+  background:white;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px;
+  margin-bottom:18px;
+  box-shadow:0 2px 6px #10243a0a;
+}
+h2 {font-size:19px;margin:0 0 15px;color:var(--navy)}
+h3 {font-size:16px;color:var(--navy);margin:20px 0 8px}
+label {display:block;font-weight:bold;font-size:13px;margin-bottom:5px}
+input,select,button {
+  font:inherit;
+  border-radius:6px;
+}
+input,select {
+  width:100%;
+  border:1px solid #cbd5df;
+  padding:10px;
+  background:white;
+}
+button {
+  border:0;
+  padding:11px 16px;
+  cursor:pointer;
+  font-weight:bold;
+}
+button:disabled {opacity:.55;cursor:not-allowed}
+.primary {background:var(--blue);color:white}
+.secondary {background:#e8eef5;color:var(--navy)}
+.teal {background:var(--teal);color:white}
+.danger {background:#fae9e8;color:var(--red)}
+.grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+}
+.field {min-width:0}
+.actions {display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+#map {
+  height:430px;
+  width:100%;
+  border-radius:8px;
+  border:1px solid var(--border);
+}
+.help {font-size:12px;color:var(--muted);margin-top:5px}
+.status {
+  padding:11px 13px;
+  border-radius:6px;
+  background:#edf3f8;
+  margin:12px 0;
+  font-size:13px;
+}
+.status.success {background:#e8f5ed;color:#17653b}
+.status.warning {background:#fff4dc;color:#805400}
+.status.error {background:#fdecea;color:#a3261d}
+.cards {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+.metric {
+  background:#f5f8fb;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:15px;
+}
+.metric strong {display:block;font-size:25px;color:var(--navy)}
+.metric span {font-size:12px;color:var(--muted)}
+.badge {
+  display:inline-block;
+  padding:3px 8px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:bold;
+  background:#e8eef5;
+  color:#43566b;
+}
+.badge.live {background:#e2f4e9;color:#17653b}
+.badge.partial {background:#fff0d3;color:#805400}
+.badge.unavailable {background:#f0edf5;color:#625174}
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin:10px 0 18px;
+  font-size:13px;
+}
+th,td {
+  text-align:left;
+  padding:9px;
+  border-bottom:1px solid var(--border);
+  vertical-align:top;
+}
+th {background:#f1f5f9;color:var(--navy)}
+a {color:var(--blue);overflow-wrap:anywhere}
+small {color:var(--muted)}
+#report {background:white}
+.report-header {
+  border-bottom:3px solid var(--blue);
+  padding-bottom:15px;
+  margin-bottom:20px;
+}
+.report-header h1 {font-size:25px;color:var(--navy);margin:0}
+.report-meta {font-size:12px;color:var(--muted);margin-top:8px}
+.report-section {
+  padding:13px 0;
+  border-bottom:1px solid var(--border);
+  break-inside:avoid;
+}
+.report-section h3 {margin-top:0}
+.report-section p {font-size:13px}
+.notice {
+  padding:12px;
+  background:#fff6e5;
+  border-left:4px solid #d99a26;
+  font-size:13px;
+  margin:12px 0;
+}
+.table-wrap {overflow-x:auto}
+footer {
+  text-align:center;
+  color:var(--muted);
+  padding:20px;
+  font-size:12px;
+}
+.hidden {display:none}
+@media(max-width:900px) {
+  .grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cards {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:550px) {
+  .grid,.cards {grid-template-columns:1fr}
+  .container {padding:12px}
+  #map {height:350px}
+}
+@media print {
+  body {background:white}
+  header,.no-print,#setup,.map-panel,footer {display:none!important}
+  .container {padding:0;max-width:none}
+  .panel {border:0;box-shadow:none;padding:0}
+  #report {display:block!important}
+  a {color:#222;text-decoration:none}
+  .report-section {break-inside:avoid}
+  @page {size:A4;margin:15mm}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Environmental Data Report Generator</h1>
+  <p>Location-based environmental screening and data collection</p>
+</header>
+
+<div class="container">
+
+  <section class="panel" id="setup">
+    <h2>1. Define the study location</h2>
+
+    <div class="grid">
+      <div class="field">
+        <label for="siteName">Site / Project Name</label>
+        <input id="siteName" value="Barnsley Town Centre">
+      </div>
+
+      <div class="field">
+        <label for="latitude">Latitude (WGS84)</label>
+        <input id="latitude" type="number" step="any" value="53.5526">
+      </div>
+
+      <div class="field">
+        <label for="longitude">Longitude (WGS84)</label>
+        <input id="longitude" type="number" step="any" value="-1.4797">
+      </div>
+
+      <div class="field">
+        <label for="radius">Search Radius</label>
+        <select id="radius">
+          <option value="1000">1 kilometre</option>
+          <option value="5000" selected>5 kilometres</option>
+          <option value="10000">10 kilometres</option>
+          <option value="20000">20 kilometres</option>
+          <option value="50000">50 kilometres</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions no-print">
+      <button class="primary" id="updatePin">Update Map Pin</button>
+      <button class="secondary" id="locateMe">Use My Location</button>
+      <button class="secondary" id="searchPlace">Search Location</button>
+    </div>
+
+    <div class="field no-print" style="margin-top:15px">
+      <label for="placeSearch">Find a place or postcode</label>
+      <input id="placeSearch" placeholder="e.g. Barnsley Town Hall, S70 2TA">
+      <div class="help">Uses OpenStreetMap Nominatim geocoding.</div>
+    </div>
+
+    <div class="status" id="locationStatus">
+      Default location: Barnsley Town Centre.
+    </div>
+
+    <div class="map-panel">
+      <div id="map"></div>
+      <p class="help">Click the map or drag the marker to select the study location.</p>
+    </div>
+  </section>
+
+  <section class="panel no-print">
+    <h2>2. Retrieve environmental data</h2>
+    <p>
+      Retrieve available live data from the Environment Agency.
+      Other report categories will be listed as requiring further investigation.
+    </p>
+    <div class="actions">
+      <button class="teal" id="generate">Generate Environmental Report</button>
+      <button class="secondary" id="reset">Reset Report</button>
+    </div>
+    <div id="loading" class="status hidden">Retrieving environmental data...</div>
+    <div id="errors"></div>
+  </section>
+
+  <section class="panel">
+    <h2>3. Environmental data overview</h2>
+    <div class="cards">
+      <div class="metric">
+        <strong id="metricFloods">—</strong>
+        <span>Flood warnings / alerts returned</span>
+      </div>
+      <div class="metric">
+        <strong id="metricStations">—</strong>
+        <span>Nearby monitoring stations</span>
+      </div>
+      <div class="metric">
+        <strong id="metricReadings">—</strong>
+        <span>Latest readings retrieved</span>
+      </div>
+      <div class="metric">
+        <strong id="metricRadius">5 km</strong>
+        <span>Study search radius</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="reportPanel">
+    <div class="no-print actions" style="justify-content:flex-end">
+      <button class="secondary" id="downloadJson">Download JSON</button>
+      <button class="secondary" id="downloadHtml">Download Report HTML</button>
+      <button class="primary" id="printReport">Print / Save as PDF</button>
+    </div>
+
+    <div id="report">
+      <div class="report-header">
+        <h1>Environmental Data Screening Report</h1>
+        <div class="report-meta">
+          Generate the report to populate this document.
+        </div>
+      </div>
+      <p>
+        This report will contain location-specific data, source references,
+        findings and limitations.
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  Environmental Data Report Generator · UK environmental screening tool
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+"use strict";
+
+/* =========================================================
+   CONFIGURATION
+========================================================= */
+
+const CONFIG = {
+  floodApi: "https://environment.data.gov.uk/flood-monitoring",
+  geocoder: "https://nominatim.openstreetmap.org/search",
+  defaultLatitude: 53.5526,
+  defaultLongitude: -1.4797,
+  requestTimeout: 15000,
+  maxStationsForReadings: 12,
+  maxMeasuresPerStation: 3
+};
+
+let map;
+let marker;
+let radiusCircle;
+let reportData = null;
+let retrievedReadings = [];
+let retrievedStations = [];
+let retrievedFloods = [];
+let retrievalErrors = [];
+
+const $ = id => document.getElementById(id);
+
+function getLocation() {
+  return {
+    name: $("siteName").value.trim() || "Unnamed Site",
+    lat: Number($("latitude").value),
+    lon: Number($("longitude").value),
+    radius: Number($("radius").value)
+  };
+}
+
+function validLocation(location) {
+  return Number.isFinite(location.lat) &&
+    Number.isFinite(location.lon) &&
+    location.lat >= -90 && location.lat <= 90 &&
+    location.lon >= -180 && location.lon <= 180;
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  })[char]);
+}
+
+function formatDate(value) {
+  if (!value) return "Not supplied";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("en-GB");
+}
+
+function distanceKm(a, b) {
+  const rad = x => x * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLon = rad(b.lon - a.lon);
+  const x = Math.sin(dLat/2)**2 +
+    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) *
+    Math.sin(dLon/2)**2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+
+// Some Environment Agency fields can be returned as arrays
+// (for example a station with several labels or positions).
+function firstValue(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+// The API returns resource links as http://. Browsers block
+// http requests from an https page, so upgrade them.
+function toHttps(url) {
+  return String(url).replace(/^http:\/\//i, "https://");
+}
+
+function stationDistance(station, loc) {
+  const lat = Number(firstValue(station.lat));
+  const lon = Number(firstValue(station.long));
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  return distanceKm(loc, { lat, lon });
+}
+
+function setStatus(id, message, type="") {
+  const element = $(id);
+  element.className = "status " + type;
+  element.textContent = message;
+}
+
+async function fetchJSON(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(),
+    CONFIG.requestTimeout
+  );
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { "Accept":"application/json" }
+    });
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("Request timed out");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* =========================================================
+   MAP
+========================================================= */
+
+function initMap() {
+  map = L.map("map").setView(
+    [CONFIG.defaultLatitude, CONFIG.defaultLongitude], 13
+  );
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(map);
+
+  marker = L.marker(
+    [CONFIG.defaultLatitude, CONFIG.defaultLongitude],
+    { draggable:true }
+  ).addTo(map);
+
+  marker.bindPopup("Selected study location");
+
+  marker.on("dragend", () => {
+    const point = marker.getLatLng();
+    updateCoordinates(point.lat, point.lng);
+  });
+
+  map.on("click", event => {
+    updateCoordinates(event.latlng.lat, event.latlng.lng);
+  });
+
+  updateRadiusCircle();
+}
+
+function updateCoordinates(lat, lon) {
+  lat = Number(lat);
+  lon = Number(lon);
+  $("latitude").value = lat.toFixed(6);
+  $("longitude").value = lon.toFixed(6);
+  marker.setLatLng([lat, lon]);
+  map.setView([lat, lon], Math.max(map.getZoom(), 12));
+  updateRadiusCircle();
+  setStatus("locationStatus",
+    "Selected location: " + lat.toFixed(6) + ", " + lon.toFixed(6),
+    "success"
+  );
+}
+
+function updateRadiusCircle() {
+  const loc = getLocation();
+  if (!validLocation(loc) || !map) return;
+
+  if (radiusCircle) map.removeLayer(radiusCircle);
+
+  radiusCircle = L.circle([loc.lat, loc.lon], {
+    radius:loc.radius,
+    color:"#087f8c",
+    weight:2,
+    fillColor:"#087f8c",
+    fillOpacity:0.08
+  }).addTo(map);
+
+  $("metricRadius").textContent =
+    (loc.radius / 1000) + " km";
+}
+
+$("updatePin").addEventListener("click", () => {
+  const loc = getLocation();
+  if (!validLocation(loc)) {
+    alert("Please enter valid latitude and longitude values.");
+    return;
+  }
+  updateCoordinates(loc.lat, loc.lon);
+});
+
+$("radius").addEventListener("change", updateRadiusCircle);
+
+/* =========================================================
+   GEOCODING
+========================================================= */
+
+$("searchPlace").addEventListener("click", searchPlace);
+
+$("placeSearch").addEventListener("keydown", event => {
+  if (event.key === "Enter") searchPlace();
+});
+
+async function searchPlace() {
+  const query = $("placeSearch").value.trim();
+  if (!query) return;
+
+  setStatus("locationStatus", "Searching for location...");
+
+  try {
+    const url = CONFIG.geocoder +
+      "?format=json&limit=1&countrycodes=gb&q=" +
+      encodeURIComponent(query);
+
+    const results = await fetchJSON(url);
+
+    if (!results.length) {
+      throw new Error("No matching location found.");
+    }
+
+    const result = results[0];
+    updateCoordinates(Number(result.lat), Number(result.lon));
+    $("siteName").value = result.display_name.split(",")[0];
+
+    map.setZoom(15);
+    setStatus("locationStatus",
+      "Location found: " + result.display_name,
+      "success"
+    );
+  } catch (error) {
+    setStatus("locationStatus",
+      "Location search failed: " + error.message,
+      "error"
+    );
+  }
+}
+
+/* =========================================================
+   BROWSER LOCATION
+========================================================= */
+
+$("locateMe").addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by this browser.");
+    return;
+  }
+
+  setStatus("locationStatus", "Requesting your location...");
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      updateCoordinates(
+        position.coords.latitude,
+        position.coords.longitude
+      );
+    },
+    error => {
+      setStatus("locationStatus",
+        "Location unavailable: " + error.message,
+        "error"
+      );
+    },
+    { enableHighAccuracy:true, timeout:12000 }
+  );
+});
+
+/* =========================================================
+   ENVIRONMENT AGENCY DATA
+========================================================= */
+
+function apiUrl(endpoint, loc) {
+  // The Environment Agency API expects "dist" in kilometres.
+  const params = new URLSearchParams({
+    lat:loc.lat,
+    long:loc.lon,
+    dist:loc.radius / 1000
+  });
+  return CONFIG.floodApi + endpoint + "?" + params.toString();
+}
+
+async function retrieveFloods(loc) {
+  const url = apiUrl("/id/floods", loc);
+  const result = await fetchJSON(url);
+  return result.items || [];
+}
+
+async function retrieveStations(loc) {
+  const url = apiUrl("/id/stations", loc);
+  const result = await fetchJSON(url);
+  const stations = result.items || [];
+
+  // Nearest stations first, so the reading limit keeps the most relevant.
+  return stations
+    .map(station => ({
+      ...station,
+      distanceKm: stationDistance(station, loc)
+    }))
+    .sort((a, b) =>
+      (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity)
+    );
+}
+
+async function retrieveStationReadings(stations) {
+  const output = [];
+  const errors = [];
+
+  // Limit requests to avoid excessive API traffic.
+  const selected = stations.slice(0, CONFIG.maxStationsForReadings);
+
+  const tasks = [];
+
+  for (const station of selected) {
+    const measures = Array.isArray(station.measures)
+      ? station.measures
+      : (station.measures ? [station.measures] : []);
+
+    const stationName =
+      firstValue(station.label) || station.stationReference || "Unknown";
+
+    for (const measure of measures.slice(0, CONFIG.maxMeasuresPerStation)) {
+      const measureId = measure["@id"];
+      if (!measureId) continue;
+
+      tasks.push((async () => {
+        try {
+          const result = await fetchJSON(
+            toHttps(measureId).replace(/\/$/, "") + "/readings?latest"
+          );
+
+          const items = result.items || [];
+
+          if (items.length) {
+            output.push({
+              station:stationName,
+              stationId:station.stationReference || "",
+              parameter:measure.parameterName || measure.parameter || "Unknown",
+              qualifier:measure.qualifier || "",
+              unit:measure.unitName || "",
+              value:items[0].value,
+              date:items[0].dateTime,
+              measureUrl:toHttps(measureId)
+            });
+          }
+        } catch (error) {
+          errors.push(
+            "Reading unavailable for " + stationName + ": " + error.message
+          );
+        }
+      })());
+    }
+  }
+
+  await Promise.all(tasks);
+
+  return { readings:output, errors };
+}
+
+/* =========================================================
+   REPORT DATA SOURCES
+========================================================= */
+
+const ENVIRONMENTAL_SECTIONS = [
+  {
+    id:"ENV-001",
+    title:"Flood risk and flood warnings",
+    description:"Screen for active flood warnings and alerts returned by the Environment Agency monitoring service.",
+    source:"Environment Agency Flood Monitoring API",
+    url:"https://environment.data.gov.uk/flood-monitoring/doc/reference",
+    method:"Automatic API retrieval",
+    live:true
+  },
+  {
+    id:"ENV-002",
+    title:"Surface water and drainage",
+    description:"Investigate surface-water flood susceptibility, drainage pathways, culverts, ordinary watercourses and local drainage constraints.",
+    source:"GOV.UK Long-term flood risk information",
+    url:"https://www.gov.uk/check-long-term-flood-risk",
+    method:"Further spatial investigation required"
+  },
+  {
+    id:"ENV-003",
+    title:"River levels and hydrology",
+    description:"Review nearby river and rainfall monitoring stations and the latest readings returned by the Environment Agency.",
+    source:"Environment Agency Flood Monitoring API",
+    url:"https://environment.data.gov.uk/flood-monitoring/doc/reference",
+    method:"Automatic API retrieval",
+    live:true
+  },
+  {
+    id:"ENV-004",
+    title:"Water quality",
+    description:"Investigate surface-water quality, chemical and ecological status, sampling locations and recorded classifications.",
+    source:"Environment Agency Catchment Data Explorer",
+    url:"https://environment.data.gov.uk/catchment-planning/",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-005",
+    title:"Air quality",
+    description:"Review local authority monitoring, Air Quality Management Areas, nitrogen dioxide, particulate matter and other available pollutants.",
+    source:"UK-AIR – Department for Environment, Food and Rural Affairs",
+    url:"https://uk-air.defra.gov.uk/",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-006",
+    title:"Groundwater",
+    description:"Investigate groundwater vulnerability, aquifer designations, groundwater levels and source protection zones.",
+    source:"British Geological Survey",
+    url:"https://www.bgs.ac.uk/",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-007",
+    title:"Pollution incidents",
+    description:"Review available pollution incident records and public environmental enforcement information.",
+    source:"Environment Agency",
+    url:"https://www.gov.uk/government/organisations/environment-agency",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-008",
+    title:"Industrial permits and regulated sites",
+    description:"Identify permitted industrial activities, environmental permits and relevant regulated installations.",
+    source:"Environment Agency environmental permits",
+    url:"https://www.gov.uk/guidance/check-if-you-need-an-environmental-permit",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-009",
+    title:"Waste sites and landfill",
+    description:"Investigate permitted waste facilities, historic landfill sites, waste transfer activities and relevant records.",
+    source:"Environment Agency",
+    url:"https://environment.data.gov.uk/",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-010",
+    title:"Ecology and biodiversity",
+    description:"Review designated habitats, protected sites, priority habitats, local wildlife sites and ecological constraints.",
+    source:"Natural England – Designated Sites",
+    url:"https://designatedsites.naturalengland.org.uk/",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-011",
+    title:"Catchment and Water Framework Directive status",
+    description:"Identify the relevant river basin district, operational catchment and available waterbody status classifications.",
+    source:"Environment Agency Catchment Data Explorer",
+    url:"https://environment.data.gov.uk/catchment-planning/",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-012",
+    title:"Geology and contaminated land",
+    description:"Review geological conditions, made ground, historical land use, mining legacy and potential contamination constraints.",
+    source:"British Geological Survey",
+    url:"https://www.bgs.ac.uk/",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-013",
+    title:"Environmental noise",
+    description:"Investigate strategic road, railway and industrial noise mapping and relevant local environmental noise information.",
+    source:"DEFRA environmental noise",
+    url:"https://www.gov.uk/government/collections/noise-pollution-guidance",
+    method:"Further investigation required"
+  },
+  {
+    id:"ENV-014",
+    title:"Environmental designations",
+    description:"Review statutory environmental designations, conservation areas, protected landscapes and relevant planning constraints.",
+    source:"DEFRA MAGIC mapping",
+    url:"https://magic.defra.gov.uk/",
+    method:"Further investigation required"
+  }
+];
+
+/* =========================================================
+   GENERATE REPORT
+========================================================= */
+
+$("generate").addEventListener("click", generateReport);
+
+async function generateReport() {
+  const loc = getLocation();
+
+  if (!validLocation(loc)) {
+    alert("Please enter valid coordinates.");
+    return;
+  }
+
+  $("loading").classList.remove("hidden");
+  $("generate").disabled = true;
+  $("errors").innerHTML = "";
+
+  retrievalErrors = [];
+  retrievedFloods = [];
+  retrievedStations = [];
+  retrievedReadings = [];
+
+  try {
+    const results = await Promise.allSettled([
+      retrieveFloods(loc),
+      retrieveStations(loc)
+    ]);
+
+    if (results[0].status === "fulfilled") {
+      retrievedFloods = results[0].value;
+    } else {
+      retrievalErrors.push(
+        "Flood warnings: " + results[0].reason.message
+      );
+    }
+
+    if (results[1].status === "fulfilled") {
+      retrievedStations = results[1].value;
+    } else {
+      retrievalErrors.push(
+        "Monitoring stations: " + results[1].reason.message
+      );
+    }
+
+    if (retrievedStations.length) {
+      const readingResult =
+        await retrieveStationReadings(retrievedStations);
+
+      retrievedReadings = readingResult.readings;
+      retrievalErrors.push(...readingResult.errors);
+    }
+
+    reportData = {
+      reportTitle:"Environmental Data Screening Report",
+      generatedAt:new Date().toISOString(),
+      site:loc,
+      coordinateSystem:"WGS84 / EPSG:4326",
+      floods:retrievedFloods,
+      stations:retrievedStations,
+      readings:retrievedReadings,
+      errors:retrievalErrors,
+      sections:ENVIRONMENTAL_SECTIONS
+    };
+
+    updateDashboard();
+    renderReport(loc);
+
+    if (retrievalErrors.length) {
+      setStatus("locationStatus",
+        "Report generated with " + retrievalErrors.length +
+        " data retrieval issue(s). See the report for details.",
+        "warning"
+      );
+    } else {
+      setStatus("locationStatus",
+        "Environmental report generated successfully.",
+        "success"
+      );
+    }
+
+  } catch (error) {
+    retrievalErrors.push(error.message);
+    $("errors").className = "status error";
+    $("errors").textContent = error.message;
+  } finally {
+    $("loading").classList.add("hidden");
+    $("generate").disabled = false;
+  }
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+function updateDashboard() {
+  $("metricFloods").textContent = retrievedFloods.length;
+  $("metricStations").textContent = retrievedStations.length;
+  $("metricReadings").textContent = retrievedReadings.length;
+  $("metricRadius").textContent =
+    reportData.site.radius / 1000 + " km";
+}
+
+/* =========================================================
+   REPORT RENDERING
+========================================================= */
+
+function renderFloodTable() {
+  if (!retrievedFloods.length) {
+    return `<p>No flood warning or alert records were returned by
+      this API query. This is not proof that the location has no
+      flood risk. Consult the official flood-risk mapping.</p>`;
+  }
+
+  return `
+    <div class="table-wrap"><table>
+      <thead>
+        <tr>
+          <th>Flood area</th>
+          <th>Message</th>
+          <th>Severity</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${retrievedFloods.map(flood => `
+          <tr>
+            <td>${escapeHTML(flood.description || flood.eaAreaName || "Not supplied")}</td>
+            <td>${escapeHTML(flood.message || "See official record")}</td>
+            <td>${escapeHTML(flood.severity || "Not supplied")}</td>
+            <td>${escapeHTML(formatDate(flood.timeMessageChanged))}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table></div>`;
+}
+
+function renderStationTable() {
+  if (!retrievedStations.length) {
+    return "<p>No monitoring stations were returned within the selected search radius.</p>";
+  }
+
+  return `
+    <div class="table-wrap"><table>
+      <thead>
+        <tr>
+          <th>Station</th>
+          <th>Identifier</th>
+          <th>River</th>
+          <th>Distance</th>
+        </tr>
+      </thead>
+      <tbody>
+      ${retrievedStations.map(station => {
+        const distance = station.distanceKm != null
+          ? station.distanceKm.toFixed(2) + " km"
+          : "Not calculated";
+
+        return `
+          <tr>
+            <td>${escapeHTML(firstValue(station.label) || "Unknown")}</td>
+            <td>${escapeHTML(station.stationReference || "Not supplied")}</td>
+            <td>${escapeHTML(station.riverName || "Not supplied")}</td>
+            <td>${escapeHTML(distance)}</td>
+          </tr>`;
+      }).join("")}
+      </tbody>
+    </table></div>`;
+}
+
+function renderReadingsTable() {
+  if (!retrievedReadings.length) {
+    return "<p>No latest readings were successfully retrieved.</p>";
+  }
+
+  return `
+    <p>Readings were requested for up to the
+      ${CONFIG.maxStationsForReadings} nearest stations.</p>
+    <div class="table-wrap"><table>
+      <thead>
+        <tr>
+          <th>Station</th>
+          <th>Parameter</th>
+          <th>Latest value</th>
+          <th>Date / time</th>
+        </tr>
+      </thead>
+      <tbody>
+      ${retrievedReadings.map(item => `
+        <tr>
+          <td>${escapeHTML(item.station)}</td>
+          <td>${escapeHTML(item.parameter)}${item.qualifier
+            ? " <small>(" + escapeHTML(item.qualifier) + ")</small>" : ""}</td>
+          <td>${escapeHTML(item.value)} ${escapeHTML(item.unit)}</td>
+          <td>${escapeHTML(formatDate(item.date))}</td>
+        </tr>
+      `).join("")}
+      </tbody>
+    </table></div>`;
+}
+
+function renderSections() {
+  return ENVIRONMENTAL_SECTIONS.map(section => {
+    let status = "Further investigation required";
+    let detail = section.description;
+
+    if (section.id === "ENV-001") {
+      status = "Live API query completed";
+      detail = retrievedFloods.length
+        ? retrievedFloods.length + " flood warning/alert record(s) returned. Review the records below."
+        : "No flood warning or alert records were returned for the selected point and radius. This does not establish that flood risk is absent.";
+    }
+
+    if (section.id === "ENV-003") {
+      status = "Live API query completed";
+      detail = retrievedStations.length +
+        " monitoring station(s) returned. " +
+        retrievedReadings.length +
+        " latest reading(s) retrieved where available.";
+    }
+
+    return `
+      <div class="report-section">
+        <h3>${escapeHTML(section.id)} – ${escapeHTML(section.title)}</h3>
+        <p>${escapeHTML(detail)}</p>
+        <p><strong>Assessment status:</strong>
+          <span class="badge ${section.live ? "live" : "partial"}">
+            ${escapeHTML(status)}
+          </span>
+        </p>
+        <p><strong>Data source:</strong>
+          <a href="${escapeHTML(section.url)}" target="_blank" rel="noopener">
+            ${escapeHTML(section.source)}
+          </a>
+        </p>
+        <p><strong>Method:</strong> ${escapeHTML(section.method)}</p>
+      </div>`;
+  }).join("");
+}
+
+function renderReport(loc) {
+  const generated = formatDate(reportData.generatedAt);
+
+  const errorHtml = retrievalErrors.length
+    ? `<div class="notice">
+        <strong>Data retrieval limitations</strong>
+        <ul>${retrievalErrors.map(e =>
+          `<li>${escapeHTML(e)}</li>`).join("")}</ul>
+      </div>`
+    : "";
+
+  $("report").innerHTML = `
+    <div class="report-header">
+      <h1>Environmental Data Screening Report</h1>
+      <div class="report-meta">
+        <strong>Project:</strong> ${escapeHTML(loc.name)}<br>
+        <strong>Generated:</strong> ${escapeHTML(generated)}<br>
+        <strong>Latitude:</strong> ${loc.lat.toFixed(6)}<br>
+        <strong>Longitude:</strong> ${loc.lon.toFixed(6)}<br>
+        <strong>Coordinate reference:</strong> WGS84 / EPSG:4326<br>
+        <strong>Search radius:</strong> ${loc.radius/1000} km
+      </div>
+    </div>
+
+    <div class="notice">
+      <strong>Important scope statement:</strong>
+      This is a preliminary desktop screening report, not a
+      site-specific environmental assessment. A point and search
+      radius do not represent a surveyed site boundary. Absence
+      of returned records does not demonstrate absence of risk.
+      Verify findings against the relevant official datasets and
+      obtain specialist advice where necessary.
+    </div>
+
+    <h2>Executive Summary</h2>
+    <p>
+      This report screens available environmental information
+      around ${escapeHTML(loc.name)}. The study point is located
+      at ${loc.lat.toFixed(6)}, ${loc.lon.toFixed(6)}, using a
+      search radius of ${loc.radius/1000} km.
+    </p>
+
+    <p>
+      The Environment Agency Flood Monitoring API returned
+      ${retrievedFloods.length} flood warning/alert record(s),
+      ${retrievedStations.length} monitoring station(s), and
+      ${retrievedReadings.length} latest reading(s).
+      Other environmental topics are identified for further
+      investigation and have not been independently assessed
+      by this application.
+    </p>
+
+    ${errorHtml}
+
+    <h2>1. Flood Warnings and Alerts</h2>
+    <p>
+      Source: Environment Agency Flood Monitoring API.
+      Results are based on the selected point and distance query.
+    </p>
+    ${renderFloodTable()}
+
+    <h2>2. River and Rainfall Monitoring Stations</h2>
+    ${renderStationTable()}
+
+    <h2>3. Latest Available Monitoring Readings</h2>
+    ${renderReadingsTable()}
+
+    <h2>4. Environmental Screening Register</h2>
+    ${renderSections()}
+
+    <h2>5. Data Quality and Limitations</h2>
+    <ul>
+      <li>API results depend on the availability and coverage of the source dataset.</li>
+      <li>The Environment Agency Flood Monitoring API covers England only.</li>
+      <li>Search-radius results are not equivalent to a site-boundary intersection assessment.</li>
+      <li>Monitoring station readings may relate to locations outside the project site.</li>
+      <li>A river-level reading is not a flood-risk classification.</li>
+      <li>Environmental records may be historical, incomplete or subject to reporting delays.</li>
+      <li>Some environmental datasets require separate mapping, licensing or formal data requests.</li>
+      <li>No environmental risk conclusion should be based solely on missing records.</li>
+    </ul>
+
+    <h2>6. Recommended Further Work</h2>
+    <ol>
+      <li>Obtain a defined site boundary polygon rather than relying only on a point.</li>
+      <li>Review the Environment Agency long-term flood-risk mapping.</li>
+      <li>Review surface-water flood mapping and local drainage information.</li>
+      <li>Check local authority environmental health and planning records.</li>
+      <li>Review contaminated-land, historical-land-use and geological information.</li>
+      <li>Check ecological designations and protected habitats.</li>
+      <li>Confirm the latest available waterbody classifications and water-quality data.</li>
+      <li>Record all source dates, dataset versions and spatial search methods.</li>
+    </ol>
+
+    <h2>7. Data Sources</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Source</th><th>Purpose</th><th>Link</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Environment Agency</td>
+          <td>Flood warnings, stations and readings</td>
+          <td><a href="https://environment.data.gov.uk/flood-monitoring/doc/reference">API documentation</a></td>
+        </tr>
+        <tr>
+          <td>GOV.UK</td>
+          <td>Long-term flood risk</td>
+          <td><a href="https://www.gov.uk/check-long-term-flood-risk">Flood risk service</a></td>
+        </tr>
+        <tr>
+          <td>UK-AIR / DEFRA</td>
+          <td>Air quality information</td>
+          <td><a href="https://uk-air.defra.gov.uk/">UK-AIR</a></td>
+        </tr>
+        <tr>
+          <td>Natural England</td>
+          <td>Designated sites</td>
+          <td><a href="https://designatedsites.naturalengland.org.uk/">Designated sites</a></td>
+        </tr>
+        <tr>
+          <td>DEFRA MAGIC</td>
+          <td>Environmental mapping</td>
+          <td><a href="https://magic.defra.gov.uk/">MAGIC map</a></td>
+        </tr>
+        <tr>
+          <td>British Geological Survey</td>
+          <td>Geology and ground conditions</td>
+          <td><a href="https://www.bgs.ac.uk/">BGS</a></td>
+        </tr>
+        <tr>
+          <td>Environment Agency</td>
+          <td>Catchment and waterbody data</td>
+          <td><a href="https://environment.data.gov.uk/catchment-planning/">Catchment Data Explorer</a></td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <h2>8. Report Conclusion</h2>
+    <p>
+      This document provides an initial environmental data
+      screening exercise. The findings should be supplemented
+      with detailed spatial analysis, site-specific records and
+      appropriate professional assessment before being used
+      to support planning, design, construction or environmental
+      decisions.
+    </p>
+
+    <p class="report-meta">
+      End of report. Generated by Environmental Data Report Generator.
+    </p>
+  `;
+}
+
+/* =========================================================
+   EXPORT FUNCTIONS
+========================================================= */
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$("downloadJson").addEventListener("click", () => {
+  if (!reportData) {
+    alert("Generate a report first.");
+    return;
+  }
+
+  downloadFile(
+    "environmental-report-data.json",
+    JSON.stringify(reportData, null, 2),
+    "application/json"
+  );
+});
+
+$("downloadHtml").addEventListener("click", () => {
+  if (!reportData) {
+    alert("Generate a report first.");
+    return;
+  }
+
+  const report = $("report").innerHTML;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Environmental Data Report</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:1000px;margin:35px auto;
+padding:20px;color:#263445;line-height:1.5}
+h1,h2,h3{color:#10243a}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px;border-bottom:1px solid #ddd;vertical-align:top}
+th{background:#f1f5f9}
+a{color:#1769aa;overflow-wrap:anywhere}
+small{color:#687789}
+.table-wrap{overflow-x:auto}
+.notice{padding:12px;background:#fff6e5;border-left:4px solid #d99a26;margin:12px 0}
+.report-header{border-bottom:3px solid #1769aa;padding-bottom:15px;margin-bottom:20px}
+.report-section{padding:12px 0;border-bottom:1px solid #ddd}
+.report-meta{font-size:12px;color:#687789}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:bold}
+.badge.live{background:#e2f4e9;color:#17653b}
+.badge.partial{background:#fff0d3;color:#805400}
+@media print{@page{size:A4;margin:15mm}}
+</style>
+</head>
+<body>${report}</body>
+</html>`;
+
+  downloadFile(
+    "environmental-data-report.html",
+    html,
+    "text/html"
+  );
+});
+
+$("printReport").addEventListener("click", () => {
+  if (!reportData) {
+    alert("Generate a report first.");
+    return;
+  }
+  window.print();
+});
+
+/* =========================================================
+   RESET
+========================================================= */
+
+$("reset").addEventListener("click", () => {
+  if (!confirm("Reset the report and retrieved data?")) return;
+
+  reportData = null;
+  retrievedFloods = [];
+  retrievedStations = [];
+  retrievedReadings = [];
+  retrievalErrors = [];
+
+  $("metricFloods").textContent = "—";
+  $("metricStations").textContent = "—";
+  $("metricReadings").textContent = "—";
+
+  $("report").innerHTML = `
+    <div class="report-header">
+      <h1>Environmental Data Screening Report</h1>
+      <div class="report-meta">Generate the report to populate this document.</div>
+    </div>
+    <p>No report has been generated.</p>`;
+
+  $("errors").className = "";
+  $("errors").innerHTML = "";
+  setStatus("locationStatus", "Report reset.");
+});
+
+/* =========================================================
+   START APPLICATION
+========================================================= */
+
+window.addEventListener("load", () => {
+  initMap();
+});
+</script>
+
+</body>
+</html>
