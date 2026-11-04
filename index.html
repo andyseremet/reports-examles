@@ -218,6 +218,7 @@ details.advanced summary {cursor:pointer;color:var(--link)}
 /* ---------- report ---------- */
 .toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:10px}
 .toolbar button {padding:9px 14px;font-size:14px}
+@media (max-width:600px) { .toolbar {justify-content:flex-start} }
 .report-nav {
   position:sticky;top:0;z-index:1100;display:flex;gap:4px;align-items:center;overflow-x:auto;white-space:nowrap;
   background:var(--surface);border-bottom:1px solid var(--border);margin:0 -22px 10px;padding:8px 22px;scrollbar-width:none;

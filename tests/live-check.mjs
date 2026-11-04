@@ -230,6 +230,17 @@ async function testDevice(device, [postcode, place]) {
     return download.suggestedFilename();
   });
 
+  await step("Saved properties are readable", async () => {
+    // The name and details should use most of the row, not a thin column beside the buttons.
+    const share = await page.evaluate(() => {
+      const list = document.getElementById("savedList"), main = list && list.querySelector(".saved-main");
+      return list && main && list.offsetWidth ? main.getBoundingClientRect().width / list.getBoundingClientRect().width : 0;
+    });
+    if (!share) throw new Error("the saved properties list did not show");
+    if (share < 0.55) throw new Error(`names and details are squeezed into ${Math.round(share * 100)}% of the row`);
+    return `text uses ${Math.round(share * 100)}% of the row`;
+  });
+
   await step("No sideways scrolling", async () =>
     (await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)) ? "ok" : false);
 
