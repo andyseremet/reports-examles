@@ -22,7 +22,7 @@ mkdirSync(OUT, { recursive: true });
 
 const results = [];
 const record = (group, name, pass, info = "") => {
-  results.push({ group, name, pass, info: String(info).slice(0, 300) });
+  results.push({ group, name, pass, info: String(info).slice(0, 900) });
   console.log(`${pass ? "PASS" : "FAIL"}  [${group}] ${name}${info ? "  – " + String(info).slice(0, 160) : ""}`);
 };
 
@@ -110,6 +110,16 @@ async function testDevice(device, [postcode, place]) {
   const page = await context.newPage();
   const pageErrors = [];
   page.on("pageerror", e => pageErrors.push(e.message));
+  // Record data requests that fail, with the reply, to explain any topic that could not load.
+  const failedRequests = [];
+  const shortUrl = u => { const x = new URL(u); return x.host + x.pathname.replace(/\/(wms|query|items)$/, "/$1"); };
+  page.on("response", res => {
+    if (res.status() >= 400 && !/tile|png|jpg/.test(res.url()))
+      failedRequests.push(`${shortUrl(res.url())} → HTTP ${res.status()}${res.headers()["retry-after"] ? " (retry-after " + res.headers()["retry-after"] + ")" : ""}`);
+  });
+  page.on("requestfailed", req => {
+    if (!/tile|png|jpg/.test(req.url())) failedRequests.push(`${shortUrl(req.url())} → ${req.failure() ? req.failure().errorText : "failed"}`);
+  });
   const step = async (name, fn) => {
     try { const info = await fn(); record(group, name, info !== false, info === false ? "" : info || ""); }
     catch (e) { record(group, name, false, e.message.split("\n")[0]); }
@@ -154,7 +164,10 @@ async function testDevice(device, [postcode, place]) {
     const total = await page.evaluate(() => CHECKS.length);
     const failed = topics.filter(t => t.status === "error");
     const secs = Math.round((Date.now() - started) / 1000);
-    if (topics.length !== total || failed.length) throw new Error(`${failed.length} topic(s) failed: ` + failed.map(t => `${t.id} (${t.found})`).join("; "));
+    if (topics.length !== total || failed.length) {
+      const why = [...new Set(failedRequests)].slice(0, 6).join("; ");
+      throw new Error(`${failed.length} topic(s) failed: ` + failed.map(t => `${t.id} (${t.found})`).join("; ") + (why ? ` | failed requests: ${why}` : ""));
+    }
     return `${total} topics in ${secs} s`;
   });
   await page.$eval("#reportTop", x => x.scrollIntoView()).catch(() => {});
