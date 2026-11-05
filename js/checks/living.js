@@ -18,7 +18,7 @@ function checkAmenities(R) {
   const summary = rows.filter(x => x.near && x.near.distanceKm <= 5 && x.t.key !== "bus_stop" && x.t.key !== "tram").slice(0, 4)
     .map(x => `${x.t.short} ${formatDistance(x.near.distanceKm)}`);
   const missing = (g.missing || []).length
-    ? `<p><strong>Not available right now:</strong> ${escapeHTML(g.missing.join(", "))}. Press “Refresh with the latest data” later.</p>` : "";
+    ? `<p><strong>Not available right now:</strong> ${escapeHTML(g.missing.join(", "))}. Press “Refresh” later.</p>` : "";
   return {
     ...base, status: "info",
     found: (summary.length ? "Nearest: " + summary.join(", ") + "." : (g.missing || []).length ? "" : "No schools, GP surgeries or stations found nearby.")

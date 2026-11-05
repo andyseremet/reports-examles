@@ -770,7 +770,7 @@ function finishRun() {
   run.done = true;
   $("runBtn").disabled = false;
   renderSummary();
-  $("checklistBox").innerHTML = buildChecklist(orderedResults());
+  $("checklistBox").innerHTML = buildViewing(orderedResults()) + buildChecklist(orderedResults());
   restoreTicks();
   renderSources();
   renderNotes();
@@ -813,7 +813,7 @@ function showSnapshot(snap, options = {}) {
     if (!slot) return;
     // Topics added to the app after this property was saved.
     const shown = res || topicResult(c, { status: "manual", gap: "saved",
-      found: "Not included in these saved results. Press “Refresh with the latest data” to check it." });
+      found: "Not included in these saved results. Press “Refresh” to check it with the latest data." });
     if (!res) run.results[c.id] = shown;
     slot.innerHTML = renderCheck(shown);
     prepareTables(slot, c.title);
@@ -1035,6 +1035,10 @@ function renderSkeleton(loc) {
     <div id="notesBox"></div>
 
     <div id="checklistBox">
+      <section class="group checklist viewing" id="viewing">
+        <h2>At the viewing</h2>
+        <p class="help">Your viewing checklist appears here when all the checks are finished.</p>
+      </section>
       <section class="group checklist" id="checklist">
         <h2>Your checklist</h2>
         <p class="help">Your checklist appears here when all the checks are finished.</p>
@@ -1097,7 +1101,7 @@ function renderSummary() {
   const savedNote = run.snapshot ? `<div class="notice saved-note${old ? " old" : ""}">Saved results from
       <strong>${escapeHTML(new Date(run.snapshot.savedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }))}</strong>.
       ${old ? `<span><strong>These results are over ${OLD_MONTHS} months old.</strong> Official data may have changed since; refresh before relying on them.</span>` : ""}
-      <button class="primary small-btn" type="button" id="refreshBtn">Refresh with the latest data</button></div>` : "";
+      <button class="primary small-btn icon-label" type="button" id="refreshBtn" aria-label="Refresh with the latest data">${icon("refresh")}Refresh</button></div>` : "";
   $("summaryBox").innerHTML = `
     ${savedNote}
     ${verdict}
@@ -1150,7 +1154,7 @@ function dataGapsBox(results) {
         (c.source && c.source.url ? ` or use ${link(c.source.url, c.source.name)}` : "") +
         `. Is it down for everyone? See ${link(new URL("status.html", location.href).href, "data service status")}.`;
     }
-    if (gapKind(c) === "saved") return "Press “Refresh with the latest data” above.";
+    if (gapKind(c) === "saved") return "Press “Refresh” above.";
     if (c.actions && c.actions.length) return c.actions[0];
     return c.source && c.source.url ? `See ${link(c.source.url, c.source.name)}.` : "Ask your conveyancer to include this in their searches.";
   };
@@ -1233,16 +1237,35 @@ function buildChecklist(checks) {
       <h2>Your checklist${infoButton("info-checklist", "About the checklist")}</h2>
       ${infoBox("info-checklist", "<p>Everything to follow up, gathered from the checks above. Tick items as you go: your ticks are remembered on this device for this property.</p>")}
       <div class="send-box no-print">
-        <p><strong>Send to my conveyancer:</strong> an email with the link to this report, the topics to look into and the questions below.</p>
+        <p><strong>Send to my conveyancer:</strong> an email, or text to copy, with the link to this report, the topics to look into and the questions below.</p>
         <div class="send-buttons">
-          <button class="primary" id="emailConveyancer" type="button">Email to my conveyancer</button>
-          <button class="secondary" id="copyConveyancer" type="button">Copy as text</button>
+          <button class="primary icon-label" id="emailConveyancer" type="button" aria-label="Email to my conveyancer">${icon("mail")}Email</button>
+          <button class="secondary icon-label" id="copyConveyancer" type="button" aria-label="Copy as text">${icon("copy")}Copy</button>
         </div>
         <p class="help" id="sendNote" role="status"></p>
       </div>
       <h3>Questions to ask the seller or estate agent</h3>${list(seller)}
       <h3>Searches and reports to ask your conveyancer for</h3>${list(conveyancer)}
       <h3>Things to check yourself</h3>${list(yourself)}
+    </section>`;
+}
+
+// "At the viewing": up to about 12 things to look for and ask on the day, the most serious topics first.
+const VIEWING_MAX = { look: 7, ask: 5 };
+function buildViewing(checks) {
+  const flagged = checks.filter(c => ["high", "medium"].includes(c.status))
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+  const pick = (items, max) => [...new Set(items)].slice(0, max);
+  const look = pick([...flagged.flatMap(c => VIEWING_LOOK[c.id] || []), ...VIEWING_GENERAL.look], VIEWING_MAX.look);
+  const ask = pick([...flagged.flatMap(c => c.seller || []), ...VIEWING_GENERAL.ask], VIEWING_MAX.ask);
+  const list = items => `<ul>${items.map(i =>
+    `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(i)}"><span>${escapeHTML(i)}</span></label></li>`).join("")}</ul>`;
+  return `
+    <section class="group checklist viewing" id="viewing">
+      <h2>At the viewing${infoButton("info-viewing", "About the viewing checklist")}</h2>
+      ${infoBox("info-viewing", "<p>A short list for the day you see the property, built from this report: the topics to look into come first. Tick items as you go: your ticks are remembered on this device for this property, and saved properties open without a signal.</p>")}
+      <h3>Look for</h3>${list(look)}
+      <h3>Ask on the day</h3>${list(ask)}
     </section>`;
 }
 
@@ -1283,7 +1306,7 @@ document.addEventListener("click", async e => {
   if (!run) return;
   if (e.target.closest("#emailConveyancer")) {
     e.preventDefault();
-    $("sendNote").textContent = "Opening your email app. Add your conveyancer's address and send. If the email looks cut off, use Copy as text.";
+    $("sendNote").textContent = "Opening your email app. Add your conveyancer's address and send. If the email looks cut off, use Copy.";
     location.href = "mailto:?subject=" + encodeURIComponent(conveyancerSubject()) + "&body=" + encodeURIComponent(conveyancerText());
   }
   if (e.target.closest("#copyConveyancer")) {
@@ -1297,15 +1320,17 @@ const ticksKey = () => "plc-ticks:" + reportKey(run.loc);
 
 function restoreTicks() {
   const ticked = new Set(store.get(ticksKey(), []));
-  document.querySelectorAll("#checklist input[data-tick]").forEach(box => { box.checked = ticked.has(box.dataset.tick); });
+  document.querySelectorAll("#checklistBox input[data-tick]").forEach(box => { box.checked = ticked.has(box.dataset.tick); });
 }
 
 document.addEventListener("change", e => {
-  const box = e.target.closest("#checklist input[data-tick]");
+  const box = e.target.closest("#checklistBox input[data-tick]");
   if (!box || !run) return;
   const ticked = new Set(store.get(ticksKey(), []));
   if (box.checked) ticked.add(box.dataset.tick); else ticked.delete(box.dataset.tick);
   store.set(ticksKey(), [...ticked]);
+  // A question can be in both lists: keep its boxes the same.
+  document.querySelectorAll("#checklistBox input[data-tick]").forEach(b => { if (b.dataset.tick === box.dataset.tick) b.checked = box.checked; });
 });
 
 /* ---------- section bar, open/close all, back to top ---------- */
@@ -1323,7 +1348,7 @@ function watchSections() {
       if (active) active.scrollIntoView({ block: "nearest", inline: "nearest" });
     });
   }, { rootMargin: "-20% 0px -70% 0px" });
-  ["reportTop", "group-flood", "group-ground", "group-living", "group-planning", "checklist"].forEach(id => {
+  ["reportTop", "group-flood", "group-ground", "group-living", "group-planning", "viewing", "checklist"].forEach(id => {
     const el = $(id);
     if (el) sectionObserver.observe(el);
   });
@@ -1336,7 +1361,7 @@ $("closeAll").addEventListener("click", () => document.querySelectorAll("#report
 // section without adding steps to the browser history, and open the topic they point to.
 document.addEventListener("click", e => {
   const a = e.target.closest('a[href^="#"]');
-  if (!a || !a.closest("#report, #reportNav")) return;
+  if (!a || !a.closest("#report, #reportNav, #toolbar")) return;
   const target = document.getElementById(a.getAttribute("href").slice(1));
   if (!target) return;
   e.preventDefault();

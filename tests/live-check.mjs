@@ -419,6 +419,29 @@ async function testDevice(device, [postcode, place]) {
     return `email text ${text.length} characters`;
   });
 
+  await step("Viewing checklist: short, serious topics first, ticks remembered", async () => {
+    await page.click("#viewingBtn");
+    await page.waitForTimeout(800);
+    const r = await page.evaluate(() => {
+      const items = [...document.querySelectorAll("#viewing input[data-tick]")].map(b => b.dataset.tick);
+      const flagged = orderedResults().filter(c => ["high", "medium"].includes(c.status))
+        .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+      const firstLook = flagged.map(c => (VIEWING_LOOK[c.id] || [])[0]).find(Boolean);
+      const box = document.getElementById("viewing").getBoundingClientRect();
+      return { items, firstLook, onScreen: box.top < innerHeight && box.bottom > 0 };
+    });
+    if (!r.onScreen) throw new Error("the Viewing checklist button did not go to the list");
+    if (r.items.length < 5 || r.items.length > 12) throw new Error(`${r.items.length} items (expected 5 to 12)`);
+    if (r.firstLook && r.items[0] !== r.firstLook) throw new Error(`first item is "${r.items[0]}", not the most serious topic's`);
+    const first = page.locator("#viewing input[data-tick]").first();
+    await first.check();
+    await page.evaluate(() => restoreTicks());
+    const kept = await first.isChecked();
+    await first.uncheck();
+    if (!kept) throw new Error("a tick was not remembered");
+    return `${r.items.length} items; first: ${r.items[0].slice(0, 60)}…`;
+  });
+
   await step("Back returns to the search, Forward reopens the report", async () => {
     await page.goBack();
     await page.waitForTimeout(1000);

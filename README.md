@@ -37,7 +37,7 @@ official checkers.
 4. Read the report: a verdict, a "Start here" list of things to look into, and a
    "Where we could not give an answer" box listing topics with no answer and who to ask instead, then results grouped into
    Flooding, Ground and land, Living environment, and Planning and
-   surroundings, ending with a checklist for the seller and conveyancer.
+   surroundings, ending with a short list of things to look for and ask at the viewing, and a checklist for the seller and conveyancer.
 5. Press **Share** to copy or send the link, or **Save or print** to download the report, print a summary, or
    print / save the full report as a PDF.
 
@@ -61,7 +61,7 @@ official checkers.
   normal and larger text, down to 320 px wide), plus keyboard focus, focus never hidden behind sticky bars, and tap
   target sizes (at least 24 × 24 pixels). Last re-checked on 5 November 2026 (version 1.19.0).
 - **Send to my conveyancer:** one button opens your email app with the report link, the topics to look into, and the
-  searches and questions from the checklist. **Copy as text** does the same for web email or messaging apps. Nothing
+  searches and questions from the checklist. **Copy** does the same for web email or messaging apps. Nothing
   passes through the app.
 - **Honest gaps:** where a council has not published its protected trees or Article 4 areas, the report says so and
   rates the topic "Check yourself", instead of "No issue found".
@@ -79,7 +79,7 @@ official checkers.
   and suggests **Download a backup** once you have 5 or more saved properties and no backup in the last 30 days.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
   message at the top, and starts by itself when the signal returns.
-- **Save or print:** one menu with Download report, Print summary (the summary, notes and checklist) and Print full
+- **Save or print:** one menu with Download report, Print summary (the summary, notes, viewing list and checklist) and Print full
   report, each with a one-line description.
 - **Comfort:** dark mode follows your device setting; **A+** makes text larger; **install as an app** on your phone's
   home screen (on iPhone: Share, then Add to Home Screen).
@@ -132,7 +132,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 
 It checks that all 23 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
-full screen, the offline message, the section bar, the topic icons, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, Send to my conveyancer, Back and Forward, saved reports and notes,
+full screen, the offline message, the section bar, the topic icons, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes,
 printing and downloads. Results,
 screenshots and sample reports are kept for 14 days with each run.
 
