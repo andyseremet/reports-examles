@@ -6,6 +6,8 @@ Property Location Check: what the app does today, and what is planned next.
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
+- Free for everyone: every feature stays free; support for the app's development is always voluntary (see "Later:
+  optional support module").
 - Data rule: outside data is saved with the app only when it is certain never to change; everything else is checked
   live.
 
@@ -127,36 +129,40 @@ update the README, add new behaviour to the daily check, and never weaken a test
 | 1.22.0 | Compare up to 3 properties | Compare side by side takes up to three saved properties instead of two; phone layout to be decided. | Builds on the existing compare view. |
 | 1.23.0 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales (7 today: land use, coast, noise, air, planning, trees, nature) where Welsh Government or Natural Resources Wales publish live open data. | Largest research task: each source must be checked first. |
 
-### Monetisation plan (chosen 5 November 2026)
+### Later: optional support module (not scheduled)
 
-The report stays free. Income comes first from optional tips, later from a paid professional PDF. Version numbers
-are given when each phase is scheduled.
+Decided on 5 November 2026. **Nothing changes in the app now.** This is planned for when the product is complete,
+and only if the owner decides to add it.
 
-**Phase 1: optional tip (no server needed)**
-- Three Stripe Payment Links: £3, £5 and £10. Stripe Checkout takes cards, Apple Pay, Google Pay and PayPal
-  (available to UK Stripe accounts). Standard UK cards cost 1.5% + 20p per payment.
-- Shown in two places only, never in the way of the report and never in print or downloads:
-  - one quiet line after the report summary ("Found this useful? Support this free tool.");
-  - a short thank-you with the tip buttons after someone downloads or prints the report.
-- Before launch:
-  - update "Privacy: what is sent where" (Stripe receives payment details on its own page);
-  - add short terms for tips (a voluntary gift; nothing is bought; how to ask for a refund).
-- Known risk, to keep in mind: Open-Meteo's free service is for non-commercial use only, and GitHub Pages must not be
-  used mainly for commercial transactions. A tip link is not listed as commercial by either, but if either says
-  otherwise, Phase 1 needs the steps from Phase 2.
+**Principles**
+- The app is and stays **free for everyone**, with every feature. Nobody is ever asked to pay to see, save, print,
+  download or share a report.
+- Support is **voluntary**: anyone can choose to contribute to or sponsor the app's development. Sharing the app is
+  encouraged as much as possible.
+- No adverts, no tracking, no accounts.
 
-**Phase 2: paid professional PDF, emailed (price set after a short test)**
-- A polished PDF of the report, emailed and re-downloadable for 12 months.
-- Needs, before it can be sold:
-  - a host that allows commercial sites (GitHub Pages does not allow e-commerce sites);
-  - a small server part that confirms each Stripe payment before the PDF is made and sent (a paywall inside the
-    page alone can be bypassed, because the app's code and data are public);
-  - commercial terms for every data service. Open-Meteo (air quality), CARTO and Esri (map pictures) do not allow
-    commercial use on their free terms, and Nominatim (address search) allows at most 1 request a second for all
-    users together. Each needs a paid plan or a replacement;
-  - terms of sale with the consumer's express consent and acknowledgement that the 14-day right to cancel is lost
-    once the PDF is supplied (Consumer Contracts Regulations 2013, regulation 37), a privacy policy, and a clear
-    "not a legal search or advice" statement. VAT registration is needed only above £90,000 a year.
+**How it would be built: a separate module the app does not depend on**
+- All support code lives in its own file (for example `js/support.js` with `css/support.css`), outside the main app.
+- The main app only offers a few named "hooks": places where the module may add something, such as after the report
+  summary, or after a download or print. If the module is not loaded, the hooks do nothing and the app is exactly as
+  it is today.
+- Switching it on or off is one line in `index.html` (and its file in `sw.js`). Nothing else in the app changes.
+- The daily check must pass both with and without the module.
+- The module never appears in printed or downloaded reports, and never slows down or blocks a report.
+
+**Options noted for that time (to be decided then)**
+- Payment links: Stripe Payment Links take cards, Apple Pay, Google Pay and PayPal (available to UK Stripe accounts;
+  standard UK cards cost 1.5% + 20p). They need no server for voluntary contributions.
+- Possible placement: one quiet line after the report summary, and a short thank-you after download or print.
+- Possible amounts: £3, £5 and £10.
+- Before switching it on: update "Privacy: what is sent where" (the payment provider receives payment details) and
+  add short terms for contributions.
+- A paid product (for example a professional emailed PDF) is not planned. If it is ever wanted, it would need a host
+  that allows commercial sites (GitHub Pages does not allow e-commerce sites), a small server part to confirm
+  payments, commercial terms for the air quality, map picture and address search services, and UK consumer terms
+  (Consumer Contracts Regulations 2013, regulation 37).
+- Known risk to check at that time: Open-Meteo's free service is for non-commercial use only, and GitHub Pages must
+  not be used mainly for commercial transactions. Ask both whether a voluntary contribution link is acceptable.
 
 Sources checked on 5 November 2026: GitHub Pages limits; Open-Meteo terms; CARTO basemap licence; Esri community
 answer on World Imagery; OSMF Nominatim policy; Stripe UK pricing and PayPal through Stripe; PayPal UK fees;
@@ -175,7 +181,7 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 | Flood warnings now | Environment Agency real-time flood service: is the home in a flood warning or alert area, and is a warning in force today. Live, allows web pages, separate from the busy map server (checked 5 November 2026). |
 | Past floods recorded here | Environment Agency Recorded Flood Outlines. Live, but adds 1 request to the busy Environment Agency map server. |
 | Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
-| Paid model alternatives | Offered on 5 November 2026 and not chosen: free summary with paid details, everything paid per report, extra licensed data (BGS GeoSure, groundwater flooding), a conveyancer pack, a report kept up to date before exchange. |
+| Paid features | Considered on 5 November 2026 and not wanted: the app stays free for everyone. Ideas noted were a free summary with paid details, paid reports, a paid emailed PDF, extra licensed data (BGS GeoSure, groundwater flooding), a conveyancer pack, and a report kept up to date before exchange. |
 | Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
 | Fuller coverage for Scotland | Fill topics that say "Check yourself" in Scotland. |
 | Welsh language | Removed on 4 November 2026: the app stays in English only. |
