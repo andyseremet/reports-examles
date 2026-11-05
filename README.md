@@ -115,7 +115,7 @@ A static site with no build step and no libraries other than Leaflet (the map). 
 | `status.html`, `js/status.js` | The data service status page: a separate page with its own small script. |
 | `sw.js` | Offline support: keeps the app files so it opens without a connection. |
 | `data/` | Fixed official data saved with the app (see below). |
-| `tests/` | The automatic live check, the syntax check (`node tests/syntax-check.mjs`), and `publish-status.mjs`, which builds the status page's file. |
+| `tests/` | The automatic live check, the syntax check (`node tests/syntax-check.mjs`), `publish-status.mjs`, which builds the status page's file, and `after-merge.sh`, which waits for a merged version to go live and then tests it. |
 
 The JavaScript files are plain scripts that share one global scope. `index.html` loads them in order, and each file
 can use what earlier files define.
