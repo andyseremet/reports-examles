@@ -311,7 +311,7 @@ function setLocation(lat, lon, label, options = {}) {
   showSearchStatus(inUK ? "" : "This location is outside the UK. The checks cover England, and some cover Scotland, Wales and Northern Ireland.", !inUK);
 
   // Keep a searched name when the pin is only nudged (within 200 m), and never
-  // overwrite a name the user typed in Advanced options.
+  // overwrite a name the user typed in More options.
   if (label) namedPlace = { lat, lon, label };
   else if (namedPlace && distanceKm(namedPlace, { lat, lon }) <= 0.2) label = namedPlace.label;
   else namedPlace = null;

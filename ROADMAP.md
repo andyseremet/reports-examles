@@ -132,7 +132,7 @@ Suggested in the quiz but not chosen this time. They can be picked up in a futur
 | Fuller coverage for Scotland | Fill topics that say "Check yourself" in Scotland. |
 | Welsh language | Removed on 4 November 2026: the app stays in English only. |
 | Remove "Download report" | Considered on 4 November 2026 and kept; may be covered by "Simpler print options". |
-| Remove the latitude and longitude boxes | Considered on 4 November 2026 and kept, in Advanced options. |
+| Remove the latitude and longitude boxes | Considered on 4 November 2026 and kept, in More options. |
 | Remove or reduce railway noise, landslides, aircraft | Considered on 4 November 2026 and kept as they are. |
 | Power lines and pylons | Dropped on 5 November 2026: the data is mostly downloads, not live services, and it changes as lines are built. Buyers can use the official network maps instead. |
 | Softer air quality rating | Considered on 4 November 2026; the council hotspot stays "Worth checking". |
