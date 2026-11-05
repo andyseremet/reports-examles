@@ -46,6 +46,9 @@ and coastal erosion risk (DAERA and DfI) are answered from Northern Ireland data
 nationally, so planning with nothing found says "Check yourself"; air quality shows the area estimate and says "Check
 yourself", because council hotspots are not mapped. Flood maps (DfI Rivers does not release them openly), radon,
 landslides, coal and old mines, land use and sale prices stay "Check yourself", with links to the right service.
+Schools, doctors and transport now shows each register only where it reaches (it used to say "None found nearby" for GPs in
+Scotland and for everything in Northern Ireland); in Northern Ireland it says "Check yourself" with links to nidirect,
+Schools Plus and Translink.
 
 Where a source has published nothing, the topic says "Check yourself", never "No issue found". Topics with no free
 live data (for example rail and aircraft noise, Japanese knotweed) link to the official checkers.
