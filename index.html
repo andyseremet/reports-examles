@@ -140,12 +140,16 @@
       <button class="primary small-btn" id="compareBtn" type="button" disabled>Compare</button>
       <span class="help" id="compareHelp">Tick two properties to compare them.</span>
     </div>
-    <div class="saved-actions">
-      <button class="secondary small-btn icon-label" id="exportBtn" type="button"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export list</button>
-      <button class="secondary small-btn icon-label" id="importBtn" type="button"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Import list</button>
-      <input type="file" id="importFile" accept=".json,application/json" class="hidden">
-      <span class="help" id="transferHelp">Move your saved properties, notes and ticks to another device.</span>
-    </div>
+    <details class="advanced move-device" id="moveDevice">
+      <summary>Move to another device (export or import)</summary>
+      <p class="help">Export saves your saved properties, notes and ticks in one file. Open it on the other device with “Import list”.</p>
+      <div class="saved-actions">
+        <button class="secondary small-btn icon-label" id="exportBtn" type="button"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export list</button>
+        <button class="secondary small-btn icon-label" id="importBtn" type="button"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Import list</button>
+        <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+        <span class="help" id="transferHelp" role="status"></span>
+      </div>
+    </details>
   </section>
 
   <!-- ===================== COMPARE ===================== -->

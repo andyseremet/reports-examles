@@ -1267,9 +1267,9 @@ function buildChecklist(checks) {
         </div>
         <p class="help" id="sendNote" role="status"></p>
       </div>
-      <h3>Questions to ask the seller or estate agent</h3>${list(seller)}
-      <h3>Searches and reports to ask your conveyancer for</h3>${list(conveyancer)}
-      <h3>Things to check yourself</h3>${list(yourself)}
+      ${tickHeading("Questions to ask the seller or estate agent", seller.length)}${list(seller)}
+      ${tickHeading("Searches and reports to ask your conveyancer for", conveyancer.length)}${list(conveyancer)}
+      ${tickHeading("Things to check yourself", yourself.length)}${list(yourself)}
     </section>`;
 }
 
@@ -1287,12 +1287,26 @@ function buildViewing(checks) {
     <section class="group checklist viewing" id="viewing">
       <h2>At the viewing${infoButton("info-viewing", "About the viewing checklist")}</h2>
       ${infoBox("info-viewing", "<p>A short list for the day you see the property, built from this report: the topics to look into come first. Tick items as you go: your ticks are remembered on this device for this property, and saved properties open without a signal.</p>")}
-      <h3>Look for</h3>${list(look)}
-      <h3>Ask on the day</h3>${list(ask)}
+      ${tickHeading("Look for", look.length)}${list(look)}
+      ${tickHeading("Ask on the day", ask.length)}${list(ask)}
     </section>`;
 }
 
 let lastChecklist = { seller: [], conveyancer: [] };
+
+// Each list's heading says how many of its items are ticked, e.g. "2 of 7 done".
+function tickHeading(title, total) {
+  return `<h3 class="tick-heading">${title} <span class="tick-count">0 of ${total} done</span></h3>`;
+}
+function updateTickCounts() {
+  document.querySelectorAll("#checklistBox .tick-heading").forEach(h => {
+    const boxes = [...h.nextElementSibling.querySelectorAll("input[data-tick]")];
+    const done = boxes.filter(b => b.checked).length;
+    const count = h.querySelector(".tick-count");
+    count.textContent = `${done} of ${boxes.length} done`;
+    count.classList.toggle("all-done", boxes.length > 0 && done === boxes.length);
+  });
+}
 
 /* ---------- send to my conveyancer ---------- */
 // Plain text for an email or a message. Nothing passes through the app: the email opens in the person's
@@ -1344,6 +1358,7 @@ const ticksKey = () => "plc-ticks:" + reportKey(run.loc);
 function restoreTicks() {
   const ticked = new Set(store.get(ticksKey(), []));
   document.querySelectorAll("#checklistBox input[data-tick]").forEach(box => { box.checked = ticked.has(box.dataset.tick); });
+  updateTickCounts();
 }
 
 document.addEventListener("change", e => {
@@ -1354,6 +1369,7 @@ document.addEventListener("change", e => {
   store.set(ticksKey(), [...ticked]);
   // A question can be in both lists: keep its boxes the same.
   document.querySelectorAll("#checklistBox input[data-tick]").forEach(b => { if (b.dataset.tick === box.dataset.tick) b.checked = box.checked; });
+  updateTickCounts();
 });
 
 /* ---------- section bar, open/close all, back to top ---------- */
@@ -1503,7 +1519,7 @@ function backupDue(count) {
     .filter(Boolean).map(d => new Date(d).getTime()).filter(t => !isNaN(t));
   return !last.length || Date.now() - Math.max(...last) > BACKUP_DAYS * 86400000;
 }
-$("backupNow").addEventListener("click", () => $("exportBtn").click());
+$("backupNow").addEventListener("click", () => { $("moveDevice").open = true; $("exportBtn").click(); });
 $("backupLater").addEventListener("click", () => { store.set("plc-backup-later", new Date().toISOString()); renderSaved(); });
 
 function selectedForCompare() {
