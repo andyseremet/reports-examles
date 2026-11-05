@@ -30,7 +30,7 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
   about 15 requests a minute. Do not add requests to it, and keep its pacing in `PACED_HOSTS`.
 - **Adding a topic:** a fetch function, then rows in `TASKS`, `CHECKS`, `TOPIC_ICONS`, `COVERAGE` (if it does not
   cover all of England, Wales and Scotland), and `SERVICES` in `tests/live-check.mjs`.
-- **Releases:** any change to `index.html`, `sw.js` or `data/` raises `APP_VERSION` (`index.html`) and `CACHE`
+- **Releases** (run `/release`, see `.claude/skills/release/SKILL.md`): any change to `index.html`, `sw.js` or `data/` raises `APP_VERSION` (`index.html`) and `CACHE`
   (`sw.js`, `plc-vN`) together. In the same commit, update `README.md`, and move the shipped items in `ROADMAP.md`
   into Part 1.
 
