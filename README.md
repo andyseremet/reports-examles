@@ -90,7 +90,8 @@ official checkers.
 
 ## Road map
 
-See [ROADMAP.md](ROADMAP.md) for the full feature list and the planned next versions.
+See [ROADMAP.md](ROADMAP.md) for the full feature list and the planned next versions. The app is free for everyone; how voluntary
+support could be added later, without changing what the app offers, is in [MONETISATION.md](MONETISATION.md).
 
 ## Limits
 
