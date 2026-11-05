@@ -42,6 +42,9 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
 - **Small commits:** one change per commit, with a clear message.
 - **Pull requests:** open one only when asked, and never merge or approve; the owner merges. After a merge, restart
   the working branch from `origin/main`.
+- **Check the live page after every merge:** once GitHub Pages has updated (a few minutes), confirm the live site
+  shows the new `APP_VERSION` and `sw.js` serves the new `CACHE`, then run `node tests/live-check.mjs` against it.
+  Report the pass count in plain English; an Environment Agency HTTP 403 "warn" is the only allowed non-pass.
 - **Keep this file current:** at the end of a task, suggest any instruction the owner repeated as a new rule here.
 
 ## Tests and CI
