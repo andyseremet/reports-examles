@@ -6,6 +6,8 @@ Property Location Check: what the app does today, and what is planned next.
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
+- Free for everyone: every feature stays free; support for the app's development is always voluntary (see "Later:
+  optional support module").
 - Data rule: outside data is saved with the app only when it is certain never to change; everything else is checked
   live.
 
@@ -114,27 +116,74 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 
 ## Part 2: Planned next steps
 
-Chosen from the quiz on 4 November 2026. Each version keeps the same habits: bump the version number and the
-offline cache name together, update the README, add the new topic to the daily check, and never weaken a test to get
-a pass.
+Chosen from the quiz on 5 November 2026, one item per version, in this order. Each is planned with a short quiz
+before it is built. Each version keeps the same habits: bump the version number and the offline cache name together,
+update the README, add new behaviour to the daily check, and never weaken a test to get a pass.
 
-### Chosen next ideas (not yet given a version number)
+| Version | Idea | What it does | Why this order |
+|---|---|---|---|
+| 1.18.0 | Data service health page | A simple page showing which outside data services worked in today's automatic check, so a buyer can see when a topic is down for everyone. | Already planned; small; helps explain "Service not answering" in the data gaps box. |
+| 1.19.0 | Accessibility re-check | Repeat the WCAG 2.2 AA check (light and dark, phone and desktop) after the 1.15.0 to 1.17.0 visual changes: the new menu, folded sections, labels and contrast. | Best done soon after the visual changes, before more are added. |
+| 1.20.0 | Faster reports | Aim for every report in under 10 seconds; while waiting, say which service is slow. Must not add requests to the Environment Agency map server. | Speed helps every visitor on every report. |
+| 1.21.0 | Viewing checklist | A short list of things to look for and ask on the day of a viewing, built from this report's results; easy to use on a phone, and works offline for saved properties. | Turns the report into action at the viewing. |
+| 1.22.0 | Compare up to 3 properties | Compare side by side takes up to three saved properties instead of two; phone layout to be decided. | Builds on the existing compare view. |
+| 1.23.0 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales (7 today: land use, coast, noise, air, planning, trees, nature) where Welsh Government or Natural Resources Wales publish live open data. | Largest research task: each source must be checked first. |
 
-| Idea | What it does |
-|---|---|
-| Data service health page | A simple page showing which outside data services worked in today's automatic check, so a buyer can see when a topic is down for everyone. |
+### Later: optional support module (not scheduled)
+
+Decided on 5 November 2026. **Nothing changes in the app now.** This is planned for when the product is complete,
+and only if the owner decides to add it.
+
+**Principles**
+- The app is and stays **free for everyone**, with every feature. Nobody is ever asked to pay to see, save, print,
+  download or share a report.
+- Support is **voluntary**: anyone can choose to contribute to or sponsor the app's development. Sharing the app is
+  encouraged as much as possible.
+- No adverts, no tracking, no accounts.
+
+**How it would be built: a separate module the app does not depend on**
+- All support code lives in its own file (for example `js/support.js` with `css/support.css`), outside the main app.
+- The main app only offers a few named "hooks": places where the module may add something, such as after the report
+  summary, or after a download or print. If the module is not loaded, the hooks do nothing and the app is exactly as
+  it is today.
+- Switching it on or off is one line in `index.html` (and its file in `sw.js`). Nothing else in the app changes.
+- The daily check must pass both with and without the module.
+- The module never appears in printed or downloaded reports, and never slows down or blocks a report.
+
+**Options noted for that time (to be decided then)**
+- Payment links: Stripe Payment Links take cards, Apple Pay, Google Pay and PayPal (available to UK Stripe accounts;
+  standard UK cards cost 1.5% + 20p). They need no server for voluntary contributions.
+- Possible placement: one quiet line after the report summary, and a short thank-you after download or print.
+- Possible amounts: £5, £10, £15, or any other amount the person is comfortable to give (Stripe Payment Links can
+  let the payer choose the amount).
+- Before switching it on: update "Privacy: what is sent where" (the payment provider receives payment details) and
+  add short terms for contributions.
+- A paid product (for example a professional emailed PDF) is not planned. If it is ever wanted, it would need a host
+  that allows commercial sites (GitHub Pages does not allow e-commerce sites), a small server part to confirm
+  payments, commercial terms for the air quality, map picture and address search services, and UK consumer terms
+  (Consumer Contracts Regulations 2013, regulation 37).
+- Known risk to check at that time: Open-Meteo's free service is for non-commercial use only, and GitHub Pages must
+  not be used mainly for commercial transactions. Ask both whether a voluntary contribution link is acceptable.
+
+Sources checked on 5 November 2026: GitHub Pages limits; Open-Meteo terms; CARTO basemap licence; Esri community
+answer on World Imagery; OSMF Nominatim policy; Stripe UK pricing and PayPal through Stripe; PayPal UK fees;
+GOV.UK VAT threshold; legislation.gov.uk (SI 2013/3134, regulation 37).
 
 ---
 
 ## Part 3: Ideas parked for later
 
-Suggested in the quiz but not chosen this time. They can be picked up in a future round.
+Suggested in a quiz but not chosen. They can be picked up in a future round.
 
 | Idea | Notes |
 |---|---|
-| Compare 3 or more properties | Today the app compares two side by side. |
-| Travel time to a chosen place | Distance and rough walking/driving time to work or a school. |
-| Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales. |
+| Travel time to a chosen place | Distance and rough walking/driving time to work or a school. Offered again on 5 November 2026; needs a routing service. |
+| What changed since last check | When a saved property is refreshed, show which topics changed rating. Offered on 5 November 2026. |
+| Flood warnings now | Environment Agency real-time flood service: is the home in a flood warning or alert area, and is a warning in force today. Live, allows web pages, separate from the busy map server (checked 5 November 2026). |
+| Past floods recorded here | Environment Agency Recorded Flood Outlines. Live, but adds 1 request to the busy Environment Agency map server. |
+| Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
+| Paid features | Considered on 5 November 2026 and not wanted: the app stays free for everyone. Ideas noted were a free summary with paid details, paid reports, a paid emailed PDF, extra licensed data (BGS GeoSure, groundwater flooding), a conveyancer pack, and a report kept up to date before exchange. |
+| Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
 | Fuller coverage for Scotland | Fill topics that say "Check yourself" in Scotland. |
 | Welsh language | Removed on 4 November 2026: the app stays in English only. |
 | Remove "Download report" | Considered on 4 November 2026 and kept; since 1.17.0 it is in the "Save or print" menu. |
