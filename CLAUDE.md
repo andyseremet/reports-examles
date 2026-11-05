@@ -32,7 +32,9 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   `APP_VERSION`/`CACHE`, runs the live check). Run it in the background; it can take 20 minutes.
 - Accessibility re-check (by hand, after visual changes; not in CI): `npm install --no-save axe-core` in the scratchpad,
   scan WCAG 2.2 AA tags on the start page, a full report (Open all, sources open), and `status.html`, at 1280 px,
-  320 px and phone, light and dark, normal and A+ text; also Tab through every control and check none is hidden.
+  320 px and phone, light and dark, normal and A+ text; also Tab through every control and check none is hidden. At
+  320 px, check for sideways scrolling both before and after using each new or changed control (a button can change
+  its own size or its neighbours' once pressed).
 
 ## Rules
 
