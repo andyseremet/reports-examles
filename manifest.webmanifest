@@ -1,7 +1,7 @@
 {
   "name": "Property Location Check",
   "short_name": "Property Check",
-  "description": "Free checks for anyone buying a house or land in England, Wales or Scotland: flooding, radon, coal mining, noise, air quality, landfill, planning and more.",
+  "description": "Free checks for anyone buying a house or land in the UK: flooding, radon, coal mining, noise, air quality, landfill, planning and more.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
