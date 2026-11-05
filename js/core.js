@@ -77,6 +77,12 @@ const LINKS = {
   niNoise: "https://www.daera-ni.gov.uk/services/noise-maps",
   niCoast: "https://www.infrastructure-ni.gov.uk/publications/baseline-study-and-gap-analysis-coastal-erosion-risk-management-ni",
   niAir: "https://www.airqualityni.co.uk/laqm/aqma",
+  walesSchools: "https://mylocalschool.wales/",
+  scotSchools: "https://www.gov.scot/publications/school-contact-details/",
+  scotNhs: "https://www.nhsinform.scot/",
+  niSchools: "https://www.education-ni.gov.uk/services/schools-plus",
+  niGps: "https://www.nidirect.gov.uk/services/gp-practices",
+  translink: "https://www.translink.co.uk/",
   niFloodMaps: "https://www.infrastructure-ni.gov.uk/topics/rivers-and-flooding/flood-maps-ni",
   simdAbout: "https://www.gov.scot/collections/scottish-index-of-multiple-deprivation-2020/",
   scotCrime: "https://www.gov.scot/collections/recorded-crime-in-scotland/",
@@ -243,6 +249,9 @@ function geometryCentre(geometry) {
 const okValue = (R, key) => R && R[key] && R[key].ok ? R[key].value : null;
 
 // Nearest first; places with no known distance go last.
+// ["a", "b", "c"] -> "a, b and c".
+const listWords = items => items.length < 2 ? items.join("") : items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+const sentenceStart = text => text.charAt(0).toUpperCase() + text.slice(1);
 const byDistance = (a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99);
 
 // A planning.data.gov.uk point ("POINT(lon lat)") with its distance from the pin.

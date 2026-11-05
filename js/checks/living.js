@@ -8,24 +8,41 @@ function checkAmenities(R) {
   };
   if (!R.amenities.ok) return unavailable(base, R, "amenities");
   const g = R.amenities.value;
-  // Schools and stops come from planning.data.gov.uk, which covers England only.
+  // Each register covers only some countries (AMENITY_TYPES "covers"); outside them a row says "Not covered".
   const country = okValue(R, "place")?.country || null;
-  const notCoveredHere = key => country && country !== "England" && ["school", "bus_stop", "tram"].includes(key);
+  const notCoveredHere = t => !!country && !t.covers.includes(country);
   const rows = AMENITY_TYPES.map(t => {
-    const list = notCoveredHere(t.key) ? [] : (g[t.key] || []);
-    return { t, near: list[0], count: list.filter(x => x.distanceKm <= t.within).length, notCovered: notCoveredHere(t.key) };
+    const list = notCoveredHere(t) ? [] : (g[t.key] || []);
+    return { t, near: list[0], count: list.filter(x => x.distanceKm <= t.within).length, notCovered: notCoveredHere(t) };
   });
+  const uncovered = rows.filter(x => x.notCovered);
+  const noneCovered = uncovered.length === rows.length;
+  const uncoveredText = uncovered.length
+    ? ` ${sentenceStart(listWords(uncovered.map(x => x.t.many)))} are not covered in ${country}.` : "";
+  const nationalLinks = {
+    Wales: [`Find schools on ${link(LINKS.walesSchools, "My Local School")}.`],
+    Scotland: [`Find GP surgeries and pharmacies on ${link(LINKS.scotNhs, "NHS inform")}, and schools in the ${link(LINKS.scotSchools, "Scottish Government's school list")}.`],
+    "Northern Ireland": [`Find GP practices on ${link(LINKS.niGps, "nidirect")}, schools on ${link(LINKS.niSchools, "Schools Plus")}, and trains and buses on ${link(LINKS.translink, "Translink")}.`]
+  }[country] || [];
   const summary = rows.filter(x => x.near && x.near.distanceKm <= 5 && x.t.key !== "bus_stop" && x.t.key !== "tram").slice(0, 4)
     .map(x => `${x.t.short} ${formatDistance(x.near.distanceKm)}`);
   const missing = (g.missing || []).length
     ? `<p><strong>Not available right now:</strong> ${escapeHTML(g.missing.join(", "))}. Press “Refresh” later.</p>` : "";
+  if (noneCovered) {
+    return {
+      ...base, status: "manual", gap: "coverage",
+      found: `Not covered in ${country}: the registers we use for schools, GP surgeries, pharmacies and stations do not include it.`,
+      meaning: "<p>Use the national services below to find schools, GP practices and public transport near the property.</p>",
+      actions: [...nationalLinks, "Check school admission areas with the education authority before relying on a nearby school."]
+    };
+  }
   return {
     ...base, status: "info",
-    found: (summary.length ? "Nearest: " + summary.join(", ") + "." : (g.missing || []).length ? "" : "No schools, GP surgeries or stations found nearby.")
-      + ((g.missing || []).length ? (summary.length ? " " : "") + "Not available right now: " + g.missing.join(", ") + "." : ""),
+    found: ((summary.length ? "Nearest: " + summary.join(", ") + "." : (g.missing || []).length ? "" : "None of the places we check were found nearby.")
+      + ((g.missing || []).length ? (summary.length ? " " : "") + "Not available right now: " + g.missing.join(", ") + "." : "") + uncoveredText).trim(),
     details: missing + `<div class="table-wrap"><table><thead><tr><th>Place</th><th>Nearest</th><th>Distance</th><th>Number nearby</th></tr></thead><tbody>${
       rows.map(x => x.notCovered
-        ? `<tr><td>${escapeHTML(x.t.label)}</td><td colspan="3">Not covered in ${escapeHTML(country)}: this register covers England only</td></tr>`
+        ? `<tr><td>${escapeHTML(x.t.label)}</td><td colspan="3">Not covered in ${escapeHTML(country)}: this register covers ${escapeHTML(listWords(x.t.covers))} only</td></tr>`
         : `<tr><td>${escapeHTML(x.t.label)}</td><td>${x.near ? escapeHTML(x.near.name || "Unnamed") : "None found nearby"}</td>
         <td>${x.near ? formatDistance(x.near.distanceKm) : "–"}</td><td>${x.count} within ${formatRadius(x.t.within * 1000)}</td></tr>`).join("")
     }</tbody></table></div>`,
@@ -35,7 +52,7 @@ function checkAmenities(R) {
       Department for Transport's national list of public transport stops.</p>
       <p>Supermarkets and shops are not included because there is no official open list. School catchment areas and
       Ofsted ratings are not shown: check them with the council and on the Ofsted website.</p>`,
-    actions: ["Check school admission areas with the council before relying on a nearby school.", "Try the journey to work or school at rush hour."]
+    actions: [...nationalLinks, "Check school admission areas with the council before relying on a nearby school.", "Try the journey to work or school at rush hour."]
   };
 }
 

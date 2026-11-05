@@ -74,13 +74,15 @@ async function getFloodNational(loc) {
 // - bus, tram and underground stops: NaPTAN (Department for Transport), via planning.data.gov.uk
 // - GP surgeries and pharmacies: NHS Organisation Data Service, located with postcodes.io
 // - railway stations: NaPTAN national station list, saved with the app (data/rail-stations.json)
+// "covers": the countries each register includes. Schools and stops (planning.data.gov.uk) are England only; the NHS
+// Organisation Data Service lists GP surgeries and pharmacies in England and Wales; NaPTAN stations cover Great Britain.
 const AMENITY_TYPES = [
-  { key: "school", label: "School", short: "school", within: 1 },
-  { key: "gp", label: "GP surgery", short: "GP", within: 2 },
-  { key: "pharmacy", label: "Pharmacy", short: "pharmacy", within: 2 },
-  { key: "station", label: "Railway station", short: "station", within: 3 },
-  { key: "tram", label: "Tram, metro or underground stop", short: "tram or underground", within: 1 },
-  { key: "bus_stop", label: "Bus stop", short: "bus stop", within: 0.5 }
+  { key: "school", many: "schools", label: "School", short: "school", within: 1, covers: ["England"] },
+  { key: "gp", many: "GP surgeries", label: "GP surgery", short: "GP", within: 2, covers: ["England", "Wales"] },
+  { key: "pharmacy", many: "pharmacies", label: "Pharmacy", short: "pharmacy", within: 2, covers: ["England", "Wales"] },
+  { key: "station", many: "railway stations", label: "Railway station", short: "station", within: 3, covers: ["England", "Wales", "Scotland"] },
+  { key: "tram", many: "tram and underground stops", label: "Tram, metro or underground stop", short: "tram or underground", within: 1, covers: ["England"] },
+  { key: "bus_stop", many: "bus stops", label: "Bus stop", short: "bus stop", within: 0.5, covers: ["England"] }
 ];
 
 const titleCase = text => String(text || "").toLowerCase()
@@ -105,6 +107,7 @@ const inCircle = (loc, radiusM, limit = 500) =>
   ({ geometry: circleWkt(loc.lat, loc.lon, radiusM), geometry_relation: "intersects", limit, exclude_field: "geometry" });
 
 async function getPlanningPlaces(loc) {
+  if (await inWales(loc) || await inScotland(loc) || await inNI(loc)) return { school: [], bus_stop: [], tram: [] };   // England only
   const [schools, stops] = await Promise.all([
     planningEntities(inCircle(loc, 2000), ["educational-establishment"]),
     planningEntities(inCircle(loc, 1000), ["transport-access-node"])
@@ -119,6 +122,7 @@ async function getPlanningPlaces(loc) {
 }
 
 async function getNhsPlaces(loc) {
+  if (await inScotland(loc) || await inNI(loc)) return { gp: [], pharmacy: [] };   // the NHS register covers England and Wales
   const [place, near] = await Promise.all([getPlace(loc), fetchJSON(API.postcodes.replace("/postcodes", "/outcodes") +
     "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=4000&limit=6").catch(() => ({ result: [] }))]);
   const outcodes = [...new Set([place && place.outcode, ...((near.result || []).map(o => o.outcode))].filter(Boolean))].slice(0, 6);
@@ -141,6 +145,7 @@ async function getNhsPlaces(loc) {
 }
 
 async function getStations(loc) {
+  if (await inNI(loc)) return { station: [] };   // NaPTAN covers Great Britain
   const data = await getStationList();
   return { station: data.stations.map(([name, lat, lon]) => ({ name, lat, lon, distanceKm: distanceKm(loc, { lat, lon }) }))
     .filter(x => x.distanceKm <= 10) };
