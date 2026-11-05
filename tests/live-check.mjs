@@ -247,6 +247,25 @@ async function testDevice(device, [postcode, place]) {
     return icons >= 13 && active === "Living" ? `${icons} icons, section bar ok` : false;
   });
 
+  await step("Data gaps box lists every topic without an answer", async () => {
+    // Every "Check yourself" or "Not available" topic must appear in the box, with a way to check it
+    // instead, and not in "Start here"; with no such topics, the box is hidden.
+    const r = await page.evaluate(() => {
+      const want = orderedResults().filter(c => ["manual", "error"].includes(c.status)).map(c => c.id).sort();
+      const rows = [...document.querySelectorAll(".gaps-box li")];
+      const inBox = rows.map(li => li.querySelector("[data-open]").dataset.open.replace("check-", "")).sort();
+      const noWay = rows.filter(li => li.querySelector(".gap-ask").textContent.replace("Instead:", "").trim().length < 10).length;
+      const inStart = [...document.querySelectorAll(".priority li .chip")].map(x => x.textContent)
+        .filter(t => t === "Check yourself" || t === "Not available").length;
+      return { want, inBox, noWay, inStart, box: !!document.querySelector(".gaps-box") };
+    });
+    if (r.want.join() !== r.inBox.join()) throw new Error(`box lists [${r.inBox}] but expected [${r.want}]`);
+    if (r.noWay) throw new Error(`${r.noWay} row(s) do not say how to check instead`);
+    if (r.inStart) throw new Error(`${r.inStart} gap topic(s) still in "Start here"`);
+    if (!r.want.length && r.box) throw new Error("box shown with no gaps");
+    return r.want.length ? `${r.want.length} gap(s): ${r.want.join(", ")}` : "no gaps, box hidden";
+  });
+
   await step("Tapping a topic shows why", async () => {
     await page.click('.topic-strip [data-why="radon"]');
     await page.waitForTimeout(300);

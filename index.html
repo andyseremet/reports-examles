@@ -248,6 +248,14 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .priority {list-style:none;padding:0;margin:0}
 .priority li {margin:6px 0;padding:10px 12px;border-radius:8px;border:1px solid var(--border);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .priority li a {font-weight:bold}
+.gaps-box {margin:16px 0;padding:12px 14px;border:1px solid var(--border);border-left:4px solid #6b7280;border-radius:8px;background:var(--surface-2)}
+.gaps-box h3 {margin:0 0 4px}
+.gaps-box p {margin:0 0 8px;font-size:14px}
+.gaps-box ul {list-style:none;padding:0;margin:0}
+.gaps-box li {padding:8px 0;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:14px}
+.gaps-box li a {font-weight:bold}
+.gap-reason {font-size:12px;font-weight:bold;padding:2px 8px;border-radius:20px;background:var(--surface);border:1px solid var(--border);white-space:nowrap}
+.gap-ask {flex-basis:100%}
 .chip {display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:bold;white-space:nowrap}
 .chip.high {background:var(--high-bg);color:var(--high)}
 .chip.medium {background:var(--med-bg);color:var(--med)}
@@ -394,7 +402,7 @@ body.has-sticky footer {padding-bottom:100px}
   .panel {border:0;box-shadow:none;padding:0;margin:0}
   a {color:#222;text-decoration:none}
   .details-start {break-before:page}
-  .check,.checklist li,.priority li {break-inside:avoid}
+  .check,.checklist li,.priority li,.gaps-box li {break-inside:avoid}
   .info-btn,[data-retry] {display:none!important}
   .info-body[hidden] {display:block!important}
   .leaflet-control-zoom {display:none}
@@ -705,7 +713,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.14.0";
+const APP_VERSION = "1.15.0";
 const APP_UPDATED = "5 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -2186,7 +2194,7 @@ function checkRadon(R) {
   if (!R.radon.ok) return unavailable(base, R, "radon");
   const r = R.radon.value;
   if (!r) {
-    return { ...base, status: "manual", found: "No radon data for this point (the data covers Great Britain only).",
+    return { ...base, status: "manual", gap: "coverage", found: "No radon data for this point (the data covers Great Britain only).",
       meaning: "", actions: [`Check the address on ${link(LINKS.ukradon, "UKradon")}.`] };
   }
   if (r.VERSION) base.dataDate = r.VERSION + ", checked " + today();
@@ -2870,7 +2878,7 @@ function notCovered(c, country, place) {
     ? [`Ask ${escapeHTML(council)}'s planning service about restrictions and protected sites.`]
     : service ? [`Check this on ${link(service[1], service[0])}.`] : [];
   return topicResult(c, {
-    status: "manual",
+    status: "manual", gap: "coverage",
     found: `Not covered in ${country}: the data we use covers ${covered} only.`,
     meaning: `<p>This check uses official data that only covers ${covered}, so we cannot give a result for a property in ${escapeHTML(country)}.
       Use the national service instead.</p>`,
@@ -3130,7 +3138,7 @@ function showSnapshot(snap, options = {}) {
     const res = run.results[c.id];
     if (!slot) return;
     // Topics added to the app after this property was saved.
-    const shown = res || topicResult(c, { status: "manual",
+    const shown = res || topicResult(c, { status: "manual", gap: "saved",
       found: "Not included in these saved results. Press “Refresh with the latest data” to check it." });
     if (!res) run.results[c.id] = shown;
     slot.innerHTML = renderCheck(shown);
@@ -3393,9 +3401,10 @@ function renderSummary() {
   const ready = results.length;
   const p = okValue(run.R, "place");
   const outsideEngland = p && p.country && p.country !== "England";
-  const priority = results.filter(c => ["high", "medium", "error", "manual"].includes(c.status))
+  const priority = results.filter(c => ["high", "medium"].includes(c.status))
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
-  const notCoveredText = n("manual") ? ` <strong>${plural(n("manual"), "topic")}</strong> need checking yourself (see below).` : "";
+  const gaps = n("manual") + n("error");
+  const notCoveredText = gaps ? ` <strong>${plural(gaps, "topic")}</strong> could not be checked here (see “Where we could not give an answer”).` : "";
 
   let verdict;
   if (!run.done) {
@@ -3439,8 +3448,44 @@ function renderSummary() {
     ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
       <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
           <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul>` : ""}
+    ${dataGapsBox(results)}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
       Some official data only covers England. Those topics are marked “Check yourself”, with a link to the right national service.</div>` : ""}`;
+}
+
+// Topics with no real answer: why, and who to ask instead. Hidden when every topic has an answer.
+const GAP_REASON = {
+  coverage: "Not covered here",
+  nodata: "No data found",
+  down: "Service not answering",
+  saved: "Not in saved results"
+};
+
+function gapKind(c) {
+  if (c.status === "error") return "down";
+  return c.status === "manual" ? (c.gap || "nodata") : null;
+}
+
+function dataGapsBox(results) {
+  const gaps = results.filter(gapKind);
+  if (!gaps.length) return "";
+  const askInstead = c => {
+    if (gapKind(c) === "down") {
+      return `<button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button>` +
+        (c.source && c.source.url ? ` or use ${link(c.source.url, c.source.name)}` : "");
+    }
+    if (gapKind(c) === "saved") return "Press “Refresh with the latest data” above.";
+    if (c.actions && c.actions.length) return c.actions[0];
+    return c.source && c.source.url ? `See ${link(c.source.url, c.source.name)}.` : "Ask your conveyancer to include this in their searches.";
+  };
+  return `<section class="gaps-box" aria-labelledby="gapsTitle">
+    <h3 id="gapsTitle">Where we could not give an answer</h3>
+    <p>${plural(gaps.length, "topic")} could not be checked here. Missing data does not mean there is no problem, so check ${gaps.length === 1 ? "it" : "them"} another way.</p>
+    <ul>${gaps.map(c => `<li><span class="gap-reason">${GAP_REASON[gapKind(c)]}</span>
+      <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
+      <span>${escapeHTML(c.found)}</span>
+      <span class="gap-ask"><strong>Instead:</strong> ${askInstead(c)}</span></li>`).join("")}</ul>
+  </section>`;
 }
 
 // The one-line reason for the topic tapped in the strip above.
