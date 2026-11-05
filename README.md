@@ -35,7 +35,8 @@ official checkers.
 3. Check the pin is on the right property (drag it if not), then press
    **Check this property**.
 4. Read the report: a verdict, a "Start here" list of things to look into, and a
-   "Where we could not give an answer" box listing topics with no answer and who to ask instead, then results grouped into
+   "Where we could not give an answer" box listing topics with no answer and who to ask instead (it folds away with
+   **Details / Hide**, and starts closed when more than 3 topics are listed), then results grouped into
    Flooding, Ground and land, Living environment, and Planning and
    surroundings, ending with a short list of things to look for and ask at the viewing, and a checklist for the seller and conveyancer.
 5. Press **Share** to copy or send the link, or **Save or print** to download the report, print a summary, or
@@ -52,7 +53,7 @@ official checkers.
   phone its edge fades to show that it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open), and the
   count boxes in the summary go to the first topic with that rating. There is also a back-to-top button.
 - **Save and share:** every report is saved on your device (nothing is sent anywhere). Reopen saved properties,
-  **compare two side by side**, tick off the checklists (remembered per property; each list shows, for example, "2 of 7 done"), and share with the phone's share menu.
+  **compare two or three side by side** (with a switch to show only the topics that differ), tick off the checklists (remembered per property; each list shows, for example, "2 of 7 done"), and share with the phone's share menu.
 - **Clear at a glance:** a row of topic icons shows every result's colour; tap one to see the reason in one line,
   with a link to the full section. On phones, tables become easy-to-read cards and
   "Check this property" stays at the bottom of the screen until pressed.
@@ -119,7 +120,7 @@ A static site with no build step and no libraries other than Leaflet (the map). 
 | `status.html`, `js/status.js` | The data service status page: a separate page with its own small script. |
 | `sw.js` | Offline support: keeps the app files so it opens without a connection. |
 | `data/` | Fixed official data saved with the app (see below). |
-| `tests/` | The automatic live check, the syntax check (`node tests/syntax-check.mjs`), `publish-status.mjs`, which builds the status page's file, and `after-merge.sh`, which waits for a merged version to go live and then tests it. |
+| `tests/` | The automatic live check, the syntax check (`node tests/syntax-check.mjs`), `publish-status.mjs`, which builds the status page's file, `after-merge.sh`, which waits for a merged version to go live and then tests it, and `a11y-check.mjs`, the accessibility scan run by hand after visual changes. |
 
 The JavaScript files are plain scripts that share one global scope. `index.html` loads them in order, and each file
 can use what earlier files define.

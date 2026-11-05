@@ -991,6 +991,11 @@ function prepareTables(container, title) {
   });
 }
 
+// "Details" with a down arrow when closed, "Hide" with an up arrow when open (the words come from css/app.css).
+function moreToggle() {
+  return `<span class="more no-print" aria-hidden="true"><span class="more-text"></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
+}
+
 function renderCheck(c) {
   const open = ["high", "medium", "error"].includes(c.status);
   const actions = c.actions && c.actions.length
@@ -1001,7 +1006,7 @@ function renderCheck(c) {
       <summary>
         <h3>${escapeHTML(c.title)}</h3>${chip(c.status)}
         <span class="found">${escapeHTML(c.found)}</span>
-        <span class="more no-print" aria-hidden="true"><span class="more-text"></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        ${moreToggle()}
       </summary>
       <div class="check-body">
         ${c.status === "error" ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
@@ -1168,6 +1173,7 @@ function gapKind(c) {
   return c.status === "manual" ? (c.gap || "nodata") : null;
 }
 
+const GAPS_OPEN_MAX = 3;
 function dataGapsBox(results) {
   const gaps = results.filter(gapKind);
   if (!gaps.length) return "";
@@ -1181,14 +1187,20 @@ function dataGapsBox(results) {
     if (c.actions && c.actions.length) return c.actions[0];
     return c.source && c.source.url ? `See ${link(c.source.url, c.source.name)}.` : "Ask your conveyancer to include this in their searches.";
   };
-  return `<section class="gaps-box" aria-labelledby="gapsTitle">
-    <h3 id="gapsTitle">Where we could not give an answer</h3>
-    <p>${plural(gaps.length, "topic")} could not be checked here. Missing data does not mean there is no problem, so check ${gaps.length === 1 ? "it" : "them"} another way.</p>
+  // Folds away with "Details / Hide" like a topic card. It starts open for up to GAPS_OPEN_MAX topics; after the
+  // person opens or closes it, their choice is kept while the rest of the report loads.
+  const open = run.gapsOpen ?? gaps.length <= GAPS_OPEN_MAX;
+  return `<details class="gaps-box" id="gapsBox"${open ? " open" : ""}>
+    <summary>
+      <h3 id="gapsTitle">Where we could not give an answer</h3>
+      <p>${plural(gaps.length, "topic")} could not be checked here. Missing data does not mean there is no problem, so check ${gaps.length === 1 ? "it" : "them"} another way.</p>
+      ${moreToggle()}
+    </summary>
     <ul>${gaps.map(c => `<li><span class="gap-reason">${GAP_REASON[gapKind(c)]}</span>
       <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
       <span>${escapeHTML(c.found)}</span>
       <span class="gap-ask"><strong>Instead:</strong> ${askInstead(c)}</span></li>`).join("")}</ul>
-  </section>`;
+  </details>`;
 }
 
 // The one-line reason for the topic tapped in the strip above.
@@ -1408,6 +1420,11 @@ $("toggleAll").addEventListener("click", () => {
   allTopics().forEach(d => { d.open = open; });
   updateToggleAll();
 });
+// Remember whether the person opened or closed the gaps box, so the next redraw keeps it that way.
+document.addEventListener("click", e => {
+  const sum = e.target.closest && e.target.closest("#gapsBox > summary");
+  if (sum && run) run.gapsOpen = !sum.parentElement.open;
+});
 document.addEventListener("toggle", e => { if (e.target.matches && e.target.matches("#report details.check")) updateToggleAll(); }, true);
 
 // Fade the edge of the section links where more of them are hidden to the side.
@@ -1526,11 +1543,15 @@ function selectedForCompare() {
   return [...document.querySelectorAll("#savedList input[data-compare]:checked")].map(b => b.dataset.compare);
 }
 
+// Compare takes 2 or 3 saved properties; once 3 are ticked, the other boxes are switched off.
+const COMPARE_MAX = 3;
 function updateCompareButton() {
-  const chosen = selectedForCompare();
-  $("compareBtn").disabled = chosen.length !== 2;
-  document.querySelectorAll("#savedList input[data-compare]").forEach(b => { b.disabled = !b.checked && chosen.length >= 2; });
-  $("compareHelp").textContent = chosen.length === 2 ? "Ready to compare." : `Tick two properties to compare them (${chosen.length} of 2 chosen).`;
+  const n = selectedForCompare().length;
+  $("compareBtn").disabled = n < 2;
+  document.querySelectorAll("#savedList input[data-compare]").forEach(b => { b.disabled = !b.checked && n >= COMPARE_MAX; });
+  $("compareHelp").textContent = n >= COMPARE_MAX ? `Ready to compare ${n}.`
+    : n === 2 ? "Ready to compare 2. You can tick one more."
+    : `Tick 2 or 3 properties to compare them (${n} chosen).`;
 }
 
 $("savedList").addEventListener("change", updateCompareButton);
@@ -1681,22 +1702,39 @@ $("importFile").addEventListener("change", async e => {
 
 $("compareBtn").addEventListener("click", () => {
   const saved = store.get(SAVED_KEY, []);
-  const [a, b] = selectedForCompare().map(k => saved.find(s => s.key === k));
-  if (!a || !b) return;
+  const list = selectedForCompare().map(k => saved.find(s => s.key === k)).filter(Boolean);
+  if (list.length < 2) return;
+  const find = (s, id) => s.checks.find(x => x.id === id);
   const cell = (s, id) => {
-    const c = s.checks.find(x => x.id === id);
+    const c = find(s, id);
     return c ? `${chip(c.status)}<br><small>${escapeHTML(c.found)}</small>` : "<small>Not checked</small>";
   };
+  // A topic "differs" when the properties do not all have the same rating.
+  const differs = id => new Set(list.map(s => (find(s, id) || {}).status || "none")).size > 1;
+  const diffCount = CHECKS.filter(c => differs(c.id)).length;
   const head = s => `<a href="${escapeHTML(reportUrl(s))}">${escapeHTML(s.name)}</a><br><small>${escapeHTML(s.postcode || "")} · checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}</small>`;
+  $("compareTitle").textContent = `Comparing ${list.length === 3 ? "three" : "two"} properties`;
   $("compareBody").innerHTML = `
-    <div class="table-wrap"><table class="compare-table">
-      <thead><tr><th>Topic</th><th>${head(a)}</th><th>${head(b)}</th></tr></thead>
+    <label class="diff-only"><input type="checkbox" id="diffOnly"> Show only topics that differ</label>
+    <p class="help" id="diffHelp" role="status"></p>
+    <div class="table-wrap"><table class="compare-table" id="compareTable">
+      <thead><tr><th>Topic</th>${list.map(s => `<th>${head(s)}</th>`).join("")}</tr></thead>
       <tbody>
-        <tr><td>Overall</td><td>${countChips(a.checks)}</td><td>${countChips(b.checks)}</td></tr>
-        ${CHECKS.map(c => `<tr><td>${escapeHTML(c.title)}</td><td>${cell(a, c.id)}</td><td>${cell(b, c.id)}</td></tr>`).join("")}
+        <tr><td>Overall</td>${list.map(s => `<td>${countChips(s.checks)}</td>`).join("")}</tr>
+        ${CHECKS.map(c => `<tr${differs(c.id) ? "" : ' class="same"'}><td>${escapeHTML(c.title)}</td>${list.map(s => `<td>${cell(s, c.id)}</td>`).join("")}</tr>`).join("")}
       </tbody>
     </table></div>
     <p class="help">Saved results from the day each property was checked. Open a property to run its checks again with the latest data.</p>`;
+  const showDiff = () => {
+    const only = $("diffOnly").checked;
+    $("compareTable").classList.toggle("only-diff", only);
+    $("diffHelp").textContent = !diffCount ? "Every topic has the same rating for these properties."
+      : only ? `Showing the ${plural(diffCount, "topic", "topics")} with different ratings, of ${CHECKS.length}.`
+      : `${plural(diffCount, "topic has", "topics have")} different ratings, of ${CHECKS.length}.`;
+  };
+  $("diffOnly").disabled = !diffCount;
+  $("diffOnly").addEventListener("change", showDiff);
+  showDiff();
   prepareTables($("compareBody"), "Comparison");
   $("comparePanel").classList.remove("hidden");
   $("comparePanel").scrollIntoView({ behavior: "smooth", block: "start" });

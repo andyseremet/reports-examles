@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.24.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.25.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.24.0)
+## Part 1: What the app does today (version 1.25.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -38,7 +38,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - Each topic says what it means, what to do next, and how current its data is.
 - Topic cards show **Details ▾** (or **Hide ▴** when open); one **Open all / Close all** button stays on the section
   bar, which fades at the edge on a phone to show it scrolls (1.23.0).
-- An overall verdict, count boxes that go to the first topic with that rating, a "Start here" list, and a box for every topic with no real answer and who to ask instead.
+- An overall verdict, count boxes that go to the first topic with that rating, a "Start here" list, and a box for every topic with no real answer and who to ask
+  instead, which folds away with **Details / Hide** and starts closed when it lists more than 3 topics (1.25.0).
 - **At the viewing:** up to 12 things to look for and ask on the day, reached with the **Viewing** button.
 - A checklist for the seller and conveyancer; ticks are remembered for each property, and each list shows, for
   example, "2 of 7 done" (1.24.0).
@@ -53,7 +54,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 ### Saved properties
 - Saved on the device only; reopen instantly and refresh; results older than 3 months are marked.
 - **Rename** and **Remove** buttons; Remove offers **Undo** for 10 seconds (1.22.0).
-- Private notes that say "Saved ✓" after each change, a starred shortlist, and compare two properties side by side.
+- Private notes that say "Saved ✓" after each change, a starred shortlist, and compare two or three properties side by side, with a
+  switch to show only the topics that differ (1.25.0).
 - Export and import, in a **Move to another device** panel (1.24.0), with a backup reminder.
 
 ### Share, print and export
@@ -62,8 +64,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Comfort and access
 - Dark mode, larger text (**A+ Text size**), and install as an app on a phone.
-- Checked against accessibility standard WCAG 2.2 AA; last re-checked on 5 November 2026 (1.24.0, after the UX review
-  changes in 1.22.0 to 1.24.0).
+- Checked against accessibility standard WCAG 2.2 AA; last re-checked on 5 November 2026 (1.25.0, after the UX review
+  changes in 1.22.0 to 1.24.0 and Compare up to 3).
 - Privacy: no account, cookies or tracking.
 - A **Data service status** page shows each data service's result in this morning's automatic check.
 
@@ -82,7 +84,6 @@ update the README, add new behaviour to the daily check, and never weaken a test
 
 | Version | Idea | What it does | Why this order |
 |---|---|---|---|
-| 1.25.0 | Compare up to 3 properties | Compare side by side takes up to three saved properties instead of two; phone layout to be decided. | Builds on the existing compare view. |
 | 1.26.0 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales (7 today: land use, coast, noise, air, planning, trees, nature) where Welsh Government or Natural Resources Wales publish live open data. | Largest research task: each source must be checked first. |
 
 ### Voluntary support (not scheduled)

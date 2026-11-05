@@ -23,16 +23,21 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - Syntax check: `node tests/syntax-check.mjs` (all `js/` files together in load order, then `sw.js`). A project hook
   (`.claude/settings.json`, `.claude/hooks/syntax-check.sh`) runs it after every edit to `index.html` or a `.js` file.
   Fix any error it reports before going on.
-- Full test: `npm install --no-save playwright@1.49.1 && npx playwright install chromium`, then
+- Full test: `npm install --no-save playwright@1.49.1 && npx playwright install chromium` (in a cloud session use the
+  preinstalled browser instead: `npm install --no-save playwright@$(node -p "require('/opt/node-tools/node_modules/playwright/package.json').version")`), then
   `BASE=http://localhost:8080/ PAUSE_MS=0 node tests/live-check.mjs` (local copy) or `node tests/live-check.mjs`
   (live site, about 6 minutes).
 - There is no way to run one test step. To check one behaviour, write a short Playwright script outside the repo,
   and answer `https://environment.data.gov.uk/spatialdata/**` with `{"features":[]}` so the report finishes fast.
-- After a merge: `bash tests/after-merge.sh` (restarts the branch from `origin/main`, waits for Pages to serve the new
-  `APP_VERSION`/`CACHE`, runs the live check). Run it in the background; it can take 20 minutes.
-- Accessibility re-check (by hand, after visual changes; not in CI): `npm install --no-save axe-core` in the scratchpad,
-  scan WCAG 2.2 AA tags on the start page, a full report (Open all, sources open), and `status.html`, at 1280 px,
-  320 px and phone, light and dark, normal and A+ text; also Tab through every control and check none is hidden.
+- After a merge: `bash tests/after-merge.sh` (restarts the branch from `origin/main` and pushes it, waits for Pages to
+  serve the new `APP_VERSION`/`CACHE`, runs the live check). Run it in the background; it can take 20 minutes. A stop
+  hook "unpushed commit" warning while it runs is a timing clash: check with `git fetch` + `git rev-list --count
+  origin/<branch>..HEAD` before pushing anything.
+- Accessibility re-check (by hand, after visual changes; not in CI): `npm install --no-save axe-core`, then
+  `node tests/a11y-check.mjs` with the local server running (about 10 minutes). It scans WCAG 2.2 AA on the start
+  page, a report and `status.html` at 1280 px, 320 px and phone, light and dark, normal and A+ text, and checks
+  sideways scrolling before and after using each control in its `ACTIONS` list: add each new or changed control
+  there. Also Tab through every control and check none is hidden.
 
 ## Rules
 
@@ -53,6 +58,14 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Releases** (run `/release`, see `.claude/skills/release/SKILL.md`): any change to `index.html`, `status.html`, `css/`,
   `js/`, `sw.js` or `data/` raises `APP_VERSION` (`js/core.js`) and `CACHE` (`sw.js`, `plc-vN`) together. In the same commit, update `README.md`, and move the shipped items in `ROADMAP.md`
   into Part 1.
+
+## Interface habits
+
+- Buttons show an icon and a word; never an icon alone (a first-time user may not know the icon).
+- Undo, not "Are you sure?": an action that deletes something offers Undo for about 10 seconds.
+- Short messages ("Saved ✓", "Copied", "Removed …") sit in a `role="status"` or `aria-live="polite"` element.
+- A control's spoken name (`aria-label`) starts with its visible words (WCAG 2.5.3, voice control).
+- In-page jumps land below the sticky bars: give the target `scroll-margin-top` (see the rule in `css/app.css`).
 
 ## Working with the owner
 
@@ -82,5 +95,5 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   map server refusing GitHub's machines with HTTP 403.
 - Outside services (BGS, Environment Agency, Open-Meteo, data.police.uk) have outages. Before changing code for a
   failed check, ask the service directly whether the fault is theirs. If a service refuses GitHub's machines but
-  answers directly (HM Land Registry did, once), re-run the job once and comment once on the PR; changing what a test
-  accepts needs the owner.
+  answers directly (HM Land Registry sometimes does; check with `curl` from the session), re-run the job once and
+  comment once on the PR; changing what a test accepts needs the owner.

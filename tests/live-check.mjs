@@ -323,6 +323,19 @@ async function testDevice(device, [postcode, place]) {
     if (r.noWay) throw new Error(`${r.noWay} row(s) do not say how to check instead`);
     if (r.inStart) throw new Error(`${r.inStart} gap topic(s) still in "Start here"`);
     if (!r.want.length && r.box) throw new Error("box shown with no gaps");
+    if (r.want.length) {
+      // The box folds away with Details / Hide: open for up to 3 topics, closed for more, and the
+      // person's choice stays when the report is drawn again.
+      const fold = async () => page.$eval("#gapsBox", d => ({ open: d.open, word: getComputedStyle(d.querySelector("summary .more-text"), "::before").content }));
+      const first = await fold();
+      if (first.open !== (r.want.length <= 3)) throw new Error(`with ${r.want.length} gap(s) the box should start ${r.want.length <= 3 ? "open" : "closed"}`);
+      if (first.word !== (first.open ? '"Hide"' : '"Details"')) throw new Error(`the box shows ${first.word} when ${first.open ? "open" : "closed"}`);
+      await page.click("#gapsBox > summary");
+      await page.evaluate(() => renderSummary());
+      const after = await fold();
+      if (after.open === first.open) throw new Error("Details / Hide did not change the box, or the choice was lost on redraw");
+      await page.click("#gapsBox > summary");
+    }
     return r.want.length ? `${r.want.length} gap(s): ${r.want.join(", ")}` : "no gaps, box hidden";
   });
 
@@ -563,6 +576,42 @@ async function testDevice(device, [postcode, place]) {
     }), key);
     if (back.rows !== before || !back.snap || back.bar) throw new Error("Undo did not put the property and its saved report back");
     return "ok";
+  });
+
+  await step("Compare up to three saved properties, and show only differences", async () => {
+    // Add two copies of the saved property (one with a different first rating), compare all three, then put the list back.
+    const keep = await page.evaluate(() => {
+      const list = store.get(SAVED_KEY, []), orig = JSON.stringify(list), s = list[0];
+      const copy = (n, change) => ({ ...JSON.parse(JSON.stringify(s)), key: "test-cmp-" + n, name: "Test copy " + n, starred: false,
+        checks: s.checks.map((c, i) => i === 0 && change ? { ...c, status: c.status === "high" ? "low" : "high" } : c) });
+      store.set(SAVED_KEY, [...list, copy(1, false), copy(2, true)]);
+      renderSaved();
+      return orig;
+    });
+    try {
+      await page.check(`#savedList input[data-compare="test-cmp-1"]`);
+      await page.check(`#savedList input[data-compare="test-cmp-2"]`);
+      if (await page.isDisabled("#compareBtn")) throw new Error("Compare is not ready with two properties ticked");
+      await page.check("#savedList input[data-compare]:not(:checked)");
+      const off = await page.$$eval("#savedList input[data-compare]:not(:checked)", x => x.every(b => b.disabled));
+      if (!off) throw new Error("a fourth property could still be ticked");
+      await page.click("#compareBtn");
+      const r = await page.evaluate(() => ({
+        cols: document.querySelectorAll("#compareTable thead th").length,
+        title: document.getElementById("compareTitle").textContent,
+        rows: document.querySelectorAll("#compareTable tbody tr").length
+      }));
+      if (r.cols !== 4 || !r.title.includes("three")) throw new Error(`expected three properties side by side (got ${r.cols - 1}, "${r.title}")`);
+      await page.check("#diffOnly");
+      const shown = await page.$$eval("#compareTable tbody tr", x => x.filter(tr => tr.offsetHeight > 0).length);
+      const help = await page.$eval("#diffHelp", x => x.textContent);
+      if (shown < 2 || shown >= r.rows) throw new Error(`"Show only topics that differ" showed ${shown} of ${r.rows} rows`);
+      if (!/^Showing/.test(help)) throw new Error(`no message about the topics shown (got "${help}")`);
+      if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw new Error("the comparison scrolls sideways");
+      return `${r.rows} rows, ${shown} shown with differences only`;
+    } finally {
+      await page.evaluate(orig => { document.getElementById("comparePanel").classList.add("hidden"); localStorage.setItem(SAVED_KEY, orig); renderSaved(); }, keep);
+    }
   });
 
   await step("No sideways scrolling", async () =>

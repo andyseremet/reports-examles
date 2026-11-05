@@ -209,6 +209,10 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .saved-actions {display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
 .compare-table td {min-width:160px}
 .compare-table td:first-child {min-width:120px;font-weight:bold;color:var(--heading)}
+.compare-table.only-diff tr.same {display:none}
+.diff-only {display:inline-flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-weight:bold}
+.diff-only input {width:22px;height:22px;margin:0}
+#diffHelp {margin-top:0}
 
 /* ---------- report ---------- */
 .toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:10px}
@@ -271,7 +275,14 @@ a.count:hover {border-color:currentColor}
 .priority li a {font-weight:bold}
 .gaps-box {margin:16px 0;padding:12px 14px;border:1px solid var(--border);border-left:4px solid #6b7280;border-radius:8px;background:var(--surface-2)}
 .gaps-box h3 {margin:0 0 4px}
-.gaps-box p {margin:0 0 8px;font-size:14px}
+.gaps-box p {margin:0;font-size:14px}
+.gaps-box > summary {cursor:pointer;list-style:none;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;
+  margin:-12px -14px;padding:12px 14px;border-radius:8px}
+.gaps-box > summary::-webkit-details-marker {display:none}
+.gaps-box > summary:hover {background:var(--hover)}
+.gaps-box > summary h3,.gaps-box > summary p {grid-column:1}
+.gaps-box > summary .more {grid-column:2;grid-row:1 / span 2}
+.gaps-box[open] > ul {margin-top:20px}
 .gaps-box ul {list-style:none;padding:0;margin:0}
 .gaps-box li {padding:8px 0;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:14px}
 .gaps-box li a {font-weight:bold}
@@ -310,13 +321,13 @@ details.check > summary::-webkit-details-marker {display:none}
 details.check > summary .found {grid-column:1;font-size:14px}
 details.check > summary:hover {background:var(--hover)}
 /* "Details" with a down arrow when closed, "Hide" with an up arrow when open. */
-details.check > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
+details.check > summary .more,.gaps-box > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
   font-size:14px;font-weight:bold;color:var(--link);white-space:nowrap}
-details.check > summary .more-text::before {content:"Details"}
-details.check[open] > summary .more-text::before {content:"Hide"}
-details.check > summary .more svg {transition:transform .15s}
-details.check[open] > summary .more svg {transform:rotate(180deg)}
-@media (prefers-reduced-motion:reduce) {details.check > summary .more svg {transition:none}}
+details.check > summary .more-text::before,.gaps-box > summary .more-text::before {content:"Details"}
+details.check[open] > summary .more-text::before,.gaps-box[open] > summary .more-text::before {content:"Hide"}
+details.check > summary .more svg,.gaps-box > summary .more svg {transition:transform .15s}
+details.check[open] > summary .more svg,.gaps-box[open] > summary .more svg {transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce) {details.check > summary .more svg,.gaps-box > summary .more svg {transition:none}}
 .check-body {padding:0 16px 14px;font-size:14px}
 .check-body p {margin:4px 0 8px}
 .check-body ul {margin:4px 0 8px;padding-left:20px}
