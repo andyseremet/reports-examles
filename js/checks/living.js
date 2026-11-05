@@ -119,7 +119,13 @@ function noiseLevelStatus(v, who) {
 }
 
 function checkNoise(R) {
-  const base = {
+  const wales = isWales(R);
+  const mapper = wales ? "the Welsh Government" : "Defra";
+  const periods = wales ? WALES_NOISE_PERIODS : NOISE_PERIODS;
+  const base = wales ? {
+    source: { name: "Welsh Government strategic noise mapping 2022 (Round 4, via DataMapWales) for road and rail; airport locations for aircraft; WHO Environmental Noise Guidelines (2018)", url: LINKS.walesNoise },
+    dataDate: "Noise maps for 2022 (Round 4), published by the Welsh Government"
+  } : {
     source: { name: "Defra strategic noise mapping 2022 (Round 4) for road and rail; airport locations for aircraft; WHO Environmental Noise Guidelines (2018)", url: LINKS.noise },
     dataDate: "Noise maps published by Defra in 2022"
   };
@@ -174,20 +180,20 @@ function checkNoise(R) {
     ...base, status, found,
     details: `<div class="table-wrap"><table>
         <thead><tr><th>Time of day</th><th>Road</th><th>Railway</th><th>WHO recommendation</th></tr></thead>
-        <tbody>${NOISE_PERIODS.map(p => row(p)).join("")}</tbody>
+        <tbody>${periods.map(p => row(p)).join("")}</tbody>
       </table></div>${airportText}`,
-    meaning: `<p>The levels are Defra's computer-modelled averages for 2021 traffic, at first-floor height on the side of the building
-        facing the noise. A room at the back can be much quieter. The daytime figure is an average over 7am to 7pm, so rush hours
-        are usually a little louder than shown.</p>
+    meaning: `<p>The levels are ${mapper}'s computer-modelled averages for 2021 traffic, at first-floor height on the side of the building
+        facing the noise. A room at the back can be much quieter. The daytime figure is an average over ${wales ? "7am to 11pm" : "7am to 7pm"}, so rush hours
+        are usually a little louder than shown.${wales ? " Wales does not publish separate daytime and evening figures." : ""}</p>
       <p>The World Health Organization recommends average levels below: road ${WHO_NOISE.road.lden} dB (night ${WHO_NOISE.road.lnight} dB),
         railway ${WHO_NOISE.rail.lden} dB (night ${WHO_NOISE.rail.lnight} dB), aircraft ${WHO_NOISE.aircraft.lden} dB (night ${WHO_NOISE.aircraft.lnight} dB).
-        Every 10 dB sounds roughly twice as loud. “Quiet” means below the lowest level Defra maps.</p>
+        Every 10 dB sounds roughly twice as loud. “Quiet” means below the lowest level ${mapper} maps.</p>
       <p>Most streets in towns are above the WHO levels, so we rate road and railway noise “Look into this” only when it is loud:
         a 24-hour average of 65 dB or more, or 55 dB or more at night. “Moderate” levels between the WHO level and that are
         shown for information.</p>
-      <p>Railway figures are worked out from Defra's published frequency bands using the standard A-weighting. Aircraft noise is
-        not part of Defra's maps, so we show the distance to major airports instead. Military airfields are not included.</p>
-      <p>Tip: open the layers button on the map and turn on “Show road noise” to see how road noise changes along the street.</p>`,
+      <p>${wales ? "" : "Railway figures are worked out from Defra's published frequency bands using the standard A-weighting. "}Aircraft noise is
+        not part of ${mapper}'s maps, so we show the distance to major airports instead. Military airfields are not included.</p>
+      ${wales ? "" : "<p>Tip: open the layers button on the map and turn on “Show road noise” to see how road noise changes along the street.</p>"}`,
     actions: [
       nearAirports.length
         ? `Check flight paths and night flights on the ${link(nearAirports[0].url, nearAirports[0].name + " Airport website")} (look for “noise” or “community”).`
@@ -199,13 +205,18 @@ function checkNoise(R) {
 }
 
 function checkAir(R) {
+  const wales = isWales(R);
   const base = {
-    source: { name: "Council Air Quality Management Areas (via planning.data.gov.uk); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.ukair }
+    source: wales
+      ? { name: "Council Air Quality Management Areas in Wales (Welsh Government, via DataMapWales); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.walesAir }
+      : { name: "Council Air Quality Management Areas (via planning.data.gov.uk); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.ukair }
   };
-  if (!R.planningPoint.ok && !R.air.ok) return unavailable(base, R, "air");
+  const hotspots = wales ? "walesSites" : "planningPoint";
+  if (!R[hotspots].ok && !R.air.ok) return unavailable(base, R, wales ? "walesSites" : "air");
 
-  const here = byDataset(okValue(R, "planningPoint"), "air-quality-management-area");
-  const near = byDataset(okValue(R, "planningNearby"), "air-quality-management-area");
+  const ws = okValue(R, "walesSites");
+  const here = wales ? (ws ? ws.aqma.map(name => ({ name })) : []) : byDataset(okValue(R, "planningPoint"), "air-quality-management-area");
+  const near = wales ? (ws ? ws.aqmaNear.filter(n => !ws.aqma.includes(n)).map(name => ({ name })) : []) : byDataset(okValue(R, "planningNearby"), "air-quality-management-area");
   const m = okValue(R, "air");
   const overLegal = m && ((m.no2 ?? 0) > 40 || (m.pm25 ?? 0) > 20);
 
@@ -237,9 +248,9 @@ function checkAir(R) {
     ...base, status, found, details,
     meaning: `<p>Councils declare an Air Quality Management Area where pollution, usually from traffic, is above legal limits. They must then have a plan to reduce it.</p>
       <p>The WHO recommendations are the yearly averages in the ${link(LINKS.whoAir, "WHO Global Air Quality Guidelines (2021)")}.
-      UK legal limits are higher. Most of England is above the WHO level. The model works on squares about 10 km
+      UK legal limits are higher. Most of ${wales ? "Wales" : "England"} is above the WHO level. The model works on squares about 10 km
       across, so it describes the wider area, not your street. Levels beside busy roads are usually higher.</p>`,
-    actions: [`See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`]
+    actions: [wales ? `See local monitoring results and hotspots on ${link(LINKS.walesAir, "Air Quality in Wales")}.` : `See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`]
   };
 }
 

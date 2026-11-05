@@ -1,7 +1,7 @@
 # Property Location Check
 
 A free, single-page tool for anyone buying a house or land in
-England. Pick a location on the map and it checks official data for:
+England and Wales. Pick a location on the map and it checks official data for:
 
 | Check | Source |
 |---|---|
@@ -9,14 +9,13 @@ England. Pick a location on the map and it checks official data for:
 | Flooding from heavy rain (surface water) | Environment Agency (2025); SEPA (Scotland); Natural Resources Wales |
 | Radon gas | BGS / UKHSA Radon Indicative Atlas |
 | Coal mining | Mining Remediation Authority (formerly the Coal Authority) |
-| Road traffic noise (day and night) | Defra strategic noise mapping, Round 4 |
-| Air quality | Council Air Quality Management Areas; Copernicus CAMS model via Open-Meteo |
-| Past use of the land: old landfill, brownfield sites, and contaminated land or major hazard (COMAH) sites where published | Environment Agency Historic Landfill Sites; planning.data.gov.uk |
+| Road and railway noise (day and night) | Defra strategic noise mapping, Round 4; Welsh Government noise mapping 2022 (Wales) |
+| Air quality | Council Air Quality Management Areas (England via planning.data.gov.uk; Wales via DataMapWales); Copernicus CAMS model via Open-Meteo |
+| Past use of the land: old landfill, brownfield sites, and contaminated land or major hazard (COMAH) sites where published; in Wales, disused coal tips | Environment Agency Historic Landfill Sites; planning.data.gov.uk; Welsh Government disused coal tips map (Wales) |
 | Landslides | BGS National Landslide Database |
-| Coastal erosion by 2055 and 2105, and the shoreline plan for the coast nearby | Environment Agency National Coastal Erosion Risk Map (NCERM 2024) |
-| Planning restrictions and heritage | planning.data.gov.uk |
-| Protected trees (Tree Preservation Orders) and Article 4 areas, and whether the council publishes this data | Councils, via planning.data.gov.uk |
-| Protected nature sites | Natural England, via planning.data.gov.uk |
+| Coastal erosion by 2055 and 2105, and the shoreline plan for the coast nearby | Environment Agency National Coastal Erosion Risk Map (NCERM 2024); Natural Resources Wales NCERM (Wales) |
+| Planning restrictions and heritage | planning.data.gov.uk; in Wales, Cadw, council conservation areas and Natural Resources Wales (via DataMapWales) |
+| Protected nature sites | Natural England, via planning.data.gov.uk; Natural Resources Wales, including the Ancient Woodland Inventory 2021 (Wales) |
 | Reported crime, and crime per 1,000 residents compared with England and Wales (where the police force publishes its data) | data.police.uk; ONS boundaries; Census 2021 residents (saved in `data/census2021-msoa-residents.json`); ONS crime and population figures |
 | Recent sale prices of homes within 500 m in the last 3 years: median price by type and the 10 most recent sales (England and Wales) | HM Land Registry Price Paid Data (Open Government Licence; contains HM Land Registry data © Crown copyright and database right) |
 | Schools, GP surgeries, pharmacies, railway stations, tram and bus stops | Department for Education and NaPTAN (via planning.data.gov.uk); NHS Organisation Data Service; NaPTAN rail stations (saved in `data/rail-stations.json`) |
@@ -66,8 +65,8 @@ official checkers.
 - **Send to my conveyancer:** one button opens your email app with the report link, the topics to look into, and the
   searches and questions from the checklist. **Copy** does the same for web email or messaging apps. Nothing
   passes through the app.
-- **Honest gaps:** where a council has not published its protected trees or Article 4 areas, the report says so and
-  rates the topic "Check yourself", instead of "No issue found".
+- **Honest gaps:** where a source has published nothing (for example old landfill sites and contaminated land in Wales),
+  the report says so and rates the topic "Check yourself", instead of "No issue found".
 - **Fair ratings:** old landfill and landslides are rated by distance (very close sites stand out; distant ones are for information).
   Road and railway noise is flagged only when loud (a 24-hour average of 65 dB or more, or 55 dB at night); moderate
   levels above the WHO recommendation are shown for information.
@@ -134,7 +133,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 - **On every pull request** that changes the page, against the proposed version, before it is merged.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
-It checks that all 23 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
+It checks that all 25 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the count boxes and Open all / Close all, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads. Results,

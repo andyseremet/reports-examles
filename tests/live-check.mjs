@@ -68,10 +68,15 @@ const SERVICES = [
   ["Census boundaries (ONS)", "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query?where=MSOA21CD%3D%27E02001521%27&outFields=MSOA21CD&returnGeometry=false&f=json", d => d.features && d.features.length === 1],
   ["Scotland flood maps (SEPA)", "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer/2/query?geometry=-3.43,56.404&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnCountOnly=true&f=json", d => Number.isFinite(d.count)],
   ["Wales flood maps (Natural Resources Wales)", wms("https://datamap.gov.wales/geoserver/ows", "inspire-nrw:NRW_FLOODZONE_RIVERS_SEAS_MERGED", 51.47, -3.188, 0.00005), d => Array.isArray(d.features) && d.features.length > 0],
+  ["Wales heritage, nature and air sites (DataMapWales)", wms("https://datamap.gov.wales/geoserver/ows", "geonode:conservation_areas_wales", 51.4816, -3.1791, 0.00005),
+    d => Array.isArray(d.features) && d.features.length > 0],
+  ["Wales noise maps (Welsh Government)", wms("https://datamap.gov.wales/geoserver/ows", "geonode:cog_WG_RD_LDEN_All", 51.488, -3.16),
+    d => Array.isArray(d.features) && d.features[0] && d.features[0].properties.GRAY_INDEX > 0],
+  ["Wales coastal erosion (Natural Resources Wales)", "https://datamap.gov.wales/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=geonode:nrw_ncerm_all_smp&propertyName=epoch&count=5&outputFormat=application/json&bbox=52.48,-4.06,52.49,-4.04,urn:ogc:def:crs:EPSG::4326",
+    d => Array.isArray(d.features) && d.features.length > 0],
+  ["Wales disused coal tips (Welsh Government)", wms("https://datamap.gov.wales/geoserver/ows", "geonode:disused_coal_tips_in_wales_public", 51.6265, -3.452, 0.01),
+    d => Array.isArray(d.features) && d.features.length > 0],
   ["Address search (OpenStreetMap Nominatim)", "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=Barnsley%20Town%20Hall", d => Array.isArray(d) && d.length > 0],
-  ["Council list (planning.data.gov.uk)", "https://www.planning.data.gov.uk/entity.json?dataset=local-authority&dataset=national-park-authority&dataset=development-corporation&limit=500&field=entity&field=local-planning-authority&field=end-date",
-    d => Array.isArray(d.entities) && d.entities.length < 500 && d.entities.filter(e => e["local-planning-authority"]).length > 300],
-  ["Protected trees and Article 4 (planning.data.gov.uk)", "https://www.planning.data.gov.uk/entity.json?dataset=tree&organisation_entity=192&limit=1&field=entity", d => d.count > 0],
   ["Schools register (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?dataset=educational-establishment&latitude=${LAT}&longitude=${LON}&limit=1`, d => Array.isArray(d.entities)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
   ["Postcode lookup for many postcodes (postcodes.io)", "https://api.postcodes.io/postcodes", d => Array.isArray(d.result) && d.result[0].result,
@@ -100,9 +105,11 @@ const SERVICE_TOPICS = {
   "Census boundaries (ONS)": ["Reported crime (crime per 1,000 residents)"],
   "Scotland flood maps (SEPA)": ["Flooding, for homes in Scotland"],
   "Wales flood maps (Natural Resources Wales)": ["Flooding, for homes in Wales"],
+  "Wales heritage, nature and air sites (DataMapWales)": ["Planning restrictions and heritage, for homes in Wales", "Protected nature sites, for homes in Wales", "Air quality, for homes in Wales"],
+  "Wales noise maps (Welsh Government)": ["Noise, for homes in Wales"],
+  "Wales coastal erosion (Natural Resources Wales)": ["Coastal erosion, for homes in Wales"],
+  "Wales disused coal tips (Welsh Government)": ["Past use of the land, for homes in Wales"],
   "Address search (OpenStreetMap Nominatim)": ["Finding the property by address"],
-  "Council list (planning.data.gov.uk)": ["Protected trees and Article 4 areas"],
-  "Protected trees and Article 4 (planning.data.gov.uk)": ["Protected trees and Article 4 areas"],
   "Schools register (planning.data.gov.uk)": ["Schools, doctors and transport"],
   "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
   "Postcode lookup for many postcodes (postcodes.io)": ["Schools, doctors and transport"],
@@ -385,6 +392,36 @@ async function testDevice(device, [postcode, place]) {
     if (r.error) throw new Error(r.error);
     if (!["high", "medium"].includes(r.status)) throw new Error(`rated "${r.status}": ${r.found}`);
     return r.found.slice(0, 90) + "…";
+  });
+
+  await step("Wales: coal tips, coast, noise, heritage and nature from Welsh data", async () => {
+    // Treorchy (Rhondda): disused coal tips nearby. Borth: an eroding coast. Cardiff centre: a conservation
+    // area, road noise and an air pollution hotspot nearby. Each must be answered from Welsh data, not "Check yourself".
+    const r = await page.evaluate(async () => {
+      const R = async (loc, keys) => {
+        const out = { loc, place: { ok: true, value: await getPlace(loc) } };
+        const fns = { coalTips: getCoalTips, coastal: getCoastalErosion, noise: getRoadNoise, railNoise: getRailNoise, walesSites: getWalesSites };
+        await Promise.all(keys.map(async k => { out[k] = { ok: true, value: await fns[k](loc) }; }));
+        out.air = { ok: false, error: "not asked" }; out.planningPoint = { ok: false, error: "England only" };
+        return out;
+      };
+      const tre = await R({ lat: 51.653995, lon: -3.520821, radius: 1000 }, ["coalTips"]);
+      const borth = await R({ lat: 52.486107, lon: -4.05112, radius: 1000 }, ["coastal"]);
+      const cdf = await R({ lat: 51.485167, lon: -3.178668, radius: 1000 }, ["noise", "railNoise", "walesSites"]);
+      return {
+        tips: checkLanduse(tre), coast: checkCoastal(borth), noise: checkNoise(cdf),
+        planning: checkPlanning(cdf), nature: checkNature(cdf), air: checkAir(cdf), country: cdf.place.value.country
+      };
+    });
+    if (r.country !== "Wales") throw new Error(`postcodes.io says Cardiff is in ${r.country}`);
+    const bad = Object.entries(r).filter(([k, c]) => k !== "country" && ["manual", "error"].includes(c.status));
+    if (bad.length) throw new Error(bad.map(([k, c]) => `${k}: ${c.found}`).join(" | "));
+    if (!["medium", "info"].includes(r.tips.status)) throw new Error(`no coal tips found near Treorchy: ${r.tips.found}`);
+    if (!/Conservation area/.test(r.planning.found)) throw new Error(`no conservation area in central Cardiff: ${r.planning.found}`);
+    if (!/Road: (moderate|loud)/.test(r.noise.found)) throw new Error(`no road noise in central Cardiff: ${r.noise.found}`);
+    if (r.coast.found.startsWith("Not near the coast")) throw new Error(`Borth not near the coast: ${r.coast.found}`);
+    if (!/hotspot/.test(r.air.found) || !/within/.test(r.air.found)) throw new Error(`no air pollution hotspot near central Cardiff: ${r.air.found}`);
+    return `coal tips ${r.tips.status}; Borth ${r.coast.status}; Cardiff: ${r.planning.found.slice(0, 50)}…`;
   });
 
   await step("Sold prices: sales in a town, Check yourself where there are none", async () => {

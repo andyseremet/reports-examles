@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.25.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.26.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.25.0)
+## Part 1: What the app does today (version 1.26.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -26,9 +26,13 @@ The [README](README.md) describes each feature in full.
 | Group | Topics | Main sources |
 |---|---|---|
 | Flooding | Rivers and the sea; heavy rain (surface water) | Environment Agency; SEPA; Natural Resources Wales |
-| Ground and land | Radon; coal mining; past use of the land; landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk |
-| Living environment | Road noise; air quality; crime; recent sale prices | Defra; councils; Copernicus CAMS; data.police.uk; ONS; HM Land Registry |
-| Planning and surroundings | Planning restrictions and heritage; protected trees and Article 4 areas; protected nature sites; schools, GPs, pharmacies and transport | planning.data.gov.uk; Natural England; DfE; NHS; NaPTAN |
+| Ground and land | Radon; coal mining; past use of the land (in Wales, disused coal tips); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales |
+| Living environment | Road and rail noise; air quality; crime; recent sale prices | Defra; Welsh Government; councils; Copernicus CAMS; data.police.uk; ONS; HM Land Registry |
+| Planning and surroundings | Planning restrictions and heritage; protected nature sites; schools, GPs, pharmacies and transport | planning.data.gov.uk; Natural England; Cadw; Natural Resources Wales; DfE; NHS; NaPTAN |
+
+**Wales (1.26.0):** land use, coastal erosion, noise, air quality, planning and nature are answered from Welsh data
+(DataMapWales). Old landfill and contaminated land are not published for Wales, so land use says "Check yourself" unless a
+disused coal tip is nearby.
 
 Where a source has published nothing, the topic says "Check yourself", never "No issue found". Topics with no free
 live data (for example rail and aircraft noise, Japanese knotweed) link to the official checkers.
@@ -78,13 +82,10 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ## Part 2: Planned next steps
 
-Chosen from the quiz on 5 November 2026, one item per version, in this order. Each is planned with a short quiz
-before it is built. Each version keeps the same habits: bump the version number and the offline cache name together,
-update the README, add new behaviour to the daily check, and never weaken a test to get a pass.
-
-| Version | Idea | What it does | Why this order |
-|---|---|---|---|
-| 1.26.0 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales (7 today: land use, coast, noise, air, planning, trees, nature) where Welsh Government or Natural Resources Wales publish live open data. | Largest research task: each source must be checked first. |
+Nothing is scheduled: every item from the 5 November 2026 quiz has shipped. The next items will be chosen in a new quiz
+round (Part 3 lists ideas). Each is planned with a short quiz before it is built, and each version keeps the same habits:
+bump the version number and the offline cache name together, update the README, add new behaviour to the daily check,
+and never weaken a test to get a pass.
 
 ### Voluntary support (not scheduled)
 
@@ -113,6 +114,7 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 | Remove "Download report" | Kept (4 November 2026); since 1.17.0 it is in the "Save" menu. |
 | Remove the latitude and longitude boxes | Kept (4 November 2026), in More options. |
 | Remove or reduce railway noise, landslides, aircraft | Kept as they are (4 November 2026). |
+| Protected trees and Article 4 areas | Removed on 5 November 2026 (1.26.0): many councils do not publish them, and Wales has no national data. The conveyancer's local authority search covers them. |
 | Power lines and pylons | Dropped on 5 November 2026: the data is mostly downloads, not live services, and it changes as lines are built. Buyers can use the official network maps instead. |
 | Softer air quality rating | Kept as "Worth checking" for a council hotspot (4 November 2026). |
 

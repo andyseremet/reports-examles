@@ -200,41 +200,6 @@ async function getPlanningNearby(loc) {
   return (await planningEntities(inCircle(loc, loc.radius), PLANNING_NEARBY)).map(e => ({ ...e, ...pointFrom(loc, e.point) }));
 }
 
-// Protected trees (Tree Preservation Orders) and Article 4 directions, from planning.data.gov.uk.
-// Councils publish these themselves and many have not yet, so this also finds the council for the pin
-// and counts what it has published. "None found" is only a result where the council publishes the data.
-const TREE_NEAR_M = 50;
-// Planning authority code -> council organisation number and name, loaded once per visit.
-const getCouncilOrgs = once(async () => {
-  const list = await planningEntities({ limit: 500 }, ["local-authority", "national-park-authority", "development-corporation"],
-    ["entity", "name", "local-planning-authority", "end-date"]);
-  return Object.fromEntries(list.filter(o => o["local-planning-authority"] && !o["end-date"])
-    .map(o => [o["local-planning-authority"], { entity: o.entity, name: o.name }]));
-});
-
-async function countPublished(dataset, org) {
-  return (await planningQuery({ dataset, organisation_entity: org, limit: 1, field: "entity" })).count || 0;
-}
-
-async function getProtectedTrees(loc) {
-  const [near, lpas, orgs] = await Promise.all([
-    planningEntities(inCircle(loc, TREE_NEAR_M, 200), ["tree", "tree-preservation-zone"]),
-    planningEntities({ latitude: loc.lat, longitude: loc.lon, exclude_field: "geometry" }, ["local-planning-authority"]),
-    getCouncilOrgs()
-  ]);
-  const nearby = near.map(e =>
-    ({ dataset: e.dataset, name: e.name, order: e["tree-preservation-order"] || "", distanceKm: pointFrom(loc, e.point).distanceKm }));
-  const lpa = lpas[0];
-  const org = lpa && orgs[lpa.reference];
-  let published = null;   // null: we could not tell which council publishes for this place
-  if (org) {
-    const [trees, zones, article4] = await Promise.all(
-      ["tree", "tree-preservation-zone", "article-4-direction-area"].map(d => countPublished(d, org.entity)));
-    published = { trees: trees + zones, article4 };
-  }
-  return { nearby, council: org ? org.name : (lpa ? lpa.name : ""), published };
-}
-
 async function getRadon(loc) {
   const f = await arcgisQuery(API.radon, loc, 0, { outFields: "Description,CLASS_MAX,VERSION" });
   return f[0] ? f[0].attributes : null;
@@ -266,6 +231,7 @@ async function wmsValuesAt(service, layers, loc) {
 const roundNoise = v => Number.isFinite(v) && v > 0 ? Math.round(v) : null;
 
 async function getRoadNoise(loc) {
+  if (await inWales(loc)) return getWalesNoise(loc, "RD");
   const values = await wmsValuesAt(API.roadNoise,
     NOISE_PERIODS.map(p => `Road_Noise_${p.metric}_England_Round_4_All`), loc);
   return Object.fromEntries(NOISE_PERIODS.map((p, i) => [p.key, roundNoise(values[i])]));
@@ -277,6 +243,7 @@ async function getRoadNoise(loc) {
 const BAND_A_WEIGHTING = { 63: -26.2, 125: -16.1, 250: -8.6, 500: -3.2, 1000: 0, 2000: 1.2, 4000: 1.0, 8000: -1.1 };
 
 async function getRailNoise(loc) {
+  if (await inWales(loc)) return getWalesNoise(loc, "RL");
   const bands = Object.keys(BAND_A_WEIGHTING);
   // Defra's rail service sometimes fails for one period in some places, so each
   // period is fetched on its own and a failure only affects that period.
@@ -341,6 +308,7 @@ async function getAirModel(loc) {
 }
 
 async function getLandfill(loc) {
+  if (await inWales(loc)) return [];   // the Environment Agency's landfill map covers England only (Wales: getCoalTips)
   const d = await fetchJSON(API.landfill + "?f=json&limit=100&bbox=" + boundingBox(loc.lat, loc.lon, loc.radius).join(","));
   return (d.features || [])
     .map(f => {
@@ -407,6 +375,7 @@ function distanceToGeometryKm(geometry, pt) {
 }
 
 async function getCoastalErosion(loc) {
+  if (await inWales(loc)) return getWalesCoast(loc);
   const items = (layer, radiusM) => fetchJSON(API.coastal + layer + "/items?f=json&limit=200&bbox=" +
     boundingBox(loc.lat, loc.lon, radiusM).join(",")).then(d => d.features || []);
   const zones = await items("NCERM_SMP_2105_70CC", COAST_NEAR_M);
@@ -498,6 +467,141 @@ async function getSoldPrices(loc) {
 // "Still waiting for" note when a report is slow). Tasks start in this order. The Environment Agency
 // server answers only a few requests at a time (PACED_HOSTS), so its most important topic,
 // flooding from heavy rain, is listed first and road and rail noise last.
+/* ---------------------------------------------------------------
+   Wales: DataMapWales (Welsh Government, Natural Resources Wales and Cadw), for the topics whose
+   England data stops at the border. Outside Wales these return null without asking DataMapWales.
+--------------------------------------------------------------- */
+async function inWales(loc) {
+  const place = await getPlace(loc);
+  return !!place && place.country === "Wales";
+}
+
+// Ask a DataMapWales layer for the features in a square around the pin (no shapes, only the named fields).
+async function walesFeaturesNear(layer, fields, loc, metres, count = 50) {
+  const dLat = metres / 111320, dLon = metres / (111320 * Math.cos(loc.lat * Math.PI / 180));
+  const params = new URLSearchParams({
+    service: "WFS", version: "2.0.0", request: "GetFeature", typeNames: layer, propertyName: fields.join(","), count,
+    bbox: [loc.lat - dLat, loc.lon - dLon, loc.lat + dLat, loc.lon + dLon, "urn:ogc:def:crs:EPSG::4326"].join(","),
+    outputFormat: "application/json"
+  });
+  return ((await fetchJSON(API.dataMapWales + "?" + params)).features || []).map(f => f.properties || {});
+}
+
+// Areas the pin is inside: one request for all of them. The key is the layer name without its workspace.
+const WALES_AT = {
+  conservation: "geonode:conservation_areas_wales", monument: "inspire-wg:Cadw_SAM",
+  park: "geonode:cadw_rhpg_registeredareas", heritage: "inspire-wg:vGeoServer_WorldHeritageSites_Public",
+  nationalPark: "inspire-nrw:NRW_NATIONAL_PARK", landscape: "inspire-nrw:NRW_AONB",
+  aqma: "geonode:aqmas_wales", sssi: "inspire-nrw:NRW_SSSI"
+};
+// Protected nature sites near the pin, with the field that holds each site's name.
+const WALES_NATURE = [
+  ["inspire-nrw:NRW_SSSI", "sssi_name", "Site of Special Scientific Interest"],
+  ["inspire-nrw:NRW_SAC", "SAC_name", "Special Area of Conservation"],
+  ["inspire-nrw:NRW_SPA", "SPA_Name", "Special Protection Area (birds)"],
+  ["inspire-nrw:NRW_RAMSAR", "RAM_name", "Ramsar wetland"],
+  ["inspire-nrw:NRW_NNR", "NNR_Name", "National Nature Reserve"],
+  ["inspire-nrw:NRW_LNR", "lnr_name", "Local Nature Reserve"],
+  ["inspire-nrw:NRW_ANCIENT_WOODLAND_INVENTORY_2021", "category_name", "Ancient woodland"]
+];
+const WALES_LISTED_NEAR_M = 200, WALES_LISTED_HERE_M = 20;
+const tidy = v => String(v ?? "").replace(/\s+/g, " ").trim();
+
+async function getWalesSites(loc) {
+  if (!(await inWales(loc))) return null;
+  const layers = Object.values(WALES_AT);
+  const [atFeatures, nature, listed, listedHere, aqmaNear] = await Promise.all([
+    wmsInfo(API.dataMapWales, layers.join(","), loc, 0.00005, { feature_count: 50, buffer: 0 }),
+    Promise.all(WALES_NATURE.map(([layer, field, kind]) => walesFeaturesNear(layer, [field], loc, loc.radius)
+      .then(list => list.map(p => ({ kind, name: tidy(p[field]) }))))).then(lists => lists.flat()),
+    walesFeaturesNear("inspire-wg:Cadw_ListedBuildings", ["Name", "Grade"], loc, WALES_LISTED_NEAR_M, 200),
+    walesFeaturesNear("inspire-wg:Cadw_ListedBuildings", ["Name", "Grade"], loc, WALES_LISTED_HERE_M, 10),
+    walesFeaturesNear("geonode:aqmas_wales", ["title"], loc, loc.radius)
+  ]);
+  const at = {};
+  Object.entries(WALES_AT).forEach(([key, layer]) => {
+    const short = layer.split(":")[1] + ".";
+    at[key] = atFeatures.filter(f => String(f.id || "").startsWith(short)).map(f => f.properties || {});
+  });
+  const name = (key, field) => [...new Set(at[key].map(p => tidy(p[field])).filter(Boolean))];
+  return {
+    conservation: name("conservation", "sitename"), monument: name("monument", "Name"), park: name("park", "site_name_en"),
+    heritage: name("heritage", "Name"), nationalPark: name("nationalPark", "np_name"), landscape: name("landscape", "AONB_NAME"),
+    aqma: name("aqma", "title"), sssi: name("sssi", "sssi_name"),
+    nature, aqmaNear: [...new Set(aqmaNear.map(p => tidy(p.title)).filter(Boolean))],
+    listedNear: listed.length, listedHere: listedHere.map(p => ({ name: tidy(p.Name), grade: tidy(p.Grade) }))
+  };
+}
+
+// Welsh Government strategic noise maps (2022, Round 4): road ("RD") or railway ("RL"), at first-floor height.
+// Wales publishes a 16-hour daytime level (7am to 11pm) instead of separate day and evening levels. 0 means not mapped (quiet).
+const WALES_NOISE_PERIODS = [
+  { key: "l16h", metric: "L16H", name: "Daytime", when: "7am to 11pm" },
+  { key: "lnight", metric: "LNGT", name: "Night", when: "11pm to 7am" },
+  { key: "lden", metric: "LDEN", name: "24-hour average", when: "with extra weight for evening and night noise" }
+];
+async function getWalesNoise(loc, source) {
+  const values = await wmsValuesAt(API.dataMapWales, WALES_NOISE_PERIODS.map(p => `geonode:cog_WG_${source}_${p.metric}_All`), loc);
+  return { wales: true, ...Object.fromEntries(WALES_NOISE_PERIODS.map((p, i) => [p.key, roundNoise(values[i])])) };
+}
+
+// Natural Resources Wales coastal erosion map (NCERM), with the shoreline plans in place. Each area is the land
+// expected to be lost by the end of one period: short term (to 2025), medium term (2025 to 2055), long term (2055 to 2105).
+// Returned in the same shape as the England check, so the report reads the same.
+async function getWalesCoast(loc) {
+  const dLat = COAST_NEAR_M / 111320, dLon = COAST_NEAR_M / (111320 * Math.cos(loc.lat * Math.PI / 180));
+  const params = new URLSearchParams({
+    service: "WFS", version: "2.0.0", request: "GetFeature", typeNames: "geonode:nrw_ncerm_all_smp", count: 300,
+    propertyName: "geom,epoch,medium_smp,long_smp,smp_name", srsName: "EPSG:4326", outputFormat: "application/json",
+    bbox: [loc.lat - dLat, loc.lon - dLon, loc.lat + dLat, loc.lon + dLon, "urn:ogc:def:crs:EPSG::4326"].join(",")
+  });
+  const zones = (await fetchJSON(API.dataMapWales + "?" + params)).features || [];
+  // "21.7 - 28.3 metres" -> 28.3; "Negligible" -> 0.
+  const upper = text => Math.max(0, ...(String(text || "").match(/[\d.]+/g) || []).map(Number));
+  const period = (f, word) => String(f.properties.epoch || "").startsWith(word);
+  const withKm = list => list.map(f => ({ f, km: geometryHas(f.geometry, loc) ? 0 : distanceToGeometryKm(f.geometry, loc) }))
+    .sort((a, b) => a.km - b.km);
+  const by2105 = withKm(zones.filter(f => period(f, "Long") && upper(f.properties.long_smp) > 0));
+  const by2055 = withKm(zones.filter(f => (period(f, "Medium") || period(f, "Short")) && upper(f.properties.medium_smp) > 0));
+  const nearest = by2105[0] || by2055[0];
+  const inside2055 = !!by2055[0] && by2055[0].km === 0;
+  const inside2105 = inside2055 || (!!by2105[0] && by2105[0].km === 0);
+  const anyZone = zones[0];
+  return {
+    country: "Wales",
+    nearCoast: zones.length > 0,
+    inside2105, inside2055,
+    erosionKm: nearest ? nearest.km : null,
+    metres2105: by2105[0] ? upper(by2105[0].f.properties.long_smp) : null,
+    metres2055: inside2055 ? upper(by2055[0].f.properties.medium_smp) : null,
+    plan: { now: null, later: null, area: anyZone ? tidy(anyZone.properties.smp_name) : null, defence: null },
+    published: null
+  };
+}
+
+// Welsh Government disused coal tips map (categories set how often a tip is inspected: C and D most often).
+// It is a map image service, so we ask for the tips drawn in a square a little larger than the search
+// distance, then keep those whose edge is within it.
+const COAL_TIP_CATEGORY = {
+  A: "A (low potential to affect public safety)", B: "B (unlikely to affect public safety)",
+  C: "C (inspected once a year)", D: "D (inspected twice a year)", R: "R (often removed, levelled or built over)"
+};
+async function getCoalTips(loc) {
+  if (!(await inWales(loc))) return null;
+  const d = 1.2 * loc.radius / 111320;
+  const features = await wmsInfo(API.dataMapWales, "geonode:disused_coal_tips_in_wales_public", loc, d,
+    { width: 31, height: 31, i: 15, j: 15, buffer: 15, feature_count: 200, bbox: [loc.lat - d, loc.lon - d / Math.cos(loc.lat * Math.PI / 180), loc.lat + d, loc.lon + d / Math.cos(loc.lat * Math.PI / 180)].join(",") });
+  return features
+    .map(f => {
+      const p = f.properties || {}, c = geometryCentre(f.geometry);
+      const km = !f.geometry ? null : geometryHas(f.geometry, loc) ? 0 : distanceToGeometryKm(f.geometry, loc);
+      return { id: tidy(p.uid), category: tidy(p.cat).toUpperCase(), inspected: tidy(p.last_inspected), council: tidy(p.authority_english),
+        lat: c?.lat, lon: c?.lon, distanceKm: km };
+    })
+    .filter(t => t.distanceKm == null || t.distanceKm <= loc.radius / 1000)
+    .sort(byDistance);
+}
+
 const TASKS = [
   ["place", "Nearest postcode and council", getPlace, "postcodes.io"],
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater, "Environment Agency"],
@@ -513,8 +617,9 @@ const TASKS = [
   ["soldPrices", "Recent sale prices nearby", getSoldPrices, "HM Land Registry"],
   ["floodNational", "Scotland and Wales flood maps", getFloodNational, "SEPA and Natural Resources Wales"],
   ["amenities", "Schools, doctors and transport", getAmenities, "NHS and planning.data.gov.uk"],
-  ["trees", "Protected trees and Article 4 areas", getProtectedTrees, "planning.data.gov.uk"],
   ["crimeArea", "Crime compared with England and Wales", getCrimeArea, "Office for National Statistics"],
   ["noise", "Road noise", getRoadNoise, "Environment Agency"],
-  ["railNoise", "Railway noise", getRailNoise, "Environment Agency"]
+  ["railNoise", "Railway noise", getRailNoise, "Environment Agency"],
+  ["walesSites", "Heritage, nature and air hotspots in Wales", getWalesSites, "DataMapWales"],
+  ["coalTips", "Disused coal tips in Wales", getCoalTips, "DataMapWales"]
 ];
