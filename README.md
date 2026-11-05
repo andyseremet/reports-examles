@@ -1,7 +1,7 @@
 # Property Location Check
 
 A free, single-page tool for anyone buying a house or land in
-England, Wales and Scotland. Pick a location on the map and it checks official data for:
+England, Wales, Scotland and Northern Ireland (some topics cover Great Britain only). Pick a location on the map and it checks official data for:
 
 | Check | Source |
 |---|---|
@@ -9,13 +9,13 @@ England, Wales and Scotland. Pick a location on the map and it checks official d
 | Flooding from heavy rain (surface water) | Environment Agency (2025); SEPA (Scotland); Natural Resources Wales |
 | Radon gas | BGS / UKHSA Radon Indicative Atlas |
 | Coal mining | Mining Remediation Authority (formerly the Coal Authority) |
-| Road and railway noise (day and night) | Defra strategic noise mapping, Round 4; Welsh Government noise mapping 2022 (Wales); Scottish Government noise mapping, 2021 traffic, published by SEPA (Scotland) |
-| Air quality | Council Air Quality Management Areas (England via planning.data.gov.uk; Wales via DataMapWales; Scotland via the Scottish Air Quality database, with Scotland's own PM2.5 limit); Copernicus CAMS model via Open-Meteo |
+| Road and railway noise (day and night) | Defra strategic noise mapping, Round 4; Welsh Government noise mapping 2022 (Wales); Scottish Government noise mapping, 2021 traffic, published by SEPA (Scotland); DAERA noise mapping, Round 4 (Northern Ireland) |
+| Air quality | Council Air Quality Management Areas (England via planning.data.gov.uk; Wales via DataMapWales; Scotland via the Scottish Air Quality database, with Scotland's own PM2.5 limit; Northern Ireland: no hotspot map, so the area estimate is shown and the topic says "Check yourself"); Copernicus CAMS model via Open-Meteo |
 | Past use of the land: old landfill, brownfield sites, and contaminated land or major hazard (COMAH) sites where published; in Wales, disused coal tips; in Scotland, licensed waste sites | Environment Agency Historic Landfill Sites; planning.data.gov.uk; Welsh Government disused coal tips map (Wales); SEPA licensed waste sites (Scotland) |
 | Landslides | BGS National Landslide Database |
-| Coastal erosion by 2055 and 2105, and the shoreline plan for the coast nearby (Scotland: by 2050 and 2100) | Environment Agency National Coastal Erosion Risk Map (NCERM 2024); Natural Resources Wales NCERM (Wales); Dynamic Coast, higher-emissions forecast (Scotland) |
-| Planning restrictions and heritage | planning.data.gov.uk; in Wales, Cadw, council conservation areas and Natural Resources Wales (via DataMapWales); in Scotland, Historic Environment Scotland and the Scottish Government (National Parks and National Scenic Areas) |
-| Protected nature sites | Natural England, via planning.data.gov.uk; Natural Resources Wales, including the Ancient Woodland Inventory 2021 (Wales); NatureScot, including the Ancient Woodland Inventory (Scotland) |
+| Coastal erosion by 2055 and 2105, and the shoreline plan for the coast nearby (Scotland: by 2050 and 2100) | Environment Agency National Coastal Erosion Risk Map (NCERM 2024); Natural Resources Wales NCERM (Wales); Dynamic Coast, higher-emissions forecast (Scotland); DfI and DAERA coastal erosion study, shoreline risk rating (Northern Ireland) |
+| Planning restrictions and heritage | planning.data.gov.uk; in Wales, Cadw, council conservation areas and Natural Resources Wales (via DataMapWales); in Scotland, Historic Environment Scotland and the Scottish Government (National Parks and National Scenic Areas); in Northern Ireland, the Department for Communities' Historic Environment Division and DAERA (no national map of conservation areas, so "nothing found" says "Check yourself") |
+| Protected nature sites | Natural England, via planning.data.gov.uk; Natural Resources Wales, including the Ancient Woodland Inventory 2021 (Wales); NatureScot, including the Ancient Woodland Inventory (Scotland); DAERA protected areas (Northern Ireland) |
 | Reported crime, and crime per 1,000 residents compared with England and Wales (where the police force publishes its data); in Scotland, the small area's crime rank | data.police.uk; ONS boundaries; Census 2021 residents (saved in `data/census2021-msoa-residents.json`); ONS crime and population figures; Scottish Index of Multiple Deprivation 2020 crime domain (Scotland, crimes recorded in 2017–18) |
 | Recent sale prices of homes within 500 m in the last 3 years: median price by type and the 10 most recent sales (England and Wales) | HM Land Registry Price Paid Data (Open Government Licence; contains HM Land Registry data © Crown copyright and database right) |
 | Schools, GP surgeries, pharmacies, railway stations, tram and bus stops | Department for Education and NaPTAN (via planning.data.gov.uk); NHS Organisation Data Service; NaPTAN rail stations (saved in `data/rail-stations.json`) |
@@ -65,7 +65,7 @@ official checkers.
 - **Send to my conveyancer:** one button opens your email app with the report link, the topics to look into, and the
   searches and questions from the checklist. **Copy** does the same for web email or messaging apps. Nothing
   passes through the app.
-- **Honest gaps:** where a source has published nothing (for example old landfill sites and contaminated land in Wales and Scotland),
+- **Honest gaps:** where a source has published nothing (for example old landfill sites and contaminated land in Wales and Scotland, or flood maps in Northern Ireland),
   the report says so and rates the topic "Check yourself", instead of "No issue found".
 - **Fair ratings:** old landfill and landslides are rated by distance (very close sites stand out; distant ones are for information).
   Road and railway noise is flagged only when loud (a 24-hour average of 65 dB or more, or 55 dB at night); moderate
@@ -133,7 +133,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 - **On every pull request** that changes the page, against the proposed version, before it is merged.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
-It checks that all 33 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
+It checks that all 37 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the count boxes and Open all / Close all, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads. Results,
