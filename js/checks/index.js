@@ -20,8 +20,12 @@ function isWales(R) {
 function isScotland(R) {
   return okValue(R, "place")?.country === "Scotland";
 }
-// The data task with Welsh or Scottish heritage, nature and air hotspots for this address.
-const sitesKey = R => isScotland(R) ? "scotlandSites" : "walesSites";
+// True for an address in Northern Ireland, where some topics use DAERA and Department for Communities data.
+function isNI(R) {
+  return okValue(R, "place")?.country === "Northern Ireland";
+}
+// The data task with Welsh, Scottish or Northern Ireland heritage, nature and air hotspots for this address.
+const sitesKey = R => isScotland(R) ? "scotlandSites" : isNI(R) ? "niSites" : "walesSites";
 
 function unavailable(base, R, key) {
   return {
@@ -49,12 +53,12 @@ const CHECKS = [
   { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },
   { id: "coastal", group: "ground", title: "Coastal erosion", deps: ["coastal"], build: checkCoastal },
   { id: "noise", group: "living", title: "Noise: road, railway and aircraft", deps: ["noise", "railNoise"], build: checkNoise },
-  { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air", "walesSites", "scotlandSites"], build: checkAir },
+  { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air", "walesSites", "scotlandSites", "niSites"], build: checkAir },
   { id: "amenities", group: "living", title: "Schools, doctors and transport", deps: ["amenities"], build: checkAmenities },
   { id: "crime", group: "living", title: "Reported crime", deps: ["crime", "crimeArea", "simdCrime"], build: checkCrime },
   { id: "soldprices", group: "living", title: "Recent sale prices nearby", deps: ["soldPrices"], build: checkSoldPrices },
-  { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby", "walesSites", "scotlandSites"], build: checkPlanning },
-  { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby", "walesSites", "scotlandSites"], build: checkNature }
+  { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby", "walesSites", "scotlandSites", "niSites"], build: checkPlanning },
+  { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby", "walesSites", "scotlandSites", "niSites"], build: checkNature }
 ];
 
 // The viewing checklist ("At the viewing"): things to see or hear on the day, for topics rated
@@ -103,8 +107,9 @@ CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
 // misleading "No issue found".
 const COVERAGE = {
   flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England", "Scotland", "Wales"],
-  coastal: ["England", "Scotland", "Wales"], soldprices: ["England", "Wales"], noise: ["England", "Scotland", "Wales"],
-  air: ["England", "Scotland", "Wales"], planning: ["England", "Scotland", "Wales"], nature: ["England", "Scotland", "Wales"],
+  coastal: ["England", "Scotland", "Wales", "Northern Ireland"], soldprices: ["England", "Wales"], noise: ["England", "Scotland", "Wales", "Northern Ireland"],
+  air: ["England", "Scotland", "Wales", "Northern Ireland"], planning: ["England", "Scotland", "Wales", "Northern Ireland"],
+  nature: ["England", "Scotland", "Wales", "Northern Ireland"],
   crime: ["England", "Scotland", "Wales", "Northern Ireland"],
   coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"]
 };
@@ -121,7 +126,7 @@ const NATIONAL = {
   },
   "Northern Ireland": {
     env: ["DAERA (Department of Agriculture, Environment and Rural Affairs)", "https://www.daera-ni.gov.uk/"],
-    flood: ["nidirect: flooding", "https://www.nidirect.gov.uk/"],
+    flood: ["Flood Maps NI (Department for Infrastructure)", "https://www.infrastructure-ni.gov.uk/topics/rivers-and-flooding/flood-maps-ni"],
     gov: ["nidirect", "https://www.nidirect.gov.uk/"]
   }
 };
@@ -130,7 +135,7 @@ function notCovered(c, country, place) {
   const n = NATIONAL[country] || {};
   const council = place && place.admin_district ? place.admin_district + " council" : "the local council";
   let service = n.env || n.gov;
-  if (c.id === "flood" && n.flood) service = n.flood;
+  if ((c.id === "flood" || c.id === "surfacewater") && n.flood) service = n.flood;
   if (c.id === "crime" && n.police) service = n.police;
   const covered = COVERAGE[c.id].join(", ").replace(/, ([^,]*)$/, " and $1");
   const actions = (c.id === "planning" || c.id === "nature")

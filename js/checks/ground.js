@@ -252,7 +252,47 @@ function shorelinePlan(policy) {
   return words ? `“${escapeHTML(policy)}” (${words})` : policy ? `“${escapeHTML(policy)}”` : "";
 }
 
+// Northern Ireland: the DfI and DAERA coastal erosion study (2019) rates the shoreline High, Moderate or Low for its
+// potential to erode. It has no "land lost by year" areas, so the rating goes by the distance to the shore.
+function checkCoastalNI(R) {
+  const base = { source: { name: "Department for Infrastructure and DAERA, Baseline Study and Gap Analysis of Coastal Erosion Risk Management (2019, high-level risk appraisal)", url: LINKS.niCoast } };
+  if (!R.coastal.ok) return unavailable(base, R, "coastal");
+  const c = R.coastal.value;
+  const meaning = `<p>The study rates each stretch of shoreline for its potential to wear away: High, Moderate or Low. It is a
+      high-level, national appraisal: it does not say how far the coast will move or when, and it cannot give exact details for
+      a single property.</p>
+    <p>Rating: High-risk shore within 200 m is “Worth checking”; Moderate-risk shore within 200 m, or High-risk shore within 1 km,
+      is “For information”.</p>`;
+  if (!c.nearCoast) {
+    return { ...base, status: "low", found: "Not near the coast: no shoreline is mapped within 1 km.",
+      meaning: "<p>This check looks for shoreline within 1 km of the property that the coastal erosion study rates for erosion risk.</p>" };
+  }
+  const near = km => km != null && km <= 0.2;
+  let status = "low", found;
+  if (near(c.highKm)) {
+    status = "medium";
+    found = `Shoreline rated High for erosion risk is about ${formatDistance(c.highKm)} from the property.`;
+  } else if (near(c.moderateKm) || c.highKm != null) {
+    status = "info";
+    found = near(c.moderateKm)
+      ? `Shoreline rated Moderate for erosion risk is about ${formatDistance(c.moderateKm)} from the property.`
+      : `The nearest shoreline rated High for erosion risk is about ${formatDistance(c.highKm)} away.`;
+  } else {
+    found = `The shore is about ${formatDistance(c.shoreKm)} away${c.moderateKm != null ? ", and the nearby coast is rated Low or Moderate for erosion risk" : " and rated Low for erosion risk"}.`;
+  }
+  return {
+    ...base, status, found, meaning,
+    actions: status === "low" ? [] : [
+      `Read about the study on the ${link(LINKS.niCoast, "Department for Infrastructure website")}.`,
+      "Ask the council how the coast here is changing, and whether any sea defences will be kept."
+    ],
+    seller: status === "low" ? [] : ["Has the cliff or shore near the property moved, or have the sea defences been repaired, in your time here?"],
+    conveyancer: status === "low" ? [] : ["Does the environmental search cover coastal erosion, and will lenders and insurers accept the property?"]
+  };
+}
+
 function checkCoastal(R) {
+  if (isNI(R)) return checkCoastalNI(R);
   const wales = isWales(R), scot = isScotland(R);
   const agency = wales ? "Natural Resources Wales" : "the Environment Agency";
   const base = {

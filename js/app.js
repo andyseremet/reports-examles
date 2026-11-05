@@ -310,7 +310,7 @@ function setLocation(lat, lon, label, options = {}) {
     return;
   }
   const inUK = lat >= 49.8 && lat <= 61 && lon >= -8.7 && lon <= 2;
-  showSearchStatus(inUK ? "" : "This location is outside the UK. The checks cover England, Wales and Scotland, and some cover Northern Ireland.", !inUK);
+  showSearchStatus(inUK ? "" : "This location is outside the UK. The checks cover England, Wales, Scotland and Northern Ireland.", !inUK);
 
   // Keep a searched name when the pin is only nudged (within 200 m), and never
   // overwrite a name the user typed in More options.
@@ -1164,6 +1164,8 @@ function renderSummary() {
         ? "Topics use Welsh data where England's stops at the border. Where Wales publishes nothing (for example old landfill sites), the topic says “Check yourself”."
         : p.country === "Scotland"
         ? "Topics use Scottish data where England's stops at the border. Where Scotland publishes nothing (for example old landfill sites or sale prices), the topic says “Check yourself”."
+        : p.country === "Northern Ireland"
+        ? "Heritage, nature, noise and coast use Northern Ireland data. Where nothing is published openly (for example flood maps, radon or old landfill sites), the topic says “Check yourself”, with a link to the right service."
         : "Some official data only covers England. Those topics are marked “Check yourself”, with a link to the right national service."}</div>` : ""}`;
   updateToggleAll();
 }

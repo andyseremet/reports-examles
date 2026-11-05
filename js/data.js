@@ -36,7 +36,7 @@ async function wmsFeaturesAt(service, layer, loc) {
 
 // England: Environment Agency "Risk of flooding from surface water" (2025 national assessment).
 async function getSurfaceWater(loc) {
-  if (await inWales(loc) || await inScotland(loc)) return null;   // answered by SEPA and NRW (getFloodNational)
+  if (await inWales(loc) || await inScotland(loc) || await inNI(loc)) return null;   // SEPA and NRW: getFloodNational
   const props = await wmsFeaturesAt(API.surfaceWater, "rofsw", loc);
   const order = ["High", "Medium", "Low"];
   const bands = props.map(x => x.risk_band).filter(b => order.includes(b));
@@ -74,13 +74,15 @@ async function getFloodNational(loc) {
 // - bus, tram and underground stops: NaPTAN (Department for Transport), via planning.data.gov.uk
 // - GP surgeries and pharmacies: NHS Organisation Data Service, located with postcodes.io
 // - railway stations: NaPTAN national station list, saved with the app (data/rail-stations.json)
+// "covers": the countries each register includes. Schools and stops (planning.data.gov.uk) are England only; the NHS
+// Organisation Data Service lists GP surgeries and pharmacies in England and Wales; NaPTAN stations cover Great Britain.
 const AMENITY_TYPES = [
-  { key: "school", label: "School", short: "school", within: 1 },
-  { key: "gp", label: "GP surgery", short: "GP", within: 2 },
-  { key: "pharmacy", label: "Pharmacy", short: "pharmacy", within: 2 },
-  { key: "station", label: "Railway station", short: "station", within: 3 },
-  { key: "tram", label: "Tram, metro or underground stop", short: "tram or underground", within: 1 },
-  { key: "bus_stop", label: "Bus stop", short: "bus stop", within: 0.5 }
+  { key: "school", many: "schools", label: "School", short: "school", within: 1, covers: ["England"] },
+  { key: "gp", many: "GP surgeries", label: "GP surgery", short: "GP", within: 2, covers: ["England", "Wales"] },
+  { key: "pharmacy", many: "pharmacies", label: "Pharmacy", short: "pharmacy", within: 2, covers: ["England", "Wales"] },
+  { key: "station", many: "railway stations", label: "Railway station", short: "station", within: 3, covers: ["England", "Wales", "Scotland"] },
+  { key: "tram", many: "tram and underground stops", label: "Tram, metro or underground stop", short: "tram or underground", within: 1, covers: ["England"] },
+  { key: "bus_stop", many: "bus stops", label: "Bus stop", short: "bus stop", within: 0.5, covers: ["England"] }
 ];
 
 const titleCase = text => String(text || "").toLowerCase()
@@ -105,6 +107,7 @@ const inCircle = (loc, radiusM, limit = 500) =>
   ({ geometry: circleWkt(loc.lat, loc.lon, radiusM), geometry_relation: "intersects", limit, exclude_field: "geometry" });
 
 async function getPlanningPlaces(loc) {
+  if (await inWales(loc) || await inScotland(loc) || await inNI(loc)) return { school: [], bus_stop: [], tram: [] };   // England only
   const [schools, stops] = await Promise.all([
     planningEntities(inCircle(loc, 2000), ["educational-establishment"]),
     planningEntities(inCircle(loc, 1000), ["transport-access-node"])
@@ -119,6 +122,7 @@ async function getPlanningPlaces(loc) {
 }
 
 async function getNhsPlaces(loc) {
+  if (await inScotland(loc) || await inNI(loc)) return { gp: [], pharmacy: [] };   // the NHS register covers England and Wales
   const [place, near] = await Promise.all([getPlace(loc), fetchJSON(API.postcodes.replace("/postcodes", "/outcodes") +
     "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=4000&limit=6").catch(() => ({ result: [] }))]);
   const outcodes = [...new Set([place && place.outcode, ...((near.result || []).map(o => o.outcode))].filter(Boolean))].slice(0, 6);
@@ -141,6 +145,7 @@ async function getNhsPlaces(loc) {
 }
 
 async function getStations(loc) {
+  if (await inNI(loc)) return { station: [] };   // NaPTAN covers Great Britain
   const data = await getStationList();
   return { station: data.stations.map(([name, lat, lon]) => ({ name, lat, lon, distanceKm: distanceKm(loc, { lat, lon }) }))
     .filter(x => x.distanceKm <= 10) };
@@ -234,6 +239,7 @@ const roundNoise = v => Number.isFinite(v) && v > 0 ? Math.round(v) : null;
 async function getRoadNoise(loc) {
   if (await inWales(loc)) return getWalesNoise(loc, "RD");
   if (await inScotland(loc)) return getScotlandNoise(loc, "Road");
+  if (await inNI(loc)) return getNINoise(loc, "Roads");
   const values = await wmsValuesAt(API.roadNoise,
     NOISE_PERIODS.map(p => `Road_Noise_${p.metric}_England_Round_4_All`), loc);
   return Object.fromEntries(NOISE_PERIODS.map((p, i) => [p.key, roundNoise(values[i])]));
@@ -247,6 +253,7 @@ const BAND_A_WEIGHTING = { 63: -26.2, 125: -16.1, 250: -8.6, 500: -3.2, 1000: 0,
 async function getRailNoise(loc) {
   if (await inWales(loc)) return getWalesNoise(loc, "RL");
   if (await inScotland(loc)) return getScotlandNoise(loc, "Rail");
+  if (await inNI(loc)) return getNINoise(loc, "Railway");
   const bands = Object.keys(BAND_A_WEIGHTING);
   // Defra's rail service sometimes fails for one period in some places, so each
   // period is fetched on its own and a failure only affects that period.
@@ -312,7 +319,7 @@ async function getAirModel(loc) {
 
 async function getLandfill(loc) {
   // The Environment Agency's landfill map covers England only (Wales: getCoalTips; Scotland: getWasteSites).
-  if (await inWales(loc) || await inScotland(loc)) return [];
+  if (await inWales(loc) || await inScotland(loc) || await inNI(loc)) return [];
   const d = await fetchJSON(API.landfill + "?f=json&limit=100&bbox=" + boundingBox(loc.lat, loc.lon, loc.radius).join(","));
   return (d.features || [])
     .map(f => {
@@ -381,6 +388,7 @@ function distanceToGeometryKm(geometry, pt) {
 async function getCoastalErosion(loc) {
   if (await inWales(loc)) return getWalesCoast(loc);
   if (await inScotland(loc)) return getScotlandCoast(loc);
+  if (await inNI(loc)) return getNICoast(loc);
   const items = (layer, radiusM) => fetchJSON(API.coastal + layer + "/items?f=json&limit=200&bbox=" +
     boundingBox(loc.lat, loc.lon, radiusM).join(",")).then(d => d.features || []);
   const zones = await items("NCERM_SMP_2105_70CC", COAST_NEAR_M);
@@ -486,6 +494,8 @@ async function inCountry(loc, country, box) {
 }
 const inWales = loc => inCountry(loc, "Wales", WALES_BOX);
 const inScotland = loc => inCountry(loc, "Scotland", SCOTLAND_BOX);
+const NI_BOX = { south: 53.9, north: 55.5, west: -8.3, east: -5.3 };
+const inNI = loc => inCountry(loc, "Northern Ireland", NI_BOX);
 
 // A square around the pin, as a WFS bbox (latitude first).
 function squareAround(loc, metres) {
@@ -770,6 +780,74 @@ async function getSimdCrime(loc) {
   return { zone: a.datazone, name: tidy(a.dzname), council: tidy(a.laname), count: a.crimecount, rate: a.crimerate, rank: a.crimerank };
 }
 
+/* ---------------------------------------------------------------
+   Northern Ireland: the Department for Communities' Historic Environment Division (listed buildings, scheduled
+   monuments, historic parks, battle sites) and DAERA (protected areas, noise maps, the coastal erosion study).
+   Outside Northern Ireland these return null without asking them.
+--------------------------------------------------------------- */
+const niHeritage = (layer, loc, metres, extra) => arcgisRequest(API.niHeritage + layer + "/query", loc, metres, extra);
+const niProtected = (layer, loc, metres, field) => arcgisQuery(API.niProtected + layer + "/query", loc, metres, { outFields: field });
+// Listed grades (A, B+, B1, B2, B); the record also holds delisted and "record only" buildings, which are left out.
+const NI_LISTED = "CurrentGra IN ('A','B+','B1','B2','B')";
+// DAERA protected area layers near the pin (every one names its sites in NAME).
+const NI_NATURE = [
+  [1, "Area of Special Scientific Interest"], [5, "Special Area of Conservation"], [6, "Special Protection Area (birds)"],
+  [4, "Ramsar wetland"], [3, "Nature Reserve"]
+];
+
+// Returned in the same shape as getWalesSites, so the planning and nature checks read the same.
+async function getNISites(loc) {
+  if (!(await inNI(loc))) return null;
+  const named = (features, field) => [...new Set(features.map(f => tidy(f.attributes?.[field])).filter(Boolean))];
+  const [parks, battles, zones, listedCount, listedHere, landscape, heritage, assi, nature] = await Promise.all([
+    niHeritage(9, loc, 0, { outFields: "SITE" }).then(d => named(d.features || [], "SITE")),
+    niHeritage(8, loc, 0, { outFields: "BATTLE" }).then(d => named(d.features || [], "BATTLE")),
+    niHeritage(10, loc, 0, { outFields: "EDITED_TYP,TOWNLAND" })
+      .then(d => [...new Set((d.features || []).map(f => [tidyCaps(f.attributes?.EDITED_TYP), tidyCaps(f.attributes?.TOWNLAND)].filter(Boolean).join(", ")).filter(Boolean))]),
+    niHeritage(1, loc, LISTED_NEAR_M, { where: NI_LISTED, returnCountOnly: "true" }).then(d => d.count || 0),
+    niHeritage(1, loc, LISTED_HERE_M, { where: NI_LISTED, outFields: "Address,CurrentGra" })
+      .then(d => (d.features || []).map(f => ({ name: tidy(String(f.attributes?.Address || "").split("\n")[0]), rank: f.attributes?.CurrentGra ? "Grade " + tidy(f.attributes.CurrentGra) : "" }))),
+    niProtected(2, loc, 0, "NAME").then(f => named(f, "NAME")),
+    niProtected(7, loc, 0, "Name_WHS").then(f => named(f, "Name_WHS")),
+    niProtected(1, loc, 0, "NAME").then(f => named(f, "NAME")),
+    Promise.all(NI_NATURE.map(([layer, kind]) => niProtected(layer, loc, loc.radius, "NAME")
+      .then(list => list.map(f => ({ kind, name: tidy(f.attributes?.NAME) }))))).then(lists => lists.flat())
+  ]);
+  return {
+    country: "Northern Ireland", conservationUnknown: true,
+    conservation: [], monument: zones, park: parks, battlefield: battles, heritage, nationalPark: [], landscape,
+    aqma: [], aqmaNear: [], sssi: assi, nature, listedNear: listedCount, listedNearCapped: false, listedHere
+  };
+}
+
+// DAERA strategic noise maps (Round 4, 2021 traffic): Belfast ("Agglomeration") and major roads and railways
+// elsewhere ("Major"). Layers: 0 Lden, 1 Lnight, 2 LAeq 16h (7am to 11pm). Where both are mapped, the louder counts.
+const NI_NOISE_LAYER = { l16h: 2, lnight: 1, lden: 0 };
+async function getNINoise(loc, source) {   // source: "Roads" or "Railway"
+  const ask = area => fetchJSON(`${API.niNoise}${area}_${source}/MapServer/identify?` + new URLSearchParams({
+    geometry: loc.lon + "," + loc.lat, geometryType: "esriGeometryPoint", sr: "4326", layers: "all:0,1,2", tolerance: "0",
+    mapExtent: [loc.lon - 0.01, loc.lat - 0.01, loc.lon + 0.01, loc.lat + 0.01].join(","), imageDisplay: "200,200,96",
+    returnGeometry: "false", f: "json"
+  })).then(d => {
+    if (d.error) throw new Error(d.error.message || "query failed");
+    return Object.fromEntries((d.results || []).map(r => [r.layerId, Number(r.attributes?.["Classify.Pixel Value"])]));
+  });
+  const [city, major] = await Promise.all([ask("Agglomeration"), ask("Major")]);
+  const pick = id => roundNoise(Math.max(...[city[id], major[id]].filter(Number.isFinite), 0));
+  return { ni: true, ...Object.fromEntries(Object.entries(NI_NOISE_LAYER).map(([key, id]) => [key, pick(id)])) };
+}
+
+// DfI and DAERA coastal erosion study (published 2019): the shoreline rated High, Moderate or Low for its potential to erode.
+async function getNICoast(loc) {
+  const features = await arcgisQuery(API.niCoast, loc, COAST_NEAR_M, { outFields: "risk", returnGeometry: "true", outSR: "4326" });
+  const shore = features
+    .map(f => ({ risk: tidy(f.attributes?.risk), km: f.geometry?.paths ? distanceToGeometryKm({ coordinates: f.geometry.paths }, loc) : null }))
+    .filter(x => x.km != null).sort((a, b) => a.km - b.km);
+  const nearest = risk => shore.find(x => x.risk === risk)?.km ?? null;
+  return { country: "Northern Ireland", nearCoast: shore.length > 0, shoreKm: shore[0]?.km ?? null,
+    highKm: nearest("High"), moderateKm: nearest("Moderate") };
+}
+
 // Each data task: key, topic name, fetch function, and the service it waits for (named in the
 // "Still waiting for" note when a report is slow). Tasks start in this order. The Environment Agency
 // server answers only a few requests at a time (PACED_HOSTS), so its most important topic,
@@ -778,7 +856,7 @@ const TASKS = [
   ["place", "Nearest postcode and council", getPlace, "postcodes.io"],
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater, "Environment Agency"],
   ["landfill", "Old landfill sites", getLandfill, "Environment Agency"],
-  ["coastal", "Coastal erosion", getCoastalErosion, "Environment Agency (Wales: DataMapWales; Scotland: NatureScot)"],
+  ["coastal", "Coastal erosion", getCoastalErosion, "Environment Agency (Wales: DataMapWales; Scotland: NatureScot; NI: DAERA)"],
   ["planningPoint", "Flood zone and planning rules at the property", getPlanningAtPoint, "planning.data.gov.uk"],
   ["planningNearby", "Things nearby: flood zones, contaminated land, heritage, nature", getPlanningNearby, "planning.data.gov.uk"],
   ["radon", "Radon gas", getRadon, "British Geological Survey"],
@@ -790,11 +868,12 @@ const TASKS = [
   ["floodNational", "Scotland and Wales flood maps", getFloodNational, "SEPA and Natural Resources Wales"],
   ["amenities", "Schools, doctors and transport", getAmenities, "NHS and planning.data.gov.uk"],
   ["crimeArea", "Crime compared with England and Wales", getCrimeArea, "Office for National Statistics"],
-  ["noise", "Road noise", getRoadNoise, "Environment Agency (Wales: DataMapWales; Scotland: SEPA)"],
-  ["railNoise", "Railway noise", getRailNoise, "Environment Agency (Wales: DataMapWales; Scotland: SEPA)"],
+  ["noise", "Road noise", getRoadNoise, "Environment Agency (Wales: DataMapWales; Scotland: SEPA; NI: DAERA)"],
+  ["railNoise", "Railway noise", getRailNoise, "Environment Agency (Wales: DataMapWales; Scotland: SEPA; NI: DAERA)"],
   ["walesSites", "Heritage, nature and air hotspots in Wales", getWalesSites, "DataMapWales"],
   ["coalTips", "Disused coal tips in Wales", getCoalTips, "DataMapWales"],
   ["scotlandSites", "Heritage, nature and air hotspots in Scotland", getScotlandSites, "Historic Environment Scotland and NatureScot"],
   ["wasteSites", "Licensed waste sites in Scotland", getWasteSites, "SEPA"],
-  ["simdCrime", "Crime rank in Scotland", getSimdCrime, "Scottish Government"]
+  ["simdCrime", "Crime rank in Scotland", getSimdCrime, "Scottish Government"],
+  ["niSites", "Heritage and nature in Northern Ireland", getNISites, "Department for Communities and DAERA"]
 ];

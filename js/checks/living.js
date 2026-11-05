@@ -8,24 +8,41 @@ function checkAmenities(R) {
   };
   if (!R.amenities.ok) return unavailable(base, R, "amenities");
   const g = R.amenities.value;
-  // Schools and stops come from planning.data.gov.uk, which covers England only.
+  // Each register covers only some countries (AMENITY_TYPES "covers"); outside them a row says "Not covered".
   const country = okValue(R, "place")?.country || null;
-  const notCoveredHere = key => country && country !== "England" && ["school", "bus_stop", "tram"].includes(key);
+  const notCoveredHere = t => !!country && !t.covers.includes(country);
   const rows = AMENITY_TYPES.map(t => {
-    const list = notCoveredHere(t.key) ? [] : (g[t.key] || []);
-    return { t, near: list[0], count: list.filter(x => x.distanceKm <= t.within).length, notCovered: notCoveredHere(t.key) };
+    const list = notCoveredHere(t) ? [] : (g[t.key] || []);
+    return { t, near: list[0], count: list.filter(x => x.distanceKm <= t.within).length, notCovered: notCoveredHere(t) };
   });
+  const uncovered = rows.filter(x => x.notCovered);
+  const noneCovered = uncovered.length === rows.length;
+  const uncoveredText = uncovered.length
+    ? ` ${sentenceStart(listWords(uncovered.map(x => x.t.many)))} are not covered in ${country}.` : "";
+  const nationalLinks = {
+    Wales: [`Find schools on ${link(LINKS.walesSchools, "My Local School")}.`],
+    Scotland: [`Find GP surgeries and pharmacies on ${link(LINKS.scotNhs, "NHS inform")}, and schools in the ${link(LINKS.scotSchools, "Scottish Government's school list")}.`],
+    "Northern Ireland": [`Find GP practices on ${link(LINKS.niGps, "nidirect")}, schools on ${link(LINKS.niSchools, "Schools Plus")}, and trains and buses on ${link(LINKS.translink, "Translink")}.`]
+  }[country] || [];
   const summary = rows.filter(x => x.near && x.near.distanceKm <= 5 && x.t.key !== "bus_stop" && x.t.key !== "tram").slice(0, 4)
     .map(x => `${x.t.short} ${formatDistance(x.near.distanceKm)}`);
   const missing = (g.missing || []).length
     ? `<p><strong>Not available right now:</strong> ${escapeHTML(g.missing.join(", "))}. Press “Refresh” later.</p>` : "";
+  if (noneCovered) {
+    return {
+      ...base, status: "manual", gap: "coverage",
+      found: `Not covered in ${country}: the registers we use for schools, GP surgeries, pharmacies and stations do not include it.`,
+      meaning: "<p>Use the national services below to find schools, GP practices and public transport near the property.</p>",
+      actions: [...nationalLinks, "Check school admission areas with the education authority before relying on a nearby school."]
+    };
+  }
   return {
     ...base, status: "info",
-    found: (summary.length ? "Nearest: " + summary.join(", ") + "." : (g.missing || []).length ? "" : "No schools, GP surgeries or stations found nearby.")
-      + ((g.missing || []).length ? (summary.length ? " " : "") + "Not available right now: " + g.missing.join(", ") + "." : ""),
+    found: ((summary.length ? "Nearest: " + summary.join(", ") + "." : (g.missing || []).length ? "" : "None of the places we check were found nearby.")
+      + ((g.missing || []).length ? (summary.length ? " " : "") + "Not available right now: " + g.missing.join(", ") + "." : "") + uncoveredText).trim(),
     details: missing + `<div class="table-wrap"><table><thead><tr><th>Place</th><th>Nearest</th><th>Distance</th><th>Number nearby</th></tr></thead><tbody>${
       rows.map(x => x.notCovered
-        ? `<tr><td>${escapeHTML(x.t.label)}</td><td colspan="3">Not covered in ${escapeHTML(country)}: this register covers England only</td></tr>`
+        ? `<tr><td>${escapeHTML(x.t.label)}</td><td colspan="3">Not covered in ${escapeHTML(country)}: this register covers ${escapeHTML(listWords(x.t.covers))} only</td></tr>`
         : `<tr><td>${escapeHTML(x.t.label)}</td><td>${x.near ? escapeHTML(x.near.name || "Unnamed") : "None found nearby"}</td>
         <td>${x.near ? formatDistance(x.near.distanceKm) : "–"}</td><td>${x.count} within ${formatRadius(x.t.within * 1000)}</td></tr>`).join("")
     }</tbody></table></div>`,
@@ -35,7 +52,7 @@ function checkAmenities(R) {
       Department for Transport's national list of public transport stops.</p>
       <p>Supermarkets and shops are not included because there is no official open list. School catchment areas and
       Ofsted ratings are not shown: check them with the council and on the Ofsted website.</p>`,
-    actions: ["Check school admission areas with the council before relying on a nearby school.", "Try the journey to work or school at rush hour."]
+    actions: [...nationalLinks, "Check school admission areas with the council before relying on a nearby school.", "Try the journey to work or school at rush hour."]
   };
 }
 
@@ -119,11 +136,14 @@ function noiseLevelStatus(v, who) {
 }
 
 function checkNoise(R) {
-  const scot = isScotland(R);
-  const wales = isWales(R) || scot;   // Wales and Scotland publish the same three periods
-  const mapper = scot ? "the Scottish Government" : wales ? "the Welsh Government" : "Defra";
+  const scot = isScotland(R), ni = isNI(R);
+  const wales = isWales(R) || scot || ni;   // Wales, Scotland and Northern Ireland: the same three periods
+  const mapper = ni ? "DAERA" : scot ? "the Scottish Government" : wales ? "the Welsh Government" : "Defra";
   const periods = wales ? NOISE_PERIODS_16H : NOISE_PERIODS;
-  const base = scot ? {
+  const base = ni ? {
+    source: { name: "DAERA strategic noise mapping (Round 4, 2021 traffic) for road and rail in Belfast and along major roads and railways; airport locations for aircraft; WHO Environmental Noise Guidelines (2018)", url: LINKS.niNoise },
+    dataDate: "Noise maps for 2021 traffic (Round 4), published by DAERA"
+  } : scot ? {
     source: { name: "Scottish Government strategic noise mapping (2021 traffic, Round 4, published by SEPA) for road and rail; airport locations for aircraft; WHO Environmental Noise Guidelines (2018)", url: LINKS.scotNoise },
     dataDate: "Noise maps for 2021 traffic (Round 4), published by the Scottish Government"
   } : wales ? {
@@ -188,7 +208,7 @@ function checkNoise(R) {
       </table></div>${airportText}`,
     meaning: `<p>The levels are ${mapper}'s computer-modelled averages for 2021 traffic, at first-floor height on the side of the building
         facing the noise. A room at the back can be much quieter. The daytime figure is an average over ${wales ? "7am to 11pm" : "7am to 7pm"}, so rush hours
-        are usually a little louder than shown.${wales ? ` ${scot ? "Scotland" : "Wales"} does not publish separate daytime and evening figures.` : ""}</p>
+        are usually a little louder than shown.${wales ? ` ${ni ? "This" : scot ? "Scotland" : "Wales"} ${ni ? "report uses the 7am to 11pm figure rather than" : "does not publish"} separate daytime and evening figures.` : ""}${ni ? " Outside Belfast, only major roads and railways are mapped." : ""}</p>
       <p>The World Health Organization recommends average levels below: road ${WHO_NOISE.road.lden} dB (night ${WHO_NOISE.road.lnight} dB),
         railway ${WHO_NOISE.rail.lden} dB (night ${WHO_NOISE.rail.lnight} dB), aircraft ${WHO_NOISE.aircraft.lden} dB (night ${WHO_NOISE.aircraft.lnight} dB).
         Every 10 dB sounds roughly twice as loud. “Quiet” means below the lowest level ${mapper} maps.</p>
@@ -210,20 +230,23 @@ function checkNoise(R) {
 
 function checkAir(R) {
   const wales = isWales(R) || isScotland(R);   // Welsh or Scottish hotspot data, in the same shape
+  const ni = isNI(R);   // no hotspot map: the area estimate only
   const base = {
-    source: isScotland(R)
+    source: ni
+      ? { name: "Copernicus CAMS air quality model (via Open-Meteo); council Air Quality Management Areas are not mapped for Northern Ireland", url: LINKS.niAir }
+      : isScotland(R)
       ? { name: "Council Air Quality Management Areas in Scotland (Scottish Air Quality database); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.scotAir }
       : wales
       ? { name: "Council Air Quality Management Areas in Wales (Welsh Government, via DataMapWales); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.walesAir }
       : { name: "Council Air Quality Management Areas (via planning.data.gov.uk); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.ukair }
   };
   // Without the council hotspot data we cannot say "not in a hotspot" (missing data is never good news).
-  const hotspots = wales ? sitesKey(R) : "planningPoint";
+  const hotspots = ni ? "air" : wales ? sitesKey(R) : "planningPoint";
   if (!R[hotspots].ok) return unavailable(base, R, hotspots);
 
   const ws = wales ? okValue(R, hotspots) : null;
-  const here = wales ? (ws ? ws.aqma.map(name => ({ name })) : []) : byDataset(okValue(R, "planningPoint"), "air-quality-management-area");
-  const near = wales ? (ws ? ws.aqmaNear.filter(n => !ws.aqma.includes(n)).map(name => ({ name })) : []) : byDataset(okValue(R, "planningNearby"), "air-quality-management-area");
+  const here = ni ? [] : wales ? (ws ? ws.aqma.map(name => ({ name })) : []) : byDataset(okValue(R, "planningPoint"), "air-quality-management-area");
+  const near = ni ? [] : wales ? (ws ? ws.aqmaNear.filter(n => !ws.aqma.includes(n)).map(name => ({ name })) : []) : byDataset(okValue(R, "planningNearby"), "air-quality-management-area");
   const m = okValue(R, "air");
   // Scotland's yearly limit for fine particles (PM2.5) is 10 µg/m³ (Air Quality (Scotland) Amendment Regulations 2016); the UK's is 20.
   const scot = isScotland(R), pm25Limit = scot ? 10 : 20, limitName = scot ? "Scottish legal limit" : "UK legal limit";
@@ -233,6 +256,11 @@ function checkAir(R) {
   let found = "Not in an air pollution hotspot declared by the council.";
   if (here.length) { status = "medium"; found = "Inside an air pollution hotspot declared by the council (an Air Quality Management Area)."; }
   else if (near.length) found += ` There is one within ${formatRadius(R.loc.radius)}.`;
+  if (ni) {
+    status = "manual";
+    found = "Council air pollution hotspots are not mapped for Northern Ireland, so check with the council." +
+      (m && !overLegal ? " Area pollution levels are estimated to be within UK legal limits." : "");
+  }
   if (overLegal) { status = "high"; found += ` Area pollution levels are estimated to be above ${scot ? "Scottish" : "UK"} legal limits.`; }
 
   let details = "";
@@ -257,9 +285,10 @@ function checkAir(R) {
     ...base, status, found, details,
     meaning: `<p>Councils declare an Air Quality Management Area where pollution, usually from traffic, is above legal limits. They must then have a plan to reduce it.</p>
       <p>The WHO recommendations are the yearly averages in the ${link(LINKS.whoAir, "WHO Global Air Quality Guidelines (2021)")}.
-      ${scot ? "Scotland's legal limits are higher, though its fine-particle limit is half the UK's." : "UK legal limits are higher."} ${scot ? "Many places in Scotland are" : wales ? "Most of Wales is" : "Most of England is"} above the WHO level. The model works on squares about 10 km
+      ${scot ? "Scotland's legal limits are higher, though its fine-particle limit is half the UK's." : "UK legal limits are higher."} ${scot ? "Many places in Scotland are" : ni ? "Many places in Northern Ireland are" : wales ? "Most of Wales is" : "Most of England is"} above the WHO level. The model works on squares about 10 km
       across, so it describes the wider area, not your street. Levels beside busy roads are usually higher.</p>`,
-    actions: [scot ? `See local monitoring results and hotspots on ${link(LINKS.scotAir, "Air Quality in Scotland")}.` : wales ? `See local monitoring results and hotspots on ${link(LINKS.walesAir, "Air Quality in Wales")}.` : `See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`]
+    ...(status === "manual" && { gap: "coverage" }),
+    actions: [ni ? `See the council's hotspots and local monitoring results on ${link(LINKS.niAir, "Northern Ireland Air")}.` : scot ? `See local monitoring results and hotspots on ${link(LINKS.scotAir, "Air Quality in Scotland")}.` : wales ? `See local monitoring results and hotspots on ${link(LINKS.walesAir, "Air Quality in Wales")}.` : `See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`]
   };
 }
 

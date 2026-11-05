@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Property Location Check: a free report on a home's location in England, Wales and Scotland from official open data, for non-technical
+Property Location Check: a free report on a home's location in England, Wales, Scotland and Northern Ireland from official open data, for non-technical
 home buyers. Static site with no build step. GitHub Pages serves `main` at https://andyseremet.github.io/reports-examles/.
 
 ## Code layout
@@ -19,7 +19,10 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Scotland:** the same topics plus crime use Historic Environment Scotland, NatureScot (`ogc.nature.scot`, also Dynamic
   Coast), SEPA, the Scottish Government and the Scottish Air Quality database: `getScotlandSites` (same shape as
   `getWalesSites`), `getScotlandNoise`, `getScotlandCoast`, `getWasteSites`, `getSimdCrime`, and `isScotland(R)`.
-  `checkPlanningDevolved`/`checkNatureDevolved` serve both Wales and Scotland (`sitesKey(R)`).
+  `checkPlanningDevolved`/`checkNatureDevolved` serve Wales, Scotland and Northern Ireland (`sitesKey(R)`).
+- **Northern Ireland:** planning, nature, noise and coast use the Department for Communities (Historic Environment
+  Division) and DAERA (`gis.daera-ni.gov.uk`): `getNISites`, `getNINoise`, `getNICoast`, and `isNI(R)`. Use the official
+  HED service, not the NIE Networks copies on ArcGIS Online. Flood maps, radon, landslides and coal are not open there.
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
   `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
   in `SERVICES` (`tests/live-check.mjs`) also needs its report topics in `SERVICE_TOPICS`.

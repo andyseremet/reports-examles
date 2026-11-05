@@ -3,7 +3,7 @@
 // Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
 
 function checkPlanning(R) {
-  if (isWales(R) || isScotland(R)) return checkPlanningDevolved(R);
+  if (isWales(R) || isScotland(R) || isNI(R)) return checkPlanningDevolved(R);
   const base = {
     source: { name: "planning.data.gov.uk (Ministry of Housing, Communities and Local Government)", url: LINKS.planningData }
   };
@@ -42,7 +42,7 @@ function checkPlanning(R) {
 }
 
 function checkNature(R) {
-  if (isWales(R) || isScotland(R)) return checkNatureDevolved(R);
+  if (isWales(R) || isScotland(R) || isNI(R)) return checkNatureDevolved(R);
   const base = {
     source: { name: "Natural England data via planning.data.gov.uk; full map on MAGIC", url: LINKS.magic }
   };
@@ -72,8 +72,10 @@ function checkNature(R) {
 // Scotland: Historic Environment Scotland (the same, plus gardens and designed landscapes and battlefields)
 // and the Scottish Government (National Parks and National Scenic Areas).
 function checkPlanningDevolved(R) {
-  const scot = isScotland(R), key = sitesKey(R);
-  const base = { source: scot
+  const scot = isScotland(R), ni = isNI(R), key = sitesKey(R);
+  const base = { source: ni
+    ? { name: "Department for Communities, Historic Environment Division (listed buildings, scheduled monuments, historic parks, battle sites); DAERA (AONBs and the World Heritage Site)", url: LINKS.niHeritageViewer }
+    : scot
     ? { name: "Historic Environment Scotland (listed buildings, conservation areas, monuments, gardens, battlefields, World Heritage Sites); Scottish Government (National Parks and National Scenic Areas)", url: LINKS.hesPortal }
     : { name: "Cadw, Welsh councils' conservation areas and Natural Resources Wales (via DataMapWales)", url: LINKS.dataMapWales } };
   if (!R[key].ok) return unavailable(base, R, key);
@@ -84,25 +86,35 @@ function checkPlanningDevolved(R) {
   const rules = [
     [w.conservation, "Conservation area", "Extra permission is needed for demolition, some extensions, and work on trees."],
     [w.nationalPark, "National Park", "The National Park authority deals with planning, with stricter rules."],
-    [w.landscape, scot ? "National Scenic Area" : "National Landscape", "Stricter planning rules apply to protect the landscape."],
+    [w.landscape, scot ? "National Scenic Area" : ni ? "Area of Outstanding Natural Beauty" : "National Landscape", "Stricter planning rules apply to protect the landscape."],
     [w.heritage, "World Heritage Site", "Development must protect the site's heritage value."],
-    [w.monument, "Scheduled monument", scot ? "Works need consent from Historic Environment Scotland." : "Works need consent from Cadw."],
-    [w.park, scot ? "Garden or designed landscape" : "Registered historic park or garden", "The council must take the park or garden into account when deciding planning applications."],
+    [w.monument, "Scheduled monument", scot ? "Works need consent from Historic Environment Scotland." : ni ? "Works need consent from the Department for Communities." : "Works need consent from Cadw."],
+    [w.park, scot ? "Garden or designed landscape" : ni ? "Historic park, garden or demesne" : "Registered historic park or garden", "The council must take the park or garden into account when deciding planning applications."],
     [w.battlefield || [], "Historic battlefield", "The council must take the battlefield into account when deciding planning applications."]
   ];
   const applies = [...rules.filter(([names]) => names.length).map(([names, name, what]) => ({ name, what, detail: names.slice(0, 3).join("; ") })), ...listedHere];
+  // Northern Ireland publishes no national map of conservation areas, so "nothing found" is never "No issue found".
+  const unknownConservation = !!w.conservationUnknown;
+  const conservationNote = " Conservation areas are not published nationally for Northern Ireland: check with the council.";
   return {
-    ...base, status: applies.length ? "info" : "low",
-    found: applies.length
+    ...base, status: applies.length ? "info" : unknownConservation ? "manual" : "low",
+    ...(!applies.length && unknownConservation && { gap: "coverage" }),
+    found: (applies.length
       ? "Planning restrictions here: " + applies.map(a => a.name).join(", ") + "."
-      : "No conservation area, listed building, National Park or similar restriction found here.",
+      : unknownConservation ? "No listed building, scheduled monument, AONB or similar restriction found here."
+      : "No conservation area, listed building, National Park or similar restriction found here.") + (unknownConservation ? conservationNote : ""),
     details: (applies.length ? `<ul>${applies.map(a => `<li><strong>${escapeHTML(a.name)}</strong>${a.detail ? " (" + escapeHTML(a.detail) + ")" : ""}: ${escapeHTML(a.what)}</li>`).join("")}</ul>` : "") +
       (w.listedNear ? `<p>${w.listedNearCapped ? "More than " + w.listedNear : plural(w.listedNear, "listed building")}${w.listedNearCapped ? " listed buildings" : ""} within ${LISTED_NEAR_M} m.</p>` : ""),
-    meaning: `<p>These rules mainly matter if you plan to extend, alter or build. Conservation areas are drawn by each council;
+    meaning: unknownConservation
+      ? `<p>These rules mainly matter if you plan to extend, alter or build. Conservation areas are drawn by each council and are not
+        published as a national map, so this check cannot rule them out.</p>`
+      : `<p>These rules mainly matter if you plan to extend, alter or build. Conservation areas are drawn by each council;
       the national map may be a little out of date, so check with the council.</p>`,
     actions: [
-      "Search the council's planning website by postcode for applications on and next to the property.",
-      scot ? `Check listed buildings and other historic sites on the ${link(LINKS.hesPortal, "Historic Environment Scotland portal")}.`
+      unknownConservation ? "Ask the council's planning service whether the property is in a conservation area, and search its planning website for applications nearby."
+        : "Search the council's planning website by postcode for applications on and next to the property.",
+      ni ? `Check listed buildings and other historic sites on the ${link(LINKS.niHeritageViewer, "Historic Environment Map Viewer")}.`
+      : scot ? `Check listed buildings and other historic sites on the ${link(LINKS.hesPortal, "Historic Environment Scotland portal")}.`
         : `Check listed buildings and other historic sites in ${link(LINKS.cadw, "Cadw's records")}.`
     ],
     seller: ["Have any extensions or alterations been made? Are there planning permissions and building regulations sign-offs for them?"]
@@ -110,8 +122,10 @@ function checkPlanningDevolved(R) {
 }
 
 function checkNatureDevolved(R) {
-  const scot = isScotland(R), key = sitesKey(R);
-  const base = { source: scot
+  const scot = isScotland(R), ni = isNI(R), key = sitesKey(R);
+  const base = { source: ni
+    ? { name: "DAERA (Northern Ireland Environment Agency) protected areas", url: LINKS.niNatureViewer }
+    : scot
     ? { name: "NatureScot protected sites and Ancient Woodland Inventory", url: LINKS.natureScotSites }
     : { name: "Natural Resources Wales protected sites and Ancient Woodland Inventory 2021 (via DataMapWales)", url: LINKS.walesNature } };
   if (!R[key].ok) return unavailable(base, R, key);
@@ -129,12 +143,12 @@ function checkNatureDevolved(R) {
   return {
     ...base, status: found.length ? "info" : "low",
     found: inSssi
-      ? `The property is inside a Site of Special Scientific Interest (${w.sssi[0]}).`
+      ? `The property is inside ${ni ? "an Area" : "a Site"} of Special Scientific Interest (${w.sssi[0]}).`
       : found.length ? `${counted} ${within}.` : `No protected nature sites ${within}.`,
     details: found.length ? `<ul>${sites.slice(0, 8).map(e => `<li>${escapeHTML(e.kind)}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}${
       woods.length ? `<li>Ancient woodland: ${plural(woods.length, "area")}</li>` : ""}</ul>` : "",
     meaning: "<p>Nature sites are usually a plus for buyers, but they can limit building work or land use nearby." +
-      (inSssi ? ` Inside a Site of Special Scientific Interest, many activities need consent from ${scot ? "NatureScot" : "Natural Resources Wales"}.` : "") + "</p>" +
+      (inSssi ? ` Inside ${ni ? "an Area" : "a Site"} of Special Scientific Interest, many activities need consent from ${scot ? "NatureScot" : ni ? "DAERA" : "Natural Resources Wales"}.` : "") + "</p>" +
       (scot ? "<p>Ancient woodland counts only woods recorded as ancient; the inventory's younger, long-established woods are left out.</p>" : "")
   };
 }
