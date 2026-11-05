@@ -178,7 +178,8 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 /* ---------- saved properties and compare ---------- */
 .saved-list {list-style:none;padding:0;margin:0}
 .saved-list li {display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
-.saved-list .cmp {margin:0;display:flex;align-items:center}
+.saved-list .cmp {margin:0;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.saved-list .cmp span {font-size:11px;color:var(--muted)}
 .saved-list .cmp input {width:20px;height:20px;margin:0}
 .saved-main {flex:1;min-width:0}
 .saved-main a {font-weight:bold}
