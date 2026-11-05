@@ -56,8 +56,9 @@ official checkers.
 - **Back button:** returns from a report to the search and map, and closes the full-screen map.
 - **How current the data is:** each topic shows a **Data:** line, for example "Crimes reported in September 2026" or
   "Noise maps published by Defra in 2022". Saved results older than 3 months are marked, with a suggestion to refresh.
-- **Accessibility:** checked against WCAG 2.2 AA with the axe-core checker (light and dark mode, phone and desktop),
-  plus keyboard focus and tap target sizes (at least 24 × 24 pixels).
+- **Accessibility:** checked against WCAG 2.2 AA with the axe-core checker (light and dark mode, phone and desktop,
+  normal and larger text, down to 320 px wide), plus keyboard focus, focus never hidden behind sticky bars, and tap
+  target sizes (at least 24 × 24 pixels). Last re-checked on 5 November 2026 (version 1.19.0).
 - **Send to my conveyancer:** one button opens your email app with the report link, the topics to look into, and the
   searches and questions from the checklist. **Copy as text** does the same for web email or messaging apps. Nothing
   passes through the app.

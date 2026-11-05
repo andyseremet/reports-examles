@@ -1638,11 +1638,15 @@ window.addEventListener("afterprint", () => {
 });
 
 // "Save or print" menu: close it after a choice, on a click elsewhere, or with Escape.
-const closeSaveMenu = () => { $("saveMenu").open = false; };
-document.querySelectorAll(".save-menu-list button").forEach(b => b.addEventListener("click", closeSaveMenu));
+// refocus: put keyboard focus back on the menu button (after a choice or Escape, the focused item is hidden).
+const closeSaveMenu = refocus => {
+  $("saveMenu").open = false;
+  if (refocus) $("saveMenuBtn").focus({ preventScroll: true });
+};
+document.querySelectorAll(".save-menu-list button").forEach(b => b.addEventListener("click", () => closeSaveMenu(true)));
 document.addEventListener("click", e => { if ($("saveMenu").open && !e.target.closest("#saveMenu")) closeSaveMenu(); });
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && $("saveMenu").open) { closeSaveMenu(); $("saveMenuBtn").focus(); }
+  if (e.key === "Escape" && $("saveMenu").open) closeSaveMenu(true);
 });
 
 $("printReport").addEventListener("click", () => window.print());
