@@ -414,3 +414,17 @@ body.has-sticky footer {padding-bottom:100px}
   .leaflet-control-zoom {display:none}
   @page {size:A4;margin:14mm}
 }
+
+/* ---------- data service status page (status.html) ---------- */
+.status-table td {vertical-align:top}
+.status-days {display:inline-flex;gap:4px;white-space:nowrap}
+.day-dot {display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;background:var(--manual-bg);border:1px solid var(--border)}
+.day-dot.ok {background:var(--low);border-color:var(--low)}
+.day-dot.warn {background:var(--med);border-color:var(--med)}
+.day-dot.fail {background:var(--high);border-color:var(--high)}
+@media (max-width:600px) {
+  .status-table thead {display:none}
+  .status-table tr {display:block;padding:10px 0;border-bottom:1px solid var(--border)}
+  .status-table td {display:block;border:0;padding:3px 0}
+  .status-table td[data-label]:not(:first-child)::before {content:attr(data-label);display:block;font-size:12px;font-weight:bold;color:var(--muted)}
+}
