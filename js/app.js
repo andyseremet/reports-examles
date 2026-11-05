@@ -1102,6 +1102,7 @@ function renderSummary() {
             <span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
       }).join("")}
     </ul>
+    <p class="help strip-hint no-print">Tap a topic to see why. Colours match the boxes above.</p>
     ${whyBox()}
     ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
       <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>

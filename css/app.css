@@ -334,6 +334,7 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 
 
 /* ---------- topic strip ---------- */
+.strip-hint {margin:-10px 0 14px}
 .topic-strip {display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px;margin:4px 0 16px;padding:0;list-style:none}
 .topic-strip li {display:flex}
 .topic-strip .topic {flex:1}
