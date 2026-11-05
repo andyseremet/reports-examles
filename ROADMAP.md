@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.22.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.23.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.22.0)
+## Part 1: What the app does today (version 1.23.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -36,7 +36,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 ### The report
 - Five plain-English ratings: **Look into this / Worth checking / No issue found / For information / Check yourself**.
 - Each topic says what it means, what to do next, and how current its data is.
-- An overall verdict, a "Start here" list, and a box for every topic with no real answer and who to ask instead.
+- Topic cards show **Details ▾** (or **Hide ▴** when open); one **Open all / Close all** button stays on the section
+  bar, which fades at the edge on a phone to show it scrolls (1.23.0).
+- An overall verdict, count boxes that go to the first topic with that rating, a "Start here" list, and a box for every topic with no real answer and who to ask instead.
 - **At the viewing:** up to 12 things to look for and ask on the day, reached with the **Viewing** button.
 - A checklist for the seller and conveyancer; ticks are remembered for each property.
 - **Email** or **Copy** the key points for your conveyancer. Nothing passes through the app.
@@ -76,12 +78,11 @@ Chosen from the quiz on 5 November 2026, one item per version, in this order. Ea
 before it is built. Each version keeps the same habits: bump the version number and the offline cache name together,
 update the README, add new behaviour to the daily check, and never weaken a test to get a pass.
 
-Versions 1.23.0 and 1.24.0 come from the UX review on 5 November 2026 (its first part shipped in 1.22.0): small changes that make the app easier to
+Version 1.24.0 comes from the UX review on 5 November 2026 (its first parts shipped in 1.22.0 and 1.23.0): small changes that make the app easier to
 use, with nothing removed. Each is followed by the accessibility re-check.
 
 | Version | Idea | What it does | Why this order |
 |---|---|---|---|
-| 1.23.0 | Finding your way in the report | Section bar on a phone: a fade shows it scrolls, the current section stays in view, and one pinned button switches between Open all and Close all. Topic cards: a "Details ▾" label, a larger arrow and a highlight show they open. Count boxes in the summary jump to the first topic with that rating. | Helps first-time users find the detail in each topic. |
 | 1.24.0 | Tidier long lists | Each checklist list shows "2 of 7 done". Export and Import fold into a "Move to another device" panel. | Shorter, calmer page on a phone. |
 | 1.25.0 | Compare up to 3 properties | Compare side by side takes up to three saved properties instead of two; phone layout to be decided. | Builds on the existing compare view. |
 | 1.26.0 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales (7 today: land use, coast, noise, air, planning, trees, nature) where Welsh Government or Natural Resources Wales publish live open data. | Largest research task: each source must be checked first. |
