@@ -1568,11 +1568,11 @@ $("shareBtn").addEventListener("click", async () => {
   }
   try {
     await navigator.clipboard.writeText(url);
-    $("shareBtn").textContent = "Link copied ✓";
+    $("shareText").textContent = "Link copied ✓";
   } catch (e) {
     prompt("Copy this link:", url);
   }
-  setTimeout(() => { $("shareBtn").textContent = "Share"; }, 2500);
+  setTimeout(() => { $("shareText").textContent = "Share"; }, 2500);
 });
 
 function downloadFile(filename, content, type) {
