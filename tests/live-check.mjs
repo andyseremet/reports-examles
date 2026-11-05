@@ -277,6 +277,36 @@ async function testDevice(device, [postcode, place]) {
     return icons >= 13 && active === "Living" ? `${icons} icons, section bar ok` : false;
   });
 
+  await step("Finding your way: count boxes, Open all and Details", async () => {
+    // A count box goes to the first topic with that rating, opens it, and leaves it below the section bar.
+    const box = page.locator("a.count").first();
+    if (!(await box.count())) throw new Error("no count box is a link");
+    const id = await box.getAttribute("data-open");
+    await page.evaluate(i => { document.getElementById(i).open = false; }, id);
+    await box.click();
+    await page.waitForTimeout(1200);
+    const r = await page.evaluate(i => {
+      const d = document.getElementById(i), bar = document.getElementById("reportNav").getBoundingClientRect().bottom;
+      return { open: d.open, below: d.getBoundingClientRect().top >= bar - 1, focus: d.contains(document.activeElement),
+        label: getComputedStyle(d.querySelector(".more-text"), "::before").content };
+    }, id);
+    if (!r.open || !r.focus) throw new Error(`the count box did not open and focus ${id}`);
+    if (!r.below) throw new Error(`${id} is hidden under the section bar`);
+    if (r.label !== '"Hide"') throw new Error(`an open topic says ${r.label}, not "Hide"`);
+    // One button opens every topic, then closes them all.
+    const toggle = async () => { await page.click("#toggleAll"); return page.evaluate(() =>
+      [document.getElementById("toggleAll").textContent, [...document.querySelectorAll("#report details.check")].filter(d => d.open).length,
+       document.querySelectorAll("#report details.check").length]); };
+    const [t1, open1, all] = await toggle();
+    const [t2, open2] = await toggle();
+    if (t1 !== "Close all" || open1 !== all) throw new Error(`after Open all: "${t1}", ${open1} of ${all} open`);
+    if (t2 !== "Open all" || open2 !== 0) throw new Error(`after Close all: "${t2}", ${open2} still open`);
+    // The button stays on screen, even on a phone.
+    const onScreen = await page.$eval("#toggleAll", b => { const x = b.getBoundingClientRect(); return x.left >= 0 && x.right <= innerWidth; });
+    if (!onScreen) throw new Error("the Open all button is off the screen");
+    return `${id.replace("check-", "")} opened; ${all} topics opened and closed`;
+  });
+
   await step("Data gaps box lists every topic without an answer", async () => {
     // Every "Check yourself" or "Not available" topic must appear in the box, with a way to check it
     // instead, and not in "Start here"; with no such topics, the box is hidden.
