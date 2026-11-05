@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.17.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.18.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -13,7 +13,7 @@ Property Location Check: what the app does today, and what is planned next.
 
 ---
 
-## Part 1: What the app does today (version 1.17.0)
+## Part 1: What the app does today (version 1.18.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -103,6 +103,8 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 - Back button returns from a report to the map and closes the full-screen map.
 - Privacy: no account, cookies or tracking; "Privacy: what is sent where" explains every outside request.
 - A short footer with the required licence statements; "Data credits and licences" opens the full list.
+- A **Data service status** page (linked from the footer and from "Service not answering" rows): each official data
+  service's result in this morning's automatic check, the report topics it feeds, and the last 7 days.
 
 ### Behind the scenes
 - Since 1.16.0 the code is split into files: `index.html` (the page), `css/app.css` (styles) and `js/` (core,
@@ -122,8 +124,7 @@ update the README, add new behaviour to the daily check, and never weaken a test
 
 | Version | Idea | What it does | Why this order |
 |---|---|---|---|
-| 1.18.0 | Data service health page | A simple page showing which outside data services worked in today's automatic check, so a buyer can see when a topic is down for everyone. | Already planned; small; helps explain "Service not answering" in the data gaps box. |
-| 1.19.0 | Accessibility re-check | Repeat the WCAG 2.2 AA check (light and dark, phone and desktop) after the 1.15.0 to 1.17.0 visual changes: the new menu, folded sections, labels and contrast. | Best done soon after the visual changes, before more are added. |
+| 1.19.0 | Accessibility re-check | Repeat the WCAG 2.2 AA check (light and dark, phone and desktop) after the 1.15.0 to 1.18.0 visual changes: the new menu, folded sections, labels, the status page and contrast. | Best done soon after the visual changes, before more are added. |
 | 1.20.0 | Faster reports | Aim for every report in under 10 seconds; while waiting, say which service is slow. Must not add requests to the Environment Agency map server. | Speed helps every visitor on every report. |
 | 1.21.0 | Viewing checklist | A short list of things to look for and ask on the day of a viewing, built from this report's results; easy to use on a phone, and works offline for saved properties. | Turns the report into action at the viewing. |
 | 1.22.0 | Compare up to 3 properties | Compare side by side takes up to three saved properties instead of two; phone layout to be decided. | Builds on the existing compare view. |
