@@ -18,6 +18,7 @@ England. Pick a location on the map and it checks official data for:
 | Protected trees (Tree Preservation Orders) and Article 4 areas, and whether the council publishes this data | Councils, via planning.data.gov.uk |
 | Protected nature sites | Natural England, via planning.data.gov.uk |
 | Reported crime, and crime per 1,000 residents compared with England and Wales (where the police force publishes its data) | data.police.uk; ONS boundaries; Census 2021 residents (saved in `data/census2021-msoa-residents.json`); ONS crime and population figures |
+| Recent sale prices of homes within 500 m in the last 3 years: median price by type and the 10 most recent sales (England and Wales) | HM Land Registry Price Paid Data (Open Government Licence; contains HM Land Registry data © Crown copyright and database right) |
 | Schools, GP surgeries, pharmacies, railway stations, tram and bus stops | Department for Education and NaPTAN (via planning.data.gov.uk); NHS Organisation Data Service; NaPTAN rail stations (saved in `data/rail-stations.json`) |
 
 Each result is given a plain-English rating (Look into this / Worth checking /
@@ -102,7 +103,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 - **On every pull request** that changes the page, against the proposed version, before it is merged.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
-It checks that all 22 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
+It checks that all 23 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, coastal erosion on an eroding coast, Send to my conveyancer, Back and Forward, saved reports and notes,
 printing and downloads. Results,
