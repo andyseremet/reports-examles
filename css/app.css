@@ -204,6 +204,18 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .toolbar button {padding:9px 14px;font-size:14px}
 .icon-label {display:inline-flex;align-items:center;gap:6px}
 .icon-label svg {flex:none}
+.save-menu {position:relative}
+.save-menu > summary {list-style:none;cursor:pointer;padding:9px 14px;font-size:14px;font-weight:bold;border-radius:6px;
+  background:var(--surface-2);color:var(--heading);border:1px solid var(--border);min-height:24px}
+.save-menu > summary::-webkit-details-marker {display:none}
+.save-menu-list {position:absolute;right:0;top:calc(100% + 4px);z-index:20;min-width:270px;display:flex;flex-direction:column;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px}
+.save-menu-list button {display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:none;border:0;
+  color:var(--heading);font-weight:bold;padding:10px 12px;border-radius:6px;cursor:pointer}
+.save-menu-list button:hover,.save-menu-list button:focus-visible {background:var(--surface-2)}
+.save-menu-list button:disabled {opacity:.5;cursor:default}
+.save-menu-list small {font-weight:normal;color:var(--muted);font-size:13px;margin-top:2px}
+@media (max-width:600px) { .save-menu-list {right:auto;left:0} }
 @media (max-width:600px) { .toolbar {justify-content:flex-start} }
 .report-nav {
   position:sticky;top:0;z-index:1100;display:flex;gap:4px;align-items:center;overflow-x:auto;white-space:nowrap;

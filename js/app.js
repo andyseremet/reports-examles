@@ -1635,6 +1635,14 @@ window.addEventListener("afterprint", () => {
   document.body.classList.remove("print-summary");
 });
 
+// "Save or print" menu: close it after a choice, on a click elsewhere, or with Escape.
+const closeSaveMenu = () => { $("saveMenu").open = false; };
+document.querySelectorAll(".save-menu-list button").forEach(b => b.addEventListener("click", closeSaveMenu));
+document.addEventListener("click", e => { if ($("saveMenu").open && !e.target.closest("#saveMenu")) closeSaveMenu(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("saveMenu").open) { closeSaveMenu(); $("saveMenuBtn").focus(); }
+});
+
 $("printReport").addEventListener("click", () => window.print());
 
 // Short printout: cover, summary, notes and checklist only.

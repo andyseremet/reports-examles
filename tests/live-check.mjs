@@ -364,7 +364,10 @@ async function testDevice(device, [postcode, place]) {
     await page.pdf({ path: `${OUT}/${device.name.replace(/\W+/g, "-")}-summary.pdf`, format: "A4" });
     await page.emulateMedia({ media: "screen" });
     await page.evaluate(() => { document.body.classList.remove("print-summary"); dispatchEvent(new Event("afterprint")); });
+    // Open the "Save or print" menu, as a person would, then choose Download report.
+    await page.click("#saveMenuBtn");
     const [download] = await Promise.all([page.waitForEvent("download"), page.click("#downloadHtml")]);
+    if (await page.$eval("#saveMenu", d => d.open)) throw new Error("the Save or print menu stayed open after choosing");
     await download.saveAs(`${OUT}/${device.name.replace(/\W+/g, "-")}-report.html`);
     return download.suggestedFilename();
   });
