@@ -583,6 +583,7 @@ body.has-sticky footer {padding-bottom:100px}
   Property Location Check · Contains public sector information licensed under the Open Government Licence v3.0 ·
   Map data © OpenStreetMap contributors, © Esri and © CARTO · Air quality model: Copernicus Atmosphere Monitoring Service via Open-Meteo ·
   Postcode data: Office for National Statistics via postcodes.io · Schools: Department for Education · GP surgeries and pharmacies: NHS Organisation Data Service · Stops and stations: NaPTAN (Department for Transport) ·
+  Sold prices: contains HM Land Registry data © Crown copyright and database right ·
   Flood maps for Scotland and Wales: SEPA and Natural Resources Wales · Census 2021 via Nomis
   <p><button class="link-btn" type="button" data-info aria-expanded="false" aria-controls="info-privacy">Privacy: what is sent where</button>
      · <span id="appVersion"></span></p>
@@ -594,7 +595,7 @@ body.has-sticky footer {padding-bottom:100px}
       <li><strong>The pin's location</strong> (latitude and longitude) goes to postcodes.io, planning.data.gov.uk, the Environment Agency,
           the British Geological Survey, the Mining Remediation Authority, Open-Meteo, data.police.uk, the NHS Organisation Data Service,
           the Office for National Statistics (local area boundaries), and for Scotland and Wales, SEPA and Natural
-          Resources Wales, to get the results.</li>
+          Resources Wales, to get the results. The postcodes within 500 m go to HM Land Registry, for recent sale prices.</li>
       <li><strong>The map pictures</strong> come from Esri, OpenStreetMap or CARTO, which see which area of the map is shown.</li>
       <li><strong>Your device's location</strong> is used only when you press the location button, to place the pin.</li>
       <li><strong>Saved properties, checklist ticks and settings</strong> stay in this browser only. Remove them with “Remove”, or by clearing
@@ -632,6 +633,7 @@ const API = {
   sepaFlood: "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer",
   nrwFlood: "https://datamap.gov.wales/geoserver/ows",
   ods: "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations",
+  landRegistry: "https://landregistry.data.gov.uk/landregistry/query",
   msoaBoundary: "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query"
 };
 
@@ -667,7 +669,9 @@ const LINKS = {
   whoNoise: "https://www.who.int/europe/publications/i/item/9789289053563",
   whoAir: "https://www.who.int/publications/i/item/9789240034228",
   whoRadon: "https://www.who.int/publications/i/item/9789241547673",
-  ukRadonLevels: "https://www.ukradon.org/information/level"
+  ukRadonLevels: "https://www.ukradon.org/information/level",
+  soldPrices: "https://www.gov.uk/search-house-prices",
+  pricePaidData: "https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads"
 };
 
 const PLANNING_AT_POINT = [
@@ -701,8 +705,8 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
 
 const REQUEST_TIMEOUT = 25000;
-const APP_VERSION = "1.13.0";
-const APP_UPDATED = "4 November 2026";
+const APP_VERSION = "1.14.0";
+const APP_UPDATED = "5 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
 let selected = null;      // {lat, lon, label}
@@ -1925,6 +1929,38 @@ function policeDataMissing(crime, area) {
   return !!area && crime.total <= 5 && area.total <= 2;
 }
 
+// Recent home sales near the pin, from HM Land Registry Price Paid Data (England and Wales).
+// The data has no map positions, so we ask postcodes.io for the postcodes within SOLD_RADIUS_M,
+// then ask Land Registry for standard sales of houses and flats in those postcodes.
+const SOLD_RADIUS_M = 500, SOLD_YEARS = 3;
+const SOLD_TYPES = { detached: "Detached", "semi-detached": "Semi-detached", terraced: "Terraced", "flat-maisonette": "Flat" };
+
+async function getSoldPrices(loc) {
+  const near = await fetchJSON(API.postcodes + "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=" + SOLD_RADIUS_M + "&limit=100");
+  const postcodes = (near.result || []).map(r => r.postcode).filter(pc => /^[A-Z0-9 ]+$/.test(pc || ""));
+  if (!postcodes.length) return { postcodes: 0, sales: [] };
+  const since = new Date();
+  since.setFullYear(since.getFullYear() - SOLD_YEARS);
+  const query = `PREFIX ppi: <http://landregistry.data.gov.uk/def/ppi/>
+    PREFIX lrc: <http://landregistry.data.gov.uk/def/common/>
+    SELECT ?price ?date ?type ?newBuild ?street WHERE {
+      VALUES ?pc { ${postcodes.map(pc => `"${pc}"`).join(" ")} }
+      ?address lrc:postcode ?pc .
+      ?sale ppi:propertyAddress ?address ; ppi:pricePaid ?price ; ppi:transactionDate ?date ;
+        ppi:propertyType ?type ; ppi:transactionCategory ppi:standardPricePaidTransaction .
+      OPTIONAL { ?sale ppi:newBuild ?newBuild }
+      OPTIONAL { ?address lrc:street ?street }
+      FILTER(?date >= "${since.toISOString().slice(0, 10)}"^^<http://www.w3.org/2001/XMLSchema#date>)
+    } ORDER BY DESC(?date) LIMIT 1000`;
+  const d = await fetchJSON(API.landRegistry + "?query=" + encodeURIComponent(query));
+  const sales = (d.results?.bindings || []).map(b => ({
+    price: Number(b.price.value), date: b.date.value,
+    type: b.type.value.split("/").pop(), newBuild: b.newBuild?.value === "true",
+    street: b.street?.value || ""
+  })).filter(x => SOLD_TYPES[x.type] && x.price > 0);
+  return { postcodes: postcodes.length, sales };
+}
+
 const TASKS = [
   ["place", "Nearest postcode and council", getPlace],
   ["planningPoint", "Flood zone and planning rules at the property", getPlanningAtPoint],
@@ -1938,6 +1974,7 @@ const TASKS = [
   ["landslides", "Landslides", getLandslides],
   ["coastal", "Coastal erosion", getCoastalErosion],
   ["crime", "Reported crime", getCrime],
+  ["soldPrices", "Recent sale prices nearby", getSoldPrices],
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater],
   ["floodNational", "Scotland and Wales flood maps", getFloodNational],
   ["amenities", "Schools, doctors and transport", getAmenities],
@@ -2365,6 +2402,64 @@ function checkCoastal(R) {
   };
 }
 
+function median(values) {
+  const v = [...values].sort((a, b) => a - b), mid = v.length >> 1;
+  return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;
+}
+
+const pounds = n => "£" + Math.round(n).toLocaleString("en-GB");
+
+function checkSoldPrices(R) {
+  const base = {
+    source: { name: "HM Land Registry Price Paid Data", url: LINKS.pricePaidData },
+    dataDate: "Sales are added about 1 to 2 months after they complete. Checked live on " + today()
+  };
+  if (!R.soldPrices.ok) return unavailable(base, R, "soldPrices");
+  const { sales } = R.soldPrices.value;
+  const where = `within ${formatRadius(SOLD_RADIUS_M)} in the last ${SOLD_YEARS} years`;
+  const licence = `<p>Contains HM Land Registry data © Crown copyright and database right ${new Date().getFullYear()}.
+    This data is licensed under the Open Government Licence v3.0.</p>`;
+  const searchLink = link(LINKS.soldPrices, "Search house price data on GOV.UK");
+  if (!sales.length) {
+    return {
+      ...base, status: "manual",
+      found: `No home sales were found ${where}.`,
+      meaning: `<p>This does not mean homes here have no value: there may simply have been no sales recorded nearby,
+        or the area has few postcodes. Ask local estate agents, and look further afield.</p>${licence}`,
+      actions: [`Look up sale prices for nearby streets on ${searchLink}.`]
+    };
+  }
+  const rows = Object.entries(SOLD_TYPES).map(([key, label]) => {
+    const prices = sales.filter(x => x.type === key).map(x => x.price);
+    return prices.length ? `<tr><td>${label}</td><td>${prices.length}</td><td>${pounds(median(prices))}</td>
+      <td>${pounds(Math.min(...prices))} to ${pounds(Math.max(...prices))}</td></tr>` : "";
+  }).join("");
+  const recent = sales.slice(0, 10).map(x => `<tr><td>${escapeHTML(new Date(x.date).toLocaleDateString("en-GB", { month: "short", year: "numeric" }))}</td>
+    <td>${pounds(x.price)}</td><td>${SOLD_TYPES[x.type]}${x.newBuild ? ' <span class="chip">New build</span>' : ""}</td>
+    <td>${escapeHTML(x.street ? x.street.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : "Not given")}</td></tr>`).join("");
+  return {
+    ...base, status: "info",
+    found: `${plural(sales.length, "home sale")} ${where}. The median price was ${pounds(median(sales.map(x => x.price)))}.`,
+    details: `<div class="table-wrap"><table><thead><tr><th>Type</th><th>Sales</th><th>Median price</th><th>Range</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+      <p><strong>Most recent sales</strong></p>
+      <div class="table-wrap"><table><thead><tr><th>Sold</th><th>Price</th><th>Type</th><th>Street</th></tr></thead>
+      <tbody>${recent}</tbody></table></div>`,
+    meaning: `<p>These are completed sales of houses and flats at market value, recorded by HM Land Registry. Sales of
+      shops, offices and homes bought in bulk are left out. Prices depend on size, condition and the exact street, so use
+      them as a rough guide only.</p>
+      <p>The ${term("median", "The middle price when all sales are put in order")} is the middle price: half the homes sold for more and
+      half for less. A few very high or low sales change it less than they would change an average.</p>
+      <p>A “New build” tag marks a newly built home; these often sell for more than similar older homes nearby.</p>${licence}`,
+    actions: [
+      `See every sale on a street on ${searchLink}.`,
+      "Compare the asking price with similar homes sold nearby, and ask the estate agent which sales they used to set it."
+    ],
+    seller: ["What did you pay for the property, and what work has been done since?"],
+    conveyancer: ["Does the price paid history on the title register match what the seller has told us?"]
+  };
+}
+
 function noiseComparison(db) {
   if (db < 45) return "very quiet";
   if (db < 55) return "like a quiet residential street";
@@ -2700,7 +2795,7 @@ function checkNature(R) {
 const GROUPS = [
   { id: "flood", title: "Flooding", intro: "Flood risk from rivers, the sea and heavy rain." },
   { id: "ground", title: "Ground and land", intro: "What is in or under the ground: mining, radon, landfill, contamination, ground movement and coastal erosion." },
-  { id: "living", title: "Living environment", intro: "What it is like to live here: noise, air quality, nearby schools, doctors and transport, and crime." },
+  { id: "living", title: "Living environment", intro: "What it is like to live here: noise, air quality, nearby schools, doctors and transport, crime, and recent sale prices." },
   { id: "planning", title: "Planning and surroundings", intro: "Rules that affect changes to the property, and protected places nearby." }
 ];
 
@@ -2717,6 +2812,7 @@ const CHECKS = [
   { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air"], build: checkAir },
   { id: "amenities", group: "living", title: "Schools, doctors and transport", deps: ["amenities"], build: checkAmenities },
   { id: "crime", group: "living", title: "Reported crime", deps: ["crime", "crimeArea"], build: checkCrime },
+  { id: "soldprices", group: "living", title: "Recent sale prices nearby", deps: ["soldPrices"], build: checkSoldPrices },
   { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby"], build: checkPlanning },
   { id: "trees", group: "planning", title: "Protected trees and Article 4 areas", deps: ["planningPoint", "trees"], build: checkTrees },
   { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby"], build: checkNature }
@@ -2729,7 +2825,8 @@ const TOPIC_ICONS = {
   flood: ["🌊", "Flood"], coal: ["⛏️", "Coal"], radon: ["☢️", "Radon"], landuse: ["🗑️", "Land use"],
   landslides: ["⛰️", "Ground"], noise: ["🔊", "Noise"],
   air: ["💨", "Air"], crime: ["🚓", "Crime"], planning: ["🏛️", "Planning"], nature: ["🌳", "Nature"],
-  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"], trees: ["🌲", "Trees"], coastal: ["🏖️", "Coast"]
+  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"], trees: ["🌲", "Trees"], coastal: ["🏖️", "Coast"],
+  soldprices: ["💷", "Prices"]
 };
 
 // Every check waits for the nearest-postcode lookup, which tells us the country.
@@ -2739,7 +2836,7 @@ CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
 // "Check yourself" and links to the right national service, instead of a
 // misleading "No issue found".
 const COVERAGE = {
-  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England"], coastal: ["England"], noise: ["England"],
+  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England"], coastal: ["England"], soldprices: ["England", "Wales"], noise: ["England"],
   air: ["England"], planning: ["England"], trees: ["England"], nature: ["England"],
   crime: ["England", "Wales", "Northern Ireland"],
   coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"]

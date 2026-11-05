@@ -58,6 +58,10 @@ const SERVICES = [
   ["Historic landfill (Environment Agency)", `https://environment.data.gov.uk/spatialdata/historic-landfill/ogc/features/v1/collections/Historic_Landfill_Sites/items?f=json&limit=5&bbox=${LON - 0.02},${LAT - 0.02},${LON + 0.02},${LAT + 0.02}`, d => Array.isArray(d.features)],
   ["Coastal erosion (Environment Agency)", "https://environment.data.gov.uk/spatialdata/ncern-national-2024/ogc/features/v1/collections/NCERM_SMP_2105_70CC/items?f=json&limit=5&bbox=1.52,52.82,1.54,52.83",
     d => Array.isArray(d.features) && d.features.some(f => f.properties.smp2105_70 > 0)],
+  ["Sold prices (HM Land Registry)", "https://landregistry.data.gov.uk/landregistry/query?query=" + encodeURIComponent(
+    'PREFIX ppi: <http://landregistry.data.gov.uk/def/ppi/> PREFIX lrc: <http://landregistry.data.gov.uk/def/common/> ' +
+    'SELECT ?price WHERE { VALUES ?pc { "S70 2TA" "S70 1SL" "S70 2AT" } ?a lrc:postcode ?pc . ?s ppi:propertyAddress ?a ; ppi:pricePaid ?price } LIMIT 5'),
+    d => d.results && d.results.bindings.length > 0],
   ["Air quality model (Open-Meteo)", `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&hourly=pm2_5&past_days=1&forecast_days=0&timeformat=unixtime`, d => d.hourly && d.hourly.pm2_5.length > 0],
   ["Crime (data.police.uk)", `https://data.police.uk/api/crimes-street/all-crime?lat=${LAT}&lng=${LON}`, d => Array.isArray(d) && d.length > 0],
   ["Police force for a place (data.police.uk)", `https://data.police.uk/api/locate-neighbourhood?q=${LAT},${LON}`, d => d.force === "south-yorkshire"],
@@ -289,6 +293,20 @@ async function testDevice(device, [postcode, place]) {
     if (r.error) throw new Error(r.error);
     if (!["high", "medium"].includes(r.status)) throw new Error(`rated "${r.status}": ${r.found}`);
     return r.found.slice(0, 90) + "…";
+  });
+
+  await step("Sold prices: sales in a town, Check yourself where there are none", async () => {
+    // Barnsley town centre has home sales every year. Open moorland on Dartmoor has no postcodes within
+    // 500 m, so no sales: that must say "Check yourself", never "No issue found".
+    const r = await page.evaluate(async () => {
+      const rate = async loc => checkSoldPrices({ loc, soldPrices: { ok: true, value: await getSoldPrices(loc) } });
+      const town = await rate({ name: "Barnsley test", lat: 53.5526, lon: -1.4797, radius: 1000 });
+      const moor = await rate({ name: "Dartmoor test", lat: 50.6, lon: -3.96, radius: 1000 });
+      return { town: town.status, townFound: town.found, moor: moor.status };
+    });
+    if (r.town !== "info") throw new Error(`Barnsley rated "${r.town}": ${r.townFound}`);
+    if (r.moor !== "manual") throw new Error(`Dartmoor (no sales) rated "${r.moor}", expected Check yourself`);
+    return r.townFound.replace(/<[^>]+>/g, "").slice(0, 90) + "…";
   });
 
   await step("Send to my conveyancer", async () => {

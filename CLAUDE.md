@@ -9,6 +9,8 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
 - Serve locally: `python3 -m http.server 8080` (the app needs http, not `file://`).
 - Syntax check:
   `node -e "new Function(require('fs').readFileSync('index.html','utf8').split('<script>').slice(-1)[0].split('</script>')[0])" && node --check sw.js`
+  A project hook (`.claude/settings.json`, `.claude/hooks/syntax-check.sh`) runs it after every edit to `index.html`
+  or `sw.js`. Fix any error it reports before going on.
 - Full test: `npm install --no-save playwright@1.49.1 && npx playwright install chromium`, then
   `BASE=http://localhost:8080/ PAUSE_MS=0 node tests/live-check.mjs` (local copy) or `node tests/live-check.mjs`
   (live site, about 6 minutes).
@@ -28,9 +30,22 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
   about 15 requests a minute. Do not add requests to it, and keep its pacing in `PACED_HOSTS`.
 - **Adding a topic:** a fetch function, then rows in `TASKS`, `CHECKS`, `TOPIC_ICONS`, `COVERAGE` (if it does not
   cover all of England, Wales and Scotland), and `SERVICES` in `tests/live-check.mjs`.
-- **Releases:** any change to `index.html`, `sw.js` or `data/` raises `APP_VERSION` (`index.html`) and `CACHE`
+- **Releases** (run `/release`, see `.claude/skills/release/SKILL.md`): any change to `index.html`, `sw.js` or `data/` raises `APP_VERSION` (`index.html`) and `CACHE`
   (`sw.js`, `plc-vN`) together. In the same commit, update `README.md`, and move the shipped items in `ROADMAP.md`
   into Part 1.
+
+## Working with the owner
+
+- **Plan first for larger work:** before a new topic, a new version, or a change across several files, give a short
+  plan and ask quiz-style questions (with a recommended answer). Small fixes need no quiz.
+- **Steady changes:** improve in small steps; no redesigns, new libraries or build step without asking. English only.
+- **Small commits:** one change per commit, with a clear message.
+- **Pull requests:** open one only when asked, and never merge or approve; the owner merges. After a merge, restart
+  the working branch from `origin/main`.
+- **Check the live page after every merge:** once GitHub Pages has updated (a few minutes), confirm the live site
+  shows the new `APP_VERSION` and `sw.js` serves the new `CACHE`, then run `node tests/live-check.mjs` against it.
+  Report the pass count in plain English; an Environment Agency HTTP 403 "warn" is the only allowed non-pass.
+- **Keep this file current:** at the end of a task, suggest any instruction the owner repeated as a new rule here.
 
 ## Tests and CI
 

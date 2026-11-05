@@ -2,8 +2,8 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.13.0** (live at https://andyseremet.github.io/reports-examles/)
-- Last updated: 4 November 2026
+- Current version: **1.14.0** (live at https://andyseremet.github.io/reports-examles/)
+- Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
 - Data rule: outside data is saved with the app only when it is certain never to change; everything else is checked
@@ -11,7 +11,7 @@ Property Location Check: what the app does today, and what is planned next.
 
 ---
 
-## Part 1: What the app does today (version 1.13.0)
+## Part 1: What the app does today (version 1.14.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -32,6 +32,7 @@ Property Location Check: what the app does today, and what is planned next.
 | Living environment | Road traffic noise (day and night) | Defra noise mapping, Round 4 |
 | Living environment | Air quality | Council Air Quality Management Areas; Copernicus CAMS via Open-Meteo |
 | Living environment | Reported crime, and crime per 1,000 residents (where the police force publishes data) | data.police.uk; ONS; Census 2021 (saved with the app) |
+| Living environment | Recent sale prices: home sales within 500 m in the last 3 years, median price by type, the 10 most recent sales, new builds marked (England and Wales) | HM Land Registry Price Paid Data |
 | Planning and surroundings | Planning restrictions and heritage | planning.data.gov.uk |
 | Planning and surroundings | Protected trees (Tree Preservation Orders) and Article 4 areas | Councils, via planning.data.gov.uk |
 | Planning and surroundings | Protected nature sites | Natural England, via planning.data.gov.uk |
@@ -42,6 +43,10 @@ council for the location has published them: if not, the topic says "Check yours
 
 Coastal erosion is checked within 1 km of the property; inland it says "Not near the coast". The Environment Agency
 says its map is a national guide and cannot give exact details for a single property, and the report says so.
+
+Sold prices count only standard sales of houses and flats; shops, offices and bulk sales are left out. The data
+has no map positions, so the app finds the postcodes within 500 m (postcodes.io) and asks Land Registry for their
+sales. Where none are found, the topic says "Check yourself". Sales appear about 1 to 2 months after they complete.
 
 Topics with no free live data (for example rail and aircraft noise, Japanese knotweed) are listed with links to
 the official checkers. Topics not covered in Wales or Scotland say "Check yourself" and link to the national service.
@@ -89,7 +94,7 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 
 ### Behind the scenes
 - An automatic check runs every day against the live site, and on every pull request before it is merged. It
-  tests all 22 outside data services, the 2 data files saved with the app, and the full report on a desktop, a phone
+  tests all 23 outside data services, the 2 data files saved with the app, and the full report on a desktop, a phone
   and a tablet. A failure opens a "Live check failed" issue on GitHub.
 
 ---
@@ -100,28 +105,12 @@ Chosen from the quiz on 4 November 2026. Each version keeps the same habits: bum
 offline cache name together, update the README, add the new topic to the daily check, and never weaken a test to get
 a pass.
 
-### Version 1.14.0: Power lines and pylons
-
-**New topic: Power lines and pylons** (Living environment)
-- What it tells the buyer: distance to high-voltage overhead lines, pylons and large substations nearby.
-- Data to investigate first:
-  - National Grid Electricity Distribution publishes 11 kV, 33 kV, 66 kV and 132 kV overhead lines and towers, but
-    only for its own areas (Midlands, South West and South Wales), under its own Shared Data Licence.
-  - The main 275 kV and 400 kV network (National Grid Electricity Transmission) is published as downloads, not as a
-    live service.
-- **Decision needed before building:** this data is mostly downloads, not live services, and new lines are built, so
-  it is **not** fixed data. Under the data rule it should not be saved with the app. Options:
-  1. use it only if a live service that web pages can read is found;
-  2. or drop the topic and link to the official maps instead.
-- England first, in line with the coverage choice.
-
 ### Chosen next ideas (not yet given a version number)
 
 | Idea | What it does |
 |---|---|
 | Data gaps box | A short box at the top of the report listing the topics where the app could not give a real answer (no data published, not covered, or a service down), and who to ask instead. |
 | Simpler print options | One "Print or save as PDF" button with a choice of short summary or full report, instead of separate buttons. |
-| Sold prices nearby | Recent sale prices within the search distance, from HM Land Registry Price Paid data (Open Government Licence). It changes monthly, so it would be a live check. Before building, confirm a web page can read it directly. |
 | Data service health page | A simple page showing which outside data services worked in today's automatic check, so a buyer can see when a topic is down for everyone. |
 
 ---
@@ -140,6 +129,7 @@ Suggested in the quiz but not chosen this time. They can be picked up in a futur
 | Remove "Download report" | Considered on 4 November 2026 and kept; may be covered by "Simpler print options". |
 | Remove the latitude and longitude boxes | Considered on 4 November 2026 and kept, in Advanced options. |
 | Remove or reduce railway noise, landslides, aircraft | Considered on 4 November 2026 and kept as they are. |
+| Power lines and pylons | Dropped on 5 November 2026: the data is mostly downloads, not live services, and it changes as lines are built. Buyers can use the official network maps instead. |
 | Softer air quality rating | Considered on 4 November 2026; the council hotspot stays "Worth checking". |
 
 ## Known issues
