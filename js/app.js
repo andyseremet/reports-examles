@@ -614,7 +614,9 @@ function runChecks(options = {}) {
     lat: selected.lat, lon: selected.lon, radius: Number($("radius").value)
   };
 
-  run = { loc, R: { loc }, results: {}, done: false };
+  run = { loc, R: { loc }, results: {}, done: false, startedAt: Date.now() };
+  const thisRun = run;
+  setTimeout(() => { if (run === thisRun && !run.done) renderSummary(); }, SLOW_NOTE_MS);
   reportData = null;
   $("runBtn").disabled = true;
   featureLayer.clearLayers();
@@ -697,6 +699,20 @@ function openReportFromAddress(options) {
   const snap = selected && findSnapshot({ lat: selected.lat, lon: selected.lon, radius: Number($("radius").value) });
   if (snap) showSnapshot(snap, options.fromHistory ? { fromHistory: true } : {}); else runChecks(options);
   return true;
+}
+
+// After 8 seconds, a report still loading names the services it is waiting for.
+const SLOW_NOTE_MS = 8000;
+function slowNote() {
+  if (run.done || !run.startedAt || Date.now() - run.startedAt < SLOW_NOTE_MS) return "";
+  const waiting = {};
+  TASKS.filter(([key]) => !run.R[key]).forEach(([, topic, , service]) => (waiting[service] ||= []).push(topic));
+  const items = Object.entries(waiting).map(([service, topics]) =>
+    `<li><strong>${escapeHTML(service)}</strong>: ${topics.map(escapeHTML).join(", ")}</li>`).join("");
+  return items && `<div class="notice slow-note no-print"><p>Still waiting for ${Object.keys(waiting).length > 1 ? "these services" : "this service"}.
+      Topics that are ready are shown below.</p><ul>${items}</ul>
+      <p class="help">Slow services usually answer within a minute. If one does not, its topic shows “Try again”.
+      <a href="status.html">Data service status</a></p></div>`;
 }
 
 // A topic whose data fails is tried once more by itself: after 20 seconds,
@@ -1068,7 +1084,7 @@ function renderSummary() {
   if (!run.done) {
     verdict = `<p class="verdict">Checking official data… <strong>${ready} of ${CHECKS.length}</strong> topics ready.</p>
       <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${CHECKS.length}" aria-valuenow="${ready}">
-        <span style="width:${Math.round(ready / CHECKS.length * 100)}%"></span></div>`;
+        <span style="width:${Math.round(ready / CHECKS.length * 100)}%"></span></div>${slowNote()}`;
   } else if (n("high") || n("medium")) {
     verdict = `<p class="verdict">We found <strong>${plural(n("high"), "thing")} to look into</strong> and
       <strong>${n("medium")} worth checking</strong>. ${plural(n("low"), "check")} found no issue.${notCoveredText}</p>`;

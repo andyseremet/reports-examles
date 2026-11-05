@@ -46,7 +46,8 @@ official checkers.
 - **Map:** on phones, scroll the page with one finger and move the map with two; on computers, use Ctrl (⌘ on Mac)
   + scroll to zoom. Full-screen map button, "my location" button, satellite and street backgrounds.
 - **Report:** results appear topic by topic as the data arrives. A topic whose data fails is tried once more by itself
-  after 20 seconds; if it fails again, it shows a **Try again** button.
+  after 20 seconds; if it fails again, it shows a **Try again** button. If the report is still loading after 8
+  seconds, the summary names the services it is waiting for, and their topics.
   A section bar stays at the top while scrolling, with **Open all / Close all** and a back-to-top button.
 - **Save and share:** every report is saved on your device (nothing is sent anywhere). Reopen saved properties,
   **compare two side by side**, tick off the checklist (remembered per property), and share with the phone's share menu.
@@ -131,7 +132,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 
 It checks that all 23 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
-full screen, the offline message, the section bar, the topic icons, coastal erosion on an eroding coast, Send to my conveyancer, Back and Forward, saved reports and notes,
+full screen, the offline message, the section bar, the topic icons, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, Send to my conveyancer, Back and Forward, saved reports and notes,
 printing and downloads. Results,
 screenshots and sample reports are kept for 14 days with each run.
 

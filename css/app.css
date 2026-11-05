@@ -332,6 +332,8 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
 .notes-download {display:block;padding:10px;border:1px solid var(--border);border-radius:8px}
 .saved-note {display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .saved-note.old {border-left-color:var(--high)}
+.slow-note p {margin:0}
+.slow-note ul {margin:6px 0;padding-left:20px}
 .old-mark {color:var(--high);font-weight:bold}
 @media print {
   .notes textarea {display:none}
