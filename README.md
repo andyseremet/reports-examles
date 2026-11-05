@@ -34,7 +34,8 @@ official checkers.
 2. Type a postcode, address or place. Pick a suggestion, or press Enter.
 3. Check the pin is on the right property (drag it if not), then press
    **Check this property**.
-4. Read the report: a verdict and "Start here" list, then results grouped into
+4. Read the report: a verdict, a "Start here" list of things to look into, and a
+   "Where we could not give an answer" box listing topics with no answer and who to ask instead, then results grouped into
    Flooding, Ground and land, Living environment, and Planning and
    surroundings, ending with a checklist for the seller and conveyancer.
 5. Copy the link, download the report, or print / save it as a PDF.

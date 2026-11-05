@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.14.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.15.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -11,7 +11,7 @@ Property Location Check: what the app does today, and what is planned next.
 
 ---
 
-## Part 1: What the app does today (version 1.14.0)
+## Part 1: What the app does today (version 1.15.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -55,7 +55,10 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 - Plain-English ratings: **Look into this / Worth checking / No issue found / For information / Check yourself**.
 - Each topic says what it means and what to do next, with questions for the seller and the conveyancer.
 - Results appear topic by topic as the data arrives.
-- An overall verdict and a "Start here" list.
+- An overall verdict and a "Start here" list of things to look into.
+- A "Where we could not give an answer" box: every topic with no real answer, why (not covered here, no data found,
+  service not answering) and who to ask instead, with "Try again" for a service that is down. Hidden when every topic
+  has an answer; included in the printed summary and the download, without buttons.
 - A row of topic icons: tap one to see the reason in one line.
 - Each topic has a **Data:** line saying how current its data is.
 - A section bar that stays at the top while scrolling, with Open all / Close all and back to top.
@@ -109,7 +112,6 @@ a pass.
 
 | Idea | What it does |
 |---|---|
-| Data gaps box | A short box at the top of the report listing the topics where the app could not give a real answer (no data published, not covered, or a service down), and who to ask instead. |
 | Simpler print options | One "Print or save as PDF" button with a choice of short summary or full report, instead of separate buttons. |
 | Data service health page | A simple page showing which outside data services worked in today's automatic check, so a buyer can see when a topic is down for everyone. |
 
