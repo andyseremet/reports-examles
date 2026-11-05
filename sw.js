@@ -3,10 +3,19 @@
 // connection. Live data (flood, radon, noise, maps) always comes from the
 // network and is never stored here; only fixed data that never changes (Census 2021
 // figures) is kept once it has been used.
-const CACHE = "plc-v13";
+const CACHE = "plc-v14";
 const SHELL = [
   "./",
   "./index.html",
+  "./css/app.css",
+  "./js/core.js",
+  "./js/data.js",
+  "./js/checks/flood.js",
+  "./js/checks/ground.js",
+  "./js/checks/living.js",
+  "./js/checks/planning.js",
+  "./js/checks/index.js",
+  "./js/app.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -50,8 +59,23 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // App files and the map library: use the saved copy if there is one.
+  // The app's own code and styles: like the page, try the network first so a new version never mixes
+  // new and old files; use the saved copy only when offline.
   const url = new URL(request.url);
+  const isAppCode = url.origin === self.location.origin && /\/(css|js)\//.test(url.pathname);
+  if (isAppCode) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response.ok) { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(request, copy)); }
+          return response;
+        })
+        .catch(() => caches.match(request, { ignoreSearch: true }))
+    );
+    return;
+  }
+
+  // Icons, the manifest and the map library: use the saved copy if there is one.
   const isShell = SHELL.some(path => new URL(path, self.location).href === url.href);
   if (isShell) {
     event.respondWith(caches.match(request).then(hit => hit || fetch(request)));
