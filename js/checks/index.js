@@ -47,6 +47,34 @@ const CHECKS = [
   { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby"], build: checkNature }
 ];
 
+// The viewing checklist ("At the viewing"): things to see or hear on the day, for topics rated
+// "Look into this" or "Worth checking". General checks are added for every property.
+const VIEWING_LOOK = {
+  flood: ["Water marks, staining or new plaster low on the walls, and flood doors, barriers or raised air bricks."],
+  surfacewater: ["Where rain would run: slopes towards the house, low doorways, blocked drains or gullies in the street."],
+  coal: ["Cracks over doors and windows, sloping floors, or doors that stick (signs of ground movement)."],
+  radon: ["A radon sump or a small vent pipe outside, or a radon test result the seller can show you."],
+  landuse: ["Signs of past industrial use nearby: bare or patchy ground, vent pipes or fenced-off land."],
+  landslides: ["Cracks in walls, paths or garden walls, leaning walls or fences, and wet or slipping slopes."],
+  coastal: ["How far the house is from the cliff edge or shore, and the state of any sea defences."],
+  noise: ["Listen inside and in the garden with a window open, and look at the glazing on the noisy side."],
+  air: ["Busy roads, junctions or works close by, and which rooms face them."],
+  trees: ["Large trees close to the house, and cracks near them (tree roots can affect the ground)."]
+};
+const VIEWING_GENERAL = {
+  look: [
+    "Damp or mould: musty smells, stains on ceilings and walls, peeling paint.",
+    "Roof, gutters and walls from outside: missing tiles, cracks, plants growing from gutters.",
+    "Water pressure: run a tap and flush a toilet.",
+    "Phone signal in the main rooms."
+  ],
+  ask: [
+    "How old are the boiler and the windows, and when was the boiler last serviced?",
+    "Why is the seller moving, and how long have they lived here?",
+    "What is included in the sale?"
+  ]
+};
+
 const TASK_FN = Object.fromEntries(TASKS.map(([key, , fn]) => [key, fn]));
 
 // Short names and symbols for the row of topic icons in the summary.

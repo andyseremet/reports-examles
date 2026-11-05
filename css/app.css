@@ -205,6 +205,7 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 /* ---------- report ---------- */
 .toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:10px}
 .toolbar button {padding:9px 14px;font-size:14px}
+.toolbar .btn-link {display:inline-flex;align-items:center;padding:9px 14px;font-size:14px;font-weight:bold;border-radius:6px;text-decoration:none}
 .icon-label {display:inline-flex;align-items:center;gap:6px}
 .icon-label svg {flex:none}
 .toolbar {position:relative;z-index:1200}   /* the open menu sits above the sticky section bar (1100) */
@@ -230,7 +231,7 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .report-nav a.active {background:var(--accent-bg);color:#fff}
 .report-nav .spacer {flex:1}
 .report-nav button {padding:6px 10px;font-size:13px}
-.cover,.group,#checklist,.slot {scroll-margin-top:var(--sticky-top)}
+.cover,.group,#checklist,#viewing,.slot {scroll-margin-top:var(--sticky-top)}
 /* Keep keyboard focus clear of the sticky section bar (top) and the "back to top" button (bottom),
    so a focused item is never hidden behind them (WCAG 2.2: 2.4.11). Not on the section bar itself:
    focusing its links must not interrupt the scroll to the chosen section. */
@@ -343,7 +344,8 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
   body.print-summary .details-start,body.print-summary #sourcesBox,body.print-summary .topic-strip {display:none!important}
   .app-bar,.why-box,.backup-note {display:none!important}
   body.print-summary #reportMap {height:200px}
-  body.print-summary .checklist {break-before:page}
+  body.print-summary #checklistBox {break-before:page}
+  body.print-summary #checklist {break-before:page}
 }
 
 

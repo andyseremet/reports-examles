@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.20.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.21.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -13,7 +13,7 @@ Property Location Check: what the app does today, and what is planned next.
 
 ---
 
-## Part 1: What the app does today (version 1.20.0)
+## Part 1: What the app does today (version 1.21.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -58,6 +58,10 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 - Plain-English ratings: **Look into this / Worth checking / No issue found / For information / Check yourself**.
 - Each topic says what it means and what to do next, with questions for the seller and the conveyancer.
 - Results appear topic by topic as the data arrives.
+- **At the viewing** (1.21.0): up to 12 things to look for and ask on the day, built from the report (topics to look
+  into first, then general checks such as damp, roof and water pressure). Tick boxes remembered per property, in
+  print, and offline for saved properties. A **Viewing checklist** button and a "Viewing" link in the section bar go
+  straight to it.
 - An overall verdict and a "Start here" list of things to look into.
 - A "Where we could not give an answer" box: every topic with no real answer, why (not covered here, no data found,
   service not answering) and who to ask instead, with "Try again" for a service that is down. Hidden when every topic
@@ -130,7 +134,6 @@ update the README, add new behaviour to the daily check, and never weaken a test
 
 | Version | Idea | What it does | Why this order |
 |---|---|---|---|
-| 1.21.0 | Viewing checklist | A short list of things to look for and ask on the day of a viewing, built from this report's results; easy to use on a phone, and works offline for saved properties. | Turns the report into action at the viewing. |
 | 1.22.0 | Compare up to 3 properties | Compare side by side takes up to three saved properties instead of two; phone layout to be decided. | Builds on the existing compare view. |
 | 1.23.0 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales (7 today: land use, coast, noise, air, planning, trees, nature) where Welsh Government or Natural Resources Wales publish live open data. | Largest research task: each source must be checked first. |
 
