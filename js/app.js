@@ -173,6 +173,7 @@ function initMap() {
         <li><span class="dot" style="background:${MAP_COLOURS.hazard}"></span>Major hazard site</li>
         <li><span class="dot" style="background:${MAP_COLOURS.landslide}"></span>Recorded landslide</li>
         <li><span class="dot" style="background:${MAP_COLOURS.coalTip}"></span>Disused coal tip (Wales)</li>
+        <li><span class="dot" style="background:${MAP_COLOURS.wasteSite}"></span>Licensed waste site (Scotland)</li>
       </ul>`;
     pop.querySelectorAll('input[name="basemap"]').forEach(radio =>
       radio.addEventListener("change", () => setBasemap(radio.value)));
@@ -309,7 +310,7 @@ function setLocation(lat, lon, label, options = {}) {
     return;
   }
   const inUK = lat >= 49.8 && lat <= 61 && lon >= -8.7 && lon <= 2;
-  showSearchStatus(inUK ? "" : "This location is outside the UK. The checks cover England, and some cover Scotland, Wales and Northern Ireland.", !inUK);
+  showSearchStatus(inUK ? "" : "This location is outside the UK. The checks cover England, Wales and Scotland, and some cover Northern Ireland.", !inUK);
 
   // Keep a searched name when the pin is only nudged (within 200 m), and never
   // overwrite a name the user typed in More options.
@@ -762,7 +763,7 @@ function onTaskSettled(key) {
     if (slot) { slot.innerHTML = renderCheck(result); prepareTables(slot, c.title); }
   });
   if (key === "place") renderMeta();
-  if (["landfill", "landslides", "planningNearby", "coalTips"].includes(key)) replotFeatures();
+  if (["landfill", "landslides", "planningNearby", "coalTips", "wasteSites"].includes(key)) replotFeatures();
   if (TASKS.every(([k]) => run.R[k])) finishRun();
   else renderSummary();
 }
@@ -791,7 +792,7 @@ function saveSnapshot() {
   store.set(snapKey(reportKey(run.loc)), {
     savedAt: new Date().toISOString(), loc: run.loc,
     results: orderedResults(),
-    R: { place: R.place, landfill: R.landfill, landslides: R.landslides, coalTips: R.coalTips, planningNearby: nearby }
+    R: { place: R.place, landfill: R.landfill, landslides: R.landslides, coalTips: R.coalTips, wasteSites: R.wasteSites, planningNearby: nearby }
   });
 }
 
@@ -940,6 +941,7 @@ function plotFeatures(layer, R) {
     [okValue(R, "landfill"), MAP_COLOURS.landfill, "Old landfill site", s => s.site_name || "Unnamed"],
     [okValue(R, "landslides"), MAP_COLOURS.landslide, "Recorded landslide", s => s.name],
     [okValue(R, "coalTips"), MAP_COLOURS.coalTip, "Disused coal tip", s => [s.id || "Unnamed tip", s.category && "category " + s.category].filter(Boolean).join(", ")],
+    [okValue(R, "wasteSites"), MAP_COLOURS.wasteSite, "Licensed waste site", s => [s.name || "Unnamed site", s.kinds.join(", ")].filter(Boolean).join(": ")],
     [byDataset(nearby, "control-of-major-accident-hazards-site"), MAP_COLOURS.hazard, "Major hazard site", s => s.name || ""],
     [byDataset(nearby, "contaminated-land"), MAP_COLOURS.contaminated, "Contaminated land", s => s.name || ""]
   ].forEach(([sites, colour, label, name]) => (sites || []).forEach(s => s.lat != null &&
@@ -1160,6 +1162,8 @@ function renderSummary() {
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
       ${p.country === "Wales"
         ? "Topics use Welsh data where England's stops at the border. Where Wales publishes nothing (for example old landfill sites), the topic says “Check yourself”."
+        : p.country === "Scotland"
+        ? "Topics use Scottish data where England's stops at the border. Where Scotland publishes nothing (for example old landfill sites or sale prices), the topic says “Check yourself”."
         : "Some official data only covers England. Those topics are marked “Check yourself”, with a link to the right national service."}</div>` : ""}`;
   updateToggleAll();
 }

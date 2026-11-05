@@ -36,6 +36,7 @@ async function wmsFeaturesAt(service, layer, loc) {
 
 // England: Environment Agency "Risk of flooding from surface water" (2025 national assessment).
 async function getSurfaceWater(loc) {
+  if (await inWales(loc) || await inScotland(loc)) return null;   // answered by SEPA and NRW (getFloodNational)
   const props = await wmsFeaturesAt(API.surfaceWater, "rofsw", loc);
   const order = ["High", "Medium", "Low"];
   const bands = props.map(x => x.risk_band).filter(b => order.includes(b));
@@ -232,6 +233,7 @@ const roundNoise = v => Number.isFinite(v) && v > 0 ? Math.round(v) : null;
 
 async function getRoadNoise(loc) {
   if (await inWales(loc)) return getWalesNoise(loc, "RD");
+  if (await inScotland(loc)) return getScotlandNoise(loc, "Road");
   const values = await wmsValuesAt(API.roadNoise,
     NOISE_PERIODS.map(p => `Road_Noise_${p.metric}_England_Round_4_All`), loc);
   return Object.fromEntries(NOISE_PERIODS.map((p, i) => [p.key, roundNoise(values[i])]));
@@ -244,6 +246,7 @@ const BAND_A_WEIGHTING = { 63: -26.2, 125: -16.1, 250: -8.6, 500: -3.2, 1000: 0,
 
 async function getRailNoise(loc) {
   if (await inWales(loc)) return getWalesNoise(loc, "RL");
+  if (await inScotland(loc)) return getScotlandNoise(loc, "Rail");
   const bands = Object.keys(BAND_A_WEIGHTING);
   // Defra's rail service sometimes fails for one period in some places, so each
   // period is fetched on its own and a failure only affects that period.
@@ -308,7 +311,8 @@ async function getAirModel(loc) {
 }
 
 async function getLandfill(loc) {
-  if (await inWales(loc)) return [];   // the Environment Agency's landfill map covers England only (Wales: getCoalTips)
+  // The Environment Agency's landfill map covers England only (Wales: getCoalTips; Scotland: getWasteSites).
+  if (await inWales(loc) || await inScotland(loc)) return [];
   const d = await fetchJSON(API.landfill + "?f=json&limit=100&bbox=" + boundingBox(loc.lat, loc.lon, loc.radius).join(","));
   return (d.features || [])
     .map(f => {
@@ -376,6 +380,7 @@ function distanceToGeometryKm(geometry, pt) {
 
 async function getCoastalErosion(loc) {
   if (await inWales(loc)) return getWalesCoast(loc);
+  if (await inScotland(loc)) return getScotlandCoast(loc);
   const items = (layer, radiusM) => fetchJSON(API.coastal + layer + "/items?f=json&limit=200&bbox=" +
     boundingBox(loc.lat, loc.lon, radiusM).join(",")).then(d => d.features || []);
   const zones = await items("NCERM_SMP_2105_70CC", COAST_NEAR_M);
@@ -405,6 +410,7 @@ async function getCoastalErosion(loc) {
 }
 
 async function getCrime(loc) {
+  if (await inScotland(loc)) return null;   // Police Scotland publishes no street-level data (Scotland: getSimdCrime)
   const items = await fetchJSON(API.crime + "?lat=" + loc.lat + "&lng=" + loc.lon);
   const byType = {};
   items.forEach(c => { byType[c.category] = (byType[c.category] || 0) + 1; });
@@ -470,23 +476,38 @@ async function getSoldPrices(loc) {
 // A point well outside Wales answers at once, without waiting for the postcode lookup. If the lookup fails,
 // the England data is used, so a postcodes.io fault never stops the England topics.
 const WALES_BOX = { south: 51.3, north: 53.5, west: -5.4, east: -2.6 };
-async function inWales(loc) {
-  if (loc.lat < WALES_BOX.south || loc.lat > WALES_BOX.north || loc.lon < WALES_BOX.west || loc.lon > WALES_BOX.east) return false;
+const SCOTLAND_BOX = { south: 54.6, north: 61, west: -9, east: -0.7 };
+async function inCountry(loc, country, box) {
+  if (loc.lat < box.south || loc.lat > box.north || loc.lon < box.west || loc.lon > box.east) return false;
   try {
     const place = await getPlace(loc);
-    return !!place && place.country === "Wales";
+    return !!place && place.country === country;
   } catch (e) { return false; }
 }
+const inWales = loc => inCountry(loc, "Wales", WALES_BOX);
+const inScotland = loc => inCountry(loc, "Scotland", SCOTLAND_BOX);
+
+// A square around the pin, as a WFS bbox (latitude first).
+function squareAround(loc, metres) {
+  const dLat = metres / 111320, dLon = metres / (111320 * Math.cos(loc.lat * Math.PI / 180));
+  return [loc.lat - dLat, loc.lon - dLon, loc.lat + dLat, loc.lon + dLon, "urn:ogc:def:crs:EPSG::4326"].join(",");
+}
+// Ask a WFS map layer (GeoServer) for the features in a square around the pin.
+async function wfsFeatures(service, layer, loc, metres, extra = {}) {
+  const params = new URLSearchParams({
+    service: "WFS", version: "2.0.0", request: "GetFeature", typeNames: layer, count: 50,
+    bbox: squareAround(loc, metres), outputFormat: "application/json", ...extra
+  });
+  return (await fetchJSON(service + "?" + params)).features || [];
+}
+// Areas sorted by distance from the pin (0 inside).
+const withDistance = (features, loc) => features
+  .map(f => ({ f, km: geometryHas(f.geometry, loc) ? 0 : distanceToGeometryKm(f.geometry, loc) }))
+  .sort((a, b) => a.km - b.km);
 
 // Ask a DataMapWales layer for the features in a square around the pin (no shapes, only the named fields).
 async function walesFeaturesNear(layer, fields, loc, metres, count = 50) {
-  const dLat = metres / 111320, dLon = metres / (111320 * Math.cos(loc.lat * Math.PI / 180));
-  const params = new URLSearchParams({
-    service: "WFS", version: "2.0.0", request: "GetFeature", typeNames: layer, propertyName: fields.join(","), count,
-    bbox: [loc.lat - dLat, loc.lon - dLon, loc.lat + dLat, loc.lon + dLon, "urn:ogc:def:crs:EPSG::4326"].join(","),
-    outputFormat: "application/json"
-  });
-  return ((await fetchJSON(API.dataMapWales + "?" + params)).features || []).map(f => f.properties || {});
+  return (await wfsFeatures(API.dataMapWales, layer, loc, metres, { propertyName: fields.join(","), count })).map(f => f.properties || {});
 }
 
 // Areas the pin is inside: one request for all of them. The key is the layer name without its workspace.
@@ -506,13 +527,13 @@ const WALES_NATURE = [
   ["inspire-nrw:NRW_LNR", "lnr_name", "Local Nature Reserve"],
   ["inspire-nrw:NRW_ANCIENT_WOODLAND_INVENTORY_2021", "category_name", "Ancient woodland"]
 ];
-const WALES_LISTED_NEAR_M = 200, WALES_LISTED_HERE_M = 20;
+const LISTED_NEAR_M = 200, LISTED_HERE_M = 20;
 const tidy = v => String(v ?? "").replace(/\s+/g, " ").trim();
 
-// Cadw listed buildings (points) within WALES_LISTED_NEAR_M, with the distance to each, in one request.
+// Cadw listed buildings (points) within LISTED_NEAR_M, with the distance to each, in one request.
 const WALES_LISTED_MAX = 500;
 async function walesListedNear(loc) {
-  const m = WALES_LISTED_NEAR_M, dLat = m / 111320, dLon = m / (111320 * Math.cos(loc.lat * Math.PI / 180));
+  const m = LISTED_NEAR_M, dLat = m / 111320, dLon = m / (111320 * Math.cos(loc.lat * Math.PI / 180));
   const params = new URLSearchParams({
     service: "WFS", version: "2.0.0", request: "GetFeature", typeNames: "inspire-wg:Cadw_ListedBuildings",
     propertyName: "geom,Name,Grade", srsName: "EPSG:4326", count: WALES_LISTED_MAX, outputFormat: "application/json",
@@ -545,22 +566,22 @@ async function getWalesSites(loc) {
     heritage: name("heritage", "Name"), nationalPark: name("nationalPark", "np_name"), landscape: name("landscape", "AONB_NAME"),
     aqma: name("aqma", "title"), sssi: name("sssi", "sssi_name"),
     nature, aqmaNear: [...new Set(aqmaNear.map(p => tidy(p.title)).filter(Boolean))],
-    listedNear: listed.filter(b => b.km <= WALES_LISTED_NEAR_M / 1000).length,
+    listedNear: listed.filter(b => b.km <= LISTED_NEAR_M / 1000).length,
     listedNearCapped: listed.length >= WALES_LISTED_MAX,
-    listedHere: listed.filter(b => b.km <= WALES_LISTED_HERE_M / 1000).map(b => ({ name: b.name, grade: b.grade }))
+    listedHere: listed.filter(b => b.km <= LISTED_HERE_M / 1000).map(b => ({ name: b.name, rank: b.grade ? "Grade " + b.grade : "" }))
   };
 }
 
 // Welsh Government strategic noise maps (2022, Round 4): road ("RD") or railway ("RL"), at first-floor height.
 // Wales publishes a 16-hour daytime level (7am to 11pm) instead of separate day and evening levels. 0 means not mapped (quiet).
-const WALES_NOISE_PERIODS = [
+const NOISE_PERIODS_16H = [
   { key: "l16h", metric: "L16H", name: "Daytime", when: "7am to 11pm" },
   { key: "lnight", metric: "LNGT", name: "Night", when: "11pm to 7am" },
   { key: "lden", metric: "LDEN", name: "24-hour average", when: "with extra weight for evening and night noise" }
 ];
 async function getWalesNoise(loc, source) {
-  const values = await wmsValuesAt(API.dataMapWales, WALES_NOISE_PERIODS.map(p => `geonode:cog_WG_${source}_${p.metric}_All`), loc);
-  return { wales: true, ...Object.fromEntries(WALES_NOISE_PERIODS.map((p, i) => [p.key, roundNoise(values[i])])) };
+  const values = await wmsValuesAt(API.dataMapWales, NOISE_PERIODS_16H.map(p => `geonode:cog_WG_${source}_${p.metric}_All`), loc);
+  return { wales: true, ...Object.fromEntries(NOISE_PERIODS_16H.map((p, i) => [p.key, roundNoise(values[i])])) };
 }
 
 // Natural Resources Wales coastal erosion map (NCERM), with the shoreline plans in place. Each area is the land
@@ -577,8 +598,7 @@ async function getWalesCoast(loc) {
   // "21.7 - 28.3 metres" -> 28.3; "Negligible" -> 0.
   const upper = text => Math.max(0, ...(String(text || "").match(/[\d.]+/g) || []).map(Number));
   const period = (f, word) => String(f.properties.epoch || "").startsWith(word);
-  const withKm = list => list.map(f => ({ f, km: geometryHas(f.geometry, loc) ? 0 : distanceToGeometryKm(f.geometry, loc) }))
-    .sort((a, b) => a.km - b.km);
+  const withKm = list => withDistance(list, loc);
   const by2105 = withKm(zones.filter(f => period(f, "Long") && upper(f.properties.long_smp) > 0));
   // Land lost by 2055: the short-term areas (to 2025) and the medium-term ones (2025 to 2055).
   const lostBy2055 = f => Math.max(upper(f.properties.short_smp), upper(f.properties.medium_smp));
@@ -623,6 +643,133 @@ async function getCoalTips(loc) {
     .sort(byDistance);
 }
 
+/* ---------------------------------------------------------------
+   Scotland: Historic Environment Scotland, NatureScot, SEPA, the Scottish Government and the Scottish Air
+   Quality database, for the topics whose England data stops at the border. Outside Scotland these return
+   null without asking the Scottish services.
+--------------------------------------------------------------- */
+// Historic Environment Scotland layers to test at the pin. Each map service has one layer (0).
+const SCOT_HES_AT = {
+  conservation: "Conservation_Areas", monument: "Scheduled_Monuments", park: "Gardens_and_Designed_Landscapes",
+  battlefield: "Battlefields_Inventory_Boundary", heritage: "World_Heritage_Sites"
+};
+const hesRequest = (service, loc, metres, extra) => arcgisRequest(API.hes + service + "/MapServer/0/query", loc, metres, extra);
+// NatureScot protected sites near the pin (every layer names its sites in NAME).
+const SCOT_NATURE = [
+  ["protectedareas:sssi", "Site of Special Scientific Interest"],
+  ["protectedareas:sac", "Special Area of Conservation"],
+  ["protectedareas:spa", "Special Protection Area (birds)"],
+  ["protectedareas:ramsar", "Ramsar wetland"],
+  ["protectedareas:nnr", "National Nature Reserve"],
+  ["protectedareas:lnr", "Local Nature Reserve"]
+];
+// Scotland's Ancient Woodland Inventory also lists younger woods: 1a and 2a are ancient; 1b, 2b and 3 are not.
+const SCOT_ANCIENT_WOOD = ["1a", "2a"];
+const SCOT_AQMA = "scotarc:scottland_aqma_3857";
+// Many Scottish records are in capitals: "OLD TOWN" -> "Old Town" (small joining words kept small).
+const tidyCaps = text => { const t = tidy(text); return /[a-z]/.test(t) ? t : titleCase(t).replace(/(?!^)\b(And|Of|The|In|On)\b/g, w => w.toLowerCase()); };
+const PIN_M = 5;   // "at the pin": a square about 10 m across
+
+// Returned in the same shape as getWalesSites, so the planning, nature and air checks read the same.
+async function getScotlandSites(loc) {
+  if (!(await inScotland(loc))) return null;
+  const titles = d => [...new Set((d.features || []).map(f => tidyCaps(f.attributes?.DES_TITLE).replace(/ Boundary$/, "")).filter(Boolean))];
+  const named = (features, field) => [...new Set(features.map(f => tidy(f.properties?.[field] ?? f.attributes?.[field])).filter(Boolean))];
+  const [hesAt, parks, landscapes, nature, woods, sssi, listedCount, listedHere, aqma, aqmaNear] = await Promise.all([
+    Promise.all(Object.values(SCOT_HES_AT).map(service => hesRequest(service, loc, 0, { outFields: "DES_TITLE" }).then(titles))),
+    Promise.all([0, 1].map(i => arcgisQuery(API.scotProtected + i + "/query", loc, 0, { outFields: "npname" })))
+      .then(lists => named(lists.flat(), "npname")),
+    arcgisQuery(API.scotProtected + "3/query", loc, 0, { outFields: "nsaname" }).then(f => named(f, "nsaname")),
+    Promise.all(SCOT_NATURE.map(([layer, kind]) => wfsFeatures(API.natureScot, layer, loc, loc.radius, { propertyName: "NAME" })
+      .then(list => list.map(f => ({ kind, name: tidy(f.properties?.NAME) }))))).then(lists => lists.flat()),
+    wfsFeatures(API.natureScot, "habitatsandspecies:awi", loc, loc.radius, { propertyName: "ANTIQ_CODE", count: 500 })
+      .then(list => list.filter(f => SCOT_ANCIENT_WOOD.includes(tidy(f.properties?.ANTIQ_CODE)))
+        .map(() => ({ kind: "Ancient woodland", name: "" }))),
+    wfsFeatures(API.natureScot, "protectedareas:sssi", loc, PIN_M, { propertyName: "NAME" }).then(f => named(f, "NAME")),
+    hesRequest("Listed_Buildings", loc, LISTED_NEAR_M, { returnCountOnly: "true" }).then(d => d.count || 0),
+    hesRequest("Listed_Buildings", loc, LISTED_HERE_M, { outFields: "DES_TITLE,CATEGORY" })
+      .then(d => (d.features || []).map(f => ({ name: tidyCaps(f.attributes?.DES_TITLE), rank: f.attributes?.CATEGORY ? "Category " + tidy(f.attributes.CATEGORY) : "" }))),
+    wfsFeatures(API.scotAir, SCOT_AQMA, loc, PIN_M, { propertyName: "title" }).then(f => named(f, "title")),
+    wfsFeatures(API.scotAir, SCOT_AQMA, loc, loc.radius, { propertyName: "title" }).then(f => named(f, "title"))
+  ]);
+  const at = Object.fromEntries(Object.keys(SCOT_HES_AT).map((key, i) => [key, hesAt[i]]));
+  return {
+    country: "Scotland", ...at, nationalPark: parks, landscape: landscapes, aqma, sssi,
+    nature: [...nature, ...woods], aqmaNear,
+    listedNear: listedCount, listedNearCapped: false, listedHere
+  };
+}
+
+// Scottish Government strategic noise maps (2021 traffic, published by SEPA): "Road" or "Rail", all sources.
+// Like Wales, Scotland publishes a 16-hour daytime level. Outside the mapped area the value is 0 or "NoData".
+async function getScotlandNoise(loc, source) {
+  const geometry = JSON.stringify({ x: loc.lon, y: loc.lat, spatialReference: { wkid: 4326 } });
+  const values = await Promise.all(NOISE_PERIODS_16H.map(p => fetchJSON(`${API.sepaNoise}Noise_${source}_${p.metric}_ALL/ImageServer/identify?` +
+    new URLSearchParams({ geometry, geometryType: "esriGeometryPoint", returnGeometry: "false", returnCatalogItems: "false", f: "json" }))
+    .then(d => { if (d.error) throw new Error(d.error.message || "query failed"); return Number(d.value); })));
+  return { scotland: true, ...Object.fromEntries(NOISE_PERIODS_16H.map((p, i) => [p.key, roundNoise(values[i])])) };
+}
+
+// Dynamic Coast (NatureScot): land expected to be lost to the sea by 2050 and by 2100, on the high-emissions
+// forecast (the only one published as a map service). It maps Scotland's soft coasts (sand, gravel and soft
+// rock); rocky coasts wear away too slowly to map. Returned in the same shape as the England check.
+async function getScotlandCoast(loc) {
+  const layer = name => wfsFeatures(API.natureScot, "dynamiccoast:" + name, loc, COAST_NEAR_M,
+    { srsName: "EPSG:4326", count: 300, propertyName: "ERODETYPE,geom" });
+  const [by2050, by2100, shore] = await Promise.all([
+    layer("dc2erosion2050high"), layer("dc2erosion2100high"),
+    wfsFeatures(API.natureScot, "dynamiccoast:dc2mhwsmodern", loc, COAST_NEAR_M, { count: 1, propertyName: "CELL" })
+  ]);
+  const lost = list => withDistance(list.filter(f => f.properties?.ERODETYPE === "ErodedArea" && f.geometry), loc);
+  const soon = lost(by2050), later = lost(by2100);
+  const inside2055 = !!soon[0] && soon[0].km === 0;
+  const inside2105 = inside2055 || (!!later[0] && later[0].km === 0);
+  const nearest = [soon[0], later[0]].filter(Boolean).sort((a, b) => a.km - b.km)[0];
+  return {
+    country: "Scotland", years: [2050, 2100],
+    nearCoast: shore.length + by2050.length + by2100.length > 0,
+    inside2105, inside2055,
+    erosionKm: nearest ? nearest.km : null,
+    metres2105: null, metres2055: null,
+    plan: { now: null, later: null, area: null, defence: null },
+    published: null
+  };
+}
+
+// SEPA licensed waste sites (landfill, transfer stations, scrapyards, recycling centres) near the pin.
+// "KE - Transfer Station; TR - Transfer Station" -> ["Transfer Station"].
+const wasteKinds = text => [...new Set(String(text || "").split(";")
+  .map(part => tidy(part.replace(/^\s*[A-Z]{2,3}\s*[-:]\s*/, "").replace(/^Waste\s*-\s*/i, "")))
+  .filter(Boolean))];
+async function getWasteSites(loc) {
+  if (!(await inScotland(loc))) return null;
+  const features = await arcgisQuery(API.sepaWaste, loc, loc.radius, {
+    outFields: "authorisation_activity,authorisation_description,authorisation_holder", returnGeometry: "true", outSR: "4326"
+  });
+  return features
+    .map(f => {
+      const a = f.attributes || {}, g = f.geometry || {};
+      const kinds = wasteKinds(a.authorisation_activity);
+      const where = tidy(String(a.authorisation_description || "").split(" --- ").pop());
+      return { name: tidyCaps(where || a.authorisation_holder).replace(/\.$/, ""), kinds, landfill: kinds.some(k => /landfill/i.test(k)),
+        mobile: /mobile plant/i.test(a.authorisation_description || ""),
+        lat: g.y, lon: g.x, distanceKm: Number.isFinite(g.y) ? distanceKm(loc, { lat: g.y, lon: g.x }) : null };
+    })
+    .filter(s => !s.mobile)     // permits for mobile machines, not places
+    .sort(byDistance);
+}
+
+// Crime in Scotland: the crime part of the Scottish Index of Multiple Deprivation 2020, for the data zone
+// (a small area of about 500 to 1,000 people) at the pin. Police Scotland publishes no street-level data.
+const SIMD_ZONES = 6976;
+async function getSimdCrime(loc) {
+  if (!(await inScotland(loc))) return null;
+  const f = await arcgisQuery(API.simd, loc, 0, { outFields: "datazone,dzname,laname,crimecount,crimerate,crimerank" });
+  const a = f[0] && f[0].attributes;
+  if (!a || !Number.isFinite(a.crimerank)) return null;
+  return { zone: a.datazone, name: tidy(a.dzname), council: tidy(a.laname), count: a.crimecount, rate: a.crimerate, rank: a.crimerank };
+}
+
 // Each data task: key, topic name, fetch function, and the service it waits for (named in the
 // "Still waiting for" note when a report is slow). Tasks start in this order. The Environment Agency
 // server answers only a few requests at a time (PACED_HOSTS), so its most important topic,
@@ -631,7 +778,7 @@ const TASKS = [
   ["place", "Nearest postcode and council", getPlace, "postcodes.io"],
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater, "Environment Agency"],
   ["landfill", "Old landfill sites", getLandfill, "Environment Agency"],
-  ["coastal", "Coastal erosion", getCoastalErosion, "Environment Agency (Wales: DataMapWales)"],
+  ["coastal", "Coastal erosion", getCoastalErosion, "Environment Agency (Wales: DataMapWales; Scotland: NatureScot)"],
   ["planningPoint", "Flood zone and planning rules at the property", getPlanningAtPoint, "planning.data.gov.uk"],
   ["planningNearby", "Things nearby: flood zones, contaminated land, heritage, nature", getPlanningNearby, "planning.data.gov.uk"],
   ["radon", "Radon gas", getRadon, "British Geological Survey"],
@@ -643,8 +790,11 @@ const TASKS = [
   ["floodNational", "Scotland and Wales flood maps", getFloodNational, "SEPA and Natural Resources Wales"],
   ["amenities", "Schools, doctors and transport", getAmenities, "NHS and planning.data.gov.uk"],
   ["crimeArea", "Crime compared with England and Wales", getCrimeArea, "Office for National Statistics"],
-  ["noise", "Road noise", getRoadNoise, "Environment Agency (Wales: DataMapWales)"],
-  ["railNoise", "Railway noise", getRailNoise, "Environment Agency (Wales: DataMapWales)"],
+  ["noise", "Road noise", getRoadNoise, "Environment Agency (Wales: DataMapWales; Scotland: SEPA)"],
+  ["railNoise", "Railway noise", getRailNoise, "Environment Agency (Wales: DataMapWales; Scotland: SEPA)"],
   ["walesSites", "Heritage, nature and air hotspots in Wales", getWalesSites, "DataMapWales"],
-  ["coalTips", "Disused coal tips in Wales", getCoalTips, "DataMapWales"]
+  ["coalTips", "Disused coal tips in Wales", getCoalTips, "DataMapWales"],
+  ["scotlandSites", "Heritage, nature and air hotspots in Scotland", getScotlandSites, "Historic Environment Scotland and NatureScot"],
+  ["wasteSites", "Licensed waste sites in Scotland", getWasteSites, "SEPA"],
+  ["simdCrime", "Crime rank in Scotland", getSimdCrime, "Scottish Government"]
 ];

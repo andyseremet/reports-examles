@@ -16,6 +16,12 @@ function byDataset(list, dataset) {
 function isWales(R) {
   return okValue(R, "place")?.country === "Wales";
 }
+// True for an address in Scotland, where some topics use Scottish data instead of England's.
+function isScotland(R) {
+  return okValue(R, "place")?.country === "Scotland";
+}
+// The data task with Welsh or Scottish heritage, nature and air hotspots for this address.
+const sitesKey = R => isScotland(R) ? "scotlandSites" : "walesSites";
 
 function unavailable(base, R, key) {
   return {
@@ -39,16 +45,16 @@ const CHECKS = [
   { id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)", deps: ["surfaceWater", "floodNational"], build: checkSurfaceWater },
   { id: "coal", group: "ground", title: "Coal mining", deps: ["coal"], build: checkCoal },
   { id: "radon", group: "ground", title: "Radon gas", deps: ["radon"], build: checkRadon },
-  { id: "landuse", group: "ground", title: "Past use of the land: landfill and contamination", deps: ["landfill", "planningPoint", "planningNearby", "coalTips"], build: checkLanduse },
+  { id: "landuse", group: "ground", title: "Past use of the land: landfill and contamination", deps: ["landfill", "planningPoint", "planningNearby", "coalTips", "wasteSites"], build: checkLanduse },
   { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },
   { id: "coastal", group: "ground", title: "Coastal erosion", deps: ["coastal"], build: checkCoastal },
   { id: "noise", group: "living", title: "Noise: road, railway and aircraft", deps: ["noise", "railNoise"], build: checkNoise },
-  { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air", "walesSites"], build: checkAir },
+  { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air", "walesSites", "scotlandSites"], build: checkAir },
   { id: "amenities", group: "living", title: "Schools, doctors and transport", deps: ["amenities"], build: checkAmenities },
-  { id: "crime", group: "living", title: "Reported crime", deps: ["crime", "crimeArea"], build: checkCrime },
+  { id: "crime", group: "living", title: "Reported crime", deps: ["crime", "crimeArea", "simdCrime"], build: checkCrime },
   { id: "soldprices", group: "living", title: "Recent sale prices nearby", deps: ["soldPrices"], build: checkSoldPrices },
-  { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby", "walesSites"], build: checkPlanning },
-  { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby", "walesSites"], build: checkNature }
+  { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby", "walesSites", "scotlandSites"], build: checkPlanning },
+  { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby", "walesSites", "scotlandSites"], build: checkNature }
 ];
 
 // The viewing checklist ("At the viewing"): things to see or hear on the day, for topics rated
@@ -96,9 +102,10 @@ CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
 // "Check yourself" and links to the right national service, instead of a
 // misleading "No issue found".
 const COVERAGE = {
-  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England", "Wales"], coastal: ["England", "Wales"], soldprices: ["England", "Wales"], noise: ["England", "Wales"],
-  air: ["England", "Wales"], planning: ["England", "Wales"], nature: ["England", "Wales"],
-  crime: ["England", "Wales", "Northern Ireland"],
+  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England", "Scotland", "Wales"],
+  coastal: ["England", "Scotland", "Wales"], soldprices: ["England", "Wales"], noise: ["England", "Scotland", "Wales"],
+  air: ["England", "Scotland", "Wales"], planning: ["England", "Scotland", "Wales"], nature: ["England", "Scotland", "Wales"],
+  crime: ["England", "Scotland", "Wales", "Northern Ireland"],
   coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"]
 };
 
