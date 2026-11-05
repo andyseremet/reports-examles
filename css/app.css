@@ -205,13 +205,13 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 /* ---------- report ---------- */
 .toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:10px}
 .toolbar button {padding:9px 14px;font-size:14px}
-.toolbar .btn-link {display:inline-flex;align-items:center;padding:9px 14px;font-size:14px;font-weight:bold;border-radius:6px;text-decoration:none}
+.toolbar .btn-link,.save-menu > summary {padding:9px 14px;font-size:14px;font-weight:bold;border-radius:6px;text-decoration:none;
+  background:var(--surface-2);color:var(--heading);border:1px solid var(--border);min-height:24px}
 .icon-label {display:inline-flex;align-items:center;gap:6px}
 .icon-label svg {flex:none}
 .toolbar {position:relative;z-index:1200}   /* the open menu sits above the sticky section bar (1100) */
 .save-menu {position:relative}
-.save-menu > summary {list-style:none;cursor:pointer;padding:9px 14px;font-size:14px;font-weight:bold;border-radius:6px;
-  background:var(--surface-2);color:var(--heading);border:1px solid var(--border);min-height:24px}
+.save-menu > summary {list-style:none;cursor:pointer}
 .save-menu > summary::-webkit-details-marker {display:none}
 .save-menu-list {position:absolute;right:0;top:calc(100% + 4px);z-index:1;min-width:270px;display:flex;flex-direction:column;
   background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px}

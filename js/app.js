@@ -813,7 +813,7 @@ function showSnapshot(snap, options = {}) {
     if (!slot) return;
     // Topics added to the app after this property was saved.
     const shown = res || topicResult(c, { status: "manual", gap: "saved",
-      found: "Not included in these saved results. Press “Refresh with the latest data” to check it." });
+      found: "Not included in these saved results. Press “Refresh” to check it with the latest data." });
     if (!res) run.results[c.id] = shown;
     slot.innerHTML = renderCheck(shown);
     prepareTables(slot, c.title);
@@ -1101,7 +1101,7 @@ function renderSummary() {
   const savedNote = run.snapshot ? `<div class="notice saved-note${old ? " old" : ""}">Saved results from
       <strong>${escapeHTML(new Date(run.snapshot.savedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }))}</strong>.
       ${old ? `<span><strong>These results are over ${OLD_MONTHS} months old.</strong> Official data may have changed since; refresh before relying on them.</span>` : ""}
-      <button class="primary small-btn" type="button" id="refreshBtn">Refresh with the latest data</button></div>` : "";
+      <button class="primary small-btn icon-label" type="button" id="refreshBtn" aria-label="Refresh with the latest data">${icon("refresh")}Refresh</button></div>` : "";
   $("summaryBox").innerHTML = `
     ${savedNote}
     ${verdict}
@@ -1154,7 +1154,7 @@ function dataGapsBox(results) {
         (c.source && c.source.url ? ` or use ${link(c.source.url, c.source.name)}` : "") +
         `. Is it down for everyone? See ${link(new URL("status.html", location.href).href, "data service status")}.`;
     }
-    if (gapKind(c) === "saved") return "Press “Refresh with the latest data” above.";
+    if (gapKind(c) === "saved") return "Press “Refresh” above.";
     if (c.actions && c.actions.length) return c.actions[0];
     return c.source && c.source.url ? `See ${link(c.source.url, c.source.name)}.` : "Ask your conveyancer to include this in their searches.";
   };
@@ -1237,10 +1237,10 @@ function buildChecklist(checks) {
       <h2>Your checklist${infoButton("info-checklist", "About the checklist")}</h2>
       ${infoBox("info-checklist", "<p>Everything to follow up, gathered from the checks above. Tick items as you go: your ticks are remembered on this device for this property.</p>")}
       <div class="send-box no-print">
-        <p><strong>Send to my conveyancer:</strong> an email with the link to this report, the topics to look into and the questions below.</p>
+        <p><strong>Send to my conveyancer:</strong> an email, or text to copy, with the link to this report, the topics to look into and the questions below.</p>
         <div class="send-buttons">
-          <button class="primary" id="emailConveyancer" type="button">Email to my conveyancer</button>
-          <button class="secondary" id="copyConveyancer" type="button">Copy as text</button>
+          <button class="primary icon-label" id="emailConveyancer" type="button" aria-label="Email to my conveyancer">${icon("mail")}Email</button>
+          <button class="secondary icon-label" id="copyConveyancer" type="button" aria-label="Copy as text">${icon("copy")}Copy</button>
         </div>
         <p class="help" id="sendNote" role="status"></p>
       </div>
@@ -1306,7 +1306,7 @@ document.addEventListener("click", async e => {
   if (!run) return;
   if (e.target.closest("#emailConveyancer")) {
     e.preventDefault();
-    $("sendNote").textContent = "Opening your email app. Add your conveyancer's address and send. If the email looks cut off, use Copy as text.";
+    $("sendNote").textContent = "Opening your email app. Add your conveyancer's address and send. If the email looks cut off, use Copy.";
     location.href = "mailto:?subject=" + encodeURIComponent(conveyancerSubject()) + "&body=" + encodeURIComponent(conveyancerText());
   }
   if (e.target.closest("#copyConveyancer")) {

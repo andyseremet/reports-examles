@@ -61,7 +61,7 @@ official checkers.
   normal and larger text, down to 320 px wide), plus keyboard focus, focus never hidden behind sticky bars, and tap
   target sizes (at least 24 × 24 pixels). Last re-checked on 5 November 2026 (version 1.19.0).
 - **Send to my conveyancer:** one button opens your email app with the report link, the topics to look into, and the
-  searches and questions from the checklist. **Copy as text** does the same for web email or messaging apps. Nothing
+  searches and questions from the checklist. **Copy** does the same for web email or messaging apps. Nothing
   passes through the app.
 - **Honest gaps:** where a council has not published its protected trees or Article 4 areas, the report says so and
   rates the topic "Check yourself", instead of "No issue found".

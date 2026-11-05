@@ -137,8 +137,8 @@
       <span class="help" id="compareHelp">Tick two properties to compare them.</span>
     </div>
     <div class="saved-actions">
-      <button class="secondary small-btn" id="exportBtn" type="button">Export list</button>
-      <button class="secondary small-btn" id="importBtn" type="button">Import list</button>
+      <button class="secondary small-btn icon-label" id="exportBtn" type="button"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export list</button>
+      <button class="secondary small-btn icon-label" id="importBtn" type="button"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Import list</button>
       <input type="file" id="importFile" accept=".json,application/json" class="hidden">
       <span class="help" id="transferHelp">Move your saved properties, notes and ticks to another device.</span>
     </div>
@@ -159,9 +159,11 @@
       <button class="primary icon-label" id="shareBtn" type="button" title="Share this report" aria-label="Share this report">
         <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
         <span id="shareText">Share</span></button>
-      <a class="secondary btn-link" id="viewingBtn" href="#viewing">Viewing checklist</a>
+      <a class="btn-link icon-label" id="viewingBtn" href="#viewing" title="Viewing checklist" aria-label="Viewing checklist">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg><span>Viewing</span></a>
       <details class="save-menu" id="saveMenu">
-        <summary class="secondary" id="saveMenuBtn">Save or print <span aria-hidden="true">▾</span></summary>
+        <summary class="icon-label" id="saveMenuBtn" title="Save or print" aria-label="Save or print">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg><span>Save</span> <span aria-hidden="true">▾</span></summary>
         <div class="save-menu-list">
           <button id="downloadHtml" type="button" disabled>Download report<small>A file to keep, email or open later</small></button>
           <button id="printSummary" type="button" disabled>Print summary<small>The summary, your notes and the checklists</small></button>
