@@ -28,6 +28,11 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   (live site, about 6 minutes).
 - There is no way to run one test step. To check one behaviour, write a short Playwright script outside the repo,
   and answer `https://environment.data.gov.uk/spatialdata/**` with `{"features":[]}` so the report finishes fast.
+- After a merge: `bash tests/after-merge.sh` (restarts the branch from `origin/main`, waits for Pages to serve the new
+  `APP_VERSION`/`CACHE`, runs the live check). Run it in the background; it can take 20 minutes.
+- Accessibility re-check (by hand, after visual changes; not in CI): `npm install --no-save axe-core` in the scratchpad,
+  scan WCAG 2.2 AA tags on the start page, a full report (Open all, sources open), and `status.html`, at 1280 px,
+  320 px and phone, light and dark, normal and A+ text; also Tab through every control and check none is hidden.
 
 ## Rules
 
@@ -38,6 +43,8 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   `policeDataMissing`, `checkTrees` and `checkLanduse`.
 - **Outside data stays live.** Save a copy in `data/` only for a finished official dataset that will never be
   revised (for example Census 2021), and ask the owner first. Say in `README.md` how the file was made.
+- **Sticky bars:** keep focus clear of them with the `:focus` `scroll-margin` rule and `--sticky-top`/`--bottom-clear`
+  in `css/app.css`. Never use `html { scroll-padding }`: it stops the section bar's smooth scroll.
 - **Environment Agency map server** (`environment.data.gov.uk/spatialdata`): it refuses addresses that send more than
   about 15 requests a minute. Do not add requests to it, and keep its pacing in `PACED_HOSTS`.
 - **Adding a topic:** a fetch function and its row in `TASKS` (`js/data.js`), the check in its section's
@@ -56,11 +63,13 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   through hooks, so the app works the same without it (see `MONETISATION.md`).
 - **Steady changes:** improve in small steps; no redesigns, new libraries or build step without asking. English only.
 - **Small commits:** one change per commit, with a clear message.
-- **Pull requests:** open one only when asked, and never merge or approve; the owner merges. After a merge, restart
-  the working branch from `origin/main`.
-- **Check the live page after every merge:** once GitHub Pages has updated (a few minutes), confirm the live site
-  shows the new `APP_VERSION` (in `js/core.js`) and `sw.js` serves the new `CACHE`, then run `node tests/live-check.mjs` against it.
-  Report the pass count in plain English; an Environment Agency HTTP 403 "warn" is the only allowed non-pass.
+- **Pull requests:** open one only when asked, and never merge or approve; the owner merges. Then watch it
+  (`subscribe_pr_activity` plus one 50-minute safety check-in). After the merge: cancel the check-in and run
+  `tests/after-merge.sh`.
+- **Check the live page after every merge** (`tests/after-merge.sh`) and report the pass count in plain English; an
+  Environment Agency HTTP 403 "warn" is the only allowed non-pass. If Pages has not published within about 10
+  minutes (no new "pages build and deployment" run), ask the owner to press Save in Settings → Pages.
+- **Default branch stays `main`:** scheduled runs use the default branch, and the status page publishes only from `main`.
 - **Keep this file current:** at the end of a task, suggest any instruction the owner repeated as a new rule here.
 
 ## Tests and CI
@@ -72,4 +81,6 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - Never skip, remove or loosen a test step to get a pass. The only allowed `"warn"` result is the Environment Agency
   map server refusing GitHub's machines with HTTP 403.
 - Outside services (BGS, Environment Agency, Open-Meteo, data.police.uk) have outages. Before changing code for a
-  failed check, ask the service directly whether the fault is theirs.
+  failed check, ask the service directly whether the fault is theirs. If a service refuses GitHub's machines but
+  answers directly (HM Land Registry did, once), re-run the job once and comment once on the PR; changing what a test
+  accepts needs the owner.
