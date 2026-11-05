@@ -565,6 +565,42 @@ async function testDevice(device, [postcode, place]) {
     return "ok";
   });
 
+  await step("Compare up to three saved properties, and show only differences", async () => {
+    // Add two copies of the saved property (one with a different first rating), compare all three, then put the list back.
+    const keep = await page.evaluate(() => {
+      const list = store.get(SAVED_KEY, []), orig = JSON.stringify(list), s = list[0];
+      const copy = (n, change) => ({ ...JSON.parse(JSON.stringify(s)), key: "test-cmp-" + n, name: "Test copy " + n, starred: false,
+        checks: s.checks.map((c, i) => i === 0 && change ? { ...c, status: c.status === "high" ? "low" : "high" } : c) });
+      store.set(SAVED_KEY, [...list, copy(1, false), copy(2, true)]);
+      renderSaved();
+      return orig;
+    });
+    try {
+      await page.check(`#savedList input[data-compare="test-cmp-1"]`);
+      await page.check(`#savedList input[data-compare="test-cmp-2"]`);
+      if (await page.isDisabled("#compareBtn")) throw new Error("Compare is not ready with two properties ticked");
+      await page.check("#savedList input[data-compare]:not(:checked)");
+      const off = await page.$$eval("#savedList input[data-compare]:not(:checked)", x => x.every(b => b.disabled));
+      if (!off) throw new Error("a fourth property could still be ticked");
+      await page.click("#compareBtn");
+      const r = await page.evaluate(() => ({
+        cols: document.querySelectorAll("#compareTable thead th").length,
+        title: document.getElementById("compareTitle").textContent,
+        rows: document.querySelectorAll("#compareTable tbody tr").length
+      }));
+      if (r.cols !== 4 || !r.title.includes("three")) throw new Error(`expected three properties side by side (got ${r.cols - 1}, "${r.title}")`);
+      await page.check("#diffOnly");
+      const shown = await page.$$eval("#compareTable tbody tr", x => x.filter(tr => tr.offsetHeight > 0).length);
+      const help = await page.$eval("#diffHelp", x => x.textContent);
+      if (shown < 2 || shown >= r.rows) throw new Error(`"Show only topics that differ" showed ${shown} of ${r.rows} rows`);
+      if (!/^Showing/.test(help)) throw new Error(`no message about the topics shown (got "${help}")`);
+      if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw new Error("the comparison scrolls sideways");
+      return `${r.rows} rows, ${shown} shown with differences only`;
+    } finally {
+      await page.evaluate(orig => { document.getElementById("comparePanel").classList.add("hidden"); localStorage.setItem(SAVED_KEY, orig); renderSaved(); }, keep);
+    }
+  });
+
   await step("No sideways scrolling", async () =>
     (await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)) ? "ok" : false);
 

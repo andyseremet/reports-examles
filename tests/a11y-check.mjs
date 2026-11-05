@@ -3,7 +3,7 @@
 //   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 10 minutes)
 // Scans WCAG 2.2 AA with axe-core on the start page, a full report and status.html, at 1280 px, 320 px and phone,
 // light and dark, normal and A+ text. In the report it also scans after using controls (Open all, a count box,
-// a tick, Move to another device, Remove), and checks for sideways scrolling before and after each.
+// a tick, Move to another device, Compare three, Remove), and checks for sideways scrolling before and after each.
 // Environment Agency map requests are answered empty so the report finishes fast. Exit code 1 on any problem.
 import { chromium, devices } from "playwright";
 import { createRequire } from "node:module";
@@ -22,6 +22,13 @@ const ACTIONS = [
   ["count box", async p => { const a = p.locator("a.count").first(); if (await a.count()) await a.click(); }],
   ["tick", async p => { const b = p.locator("#viewing input[data-tick]").first(); if (await b.count()) await b.check(); }],
   ["Move to another device", p => p.click("#moveDevice summary")],
+  ["Compare three", async p => {
+    await p.evaluate(() => { const l = store.get(SAVED_KEY, []), s = l[0]; if (!s) return;
+      store.set(SAVED_KEY, [...l, ...[1, 2].map(n => ({ ...s, key: "a11y-" + n, name: "Copy " + n,
+        checks: s.checks.map((c, i) => i === n - 1 ? { ...c, status: "high" } : c) }))]); renderSaved(); });
+    for (const b of await p.locator("#savedList input[data-compare]").all()) if (await b.isEnabled()) await b.check();
+    if (await p.isEnabled("#compareBtn")) { await p.click("#compareBtn"); await p.check("#diffOnly"); }
+  }],
   ["Remove (Undo bar)", async p => { const b = p.locator("#savedList [data-remove]").first(); if (await b.count()) await b.click(); }],
 ];
 

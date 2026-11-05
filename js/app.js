@@ -1526,11 +1526,15 @@ function selectedForCompare() {
   return [...document.querySelectorAll("#savedList input[data-compare]:checked")].map(b => b.dataset.compare);
 }
 
+// Compare takes 2 or 3 saved properties; once 3 are ticked, the other boxes are switched off.
+const COMPARE_MAX = 3;
 function updateCompareButton() {
-  const chosen = selectedForCompare();
-  $("compareBtn").disabled = chosen.length !== 2;
-  document.querySelectorAll("#savedList input[data-compare]").forEach(b => { b.disabled = !b.checked && chosen.length >= 2; });
-  $("compareHelp").textContent = chosen.length === 2 ? "Ready to compare." : `Tick two properties to compare them (${chosen.length} of 2 chosen).`;
+  const n = selectedForCompare().length;
+  $("compareBtn").disabled = n < 2;
+  document.querySelectorAll("#savedList input[data-compare]").forEach(b => { b.disabled = !b.checked && n >= COMPARE_MAX; });
+  $("compareHelp").textContent = n >= COMPARE_MAX ? `Ready to compare ${n}.`
+    : n === 2 ? "Ready to compare 2. You can tick one more."
+    : `Tick 2 or 3 properties to compare them (${n} chosen).`;
 }
 
 $("savedList").addEventListener("change", updateCompareButton);
@@ -1681,22 +1685,39 @@ $("importFile").addEventListener("change", async e => {
 
 $("compareBtn").addEventListener("click", () => {
   const saved = store.get(SAVED_KEY, []);
-  const [a, b] = selectedForCompare().map(k => saved.find(s => s.key === k));
-  if (!a || !b) return;
+  const list = selectedForCompare().map(k => saved.find(s => s.key === k)).filter(Boolean);
+  if (list.length < 2) return;
+  const find = (s, id) => s.checks.find(x => x.id === id);
   const cell = (s, id) => {
-    const c = s.checks.find(x => x.id === id);
+    const c = find(s, id);
     return c ? `${chip(c.status)}<br><small>${escapeHTML(c.found)}</small>` : "<small>Not checked</small>";
   };
+  // A topic "differs" when the properties do not all have the same rating.
+  const differs = id => new Set(list.map(s => (find(s, id) || {}).status || "none")).size > 1;
+  const diffCount = CHECKS.filter(c => differs(c.id)).length;
   const head = s => `<a href="${escapeHTML(reportUrl(s))}">${escapeHTML(s.name)}</a><br><small>${escapeHTML(s.postcode || "")} · checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}</small>`;
+  $("compareTitle").textContent = `Comparing ${list.length === 3 ? "three" : "two"} properties`;
   $("compareBody").innerHTML = `
-    <div class="table-wrap"><table class="compare-table">
-      <thead><tr><th>Topic</th><th>${head(a)}</th><th>${head(b)}</th></tr></thead>
+    <label class="diff-only"><input type="checkbox" id="diffOnly"> Show only topics that differ</label>
+    <p class="help" id="diffHelp" role="status"></p>
+    <div class="table-wrap"><table class="compare-table" id="compareTable">
+      <thead><tr><th>Topic</th>${list.map(s => `<th>${head(s)}</th>`).join("")}</tr></thead>
       <tbody>
-        <tr><td>Overall</td><td>${countChips(a.checks)}</td><td>${countChips(b.checks)}</td></tr>
-        ${CHECKS.map(c => `<tr><td>${escapeHTML(c.title)}</td><td>${cell(a, c.id)}</td><td>${cell(b, c.id)}</td></tr>`).join("")}
+        <tr><td>Overall</td>${list.map(s => `<td>${countChips(s.checks)}</td>`).join("")}</tr>
+        ${CHECKS.map(c => `<tr${differs(c.id) ? "" : ' class="same"'}><td>${escapeHTML(c.title)}</td>${list.map(s => `<td>${cell(s, c.id)}</td>`).join("")}</tr>`).join("")}
       </tbody>
     </table></div>
     <p class="help">Saved results from the day each property was checked. Open a property to run its checks again with the latest data.</p>`;
+  const showDiff = () => {
+    const only = $("diffOnly").checked;
+    $("compareTable").classList.toggle("only-diff", only);
+    $("diffHelp").textContent = !diffCount ? "Every topic has the same rating for these properties."
+      : only ? `Showing the ${plural(diffCount, "topic", "topics")} with different ratings, of ${CHECKS.length}.`
+      : `${plural(diffCount, "topic has", "topics have")} different ratings, of ${CHECKS.length}.`;
+  };
+  $("diffOnly").disabled = !diffCount;
+  $("diffOnly").addEventListener("change", showDiff);
+  showDiff();
   prepareTables($("compareBody"), "Comparison");
   $("comparePanel").classList.remove("hidden");
   $("comparePanel").scrollIntoView({ behavior: "smooth", block: "start" });

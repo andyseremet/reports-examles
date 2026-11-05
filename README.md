@@ -52,7 +52,7 @@ official checkers.
   phone its edge fades to show that it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open), and the
   count boxes in the summary go to the first topic with that rating. There is also a back-to-top button.
 - **Save and share:** every report is saved on your device (nothing is sent anywhere). Reopen saved properties,
-  **compare two side by side**, tick off the checklists (remembered per property; each list shows, for example, "2 of 7 done"), and share with the phone's share menu.
+  **compare two or three side by side** (with a switch to show only the topics that differ), tick off the checklists (remembered per property; each list shows, for example, "2 of 7 done"), and share with the phone's share menu.
 - **Clear at a glance:** a row of topic icons shows every result's colour; tap one to see the reason in one line,
   with a link to the full section. On phones, tables become easy-to-read cards and
   "Check this property" stays at the bottom of the screen until pressed.
