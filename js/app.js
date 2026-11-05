@@ -1131,7 +1131,8 @@ function dataGapsBox(results) {
   const askInstead = c => {
     if (gapKind(c) === "down") {
       return `<button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button>` +
-        (c.source && c.source.url ? ` or use ${link(c.source.url, c.source.name)}` : "");
+        (c.source && c.source.url ? ` or use ${link(c.source.url, c.source.name)}` : "") +
+        `. Is it down for everyone? See ${link(new URL("status.html", location.href).href, "data service status")}.`;
     }
     if (gapKind(c) === "saved") return "Press “Refresh with the latest data” above.";
     if (c.actions && c.actions.length) return c.actions[0];

@@ -110,9 +110,10 @@ A static site with no build step and no libraries other than Leaflet (the map). 
 | `js/checks/flood.js`, `ground.js`, `living.js`, `planning.js` | The topics in each report section: turning data into plain-English results. |
 | `js/checks/index.js` | Shared check helpers and the list of report topics. |
 | `js/app.js` | The map, search, running the checks, the report, saved properties, sharing and start-up. |
+| `status.html`, `js/status.js` | The data service status page: a separate page with its own small script. |
 | `sw.js` | Offline support: keeps the app files so it opens without a connection. |
 | `data/` | Fixed official data saved with the app (see below). |
-| `tests/` | The automatic live check, and the syntax check (`node tests/syntax-check.mjs`). |
+| `tests/` | The automatic live check, the syntax check (`node tests/syntax-check.mjs`), and `publish-status.mjs`, which builds the status page's file. |
 
 The JavaScript files are plain scripts that share one global scope. `index.html` loads them in order, and each file
 can use what earlier files define.
@@ -143,6 +144,10 @@ That server sometimes refuses GitHub's shared test machines outright ("403 Forbi
 answering everyone else. That refusal, and only that, is shown as a **warning** (⚠️ in the summary) instead of a
 failure, so it does not open an issue. Any other problem with that server, such as an error, a slow answer or wrong
 content, still fails the check. If the warning appears for several days in a row, check the live site by hand.
+
+After each daily (or manual) run on `main`, a separate step publishes each data service's result to the `status`
+branch (`status.json`, with 7 days of history). The [data service status page](https://andyseremet.github.io/reports-examles/status.html)
+reads that file, so a buyer can see when a topic is down for everyone. Pull request runs do not publish.
 
 Run it yourself: `npm install playwright@1.49.1 && npx playwright install chromium && node tests/live-check.mjs`
 (set `BASE` to test another address, for example a local copy; set `PAUSE_MS=0` to skip the pauses).

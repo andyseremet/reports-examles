@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Data service status – Property Location Check</title>
+<meta name="description" content="Which official data services used by Property Location Check worked in this morning's automatic check.">
+<meta name="theme-color" content="#10243a">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header>
+  <div class="title-row">
+    <h1>Property Location Check</h1>
+  </div>
+</header>
+
+<main class="container">
+  <section class="panel">
+    <p><a href="./">← Back to the property check</a></p>
+    <h2>Data service status</h2>
+    <p>The report uses free official data services. Every morning at about 05:17 UTC an automatic check tests each
+       one. If a service is not answering, the topics it feeds may show “Not available” in reports until it is back.</p>
+    <div id="statusBox" aria-live="polite"><p>Loading today's results…</p></div>
+  </section>
+</main>
+
+<footer>
+  Property Location Check · Contains public sector information licensed under the Open Government Licence v3.0
+  <p><a href="./">Back to the property check</a></p>
+</footer>
+
+<script src="js/status.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 // connection. Live data (flood, radon, noise, maps) always comes from the
 // network and is never stored here; only fixed data that never changes (Census 2021
 // figures) is kept once it has been used.
-const CACHE = "plc-v15";
+const CACHE = "plc-v16";
 const SHELL = [
   "./",
   "./index.html",
@@ -45,13 +45,15 @@ self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
 
-  // The page: try the network first so updates appear straight away.
+  // The page: try the network first so updates appear straight away. Only the app's own page is saved as
+  // the offline copy; other pages (such as status.html) are not, so they never replace it.
   if (request.mode === "navigate") {
+    const path = new URL(request.url).pathname;
+    const isApp = path.endsWith("/") || path.endsWith("/index.html");
     event.respondWith(
       fetch(request)
         .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put("./index.html", copy));
+          if (isApp && response.ok) { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put("./index.html", copy)); }
           return response;
         })
         .catch(() => caches.match("./index.html"))

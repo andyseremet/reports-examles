@@ -15,6 +15,7 @@ on:
   pull_request:
     paths:
       - "index.html"
+      - "status.html"
       - "css/**"
       - "js/**"
       - "sw.js"
@@ -85,3 +86,39 @@ jobs:
             } else {
               await github.rest.issues.create({ ...context.repo, title, body: body.slice(0, 60000) });
             }
+
+  # After a daily (or manual) check of the live site on main, publish the result of each
+  # data service for the status page (status.html). It goes to a separate "status" branch,
+  # so main stays clean; the page reads it from raw.githubusercontent.com.
+  publish-status:
+    needs: check
+    if: always() && needs.check.result != 'cancelled' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v6
+
+      - name: Get today's results
+        uses: actions/download-artifact@v7
+        with:
+          name: live-check-results
+          path: test-results/
+
+      - name: Publish to the status branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          prev=none
+          if git fetch --depth 1 origin status 2>/dev/null; then
+            git show FETCH_HEAD:status.json > /tmp/previous.json 2>/dev/null && prev=/tmp/previous.json
+          fi
+          node tests/publish-status.mjs test-results/status.json "$prev" /tmp/status.json
+          git switch --orphan status-new
+          git rm -rq --cached . 2>/dev/null || true
+          cp /tmp/status.json status.json
+          git add status.json
+          git commit -qm "Data service status $(date -u +%Y-%m-%d)"
+          git push -f origin HEAD:status

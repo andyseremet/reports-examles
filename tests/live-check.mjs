@@ -80,6 +80,36 @@ const SERVICES = [
   ["Census 2021 residents (saved with the app)", new URL("data/census2021-msoa-residents.json", BASE).href, d => Object.keys(d.residents || {}).length === 7264 && d.residents.E02001521 > 0, { sameSite: true }]
 ];
 
+// The report topics each service feeds, shown on the data service status page (status.html).
+// Every row of SERVICES must have an entry here; the check fails if one is missing.
+const SERVICE_TOPICS = {
+  "Postcodes (postcodes.io)": ["Every topic (finds the nearest postcode, council and country)", "Recent sale prices nearby"],
+  "Planning data (planning.data.gov.uk)": ["Flooding from rivers and the sea", "Past use of the land", "Air quality", "Planning restrictions and heritage", "Protected nature sites"],
+  "Surface water (Environment Agency)": ["Flooding from heavy rain (surface water)"],
+  "Radon (British Geological Survey)": ["Radon gas"],
+  "Landslides (British Geological Survey)": ["Landslides and ground movement"],
+  "Coal mining (Mining Remediation Authority)": ["Coal mining"],
+  "Road noise (Defra)": ["Noise: road, railway and aircraft"],
+  "Rail noise (Defra)": ["Noise: road, railway and aircraft"],
+  "Historic landfill (Environment Agency)": ["Past use of the land"],
+  "Coastal erosion (Environment Agency)": ["Coastal erosion"],
+  "Sold prices (HM Land Registry)": ["Recent sale prices nearby"],
+  "Air quality model (Open-Meteo)": ["Air quality"],
+  "Crime (data.police.uk)": ["Reported crime"],
+  "Police force for a place (data.police.uk)": ["Reported crime"],
+  "Census boundaries (ONS)": ["Reported crime (crime per 1,000 residents)"],
+  "Scotland flood maps (SEPA)": ["Flooding, for homes in Scotland"],
+  "Wales flood maps (Natural Resources Wales)": ["Flooding, for homes in Wales"],
+  "Address search (OpenStreetMap Nominatim)": ["Finding the property by address"],
+  "Council list (planning.data.gov.uk)": ["Protected trees and Article 4 areas"],
+  "Protected trees and Article 4 (planning.data.gov.uk)": ["Protected trees and Article 4 areas"],
+  "Schools register (planning.data.gov.uk)": ["Schools, doctors and transport"],
+  "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
+  "Postcode lookup for many postcodes (postcodes.io)": ["Schools, doctors and transport"],
+  "Railway station list (saved with the app)": ["Schools, doctors and transport"],
+  "Census 2021 residents (saved with the app)": ["Reported crime (crime per 1,000 residents)"]
+};
+
 async function checkService([name, url, expect, options = {}]) {
   const started = Date.now();
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -328,6 +358,34 @@ async function testDevice(device, [postcode, place]) {
     return r.townFound.replace(/<[^>]+>/g, "").slice(0, 90) + "…";
   });
 
+  await step("Data service status page", async () => {
+    // Open status.html with a sample of today's results (the published file may not exist yet on a pull
+    // request), and check it lists every service with a status, its topics and the 7-day dots.
+    const sample = {
+      checked: new Date().toISOString(),
+      services: SERVICES.map(([name], i) => ({ name, status: i === 2 ? "fail" : "ok", detail: i === 2 ? "HTTP 503" : "120 ms", topics: SERVICE_TOPICS[name] || [] })),
+      history: [{ date: new Date().toISOString().slice(0, 10), services: {} }]
+    };
+    const statusPage = await page.context().newPage();
+    const errors = [];
+    statusPage.on("pageerror", e => errors.push(e.message));
+    await statusPage.route("https://raw.githubusercontent.com/**", r => r.fulfill({ json: sample }));
+    await statusPage.goto(new URL("status.html", BASE).href);
+    await statusPage.waitForSelector(".status-table tbody tr", { timeout: 15000 });
+    const r = await statusPage.evaluate(() => ({
+      rows: document.querySelectorAll(".status-table tbody tr").length,
+      down: document.querySelectorAll(".status-table .chip.high").length,
+      verdict: document.querySelector(".verdict")?.textContent || "",
+      back: !!document.querySelector('a[href="./"]')
+    }));
+    await statusPage.close();
+    if (errors.length) throw new Error("page errors: " + errors.join("; "));
+    if (r.rows !== SERVICES.length) throw new Error(`${r.rows} rows for ${SERVICES.length} services`);
+    if (r.down !== 1 || !/1 of \d+ services/.test(r.verdict)) throw new Error("the service that did not answer is not shown as such: " + r.verdict);
+    if (!r.back) throw new Error("no link back to the app");
+    return `${r.rows} services listed; ${r.verdict.trim()}`;
+  });
+
   await step("Send to my conveyancer", async () => {
     const text = await page.evaluate(() => conveyancerText());
     if (!text.includes("?lat=") || !text.includes("Please could you include these searches")) throw new Error("the email text is incomplete");
@@ -397,6 +455,9 @@ async function testDevice(device, [postcode, place]) {
 let browser;
 const reports = {};
 try {
+  const noTopics = SERVICES.map(([name]) => name).filter(name => !SERVICE_TOPICS[name]);
+  record("Data services", "Every service lists the report topics it feeds", !noTopics.length,
+    noTopics.length ? "missing in SERVICE_TOPICS: " + noTopics.join("; ") : `${SERVICES.length} services`);
   for (const service of SERVICES) await checkService(service);
   browser = await chromium.launch();
   const randomPlace = await randomEnglishPostcode();
@@ -448,6 +509,14 @@ Object.entries(reports).forEach(([name, topics]) => {
 const summary = lines.join("\n");
 writeFileSync(`${OUT}/summary.md`, summary);
 writeFileSync(`${OUT}/results.json`, JSON.stringify({ base: BASE, date: new Date().toISOString(), results, reports }, null, 2));
+// For the data service status page: one row per outside service (published by the daily run only).
+writeFileSync(`${OUT}/status.json`, JSON.stringify({
+  checked: new Date().toISOString(), base: BASE,
+  services: SERVICES.map(([name]) => {
+    const r = results.find(x => x.group === "Data services" && x.name === name);
+    return { name, status: !r ? "fail" : r.warn ? "warn" : r.pass ? "ok" : "fail", detail: r ? r.info.slice(0, 200) : "not checked", topics: SERVICE_TOPICS[name] || [] };
+  })
+}, null, 2));
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 console.log(`\n${results.length - failed.length} of ${results.length} checks passed` + (warned.length ? ` (${warned.length} with a warning).` : "."));
 process.exit(failed.length ? 1 : 0);

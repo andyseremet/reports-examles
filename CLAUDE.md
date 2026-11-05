@@ -13,6 +13,9 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   check helpers, `CHECKS`, `TOPIC_ICONS`, `COVERAGE`) → `app.js` (map, search, run, report, saved, share, start).
   Code that runs at load time may only use what an earlier file defines. A new JS file must be added to `index.html`
   and to `SHELL` in `sw.js`.
+- `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
+  `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
+  in `SERVICES` (`tests/live-check.mjs`) also needs its report topics in `SERVICE_TOPICS`.
 
 ## Commands
 
@@ -40,8 +43,8 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Adding a topic:** a fetch function and its row in `TASKS` (`js/data.js`), the check in its section's
   `js/checks/` file, rows in `CHECKS`, `TOPIC_ICONS` and `COVERAGE` (if it does not cover all of England, Wales and
   Scotland) in `js/checks/index.js`, and `SERVICES` in `tests/live-check.mjs`.
-- **Releases** (run `/release`, see `.claude/skills/release/SKILL.md`): any change to `index.html`, `css/`, `js/`,
-  `sw.js` or `data/` raises `APP_VERSION` (`js/core.js`) and `CACHE` (`sw.js`, `plc-vN`) together. In the same commit, update `README.md`, and move the shipped items in `ROADMAP.md`
+- **Releases** (run `/release`, see `.claude/skills/release/SKILL.md`): any change to `index.html`, `status.html`, `css/`,
+  `js/`, `sw.js` or `data/` raises `APP_VERSION` (`js/core.js`) and `CACHE` (`sw.js`, `plc-vN`) together. In the same commit, update `README.md`, and move the shipped items in `ROADMAP.md`
   into Part 1.
 
 ## Working with the owner
@@ -63,7 +66,8 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 ## Tests and CI
 
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
-  that change `index.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow. A failed daily or manual run
+  that change `index.html`, `status.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
+  Daily and manual runs on `main` then publish `status.json` to the `status` branch for the status page. A failed daily or manual run
   opens or updates a "Live check failed" issue.
 - Never skip, remove or loosen a test step to get a pass. The only allowed `"warn"` result is the Environment Agency
   map server refusing GitHub's machines with HTTP 403.
