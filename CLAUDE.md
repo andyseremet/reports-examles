@@ -53,7 +53,7 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   plan and ask quiz-style questions (with a recommended answer). Small fixes need no quiz.
 - **Free for everyone:** every feature stays free. Never add a paywall, forced payment, adverts or accounts. Support
   for the app's development is always voluntary, and only ever as a separate optional module that the app reaches
-  through hooks, so the app works the same without it (see ROADMAP "Later: optional support module").
+  through hooks, so the app works the same without it (see `MONETISATION.md`).
 - **Steady changes:** improve in small steps; no redesigns, new libraries or build step without asking. English only.
 - **Small commits:** one change per commit, with a clear message.
 - **Pull requests:** open one only when asked, and never merge or approve; the owner merges. After a merge, restart
