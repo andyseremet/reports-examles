@@ -38,7 +38,8 @@ official checkers.
    "Where we could not give an answer" box listing topics with no answer and who to ask instead, then results grouped into
    Flooding, Ground and land, Living environment, and Planning and
    surroundings, ending with a checklist for the seller and conveyancer.
-5. Copy the link, download the report, or print / save it as a PDF.
+5. Press **Share** to copy or send the link, or **Save or print** to download the report, print a summary, or
+   print / save the full report as a PDF.
 
 ## Features for easy use
 
@@ -76,7 +77,8 @@ official checkers.
   and suggests **Download a backup** once you have 5 or more saved properties and no backup in the last 30 days.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
   message at the top, and starts by itself when the signal returns.
-- **Printouts:** a short "Print summary" option, or the full report.
+- **Save or print:** one menu with Download report, Print summary (the summary, notes and checklist) and Print full
+  report, each with a one-line description.
 - **Comfort:** dark mode follows your device setting; **A+** makes text larger; **install as an app** on your phone's
   home screen (on iPhone: Share, then Add to Home Screen).
 

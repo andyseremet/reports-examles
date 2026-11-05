@@ -311,7 +311,7 @@ function setLocation(lat, lon, label, options = {}) {
   showSearchStatus(inUK ? "" : "This location is outside the UK. The checks cover England, and some cover Scotland, Wales and Northern Ireland.", !inUK);
 
   // Keep a searched name when the pin is only nudged (within 200 m), and never
-  // overwrite a name the user typed in Advanced options.
+  // overwrite a name the user typed in More options.
   if (label) namedPlace = { lat, lon, label };
   else if (namedPlace && distanceKm(namedPlace, { lat, lon }) <= 0.2) label = namedPlace.label;
   else namedPlace = null;
@@ -848,10 +848,10 @@ function renderSources() {
       <td>${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}</td>
       <td>${escapeHTML(c.dataDate || "Checked live on " + today())}</td></tr>`).join("");
   $("sourcesBox").innerHTML = `
-    <section class="group" id="sources">
-      <h2>Data sources and dates</h2>
+    <details class="group sources-fold" id="sources">
+      <summary><h2>Data sources and dates <span class="muted-count">(${plural(orderedResults().filter(c => c.source && c.source.name).length, "topic")})</span></h2></summary>
       <div class="table-wrap"><table><thead><tr><th>Topic</th><th>Source</th><th>Data date</th></tr></thead><tbody>${rows}</tbody></table></div>
-    </section>`;
+    </details>`;
   prepareTables($("sourcesBox"), "Data sources");
 }
 
@@ -1102,6 +1102,7 @@ function renderSummary() {
             <span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
       }).join("")}
     </ul>
+    <p class="help strip-hint no-print">Tap a topic to see why. Colours match the boxes above.</p>
     ${whyBox()}
     ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
       <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
@@ -1386,7 +1387,7 @@ function renderSaved() {
   $("backupNote").classList.toggle("hidden", !backupDue(saved.length));
   $("savedList").innerHTML = saved.map(s => `
     <li>
-      <label class="cmp" title="Select to compare"><input type="checkbox" data-compare="${escapeHTML(s.key)}" aria-label="Compare ${escapeHTML(s.name)}"></label>
+      <label class="cmp" title="Select to compare"><input type="checkbox" data-compare="${escapeHTML(s.key)}" aria-label="Compare ${escapeHTML(s.name)}"><span aria-hidden="true">Compare</span></label>
       <button class="star-btn" type="button" data-star="${escapeHTML(s.key)}" aria-pressed="${s.starred ? "true" : "false"}"
         title="${s.starred ? "Remove from shortlist" : "Add to shortlist"}" aria-label="Shortlist ${escapeHTML(s.name)}">${s.starred ? "★" : "☆"}</button>
       <div class="saved-main">
@@ -1568,11 +1569,11 @@ $("shareBtn").addEventListener("click", async () => {
   }
   try {
     await navigator.clipboard.writeText(url);
-    $("shareBtn").textContent = "Link copied ✓";
+    $("shareText").textContent = "Link copied ✓";
   } catch (e) {
     prompt("Copy this link:", url);
   }
-  setTimeout(() => { $("shareBtn").textContent = "Share"; }, 2500);
+  setTimeout(() => { $("shareText").textContent = "Share"; }, 2500);
 });
 
 function downloadFile(filename, content, type) {
@@ -1633,6 +1634,14 @@ window.addEventListener("beforeprint", () => {
 window.addEventListener("afterprint", () => {
   closedBeforePrint.forEach(d => { d.open = false; });
   document.body.classList.remove("print-summary");
+});
+
+// "Save or print" menu: close it after a choice, on a click elsewhere, or with Escape.
+const closeSaveMenu = () => { $("saveMenu").open = false; };
+document.querySelectorAll(".save-menu-list button").forEach(b => b.addEventListener("click", closeSaveMenu));
+document.addEventListener("click", e => { if ($("saveMenu").open && !e.target.closest("#saveMenu")) closeSaveMenu(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("saveMenu").open) { closeSaveMenu(); $("saveMenuBtn").focus(); }
 });
 
 $("printReport").addEventListener("click", () => window.print());

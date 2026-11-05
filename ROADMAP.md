@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.16.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.17.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -11,12 +11,13 @@ Property Location Check: what the app does today, and what is planned next.
 
 ---
 
-## Part 1: What the app does today (version 1.16.0)
+## Part 1: What the app does today (version 1.17.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
 - Map with street and satellite backgrounds, a "my location" button and a full-screen view.
-- A pin you can drag onto the exact property, with a choice of nearby search distance (250 m, 500 m, 1 km or 2 km).
+- A pin you can drag onto the exact property, with a choice of nearby search distance (250 m, 500 m, 1 km or 2 km),
+  in "More options: name, exact location, distance".
 - Phone-friendly map: one finger scrolls the page, two fingers move the map; Ctrl (⌘) + scroll zooms on computers.
 
 ### Topics checked (official open data)
@@ -59,7 +60,9 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 - A "Where we could not give an answer" box: every topic with no real answer, why (not covered here, no data found,
   service not answering) and who to ask instead, with "Try again" for a service that is down. Hidden when every topic
   has an answer; included in the printed summary and the download, without buttons.
-- A row of topic icons: tap one to see the reason in one line.
+- A row of topic icons: tap one to see the reason in one line. A hint under them says so, and that the colours
+  match the count boxes.
+- "Data sources and dates" at the end folds away (opens on click, and always in print and downloads).
 - Each topic has a **Data:** line saying how current its data is.
 - A section bar that stays at the top while scrolling, with Open all / Close all and back to top.
 - Checklist for the seller and conveyancer, with ticks remembered for each property.
@@ -78,14 +81,17 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 ### Saved properties
 - Every report is saved on the device only, nothing is sent anywhere.
 - Saved reports reopen instantly, with a refresh button; results older than 3 months are marked.
-- Private notes, a starred shortlist, and **compare two properties side by side**.
+- Private notes, a starred shortlist, and **compare two properties side by side** (each tick box is labelled
+  "Compare").
 - Export and import, to move the list to another device.
 - Backup reminder once you have 5 or more saved properties and no backup in 30 days.
 - The app asks the browser to keep saved data, and says plainly if something could not be saved.
 
 ### Share, print and export
 - Shareable links (`?postcode=` or `?lat=&lon=&name=&r=`) and the phone's share menu.
-- Download the report, print it or save it as a PDF; a short "Print summary" option.
+- A **Share** button with the share icon (the phone's share menu, or copy the link).
+- One **Save or print** menu: Download report, Print summary, or Print full report (or save as PDF), each with a
+  one-line description.
 
 ### Comfort and access
 - Dark mode follows the device setting; **A+** makes text larger.
@@ -94,6 +100,7 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
   least 24 × 24 pixels.
 - Back button returns from a report to the map and closes the full-screen map.
 - Privacy: no account, cookies or tracking; "Privacy: what is sent where" explains every outside request.
+- A short footer with the required licence statements; "Data credits and licences" opens the full list.
 
 ### Behind the scenes
 - Since 1.16.0 the code is split into files: `index.html` (the page), `css/app.css` (styles) and `js/` (core,
@@ -115,7 +122,6 @@ a pass.
 
 | Idea | What it does |
 |---|---|
-| Simpler print options | One "Print or save as PDF" button with a choice of short summary or full report, instead of separate buttons. |
 | Data service health page | A simple page showing which outside data services worked in today's automatic check, so a buyer can see when a topic is down for everyone. |
 
 ---
@@ -131,8 +137,8 @@ Suggested in the quiz but not chosen this time. They can be picked up in a futur
 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales. |
 | Fuller coverage for Scotland | Fill topics that say "Check yourself" in Scotland. |
 | Welsh language | Removed on 4 November 2026: the app stays in English only. |
-| Remove "Download report" | Considered on 4 November 2026 and kept; may be covered by "Simpler print options". |
-| Remove the latitude and longitude boxes | Considered on 4 November 2026 and kept, in Advanced options. |
+| Remove "Download report" | Considered on 4 November 2026 and kept; since 1.17.0 it is in the "Save or print" menu. |
+| Remove the latitude and longitude boxes | Considered on 4 November 2026 and kept, in More options. |
 | Remove or reduce railway noise, landslides, aircraft | Considered on 4 November 2026 and kept as they are. |
 | Power lines and pylons | Dropped on 5 November 2026: the data is mostly downloads, not live services, and it changes as lines are built. Buyers can use the official network maps instead. |
 | Softer air quality rating | Considered on 4 November 2026; the council hotspot stays "Worth checking". |
