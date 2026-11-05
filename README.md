@@ -73,15 +73,16 @@ official checkers.
   never reports it as clear. If part of a topic fails (for example the school search), it is tried again and, if still
   missing, named in the topic's summary line.
 - **Privacy:** no account, cookies or tracking; see "Privacy: what is sent where" at the bottom of the page.
-- **Saved properties:** reopen instantly from saved results (with a refresh button), private notes, a starred shortlist,
-  and export/import to move the list to another device. Saved properties live only in the browser, so the app asks the
+- **Saved properties:** reopen instantly from saved results (with a refresh button), private notes (marked "Saved on
+  this device", with "Saved ✓" after each change), a starred shortlist, **Rename** and **Remove** buttons (Remove offers
+  **Undo** for 10 seconds), and export/import to move the list to another device. Saved properties live only in the browser, so the app asks the
   browser to keep them, says plainly if something could not be saved (for example, storage full or a private window),
   and suggests **Download a backup** once you have 5 or more saved properties and no backup in the last 30 days.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
   message at the top, and starts by itself when the signal returns.
 - **Save or print:** one menu with Download report, Print summary (the summary, notes, viewing list and checklist) and Print full
   report, each with a one-line description.
-- **Comfort:** dark mode follows your device setting; **A+** makes text larger; **install as an app** on your phone's
+- **Comfort:** dark mode follows your device setting; **A+ Text size** makes text larger (just "A+" on a phone); **install as an app** on your phone's
   home screen (on iPhone: Share, then Add to Home Screen).
 
 ### Shareable links
@@ -132,7 +133,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 
 It checks that all 23 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
-full screen, the offline message, the section bar, the topic icons, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes,
+full screen, the offline message, the section bar, the topic icons, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo,
 printing and downloads. Results,
 screenshots and sample reports are kept for 14 days with each run.
 

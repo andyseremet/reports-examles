@@ -842,6 +842,7 @@ function renderNotes() {
       <h2><label for="notesText" style="display:inline;font-size:inherit">Your notes</label>${infoButton("info-notes", "About notes")}</h2>
       ${infoBox("info-notes", "<p>Private notes for this property, for example viewing times or questions. Saved only on this device, and included when you print or download the report.</p>")}
       <textarea id="notesText" rows="4" placeholder="e.g. Viewing on Saturday at 10am. Ask about the damp patch in the back bedroom."></textarea>
+      <p class="help notes-status no-print">Saved on this device <span id="notesFlash" aria-live="polite"></span></p>
       <div class="notes-print" aria-hidden="true"></div>
     </section>`;
   $("notesText").value = text;
@@ -854,8 +855,21 @@ document.addEventListener("input", e => {
   const text = e.target.value;
   $("notesBox").querySelector(".notes-print").textContent = text;
   clearTimeout(notesTimer);
-  notesTimer = setTimeout(() => { store.set(notesKey(), text); renderSaved(); }, 400);
+  notesTimer = setTimeout(() => {
+    const ok = store.set(notesKey(), text);
+    renderSaved();
+    flashNotes(ok ? "Saved ✓" : "Not saved: see the message at the top");
+  }, 400);
 });
+// A short "Saved ✓" after each change, read out once by screen readers.
+let notesFlashTimer = null;
+function flashNotes(msg) {
+  const el = $("notesFlash");
+  if (!el) return;
+  el.textContent = msg;
+  clearTimeout(notesFlashTimer);
+  notesFlashTimer = setTimeout(() => { el.textContent = ""; }, 2000);
+}
 
 // Where each result came from, and how current the data is.
 function renderSources() {
@@ -1117,8 +1131,10 @@ function renderSummary() {
         const st = res ? res.status : "loading";
         const [icon, short] = TOPIC_ICONS[c.id];
         const label = res ? STATUS_LABEL[st] : "Checking";
+        // The spoken name starts with the visible short name, so voice control users can say it.
+        const name = ` ${c.title.toLowerCase()} `.includes(` ${short.toLowerCase()} `) ? c.title : `${short} (${c.title})`;
         return `<li><button type="button" class="topic ${st}" data-why="${c.id}" aria-controls="whyBox"
-            aria-expanded="${run.whyId === c.id}" aria-label="${escapeHTML(c.title)}: ${label}. Show why">
+            aria-expanded="${run.whyId === c.id}" aria-label="${escapeHTML(name)}: ${label}. Show why">
             <span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
       }).join("")}
     </ul>
@@ -1425,7 +1441,7 @@ function countChips(checks) {
 function renderSaved() {
   const raw = store.get(SAVED_KEY, []);
   const saved = Array.isArray(raw) ? [...raw].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)) : [];
-  $("savedPanel").classList.toggle("hidden", !saved.length);
+  $("savedPanel").classList.toggle("hidden", !saved.length && !undoRemove);
   $("backupNote").classList.toggle("hidden", !backupDue(saved.length));
   $("savedList").innerHTML = saved.map(s => `
     <li>
@@ -1438,8 +1454,8 @@ function renderSaved() {
         <div class="mini-counts">${countChips(s.checks)}</div>
       </div>
       <div class="saved-btns">
-        <button class="link-btn" type="button" data-rename="${escapeHTML(s.key)}">Rename</button>
-        <button class="link-btn" type="button" data-remove="${escapeHTML(s.key)}">Remove</button>
+        <button class="saved-act icon-label" type="button" data-rename="${escapeHTML(s.key)}" aria-label="Rename ${escapeHTML(s.name)}">${icon("pencil")}Rename</button>
+        <button class="saved-act icon-label" type="button" data-remove="${escapeHTML(s.key)}" aria-label="Remove ${escapeHTML(s.name)}">${icon("bin")}Remove</button>
       </div>
     </li>`).join("");
   updateCompareButton();
@@ -1497,7 +1513,8 @@ $("savedList").addEventListener("click", e => {
     input.value = linkEl.textContent;
     input.setAttribute("aria-label", "New name for this property");
     linkEl.replaceWith(input);
-    ren.textContent = "Save";
+    ren.innerHTML = icon("check") + "Save";
+    ren.setAttribute("aria-label", "Save the new name");
     input.focus();
     input.select();
     let finished = false;
@@ -1523,9 +1540,49 @@ $("savedList").addEventListener("click", e => {
   }
   const btn = e.target.closest("[data-remove]");
   if (!btn) return;
-  store.set(SAVED_KEY, store.get(SAVED_KEY, []).filter(s => s.key !== btn.dataset.remove));
-  store.remove(snapKey(btn.dataset.remove));
+  removeSaved(btn.dataset.remove);
+});
+
+// Remove a saved property, with "Undo" for a short time. Its report copy is kept in memory
+// until then, so Undo puts it back exactly as it was. Notes and ticks stay on the device.
+const UNDO_MS = 10000;
+let undoRemove = null;   // { item, index, snap, timer }
+function removeSaved(key) {
+  finishUndo();
+  const list = store.get(SAVED_KEY, []);
+  const index = list.findIndex(s => s.key === key);
+  if (index < 0) return;
+  const item = list[index];
+  undoRemove = { item, index, snap: store.get(snapKey(key), null), timer: setTimeout(() => finishUndo(true), UNDO_MS) };
+  list.splice(index, 1);
+  store.set(SAVED_KEY, list);
+  store.remove(snapKey(key));
   renderSaved();
+  $("undoText").textContent = `Removed ${item.name}.`;
+  $("undoBar").classList.remove("hidden");
+  $("undoBtn").focus();
+}
+// End the Undo offer: the removal stays. If the Undo button had focus, keep focus in the list.
+function finishUndo(timedOut) {
+  if (!undoRemove) return;
+  clearTimeout(undoRemove.timer);
+  undoRemove = null;
+  const hadFocus = document.activeElement === $("undoBtn");
+  $("undoBar").classList.add("hidden");
+  if (timedOut) renderSaved();
+  if (hadFocus) ($("savedPanel").classList.contains("hidden") ? $("q") : $("savedTitle")).focus();
+}
+$("undoBtn").addEventListener("click", () => {
+  if (!undoRemove) return;
+  const { item, index, snap } = undoRemove;
+  const list = store.get(SAVED_KEY, []).filter(s => s.key !== item.key);
+  list.splice(Math.min(index, list.length), 0, item);
+  store.set(SAVED_KEY, list);
+  if (snap) store.set(snapKey(item.key), snap);
+  finishUndo();
+  renderSaved();
+  const link = [...document.querySelectorAll("#savedList [data-remove]")].find(b => b.dataset.remove === item.key);
+  if (link) link.closest("li").querySelector(".saved-main a").focus();
 });
 
 /* ---------- move the saved list to another device (a small file; no account) ---------- */
