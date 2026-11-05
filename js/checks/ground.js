@@ -150,11 +150,11 @@ function checkLanduseWales(R) {
   const tips = R.coalTips.value || [];
   const council = okValue(R, "place") ? R.place.value.admin_district + " Council" : "the local council";
   const within = formatRadius(R.loc.radius);
-  const close = tips.filter(t => (t.distanceKm ?? 0) <= COAL_TIP_CLOSE_KM);
+  const close = tips.filter(t => t.distanceKm != null && t.distanceKm <= COAL_TIP_CLOSE_KM);
   const higher = tips.filter(t => t.category === "C" || t.category === "D");
   const status = close.length ? "medium" : tips.length ? "info" : "manual";
   const found = tips.length
-    ? `${plural(tips.length, "disused coal tip")} within ${within}, the nearest about ${formatDistance(tips[0].distanceKm)} away${higher.length ? ` (${plural(higher.length, "tip")} in the more often inspected categories C and D)` : ""}. Landfill and contaminated land are not published for Wales.`
+    ? `${plural(tips.length, "disused coal tip")} within ${within}${tips[0].distanceKm == null ? "" : `, the nearest about ${formatDistance(tips[0].distanceKm)} away`}${higher.length ? ` (${plural(higher.length, "tip")} in the more often inspected categories C and D)` : ""}. Landfill and contaminated land are not published for Wales.`
     : `No disused coal tips within ${within}. Old landfill sites and contaminated land are not published for Wales, so check these another way.`;
   return {
     ...base, status, found, ...(status === "manual" && { gap: "coverage" }),

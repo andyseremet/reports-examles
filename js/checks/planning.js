@@ -91,7 +91,7 @@ function checkPlanningWales(R) {
       ? "Planning restrictions here: " + applies.map(a => a.name).join(", ") + "."
       : "No conservation area, listed building, National Park or similar restriction found here.",
     details: (applies.length ? `<ul>${applies.map(a => `<li><strong>${escapeHTML(a.name)}</strong>${a.detail ? " (" + escapeHTML(a.detail) + ")" : ""}: ${escapeHTML(a.what)}</li>`).join("")}</ul>` : "") +
-      (w.listedNear ? `<p>${plural(w.listedNear, "listed building")} within about ${WALES_LISTED_NEAR_M} m.</p>` : ""),
+      (w.listedNear ? `<p>${w.listedNearCapped ? "More than " + w.listedNear : plural(w.listedNear, "listed building")}${w.listedNearCapped ? " listed buildings" : ""} within ${WALES_LISTED_NEAR_M} m.</p>` : ""),
     meaning: `<p>These rules mainly matter if you plan to extend, alter or build. Conservation areas are drawn by each council;
       the national map may be a little out of date, so check with the council.</p>`,
     actions: [
@@ -106,16 +106,21 @@ function checkNatureWales(R) {
   const base = { source: { name: "Natural Resources Wales protected sites and Ancient Woodland Inventory 2021 (via DataMapWales)", url: LINKS.walesNature } };
   if (!R.walesSites.ok) return unavailable(base, R, "walesSites");
   const w = R.walesSites.value;
+  // Named sites can come back once per part, so repeats are removed; ancient woodland areas have no names, so each counts.
   const seen = new Set();
-  const found = w.nature.filter(e => { const k = e.kind + "|" + e.name; if (seen.has(k)) return false; seen.add(k); return true; });
+  const woods = w.nature.filter(e => e.kind === "Ancient woodland");
+  const sites = w.nature.filter(e => e.kind !== "Ancient woodland")
+    .filter(e => { const k = e.kind + "|" + e.name; if (seen.has(k)) return false; seen.add(k); return true; });
+  const found = [...sites, ...woods];
   const inSssi = w.sssi.length > 0;
-  const woods = found.filter(e => e.kind === "Ancient woodland"), sites = found.filter(e => e.kind !== "Ancient woodland");
   const within = `within about ${formatRadius(R.loc.radius)}`;
+  const counted = [sites.length && plural(sites.length, "protected nature site"), woods.length && plural(woods.length, "area") + " of ancient woodland"]
+    .filter(Boolean).join(" and ");
   return {
     ...base, status: found.length ? "info" : "low",
     found: inSssi
       ? `The property is inside a Site of Special Scientific Interest (${w.sssi[0]}).`
-      : found.length ? `${plural(sites.length + (woods.length ? 1 : 0), "protected nature site")} ${within}.` : `No protected nature sites ${within}.`,
+      : found.length ? `${counted} ${within}.` : `No protected nature sites ${within}.`,
     details: found.length ? `<ul>${sites.slice(0, 8).map(e => `<li>${escapeHTML(e.kind)}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}${
       woods.length ? `<li>Ancient woodland: ${plural(woods.length, "area")}</li>` : ""}</ul>` : "",
     meaning: "<p>Nature sites are usually a plus for buyers, but they can limit building work or land use nearby." +

@@ -410,11 +410,14 @@ async function testDevice(device, [postcode, place]) {
       const cdf = await R({ lat: 51.485167, lon: -3.178668, radius: 1000 }, ["noise", "railNoise", "walesSites"]);
       return {
         tips: checkLanduse(tre), coast: checkCoastal(borth), noise: checkNoise(cdf),
-        planning: checkPlanning(cdf), nature: checkNature(cdf), air: checkAir(cdf), country: cdf.place.value.country
+        planning: checkPlanning(cdf), nature: checkNature(cdf), air: checkAir(cdf), country: cdf.place.value.country,
+        // Missing hotspot data must never read as "not in a hotspot".
+        airNoHotspotData: checkAir({ ...cdf, walesSites: { ok: false, error: "test" }, air: { ok: true, value: { no2: 10, pm25: 5 } } }).status
       };
     });
     if (r.country !== "Wales") throw new Error(`postcodes.io says Cardiff is in ${r.country}`);
-    const bad = Object.entries(r).filter(([k, c]) => k !== "country" && ["manual", "error"].includes(c.status));
+    if (["low", "info"].includes(r.airNoHotspotData)) throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}"`);
+    const bad = Object.entries(r).filter(([k, c]) => !["country", "airNoHotspotData"].includes(k) && ["manual", "error"].includes(c.status));
     if (bad.length) throw new Error(bad.map(([k, c]) => `${k}: ${c.found}`).join(" | "));
     if (!["medium", "info"].includes(r.tips.status)) throw new Error(`no coal tips found near Treorchy: ${r.tips.found}`);
     if (!/Conservation area/.test(r.planning.found)) throw new Error(`no conservation area in central Cardiff: ${r.planning.found}`);

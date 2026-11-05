@@ -211,8 +211,9 @@ function checkAir(R) {
       ? { name: "Council Air Quality Management Areas in Wales (Welsh Government, via DataMapWales); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.walesAir }
       : { name: "Council Air Quality Management Areas (via planning.data.gov.uk); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.ukair }
   };
+  // Without the council hotspot data we cannot say "not in a hotspot" (missing data is never good news).
   const hotspots = wales ? "walesSites" : "planningPoint";
-  if (!R[hotspots].ok && !R.air.ok) return unavailable(base, R, wales ? "walesSites" : "air");
+  if (!R[hotspots].ok) return unavailable(base, R, hotspots);
 
   const ws = okValue(R, "walesSites");
   const here = wales ? (ws ? ws.aqma.map(name => ({ name })) : []) : byDataset(okValue(R, "planningPoint"), "air-quality-management-area");

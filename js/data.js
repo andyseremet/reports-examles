@@ -463,17 +463,19 @@ async function getSoldPrices(loc) {
   return { postcodes: postcodes.length, sales };
 }
 
-// Each data task: key, topic name, fetch function, and the service it waits for (named in the
-// "Still waiting for" note when a report is slow). Tasks start in this order. The Environment Agency
-// server answers only a few requests at a time (PACED_HOSTS), so its most important topic,
-// flooding from heavy rain, is listed first and road and rail noise last.
 /* ---------------------------------------------------------------
    Wales: DataMapWales (Welsh Government, Natural Resources Wales and Cadw), for the topics whose
    England data stops at the border. Outside Wales these return null without asking DataMapWales.
 --------------------------------------------------------------- */
+// A point well outside Wales answers at once, without waiting for the postcode lookup. If the lookup fails,
+// the England data is used, so a postcodes.io fault never stops the England topics.
+const WALES_BOX = { south: 51.3, north: 53.5, west: -5.4, east: -2.6 };
 async function inWales(loc) {
-  const place = await getPlace(loc);
-  return !!place && place.country === "Wales";
+  if (loc.lat < WALES_BOX.south || loc.lat > WALES_BOX.north || loc.lon < WALES_BOX.west || loc.lon > WALES_BOX.east) return false;
+  try {
+    const place = await getPlace(loc);
+    return !!place && place.country === "Wales";
+  } catch (e) { return false; }
 }
 
 // Ask a DataMapWales layer for the features in a square around the pin (no shapes, only the named fields).
@@ -507,15 +509,29 @@ const WALES_NATURE = [
 const WALES_LISTED_NEAR_M = 200, WALES_LISTED_HERE_M = 20;
 const tidy = v => String(v ?? "").replace(/\s+/g, " ").trim();
 
+// Cadw listed buildings (points) within WALES_LISTED_NEAR_M, with the distance to each, in one request.
+const WALES_LISTED_MAX = 500;
+async function walesListedNear(loc) {
+  const m = WALES_LISTED_NEAR_M, dLat = m / 111320, dLon = m / (111320 * Math.cos(loc.lat * Math.PI / 180));
+  const params = new URLSearchParams({
+    service: "WFS", version: "2.0.0", request: "GetFeature", typeNames: "inspire-wg:Cadw_ListedBuildings",
+    propertyName: "geom,Name,Grade", srsName: "EPSG:4326", count: WALES_LISTED_MAX, outputFormat: "application/json",
+    bbox: [loc.lat - dLat, loc.lon - dLon, loc.lat + dLat, loc.lon + dLon, "urn:ogc:def:crs:EPSG::4326"].join(",")
+  });
+  return ((await fetchJSON(API.dataMapWales + "?" + params)).features || []).map(f => {
+    const c = geometryCentre(f.geometry);
+    return { name: tidy(f.properties?.Name), grade: tidy(f.properties?.Grade), km: c ? distanceKm(loc, c) : Infinity };
+  });
+}
+
 async function getWalesSites(loc) {
   if (!(await inWales(loc))) return null;
   const layers = Object.values(WALES_AT);
-  const [atFeatures, nature, listed, listedHere, aqmaNear] = await Promise.all([
+  const [atFeatures, nature, listed, aqmaNear] = await Promise.all([
     wmsInfo(API.dataMapWales, layers.join(","), loc, 0.00005, { feature_count: 50, buffer: 0 }),
     Promise.all(WALES_NATURE.map(([layer, field, kind]) => walesFeaturesNear(layer, [field], loc, loc.radius)
       .then(list => list.map(p => ({ kind, name: tidy(p[field]) }))))).then(lists => lists.flat()),
-    walesFeaturesNear("inspire-wg:Cadw_ListedBuildings", ["Name", "Grade"], loc, WALES_LISTED_NEAR_M, 200),
-    walesFeaturesNear("inspire-wg:Cadw_ListedBuildings", ["Name", "Grade"], loc, WALES_LISTED_HERE_M, 10),
+    walesListedNear(loc),
     walesFeaturesNear("geonode:aqmas_wales", ["title"], loc, loc.radius)
   ]);
   const at = {};
@@ -529,7 +545,9 @@ async function getWalesSites(loc) {
     heritage: name("heritage", "Name"), nationalPark: name("nationalPark", "np_name"), landscape: name("landscape", "AONB_NAME"),
     aqma: name("aqma", "title"), sssi: name("sssi", "sssi_name"),
     nature, aqmaNear: [...new Set(aqmaNear.map(p => tidy(p.title)).filter(Boolean))],
-    listedNear: listed.length, listedHere: listedHere.map(p => ({ name: tidy(p.Name), grade: tidy(p.Grade) }))
+    listedNear: listed.filter(b => b.km <= WALES_LISTED_NEAR_M / 1000).length,
+    listedNearCapped: listed.length >= WALES_LISTED_MAX,
+    listedHere: listed.filter(b => b.km <= WALES_LISTED_HERE_M / 1000).map(b => ({ name: b.name, grade: b.grade }))
   };
 }
 
@@ -552,7 +570,7 @@ async function getWalesCoast(loc) {
   const dLat = COAST_NEAR_M / 111320, dLon = COAST_NEAR_M / (111320 * Math.cos(loc.lat * Math.PI / 180));
   const params = new URLSearchParams({
     service: "WFS", version: "2.0.0", request: "GetFeature", typeNames: "geonode:nrw_ncerm_all_smp", count: 300,
-    propertyName: "geom,epoch,medium_smp,long_smp,smp_name", srsName: "EPSG:4326", outputFormat: "application/json",
+    propertyName: "geom,epoch,short_smp,medium_smp,long_smp,smp_name", srsName: "EPSG:4326", outputFormat: "application/json",
     bbox: [loc.lat - dLat, loc.lon - dLon, loc.lat + dLat, loc.lon + dLon, "urn:ogc:def:crs:EPSG::4326"].join(",")
   });
   const zones = (await fetchJSON(API.dataMapWales + "?" + params)).features || [];
@@ -562,7 +580,10 @@ async function getWalesCoast(loc) {
   const withKm = list => list.map(f => ({ f, km: geometryHas(f.geometry, loc) ? 0 : distanceToGeometryKm(f.geometry, loc) }))
     .sort((a, b) => a.km - b.km);
   const by2105 = withKm(zones.filter(f => period(f, "Long") && upper(f.properties.long_smp) > 0));
-  const by2055 = withKm(zones.filter(f => (period(f, "Medium") || period(f, "Short")) && upper(f.properties.medium_smp) > 0));
+  // Land lost by 2055: the short-term areas (to 2025) and the medium-term ones (2025 to 2055).
+  const lostBy2055 = f => Math.max(upper(f.properties.short_smp), upper(f.properties.medium_smp));
+  const by2055 = withKm(zones.filter(f => (period(f, "Medium") && upper(f.properties.medium_smp) > 0) ||
+    (period(f, "Short") && upper(f.properties.short_smp) > 0)));
   const nearest = by2105[0] || by2055[0];
   const inside2055 = !!by2055[0] && by2055[0].km === 0;
   const inside2105 = inside2055 || (!!by2105[0] && by2105[0].km === 0);
@@ -573,7 +594,7 @@ async function getWalesCoast(loc) {
     inside2105, inside2055,
     erosionKm: nearest ? nearest.km : null,
     metres2105: by2105[0] ? upper(by2105[0].f.properties.long_smp) : null,
-    metres2055: inside2055 ? upper(by2055[0].f.properties.medium_smp) : null,
+    metres2055: inside2055 ? lostBy2055(by2055[0].f) : null,
     plan: { now: null, later: null, area: anyZone ? tidy(anyZone.properties.smp_name) : null, defence: null },
     published: null
   };
@@ -602,11 +623,15 @@ async function getCoalTips(loc) {
     .sort(byDistance);
 }
 
+// Each data task: key, topic name, fetch function, and the service it waits for (named in the
+// "Still waiting for" note when a report is slow). Tasks start in this order. The Environment Agency
+// server answers only a few requests at a time (PACED_HOSTS), so its most important topic,
+// flooding from heavy rain, is listed first and road and rail noise last.
 const TASKS = [
   ["place", "Nearest postcode and council", getPlace, "postcodes.io"],
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater, "Environment Agency"],
   ["landfill", "Old landfill sites", getLandfill, "Environment Agency"],
-  ["coastal", "Coastal erosion", getCoastalErosion, "Environment Agency"],
+  ["coastal", "Coastal erosion", getCoastalErosion, "Environment Agency (Wales: DataMapWales)"],
   ["planningPoint", "Flood zone and planning rules at the property", getPlanningAtPoint, "planning.data.gov.uk"],
   ["planningNearby", "Things nearby: flood zones, contaminated land, heritage, nature", getPlanningNearby, "planning.data.gov.uk"],
   ["radon", "Radon gas", getRadon, "British Geological Survey"],
@@ -618,8 +643,8 @@ const TASKS = [
   ["floodNational", "Scotland and Wales flood maps", getFloodNational, "SEPA and Natural Resources Wales"],
   ["amenities", "Schools, doctors and transport", getAmenities, "NHS and planning.data.gov.uk"],
   ["crimeArea", "Crime compared with England and Wales", getCrimeArea, "Office for National Statistics"],
-  ["noise", "Road noise", getRoadNoise, "Environment Agency"],
-  ["railNoise", "Railway noise", getRailNoise, "Environment Agency"],
+  ["noise", "Road noise", getRoadNoise, "Environment Agency (Wales: DataMapWales)"],
+  ["railNoise", "Railway noise", getRailNoise, "Environment Agency (Wales: DataMapWales)"],
   ["walesSites", "Heritage, nature and air hotspots in Wales", getWalesSites, "DataMapWales"],
   ["coalTips", "Disused coal tips in Wales", getCoalTips, "DataMapWales"]
 ];

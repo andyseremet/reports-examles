@@ -11,11 +11,11 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   `core.js` (sources, links, settings, `APP_VERSION`, helpers) → `data.js` (fetch functions, `TASKS`) →
   `checks/flood.js`, `ground.js`, `living.js`, `planning.js` (one per report section) → `checks/index.js` (shared
   check helpers, `CHECKS`, `TOPIC_ICONS`, `COVERAGE`) → `app.js` (map, search, run, report, saved, share, start).
-  Code that runs at load time may only use what an earlier file defines.
+  Code that runs at load time may only use what an earlier file defines. A new JS file must be added to `index.html`
+  and to `SHELL` in `sw.js`.
 - **Wales:** land use, coast, noise, air, planning and nature use DataMapWales (`datamap.gov.wales`, paced in
   `PACED_HOSTS`): `getWalesSites`, `getWalesNoise`, `getWalesCoast`, `getCoalTips` in `js/data.js`, and `isWales(R)`
-  branches in the checks. England-only fetches return early for Wales instead of asking England's servers. A new JS file must be added to `index.html`
-  and to `SHELL` in `sw.js`.
+  branches in the checks. England-only fetches return early for Wales instead of asking England's servers.
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
   `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
   in `SERVICES` (`tests/live-check.mjs`) also needs its report topics in `SERVICE_TOPICS`.
