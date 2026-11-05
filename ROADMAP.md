@@ -154,7 +154,8 @@ and only if the owner decides to add it.
 - Payment links: Stripe Payment Links take cards, Apple Pay, Google Pay and PayPal (available to UK Stripe accounts;
   standard UK cards cost 1.5% + 20p). They need no server for voluntary contributions.
 - Possible placement: one quiet line after the report summary, and a short thank-you after download or print.
-- Possible amounts: £3, £5 and £10.
+- Possible amounts: £5, £10, £15, or any other amount the person is comfortable to give (Stripe Payment Links can
+  let the payer choose the amount).
 - Before switching it on: update "Privacy: what is sent where" (the payment provider receives payment details) and
   add short terms for contributions.
 - A paid product (for example a professional emailed PDF) is not planned. If it is ever wanted, it would need a host
