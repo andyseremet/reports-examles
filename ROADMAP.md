@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.21.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.22.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.21.0)
+## Part 1: What the app does today (version 1.22.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -49,7 +49,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Saved properties
 - Saved on the device only; reopen instantly and refresh; results older than 3 months are marked.
-- Private notes, a starred shortlist, and compare two properties side by side.
+- **Rename** and **Remove** buttons; Remove offers **Undo** for 10 seconds (1.22.0).
+- Private notes that say "Saved ✓" after each change, a starred shortlist, and compare two properties side by side.
 - Export and import to move the list to another device, with a backup reminder.
 
 ### Share, print and export
@@ -57,7 +58,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - **Save** menu: download the report, print a summary, or print the full report (or save as PDF).
 
 ### Comfort and access
-- Dark mode, larger text (**A+**), and install as an app on a phone.
+- Dark mode, larger text (**A+ Text size**), and install as an app on a phone.
 - Checked against accessibility standard WCAG 2.2 AA; last re-checked on 5 November 2026 (1.19.0).
 - Privacy: no account, cookies or tracking.
 - A **Data service status** page shows each data service's result in this morning's automatic check.
@@ -75,12 +76,11 @@ Chosen from the quiz on 5 November 2026, one item per version, in this order. Ea
 before it is built. Each version keeps the same habits: bump the version number and the offline cache name together,
 update the README, add new behaviour to the daily check, and never weaken a test to get a pass.
 
-Versions 1.22.0 to 1.24.0 come from the UX review on 5 November 2026: small changes that make the app easier to
+Versions 1.23.0 and 1.24.0 come from the UX review on 5 November 2026 (its first part shipped in 1.22.0): small changes that make the app easier to
 use, with nothing removed. Each is followed by the accessibility re-check.
 
 | Version | Idea | What it does | Why this order |
 |---|---|---|---|
-| 1.22.0 | Safety and feedback | Saved properties: **Rename** and **Remove** become buttons with icons, and Remove offers **Undo** for about 10 seconds. Notes say "Saved on this device" and flash "Saved ✓" after each change. The **A+** button shows "Text size" on wider screens. | Stops a property and its notes being lost by one tap. |
 | 1.23.0 | Finding your way in the report | Section bar on a phone: a fade shows it scrolls, the current section stays in view, and one pinned button switches between Open all and Close all. Topic cards: a "Details ▾" label, a larger arrow and a highlight show they open. Count boxes in the summary jump to the first topic with that rating. | Helps first-time users find the detail in each topic. |
 | 1.24.0 | Tidier long lists | Each checklist list shows "2 of 7 done". Export and Import fold into a "Move to another device" panel. | Shorter, calmer page on a phone. |
 | 1.25.0 | Compare up to 3 properties | Compare side by side takes up to three saved properties instead of two; phone layout to be decided. | Builds on the existing compare view. |
