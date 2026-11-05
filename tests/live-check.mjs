@@ -464,11 +464,20 @@ async function testDevice(device, [postcode, place]) {
     if (r.items.length < 5 || r.items.length > 12) throw new Error(`${r.items.length} items (expected 5 to 12)`);
     if (r.firstLook && r.items[0] !== r.firstLook) throw new Error(`first item is "${r.items[0]}", not the most serious topic's`);
     const first = page.locator("#viewing input[data-tick]").first();
+    const countText = () => page.$eval("#viewing .tick-count", x => x.textContent);
+    const before = await countText();
     await first.check();
+    const after = await countText();
     await page.evaluate(() => restoreTicks());
     const kept = await first.isChecked();
+    const afterRestore = await countText();
     await first.uncheck();
     if (!kept) throw new Error("a tick was not remembered");
+    // Each list's heading counts its ticks: "0 of 7 done" becomes "1 of 7 done", also after reopening.
+    const m = before.match(/^(\d+) of (\d+) done$/);
+    if (!m) throw new Error(`the list heading says "${before}", not "N of M done"`);
+    const want = `${Number(m[1]) + 1} of ${m[2]} done`;
+    if (after !== want || afterRestore !== want) throw new Error(`after a tick the count says "${after}" / "${afterRestore}", not "${want}"`);
     return `${r.items.length} items; first: ${r.items[0].slice(0, 60)}…`;
   });
 
@@ -517,6 +526,21 @@ async function testDevice(device, [postcode, place]) {
     if (!share) throw new Error("the saved properties list did not show");
     if (share < 0.55) throw new Error(`names and details are squeezed into ${Math.round(share * 100)}% of the row`);
     return `text uses ${Math.round(share * 100)}% of the row`;
+  });
+
+  await step("Export and Import fold into Move to another device", async () => {
+    const r = await page.evaluate(() => {
+      const d = document.getElementById("moveDevice");
+      return { closed: d && !d.open, inside: d && d.contains(document.getElementById("exportBtn")) && d.contains(document.getElementById("importBtn")) };
+    });
+    if (!r.inside) throw new Error("Export and Import are not in the Move to another device panel");
+    if (!r.closed) throw new Error("the panel is open before it is used");
+    await page.click("#moveDevice summary");
+    const shown = await page.isVisible("#exportBtn") && await page.isVisible("#importBtn");
+    const [download] = await Promise.all([page.waitForEvent("download"), page.click("#exportBtn")]);
+    await page.click("#moveDevice summary");
+    if (!shown) throw new Error("Export and Import did not show when the panel opened");
+    return download.suggestedFilename();
   });
 
   await step("Remove a saved property, then Undo puts it back", async () => {

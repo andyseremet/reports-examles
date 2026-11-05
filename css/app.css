@@ -327,6 +327,10 @@ th,td {text-align:left;padding:7px;border-bottom:1px solid var(--border);vertica
 th {background:var(--surface-2);color:var(--heading)}
 .table-wrap {overflow-x:auto}
 .checklist h3 {margin-top:16px}
+.tick-count {font-size:13px;font-weight:normal;color:var(--muted);margin-left:6px;white-space:nowrap}
+.tick-count.all-done {color:var(--low);font-weight:bold}
+.tick-count.all-done::after {content:" ✓"}
+details.move-device .saved-actions {margin-top:8px}
 .checklist ul {list-style:none;padding:0}
 .checklist li {border-bottom:1px solid var(--border)}
 .send-box {border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:10px 0 4px;background:var(--surface-2)}
