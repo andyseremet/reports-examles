@@ -261,6 +261,13 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .notice {padding:12px 14px;background:var(--notice-bg);border-left:4px solid #d99a26;font-size:14px;margin:14px 0}
 .group {margin-top:26px}
 .group > h2 {border-bottom:2px solid var(--border);padding-bottom:6px}
+/* "Data sources and dates": folded on screen, opened for print and downloads. */
+.sources-fold > summary {list-style:none;cursor:pointer}
+.sources-fold > summary::-webkit-details-marker {display:none}
+.sources-fold > summary h2 {display:flex;align-items:baseline;gap:8px;border-bottom:2px solid var(--border);padding-bottom:6px}
+.sources-fold > summary h2::before {content:"▸";font-size:14px;color:var(--muted)}
+.sources-fold[open] > summary h2::before {content:"▾"}
+.muted-count {font-size:14px;font-weight:normal;color:var(--muted)}
 .check {border:1px solid var(--border);border-left:6px solid var(--border);border-radius:8px;margin:10px 0;background:var(--surface)}
 .check.high {border-left-color:var(--high)}
 .check.medium {border-left-color:#d99a26}

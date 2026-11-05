@@ -848,10 +848,10 @@ function renderSources() {
       <td>${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}</td>
       <td>${escapeHTML(c.dataDate || "Checked live on " + today())}</td></tr>`).join("");
   $("sourcesBox").innerHTML = `
-    <section class="group" id="sources">
-      <h2>Data sources and dates</h2>
+    <details class="group sources-fold" id="sources">
+      <summary><h2>Data sources and dates <span class="muted-count">(${plural(orderedResults().filter(c => c.source && c.source.name).length, "topic")})</span></h2></summary>
       <div class="table-wrap"><table><thead><tr><th>Topic</th><th>Source</th><th>Data date</th></tr></thead><tbody>${rows}</tbody></table></div>
-    </section>`;
+    </details>`;
   prepareTables($("sourcesBox"), "Data sources");
 }
 
