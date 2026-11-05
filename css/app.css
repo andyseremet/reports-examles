@@ -188,7 +188,7 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .saved-main {flex:1;min-width:0}
 .saved-main a {font-weight:bold}
 .saved-main small {display:block;color:var(--muted)}
-.saved-btns {display:flex;gap:6px;flex-shrink:0}
+.saved-btns {display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0}
 .saved-act {background:var(--surface);color:var(--link);border:1px solid var(--border);padding:6px 10px;font-size:14px;min-height:36px}
 .saved-act:hover {background:var(--hover)}
 .undo-bar {display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;margin:10px 0;border-radius:6px;
@@ -237,9 +237,14 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .report-nav::-webkit-scrollbar {display:none}
 .report-nav a {padding:6px 10px;border-radius:20px;text-decoration:none;color:var(--text);font-size:14px}
 .report-nav a.active {background:var(--accent-bg);color:#fff}
-.report-nav .spacer {flex:1}
+.report-nav .nav-links {display:flex;gap:4px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.report-nav .nav-links::-webkit-scrollbar {display:none}
+.report-nav #toggleAll {flex:none}
+.nav-links.more-right {-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 40px),transparent)}
+.nav-links.more-left {-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 40px),transparent)}
+.nav-links.more-left.more-right {-webkit-mask-image:linear-gradient(to right,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to right,transparent,#000 40px,#000 calc(100% - 40px),transparent)}
 .report-nav button {padding:6px 10px;font-size:13px}
-.cover,.group,#checklist,#viewing,.slot {scroll-margin-top:var(--sticky-top)}
+.cover,.group,#checklist,#viewing,.slot,details.check {scroll-margin-top:calc(var(--sticky-top) + 8px)}
 /* Keep keyboard focus clear of the sticky section bar (top) and the "back to top" button (bottom),
    so a focused item is never hidden behind them (WCAG 2.2: 2.4.11). Not on the section bar itself:
    focusing its links must not interrupt the scroll to the chosen section. */
@@ -258,6 +263,9 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .count.medium {background:var(--med-bg);color:var(--med)}
 .count.low {background:var(--low-bg);color:var(--low)}
 .count.info {background:var(--info-bg);color:var(--info)}
+a.count {text-decoration:none;border:1px solid transparent;display:block}
+a.count:hover {border-color:currentColor}
+.count-go {display:block;font-size:13px;font-weight:bold;margin-top:2px;text-decoration:underline}
 .priority {list-style:none;padding:0;margin:0}
 .priority li {margin:6px 0;padding:10px 12px;border-radius:8px;border:1px solid var(--border);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .priority li a {font-weight:bold}
@@ -299,9 +307,16 @@ details.check > summary {cursor:pointer;padding:12px 14px;list-style:none;displa
 /* Long topic names wrap instead of pushing the rating label off narrow screens (WCAG 1.4.10 Reflow). */
 details.check > summary h3 {overflow-wrap:anywhere}
 details.check > summary::-webkit-details-marker {display:none}
-details.check > summary .found {grid-column:1 / -1;font-size:14px}
-details.check > summary h3::before {content:"▸ ";color:var(--muted)}
-details.check[open] > summary h3::before {content:"▾ "}
+details.check > summary .found {grid-column:1;font-size:14px}
+details.check > summary:hover {background:var(--hover)}
+/* "Details" with a down arrow when closed, "Hide" with an up arrow when open. */
+details.check > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
+  font-size:14px;font-weight:bold;color:var(--link);white-space:nowrap}
+details.check > summary .more-text::before {content:"Details"}
+details.check[open] > summary .more-text::before {content:"Hide"}
+details.check > summary .more svg {transition:transform .15s}
+details.check[open] > summary .more svg {transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce) {details.check > summary .more svg {transition:none}}
 .check-body {padding:0 16px 14px;font-size:14px}
 .check-body p {margin:4px 0 8px}
 .check-body ul {margin:4px 0 8px;padding-left:20px}

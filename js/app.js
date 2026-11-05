@@ -1001,6 +1001,7 @@ function renderCheck(c) {
       <summary>
         <h3>${escapeHTML(c.title)}</h3>${chip(c.status)}
         <span class="found">${escapeHTML(c.found)}</span>
+        <span class="more no-print" aria-hidden="true"><span class="more-text"></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
       </summary>
       <div class="check-body">
         ${c.status === "error" ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
@@ -1068,6 +1069,7 @@ function renderSkeleton(loc) {
   drawReportMap(loc);
   renderSummary();
   watchSections();
+  updateNavFade();
 }
 
 function renderMeta() {
@@ -1090,6 +1092,13 @@ function isOld(savedAt) {
 function renderSummary() {
   const results = orderedResults();
   const n = s => results.filter(c => c.status === s).length;
+  // A count box goes to the first topic with that rating, and opens it. A count of 0 is plain text.
+  const countBox = (s, label) => {
+    const first = results.find(c => c.status === s), inner = `<strong>${n(s)}</strong><span>${label}</span>`;
+    return first
+      ? `<a class="count ${s}" href="#check-${first.id}" data-open="check-${first.id}">${inner}<span class="count-go no-print">Go to first<span aria-hidden="true"> ›</span></span></a>`
+      : `<div class="count ${s}">${inner}</div>`;
+  };
   const ready = results.length;
   const p = okValue(run.R, "place");
   const outsideEngland = p && p.country && p.country !== "England";
@@ -1120,10 +1129,7 @@ function renderSummary() {
     ${savedNote}
     ${verdict}
     <div class="counts">
-      <div class="count high"><strong>${n("high")}</strong><span>Look into this</span></div>
-      <div class="count medium"><strong>${n("medium")}</strong><span>Worth checking</span></div>
-      <div class="count low"><strong>${n("low")}</strong><span>No issue found</span></div>
-      <div class="count info"><strong>${n("info")}</strong><span>For information</span></div>
+      ${countBox("high", "Look into this")}${countBox("medium", "Worth checking")}${countBox("low", "No issue found")}${countBox("info", "For information")}
     </div>
     <ul class="topic-strip" aria-label="All topics at a glance">
       ${CHECKS.map(c => {
@@ -1146,6 +1152,7 @@ function renderSummary() {
     ${dataGapsBox(results)}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
       Some official data only covers England. Those topics are marked “Check yourself”, with a link to the right national service.</div>` : ""}`;
+  updateToggleAll();
 }
 
 // Topics with no real answer: why, and who to ask instead. Hidden when every topic has an answer.
@@ -1361,7 +1368,11 @@ function watchSections() {
       const id = entry.target.id;
       document.querySelectorAll("#reportNav a").forEach(a => a.classList.toggle("active", a.dataset.nav === id));
       const active = document.querySelector(`#reportNav a[data-nav="${id}"]`);
-      if (active) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+      if (active) {
+        const box = $("navLinks"), l = active.offsetLeft - box.offsetLeft;
+        if (l < box.scrollLeft || l + active.offsetWidth > box.scrollLeft + box.clientWidth) box.scrollTo({ left: l - 24, behavior: "smooth" });
+        updateNavFade();
+      }
     });
   }, { rootMargin: "-20% 0px -70% 0px" });
   ["reportTop", "group-flood", "group-ground", "group-living", "group-planning", "viewing", "checklist"].forEach(id => {
@@ -1370,8 +1381,27 @@ function watchSections() {
   });
 }
 
-$("openAll").addEventListener("click", () => document.querySelectorAll("#report details.check").forEach(d => { d.open = true; }));
-$("closeAll").addEventListener("click", () => document.querySelectorAll("#report details.check").forEach(d => { d.open = false; }));
+// One button opens every topic, or closes them all when every topic is already open.
+function allTopics() { return [...document.querySelectorAll("#report details.check")]; }
+function updateToggleAll() {
+  const list = allTopics();
+  $("toggleAll").textContent = list.length && list.every(d => d.open) ? "Close all" : "Open all";
+}
+$("toggleAll").addEventListener("click", () => {
+  const open = $("toggleAll").textContent === "Open all";
+  allTopics().forEach(d => { d.open = open; });
+  updateToggleAll();
+});
+document.addEventListener("toggle", e => { if (e.target.matches && e.target.matches("#report details.check")) updateToggleAll(); }, true);
+
+// Fade the edge of the section links where more of them are hidden to the side.
+function updateNavFade() {
+  const el = $("navLinks");
+  el.classList.toggle("more-left", el.scrollLeft > 2);
+  el.classList.toggle("more-right", el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+}
+$("navLinks").addEventListener("scroll", updateNavFade, { passive: true });
+window.addEventListener("resize", updateNavFade);
 
 // Links within the report (section bar, topic icons, "Start here") scroll to their
 // section without adding steps to the browser history, and open the topic they point to.
@@ -1381,7 +1411,10 @@ document.addEventListener("click", e => {
   const target = document.getElementById(a.getAttribute("href").slice(1));
   if (!target) return;
   e.preventDefault();
-  if (a.dataset.open) { const d = $(a.dataset.open); if (d) d.open = true; }
+  if (a.dataset.open) {
+    const d = $(a.dataset.open);
+    if (d) { d.open = true; const s = d.querySelector("summary"); if (s) s.focus({ preventScroll: true }); }
+  }
   target.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
