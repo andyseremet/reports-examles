@@ -76,6 +76,22 @@ const SERVICES = [
     d => Array.isArray(d.features) && d.features.length > 0],
   ["Wales disused coal tips (Welsh Government)", wms("https://datamap.gov.wales/geoserver/ows", "geonode:disused_coal_tips_in_wales_public", 51.6265, -3.452, 0.01),
     d => Array.isArray(d.features) && d.features.length > 0],
+  ["Scotland heritage sites (Historic Environment Scotland)", "https://inspire.hes.scot/arcgis/rest/services/HES/Conservation_Areas/MapServer/0/query?geometry=-3.1907,55.9497&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=DES_TITLE&returnGeometry=false&f=json",
+    d => Array.isArray(d.features) && d.features.length > 0],
+  ["Scotland protected nature sites (NatureScot)", "https://ogc.nature.scot/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=protectedareas:sssi&propertyName=NAME&count=5&outputFormat=application/json&bbox=55.94,-3.17,55.95,-3.15,urn:ogc:def:crs:EPSG::4326",
+    d => Array.isArray(d.features) && d.features.length > 0],
+  ["Scotland National Parks and Scenic Areas (Scottish Government)", "https://maps.gov.scot/server/rest/services/ScotGov/ProtectedSites/MapServer/0/query?geometry=-3.95,57.08&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=npname&returnGeometry=false&f=json",
+    d => Array.isArray(d.features) && d.features.length > 0],
+  ["Scotland air pollution hotspots (Scottish Air Quality)", "https://geoserver.rcdo.co.uk/geoserver/scotarc/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=scotarc:scottland_aqma_3857&propertyName=title&count=5&outputFormat=application/json&bbox=55.949,-3.191,55.950,-3.190,urn:ogc:def:crs:EPSG::4326",
+    d => Array.isArray(d.features) && d.features.length > 0],
+  ["Scotland noise maps (SEPA)", "https://map.sepa.org.uk/server/rest/services/Noise/Noise_Road_LDEN_ALL/ImageServer/identify?geometry=" + encodeURIComponent('{"x":-3.1907,"y":55.9497,"spatialReference":{"wkid":4326}}') + "&geometryType=esriGeometryPoint&returnGeometry=false&returnCatalogItems=false&f=json",
+    d => Number(d.value) > 0],
+  ["Scotland coastal erosion (Dynamic Coast)", "https://ogc.nature.scot/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=dynamiccoast:dc2erosion2100high&propertyName=ERODETYPE&count=5&outputFormat=application/json&bbox=55.946,-3.12,55.964,-3.09,urn:ogc:def:crs:EPSG::4326",
+    d => Array.isArray(d.features) && d.features.length > 0],
+  ["Scotland licensed waste sites (SEPA)", "https://map.sepa.org.uk/server/rest/services/Open/Utility_and_Governmental_Services/MapServer/416/query?geometry=-4.25,55.86&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=3000&units=esriSRUnit_Meter&outFields=authorisation_activity&returnGeometry=false&f=json",
+    d => Array.isArray(d.features) && d.features.length > 0],
+  ["Scotland crime rank (Scottish Government, SIMD 2020)", "https://maps.gov.scot/server/rest/services/ScotGov/PeopleSociety/MapServer/7/query?geometry=-3.1907,55.9497&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=crimerank&returnGeometry=false&f=json",
+    d => d.features && d.features.length === 1 && d.features[0].attributes.crimerank > 0],
   ["Address search (OpenStreetMap Nominatim)", "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=Barnsley%20Town%20Hall", d => Array.isArray(d) && d.length > 0],
   ["Schools register (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?dataset=educational-establishment&latitude=${LAT}&longitude=${LON}&limit=1`, d => Array.isArray(d.entities)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
@@ -109,6 +125,14 @@ const SERVICE_TOPICS = {
   "Wales noise maps (Welsh Government)": ["Noise, for homes in Wales"],
   "Wales coastal erosion (Natural Resources Wales)": ["Coastal erosion, for homes in Wales"],
   "Wales disused coal tips (Welsh Government)": ["Past use of the land, for homes in Wales"],
+  "Scotland heritage sites (Historic Environment Scotland)": ["Planning restrictions and heritage, for homes in Scotland"],
+  "Scotland protected nature sites (NatureScot)": ["Protected nature sites, for homes in Scotland"],
+  "Scotland National Parks and Scenic Areas (Scottish Government)": ["Planning restrictions and heritage, for homes in Scotland"],
+  "Scotland air pollution hotspots (Scottish Air Quality)": ["Air quality, for homes in Scotland"],
+  "Scotland noise maps (SEPA)": ["Noise, for homes in Scotland"],
+  "Scotland coastal erosion (Dynamic Coast)": ["Coastal erosion, for homes in Scotland"],
+  "Scotland licensed waste sites (SEPA)": ["Past use of the land, for homes in Scotland"],
+  "Scotland crime rank (Scottish Government, SIMD 2020)": ["Reported crime, for homes in Scotland"],
   "Address search (OpenStreetMap Nominatim)": ["Finding the property by address"],
   "Schools register (planning.data.gov.uk)": ["Schools, doctors and transport"],
   "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
@@ -425,6 +449,47 @@ async function testDevice(device, [postcode, place]) {
     if (r.coast.found.startsWith("Not near the coast")) throw new Error(`Borth not near the coast: ${r.coast.found}`);
     if (!/hotspot/.test(r.air.found) || !/within/.test(r.air.found)) throw new Error(`no air pollution hotspot near central Cardiff: ${r.air.found}`);
     return `coal tips ${r.tips.status}; Borth ${r.coast.status}; Cardiff: ${r.planning.found.slice(0, 50)}…`;
+  });
+
+  await step("Scotland: heritage, nature, air, noise, coast, waste sites and crime from Scottish data", async () => {
+    // Edinburgh Old Town: a conservation area, World Heritage Site, listed building, air pollution hotspot, road noise
+    // and a crime rank. Portobello: an eroding soft coast. Insh Marshes (Cairngorms): a National Park and an SSSI.
+    // Oban: rocky coast and no waste site, so land use must say "Check yourself".
+    const r = await page.evaluate(async () => {
+      const fns = { coastal: getCoastalErosion, noise: getRoadNoise, railNoise: getRailNoise, scotlandSites: getScotlandSites, wasteSites: getWasteSites, simdCrime: getSimdCrime };
+      const R = async (loc, keys) => {
+        const out = { loc, place: { ok: true, value: await getPlace(loc) } };
+        await Promise.all(keys.map(async k => { out[k] = { ok: true, value: await fns[k](loc) }; }));
+        out.air = { ok: false, error: "not asked" }; out.planningPoint = { ok: false, error: "England only" };
+        out.crime = { ok: false, error: "England and Wales only" };
+        return out;
+      };
+      const edi = await R({ lat: 55.9497, lon: -3.1907, radius: 1000 }, ["noise", "railNoise", "scotlandSites", "wasteSites", "simdCrime"]);
+      const por = await R({ lat: 55.955, lon: -3.105, radius: 1000 }, ["coastal"]);
+      const insh = await R({ lat: 57.08, lon: -3.95, radius: 1000 }, ["scotlandSites"]);
+      const oban = await R({ lat: 56.415, lon: -5.472, radius: 1000 }, ["wasteSites"]);
+      return {
+        planning: checkPlanning(edi), nature: checkNature(edi), air: checkAir(edi), noise: checkNoise(edi), crime: checkCrime(edi),
+        waste: checkLanduse(edi), coast: checkCoastal(por), park: checkPlanning(insh), sssi: checkNature(insh),
+        country: edi.place.value.country, obanLand: checkLanduse(oban).status,
+        // Missing hotspot data must never read as "not in a hotspot".
+        airNoHotspotData: checkAir({ ...edi, scotlandSites: { ok: false, error: "test" }, air: { ok: true, value: { no2: 10, pm25: 5 } } }).status
+      };
+    });
+    if (r.country !== "Scotland") throw new Error(`postcodes.io says Edinburgh is in ${r.country}`);
+    if (["low", "info"].includes(r.airNoHotspotData)) throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}"`);
+    if (r.obanLand !== "manual") throw new Error(`Oban (no waste sites; old landfill not published) rated "${r.obanLand}", expected Check yourself`);
+    const bad = Object.entries(r).filter(([k, c]) => !["country", "airNoHotspotData", "obanLand"].includes(k) && ["manual", "error"].includes(c.status));
+    if (bad.length) throw new Error(bad.map(([k, c]) => `${k}: ${c.found}`).join(" | "));
+    if (!/Conservation area/.test(r.planning.found) || !/World Heritage Site/.test(r.planning.found)) throw new Error(`Edinburgh Old Town planning: ${r.planning.found}`);
+    if (!/National Park/.test(r.park.found)) throw new Error(`no National Park at Insh Marshes: ${r.park.found}`);
+    if (!/Site of Special Scientific Interest/.test(r.sssi.found)) throw new Error(`no SSSI at Insh Marshes: ${r.sssi.found}`);
+    if (!/Inside an air pollution hotspot/.test(r.air.found)) throw new Error(`Edinburgh centre not in its air pollution hotspot: ${r.air.found}`);
+    if (!/Road: (moderate|loud)/.test(r.noise.found)) throw new Error(`no road noise in central Edinburgh: ${r.noise.found}`);
+    if (!/ranked [\d,]+ of 6,976/.test(r.crime.found)) throw new Error(`no crime rank: ${r.crime.found}`);
+    if (!/licensed/.test(r.waste.found)) throw new Error(`no licensed waste site near central Edinburgh: ${r.waste.found}`);
+    if (!/expected to be lost by 2100/.test(r.coast.found)) throw new Error(`Portobello coast: ${r.coast.found}`);
+    return `Edinburgh: ${r.planning.found.slice(0, 60)}…; Portobello ${r.coast.status}; crime ${r.crime.found.match(/ranked [\d,]+/)[0]}`;
   });
 
   await step("Sold prices: sales in a town, Check yourself where there are none", async () => {
