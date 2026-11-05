@@ -26,6 +26,13 @@ const API = {
   sepaFlood: "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer",
   nrwFlood: "https://datamap.gov.wales/geoserver/ows",
   dataMapWales: "https://datamap.gov.wales/geoserver/ows",
+  hes: "https://inspire.hes.scot/arcgis/rest/services/HES/",
+  natureScot: "https://ogc.nature.scot/geoserver/ows",
+  scotProtected: "https://maps.gov.scot/server/rest/services/ScotGov/ProtectedSites/MapServer/",
+  simd: "https://maps.gov.scot/server/rest/services/ScotGov/PeopleSociety/MapServer/7/query",
+  scotAir: "https://geoserver.rcdo.co.uk/geoserver/scotarc/ows",
+  sepaNoise: "https://map.sepa.org.uk/server/rest/services/Noise/",
+  sepaWaste: "https://map.sepa.org.uk/server/rest/services/Open/Utility_and_Governmental_Services/MapServer/416/query",
   ods: "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations",
   landRegistry: "https://landregistry.data.gov.uk/landregistry/query",
   msoaBoundary: "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query"
@@ -54,6 +61,15 @@ const LINKS = {
   walesNature: "https://naturalresources.wales/guidance-and-advice/environmental-topics/wildlife-and-biodiversity/protected-areas-of-land-and-seas/",
   walesConservation: "https://datamap.gov.wales/layers/geonode:conservation_areas_wales",
   dataMapWales: "https://datamap.gov.wales/",
+  hesPortal: "https://portal.historicenvironment.scot/",
+  natureScotSites: "https://sitelink.nature.scot/home",
+  scotNoise: "https://noise.environment.gov.scot/",
+  dynamicCoast: "https://www.dynamiccoast.com/webmaps.html",
+  scotAir: "https://www.scottishairquality.scot/laqm/aqma",
+  sepaPermits: "https://www.sepa.org.uk/regulations/authorisations-and-permits/",
+  simd: "https://simd.scot/",
+  simdAbout: "https://www.gov.scot/collections/scottish-index-of-multiple-deprivation-2020/",
+  scotCrime: "https://www.gov.scot/collections/recorded-crime-in-scotland/",
   coastalData: "https://environment.data.gov.uk/dataset/9fede91f-5acd-4fd2-9bd8-98153fa3c2ff",
   geosure: "https://www.bgs.ac.uk/datasets/geosure/",
   police: "https://www.police.uk/",
@@ -115,10 +131,10 @@ const icon = name => `<svg aria-hidden="true" width="16" height="16" viewBox="0 
 
 const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 };
 
-const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937" };
+const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "1.26.0";
+const APP_VERSION = "1.27.0";
 const APP_UPDATED = "5 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -244,7 +260,10 @@ function once(load) {
 const PACED_HOSTS = [
   { prefix: "https://environment.data.gov.uk/spatialdata/", maxAtOnce: 2, gapMs: 300, retryWaitsMs: [2000, 6000], timeoutMs: 35000 },
   // DataMapWales (Welsh Government): a report for a Welsh address asks it about 15 things, so they go a few at a time.
-  { prefix: "https://datamap.gov.wales/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 }
+  { prefix: "https://datamap.gov.wales/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 },
+  // Scotland: Historic Environment Scotland and NatureScot each get about 8 requests for a Scottish address.
+  { prefix: "https://inspire.hes.scot/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 },
+  { prefix: "https://ogc.nature.scot/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 }
 ];
 const pacing = new Map();
 

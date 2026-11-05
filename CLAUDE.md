@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Property Location Check: a free report on a home's location in England from official open data, for non-technical
+Property Location Check: a free report on a home's location in England, Wales and Scotland from official open data, for non-technical
 home buyers. Static site with no build step. GitHub Pages serves `main` at https://andyseremet.github.io/reports-examles/.
 
 ## Code layout
@@ -16,6 +16,10 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Wales:** land use, coast, noise, air, planning and nature use DataMapWales (`datamap.gov.wales`, paced in
   `PACED_HOSTS`): `getWalesSites`, `getWalesNoise`, `getWalesCoast`, `getCoalTips` in `js/data.js`, and `isWales(R)`
   branches in the checks. England-only fetches return early for Wales instead of asking England's servers.
+- **Scotland:** the same topics plus crime use Historic Environment Scotland, NatureScot (`ogc.nature.scot`, also Dynamic
+  Coast), SEPA, the Scottish Government and the Scottish Air Quality database: `getScotlandSites` (same shape as
+  `getWalesSites`), `getScotlandNoise`, `getScotlandCoast`, `getWasteSites`, `getSimdCrime`, and `isScotland(R)`.
+  `checkPlanningDevolved`/`checkNatureDevolved` serve both Wales and Scotland (`sitesKey(R)`).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
   `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
   in `SERVICES` (`tests/live-check.mjs`) also needs its report topics in `SERVICE_TOPICS`.

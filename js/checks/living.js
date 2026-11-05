@@ -119,10 +119,14 @@ function noiseLevelStatus(v, who) {
 }
 
 function checkNoise(R) {
-  const wales = isWales(R);
-  const mapper = wales ? "the Welsh Government" : "Defra";
-  const periods = wales ? WALES_NOISE_PERIODS : NOISE_PERIODS;
-  const base = wales ? {
+  const scot = isScotland(R);
+  const wales = isWales(R) || scot;   // Wales and Scotland publish the same three periods
+  const mapper = scot ? "the Scottish Government" : wales ? "the Welsh Government" : "Defra";
+  const periods = wales ? NOISE_PERIODS_16H : NOISE_PERIODS;
+  const base = scot ? {
+    source: { name: "Scottish Government strategic noise mapping (2021 traffic, Round 4, published by SEPA) for road and rail; airport locations for aircraft; WHO Environmental Noise Guidelines (2018)", url: LINKS.scotNoise },
+    dataDate: "Noise maps for 2021 traffic (Round 4), published by the Scottish Government"
+  } : wales ? {
     source: { name: "Welsh Government strategic noise mapping 2022 (Round 4, via DataMapWales) for road and rail; airport locations for aircraft; WHO Environmental Noise Guidelines (2018)", url: LINKS.walesNoise },
     dataDate: "Noise maps for 2022 (Round 4), published by the Welsh Government"
   } : {
@@ -184,7 +188,7 @@ function checkNoise(R) {
       </table></div>${airportText}`,
     meaning: `<p>The levels are ${mapper}'s computer-modelled averages for 2021 traffic, at first-floor height on the side of the building
         facing the noise. A room at the back can be much quieter. The daytime figure is an average over ${wales ? "7am to 11pm" : "7am to 7pm"}, so rush hours
-        are usually a little louder than shown.${wales ? " Wales does not publish separate daytime and evening figures." : ""}</p>
+        are usually a little louder than shown.${wales ? ` ${scot ? "Scotland" : "Wales"} does not publish separate daytime and evening figures.` : ""}</p>
       <p>The World Health Organization recommends average levels below: road ${WHO_NOISE.road.lden} dB (night ${WHO_NOISE.road.lnight} dB),
         railway ${WHO_NOISE.rail.lden} dB (night ${WHO_NOISE.rail.lnight} dB), aircraft ${WHO_NOISE.aircraft.lden} dB (night ${WHO_NOISE.aircraft.lnight} dB).
         Every 10 dB sounds roughly twice as loud. “Quiet” means below the lowest level ${mapper} maps.</p>
@@ -205,27 +209,31 @@ function checkNoise(R) {
 }
 
 function checkAir(R) {
-  const wales = isWales(R);
+  const wales = isWales(R) || isScotland(R);   // Welsh or Scottish hotspot data, in the same shape
   const base = {
-    source: wales
+    source: isScotland(R)
+      ? { name: "Council Air Quality Management Areas in Scotland (Scottish Air Quality database); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.scotAir }
+      : wales
       ? { name: "Council Air Quality Management Areas in Wales (Welsh Government, via DataMapWales); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.walesAir }
       : { name: "Council Air Quality Management Areas (via planning.data.gov.uk); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.ukair }
   };
   // Without the council hotspot data we cannot say "not in a hotspot" (missing data is never good news).
-  const hotspots = wales ? "walesSites" : "planningPoint";
+  const hotspots = wales ? sitesKey(R) : "planningPoint";
   if (!R[hotspots].ok) return unavailable(base, R, hotspots);
 
-  const ws = okValue(R, "walesSites");
+  const ws = wales ? okValue(R, hotspots) : null;
   const here = wales ? (ws ? ws.aqma.map(name => ({ name })) : []) : byDataset(okValue(R, "planningPoint"), "air-quality-management-area");
   const near = wales ? (ws ? ws.aqmaNear.filter(n => !ws.aqma.includes(n)).map(name => ({ name })) : []) : byDataset(okValue(R, "planningNearby"), "air-quality-management-area");
   const m = okValue(R, "air");
-  const overLegal = m && ((m.no2 ?? 0) > 40 || (m.pm25 ?? 0) > 20);
+  // Scotland's yearly limit for fine particles (PM2.5) is 10 µg/m³ (Air Quality (Scotland) Amendment Regulations 2016); the UK's is 20.
+  const scot = isScotland(R), pm25Limit = scot ? 10 : 20, limitName = scot ? "Scottish legal limit" : "UK legal limit";
+  const overLegal = m && ((m.no2 ?? 0) > 40 || (m.pm25 ?? 0) > pm25Limit);
 
   let status = "low";
   let found = "Not in an air pollution hotspot declared by the council.";
   if (here.length) { status = "medium"; found = "Inside an air pollution hotspot declared by the council (an Air Quality Management Area)."; }
   else if (near.length) found += ` There is one within ${formatRadius(R.loc.radius)}.`;
-  if (overLegal) { status = "high"; found += " Area pollution levels are estimated to be above UK legal limits."; }
+  if (overLegal) { status = "high"; found += ` Area pollution levels are estimated to be above ${scot ? "Scottish" : "UK"} legal limits.`; }
 
   let details = "";
   const names = [...new Set([...here, ...near].map(a => a.name).filter(Boolean))].slice(0, 3);
@@ -233,12 +241,12 @@ function checkAir(R) {
   if (m) {
     if (m.from) base.dataDate = `Model average ${new Date(m.from).toLocaleDateString("en-GB")} to ${new Date(m.to).toLocaleDateString("en-GB")}`;
     const verdict = (v, who, legal) => v == null ? "Not available"
-      : v > legal ? "Above UK legal limit"
-      : v > who ? "Within UK limit, above WHO"
+      : v > legal ? "Above " + limitName
+      : v > who ? `Within ${scot ? "Scottish" : "UK"} limit, above WHO`
       : "Within WHO";
     details += `<p><strong>Area estimate</strong> (average over the last 3 months):</p>
-      <div class="table-wrap"><table><thead><tr><th>Pollutant</th><th>Level here</th><th>WHO recommendation</th><th>UK legal limit</th><th>Result</th></tr></thead><tbody>
-        <tr><td>Fine particles (PM2.5)</td><td>${m.pm25 ?? "–"} µg/m³</td><td>Below 5 µg/m³</td><td>20 µg/m³</td><td>${verdict(m.pm25, 5, 20)}</td></tr>
+      <div class="table-wrap"><table><thead><tr><th>Pollutant</th><th>Level here</th><th>WHO recommendation</th><th>${limitName.charAt(0).toUpperCase() + limitName.slice(1)}</th><th>Result</th></tr></thead><tbody>
+        <tr><td>Fine particles (PM2.5)</td><td>${m.pm25 ?? "–"} µg/m³</td><td>Below 5 µg/m³</td><td>${pm25Limit} µg/m³</td><td>${verdict(m.pm25, 5, pm25Limit)}</td></tr>
         <tr><td>Nitrogen dioxide (NO₂), mainly from traffic</td><td>${m.no2 ?? "–"} µg/m³</td><td>Below 10 µg/m³</td><td>40 µg/m³</td><td>${verdict(m.no2, 10, 40)}</td></tr>
       </tbody></table></div>`;
   } else {
@@ -249,13 +257,55 @@ function checkAir(R) {
     ...base, status, found, details,
     meaning: `<p>Councils declare an Air Quality Management Area where pollution, usually from traffic, is above legal limits. They must then have a plan to reduce it.</p>
       <p>The WHO recommendations are the yearly averages in the ${link(LINKS.whoAir, "WHO Global Air Quality Guidelines (2021)")}.
-      UK legal limits are higher. Most of ${wales ? "Wales" : "England"} is above the WHO level. The model works on squares about 10 km
+      ${scot ? "Scotland's legal limits are higher, though its fine-particle limit is half the UK's." : "UK legal limits are higher."} ${scot ? "Many places in Scotland are" : wales ? "Most of Wales is" : "Most of England is"} above the WHO level. The model works on squares about 10 km
       across, so it describes the wider area, not your street. Levels beside busy roads are usually higher.</p>`,
-    actions: [wales ? `See local monitoring results and hotspots on ${link(LINKS.walesAir, "Air Quality in Wales")}.` : `See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`]
+    actions: [scot ? `See local monitoring results and hotspots on ${link(LINKS.scotAir, "Air Quality in Scotland")}.` : wales ? `See local monitoring results and hotspots on ${link(LINKS.walesAir, "Air Quality in Wales")}.` : `See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`]
+  };
+}
+
+// Scotland: Police Scotland publishes no street-level crime data, so we use the crime part of the Scottish Index
+// of Multiple Deprivation 2020 (recorded crime in 2017-18) for the small area at the pin.
+function checkCrimeScotland(R) {
+  const base = {
+    source: { name: "Scottish Index of Multiple Deprivation 2020, crime domain (Scottish Government)", url: LINKS.simdAbout },
+    dataDate: "Crimes recorded in 2017–18, published in the Scottish Index of Multiple Deprivation 2020"
+  };
+  if (!R.simdCrime.ok) return unavailable(base, R, "simdCrime");
+  const z = R.simdCrime.value;
+  if (!z) {
+    return {
+      ...base, status: "manual", gap: "nodata",
+      found: "No crime figures were found for this spot. Police Scotland does not publish street-level crime data.",
+      meaning: "<p>Check recorded crime for the council area instead.</p>",
+      actions: [`See recorded crime by council area in the ${link(LINKS.scotCrime, "Scottish Government's recorded crime statistics")}.`]
+    };
+  }
+  const share = z.rank / SIMD_ZONES;   // rank 1 = the highest crime rate in Scotland
+  const word = share <= 0.1 ? "among the highest 10% in Scotland" : share <= 0.3 ? "above average for Scotland"
+    : share <= 0.7 ? "around average for Scotland" : "below average for Scotland";
+  return {
+    ...base, status: "info",
+    found: `In this small area (${z.name}), the recorded crime rate is ${word}: ranked ${z.rank.toLocaleString("en-GB")} of ${SIMD_ZONES.toLocaleString("en-GB")} areas, where 1 has the most crime.`,
+    details: `<div class="table-wrap"><table><tbody>
+        <tr><th scope="row">Area</th><td>${escapeHTML(z.name)}, ${escapeHTML(z.council)} (${term("data zone", "A small area used for Scottish statistics, home to about 500 to 1,000 people")} ${escapeHTML(z.zone)})</td></tr>
+        <tr><th scope="row">Selected crimes recorded in 2017–18</th><td>${z.count}</td></tr>
+        <tr><th scope="row">Rate per 10,000 people</th><td>${z.rate}</td></tr>
+        <tr><th scope="row">Rank in Scotland (1 = most crime)</th><td>${z.rank.toLocaleString("en-GB")} of ${SIMD_ZONES.toLocaleString("en-GB")}</td></tr>
+      </tbody></table></div>`,
+    meaning: `<p>Police Scotland does not publish street-level crime data, so we use the crime part of the Scottish Government's
+        ${link(LINKS.simd, "Scottish Index of Multiple Deprivation")}. It counts crimes of violence, sexual crimes, domestic housebreaking,
+        vandalism, drugs offences and common assault recorded in 2017–18, per 10,000 people. The figures are several years old
+        and town centres rank high because of shops and nightlife, so treat this as a rough guide.</p>
+      <p>Rating: crime is shown for information only.</p>`,
+    actions: [
+      `Compare areas on ${link(LINKS.simd, "SIMD")} (choose the crime domain), and see recent figures by council area in the ${link(LINKS.scotCrime, "recorded crime statistics")}.`,
+      `Find the local policing team on the ${link(NATIONAL.Scotland.police[1], "Police Scotland website")}.`
+    ]
   };
 }
 
 function checkCrime(R) {
+  if (isScotland(R)) return checkCrimeScotland(R);
   const base = {
     source: { name: "data.police.uk (Home Office)", url: LINKS.policeData }
   };

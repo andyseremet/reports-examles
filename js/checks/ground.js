@@ -85,6 +85,7 @@ function checkCoal(R) {
 // records at all, so finding none of those proves nothing: the topic never says "No issue found" because of them.
 function checkLanduse(R) {
   if (isWales(R)) return checkLanduseWales(R);
+  if (isScotland(R)) return checkLanduseScotland(R);
   const base = {
     source: { name: "Environment Agency Historic Landfill Sites; council brownfield registers on planning.data.gov.uk", url: LINKS.landfill }
   };
@@ -178,6 +179,45 @@ function checkLanduseWales(R) {
   };
 }
 
+// Scotland: SEPA licensed waste sites. Old (closed) landfill and contaminated land are not published nationally,
+// so with no licensed landfill nearby the topic is never "No issue found".
+function checkLanduseScotland(R) {
+  const base = { source: { name: "SEPA, licensed waste sites (waste management licences and permits)", url: LINKS.sepaPermits } };
+  if (!R.wasteSites.ok) return unavailable(base, R, "wasteSites");
+  const sites = R.wasteSites.value || [];
+  const council = okValue(R, "place") ? R.place.value.admin_district + " Council" : "the local council";
+  const within = formatRadius(R.loc.radius);
+  const landfill = sites.filter(s => s.landfill);
+  // Landfill uses the England rule: within 250 m "Look into this", up to 1 km "Worth checking". Other waste sites are for information.
+  const d = landfill.length ? (landfill[0].distanceKm ?? 0) : null;
+  const status = d != null ? (d <= 0.25 ? "high" : d <= 1 ? "medium" : "info") : sites.length ? "info" : "manual";
+  const others = sites.length - landfill.length;
+  const found = [
+    landfill.length ? `${plural(landfill.length, "licensed landfill site")} within ${within}, the nearest about ${formatDistance(landfill[0].distanceKm)} away.` : "",
+    others ? `${plural(others, "other licensed waste site")} (such as recycling centres, transfer stations or scrapyards) within ${within}.` : "",
+    !sites.length ? `No licensed waste sites within ${within}.` : "",
+    "Old, closed landfill sites and contaminated land are not published for Scotland, so check these another way."
+  ].filter(Boolean).join(" ");
+  return {
+    ...base, status, found, ...(status === "manual" && { gap: "coverage" }),
+    details: sites.length ? `<div class="table-wrap"><table><thead><tr><th>Waste site</th><th>Distance</th><th>Activity</th></tr></thead><tbody>${
+      sites.slice(0, 10).map(s => `<tr><td>${escapeHTML(s.name || "Unnamed site")}</td><td>${escapeHTML(formatDistance(s.distanceKm))}</td><td>${escapeHTML(s.kinds.join(", ") || "Not recorded")}</td></tr>`).join("")
+    }</tbody></table></div>` : "",
+    meaning: `<p>These are sites SEPA licenses to handle waste today, including landfill. Landfill can give off gas or affect the ground.
+      Busy waste sites can also bring lorries, noise or smells. The dark green dots on the map show where the sites are.</p>
+      <p>Rating: licensed landfill within 250 m “Look into this”, 250 m to 1 km “Worth checking”; other waste sites are “For information”.
+      With no waste site nearby this topic says “Check yourself”, because old landfill sites and contaminated land are not published for Scotland.</p>
+      <p>Former factories, petrol stations, railways, gasworks and mines are common sources of contamination. The environmental search
+      your solicitor orders looks at the past uses of the land.</p>`,
+    actions: [
+      ...(sites.length ? [`Find out more about a site in ${link(LINKS.sepaPermits, "SEPA's authorisations and permits")} (search by its address).`] : []),
+      `Ask ${escapeHTML(council)} for its contaminated land register entry for the area, and about any old landfill sites.`
+    ],
+    seller: ["Do you know of any previous industrial use of the land, or any underground fuel or oil tanks?"],
+    conveyancer: ["An environmental search. It covers landfill, contaminated land and former industrial uses of the land."]
+  };
+}
+
 function checkLandslides(R) {
   const base = {
     source: { name: "British Geological Survey, National Landslide Database", url: LINKS.landslides }
@@ -213,22 +253,28 @@ function shorelinePlan(policy) {
 }
 
 function checkCoastal(R) {
-  const wales = isWales(R);
+  const wales = isWales(R), scot = isScotland(R);
   const agency = wales ? "Natural Resources Wales" : "the Environment Agency";
   const base = {
-    source: wales
+    source: scot
+      ? { name: "Dynamic Coast (NatureScot and the Scottish Government), 2021, higher-emissions forecast", url: LINKS.dynamicCoast }
+      : wales
       ? { name: "Natural Resources Wales, National Coastal Erosion Risk Map (NCERM, via DataMapWales)", url: LINKS.walesCoast }
       : { name: "Environment Agency, National Coastal Erosion Risk Map (NCERM 2024)", url: LINKS.coastalData }
   };
   if (!R.coastal.ok) return unavailable(base, R, "coastal");
   const c = R.coastal.value;
   if (c.published) base.dataDate = `Map last updated ${c.published}. Checked live on ${today()}`;
-  const checker = wales ? link(LINKS.walesCoast, "Natural Resources Wales coastal erosion map") : link(LINKS.coastalMap, "Check coastal erosion management in your area");
+  const checker = scot ? link(LINKS.dynamicCoast, "Dynamic Coast map")
+    : wales ? link(LINKS.walesCoast, "Natural Resources Wales coastal erosion map") : link(LINKS.coastalMap, "Check coastal erosion management in your area");
+  const [soon, later] = c.years || [2055, 2105];
+  const upTo = m => m != null ? ` (up to about ${m} m of land lost)` : "";
   if (!c.nearCoast) {
     return {
       ...base, status: "low",
-      found: "Not near the coast: no coastline is mapped within 1 km.",
-      meaning: "<p>This check looks for coast within 1 km of the property that is expected to wear away over the next 100 years.</p>"
+      found: scot ? "No soft coast (sand, gravel or soft rock) is mapped within 1 km." : "Not near the coast: no coastline is mapped within 1 km.",
+      meaning: "<p>This check looks for coast within 1 km of the property that is expected to wear away over the next 100 years.</p>" +
+        (scot ? "<p>Dynamic Coast maps all of Scotland's soft coast. Rocky coasts wear away too slowly to be mapped.</p>" : "")
     };
   }
   const plan = c.plan.now || c.plan.later;
@@ -241,28 +287,32 @@ function checkCoastal(R) {
   let status, found;
   if (c.inside2055) {
     status = "high";
-    found = `The property is inside the area the coast is expected to reach by 2055 (up to about ${c.metres2055} m of land lost).`;
+    found = `The property is inside the area the coast is expected to reach by ${soon}${upTo(c.metres2055)}.`;
   } else if (c.inside2105) {
     status = "medium";
-    found = `The property is inside the area the coast is expected to reach by 2105 (up to about ${c.metres2105} m of land lost), but not by 2055.`;
+    found = `The property is inside the area the coast is expected to reach by ${later}${upTo(c.metres2105)}, but not by ${soon}.`;
   } else if (c.erosionKm != null && c.erosionKm <= 0.2) {
     status = "info";
-    found = `The coast nearby is expected to wear away. The edge of the area expected to be lost by 2105 is about ${formatDistance(c.erosionKm)} from the property.`;
+    found = `The coast nearby is expected to wear away. The edge of the area expected to be lost by ${later} is about ${formatDistance(c.erosionKm)} from the property.`;
   } else {
     status = "low";
     found = c.erosionKm != null
-      ? `The coast is within 1 km. The nearest area expected to be lost by 2105 is about ${formatDistance(c.erosionKm)} away.`
-      : "The coast is within 1 km, but no land there is expected to be lost to the sea by 2105.";
+      ? `The coast is within 1 km. The nearest area expected to be lost by ${later} is about ${formatDistance(c.erosionKm)} away.`
+      : `The coast is within 1 km, but no land there is expected to be lost to the sea by ${later}.`;
   }
   return {
     ...base, status, found,
-    meaning: `<p>Rating: inside the area expected to be lost by 2055 is “Look into this”; by 2105 is “Worth checking”;
+    meaning: `<p>Rating: inside the area expected to be lost by ${soon} is “Look into this”; by ${later} is “Worth checking”;
       within 200 m of it is “For information”.</p>
       ${planLine}
-      <p>${wales ? "The map assumes the shoreline plan is carried out." : "The map assumes the shoreline plan is carried out and the sea level rise the Environment Agency advises planning for."}
-      ${wales ? "Natural Resources Wales" : "The Environment Agency"} says it is a national guide and cannot give exact details for a single property.</p>`,
+      <p>${scot
+        ? `Dynamic Coast projects past shoreline change forward with rising sea levels. The online map uses the higher-emissions
+          forecast, so it is a cautious view: with lower emissions, less land would be lost. It maps soft coasts (sand, gravel and soft rock) only.
+          It is a national guide and cannot give exact details for a single property.`
+        : `${wales ? "The map assumes the shoreline plan is carried out." : "The map assumes the shoreline plan is carried out and the sea level rise the Environment Agency advises planning for."}
+      ${wales ? "Natural Resources Wales" : "The Environment Agency"} says it is a national guide and cannot give exact details for a single property.`}</p>`,
     actions: status === "low" ? [] : [
-      `See the map and the plan for this stretch of coast on ${checker}.`,
+      scot ? `See how this stretch of coast is changing on the ${checker}.` : `See the map and the plan for this stretch of coast on ${checker}.`,
       "Ask the council's coastal team how the coast here is changing, and whether the defences will be kept."
     ],
     seller: status === "low" ? [] : ["Has the cliff or shore near the property moved, or have the sea defences been repaired, in your time here?"],
