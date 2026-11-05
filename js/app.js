@@ -991,6 +991,11 @@ function prepareTables(container, title) {
   });
 }
 
+// "Details" with a down arrow when closed, "Hide" with an up arrow when open (the words come from css/app.css).
+function moreToggle() {
+  return `<span class="more no-print" aria-hidden="true"><span class="more-text"></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
+}
+
 function renderCheck(c) {
   const open = ["high", "medium", "error"].includes(c.status);
   const actions = c.actions && c.actions.length
@@ -1001,7 +1006,7 @@ function renderCheck(c) {
       <summary>
         <h3>${escapeHTML(c.title)}</h3>${chip(c.status)}
         <span class="found">${escapeHTML(c.found)}</span>
-        <span class="more no-print" aria-hidden="true"><span class="more-text"></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        ${moreToggle()}
       </summary>
       <div class="check-body">
         ${c.status === "error" ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
@@ -1168,6 +1173,7 @@ function gapKind(c) {
   return c.status === "manual" ? (c.gap || "nodata") : null;
 }
 
+const GAPS_OPEN_MAX = 3;
 function dataGapsBox(results) {
   const gaps = results.filter(gapKind);
   if (!gaps.length) return "";
@@ -1181,14 +1187,20 @@ function dataGapsBox(results) {
     if (c.actions && c.actions.length) return c.actions[0];
     return c.source && c.source.url ? `See ${link(c.source.url, c.source.name)}.` : "Ask your conveyancer to include this in their searches.";
   };
-  return `<section class="gaps-box" aria-labelledby="gapsTitle">
-    <h3 id="gapsTitle">Where we could not give an answer</h3>
-    <p>${plural(gaps.length, "topic")} could not be checked here. Missing data does not mean there is no problem, so check ${gaps.length === 1 ? "it" : "them"} another way.</p>
+  // Folds away with "Details / Hide" like a topic card. It starts open for up to GAPS_OPEN_MAX topics; after the
+  // person opens or closes it, their choice is kept while the rest of the report loads.
+  const open = run.gapsOpen ?? gaps.length <= GAPS_OPEN_MAX;
+  return `<details class="gaps-box" id="gapsBox"${open ? " open" : ""}>
+    <summary>
+      <h3 id="gapsTitle">Where we could not give an answer</h3>
+      <p>${plural(gaps.length, "topic")} could not be checked here. Missing data does not mean there is no problem, so check ${gaps.length === 1 ? "it" : "them"} another way.</p>
+      ${moreToggle()}
+    </summary>
     <ul>${gaps.map(c => `<li><span class="gap-reason">${GAP_REASON[gapKind(c)]}</span>
       <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
       <span>${escapeHTML(c.found)}</span>
       <span class="gap-ask"><strong>Instead:</strong> ${askInstead(c)}</span></li>`).join("")}</ul>
-  </section>`;
+  </details>`;
 }
 
 // The one-line reason for the topic tapped in the strip above.
@@ -1407,6 +1419,11 @@ $("toggleAll").addEventListener("click", () => {
   const open = $("toggleAll").textContent === "Open all";
   allTopics().forEach(d => { d.open = open; });
   updateToggleAll();
+});
+// Remember whether the person opened or closed the gaps box, so the next redraw keeps it that way.
+document.addEventListener("click", e => {
+  const sum = e.target.closest && e.target.closest("#gapsBox > summary");
+  if (sum && run) run.gapsOpen = !sum.parentElement.open;
 });
 document.addEventListener("toggle", e => { if (e.target.matches && e.target.matches("#report details.check")) updateToggleAll(); }, true);
 

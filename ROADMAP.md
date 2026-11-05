@@ -38,7 +38,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - Each topic says what it means, what to do next, and how current its data is.
 - Topic cards show **Details ▾** (or **Hide ▴** when open); one **Open all / Close all** button stays on the section
   bar, which fades at the edge on a phone to show it scrolls (1.23.0).
-- An overall verdict, count boxes that go to the first topic with that rating, a "Start here" list, and a box for every topic with no real answer and who to ask instead.
+- An overall verdict, count boxes that go to the first topic with that rating, a "Start here" list, and a box for every topic with no real answer and who to ask
+  instead, which folds away with **Details / Hide** and starts closed when it lists more than 3 topics (1.25.0).
 - **At the viewing:** up to 12 things to look for and ask on the day, reached with the **Viewing** button.
 - A checklist for the seller and conveyancer; ticks are remembered for each property, and each list shows, for
   example, "2 of 7 done" (1.24.0).

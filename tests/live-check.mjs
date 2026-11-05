@@ -323,6 +323,19 @@ async function testDevice(device, [postcode, place]) {
     if (r.noWay) throw new Error(`${r.noWay} row(s) do not say how to check instead`);
     if (r.inStart) throw new Error(`${r.inStart} gap topic(s) still in "Start here"`);
     if (!r.want.length && r.box) throw new Error("box shown with no gaps");
+    if (r.want.length) {
+      // The box folds away with Details / Hide: open for up to 3 topics, closed for more, and the
+      // person's choice stays when the report is drawn again.
+      const fold = async () => page.$eval("#gapsBox", d => ({ open: d.open, word: getComputedStyle(d.querySelector("summary .more-text"), "::before").content }));
+      const first = await fold();
+      if (first.open !== (r.want.length <= 3)) throw new Error(`with ${r.want.length} gap(s) the box should start ${r.want.length <= 3 ? "open" : "closed"}`);
+      if (first.word !== (first.open ? '"Hide"' : '"Details"')) throw new Error(`the box shows ${first.word} when ${first.open ? "open" : "closed"}`);
+      await page.click("#gapsBox > summary");
+      await page.evaluate(() => renderSummary());
+      const after = await fold();
+      if (after.open === first.open) throw new Error("Details / Hide did not change the box, or the choice was lost on redraw");
+      await page.click("#gapsBox > summary");
+    }
     return r.want.length ? `${r.want.length} gap(s): ${r.want.join(", ")}` : "no gaps, box hidden";
   });
 

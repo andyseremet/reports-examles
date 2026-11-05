@@ -2,7 +2,7 @@
 //   npm install --no-save axe-core   (Playwright as for the full test; see CLAUDE.md)
 //   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 10 minutes)
 // Scans WCAG 2.2 AA with axe-core on the start page, a full report and status.html, at 1280 px, 320 px and phone,
-// light and dark, normal and A+ text. In the report it also scans after using controls (Open all, a count box,
+// light and dark, normal and A+ text. In the report it also scans after using controls (Open all, the gaps box, a count box,
 // a tick, Move to another device, Compare three, Remove), and checks for sideways scrolling before and after each.
 // Environment Agency map requests are answered empty so the report finishes fast. Exit code 1 on any problem.
 import { chromium, devices } from "playwright";
@@ -18,6 +18,7 @@ const SIZES = [["1280 px", { viewport: { width: 1280, height: 900 } }], ["320 px
 // Controls used one after another on the report; each is followed by a scan and a sideways-scroll check.
 const ACTIONS = [
   ["Open all", p => p.click("#toggleAll")],
+  ["gaps box toggled", async p => { if (await p.locator("#gapsBox > summary").count()) await p.click("#gapsBox > summary"); }],
   ["sources open", p => p.evaluate(() => { const d = document.getElementById("sources"); if (d) d.open = true; })],
   ["count box", async p => { const a = p.locator("a.count").first(); if (await a.count()) await a.click(); }],
   ["tick", async p => { const b = p.locator("#viewing input[data-tick]").first(); if (await b.count()) await b.check(); }],

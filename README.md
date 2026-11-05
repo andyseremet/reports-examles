@@ -35,7 +35,8 @@ official checkers.
 3. Check the pin is on the right property (drag it if not), then press
    **Check this property**.
 4. Read the report: a verdict, a "Start here" list of things to look into, and a
-   "Where we could not give an answer" box listing topics with no answer and who to ask instead, then results grouped into
+   "Where we could not give an answer" box listing topics with no answer and who to ask instead (it folds away with
+   **Details / Hide**, and starts closed when more than 3 topics are listed), then results grouped into
    Flooding, Ground and land, Living environment, and Planning and
    surroundings, ending with a short list of things to look for and ask at the viewing, and a checklist for the seller and conveyancer.
 5. Press **Share** to copy or send the link, or **Save or print** to download the report, print a summary, or
