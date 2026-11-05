@@ -12,6 +12,11 @@ function byDataset(list, dataset) {
   return (list || []).filter(e => e.dataset === dataset);
 }
 
+// True for an address in Wales, where some topics use Welsh data (DataMapWales) instead of England's.
+function isWales(R) {
+  return okValue(R, "place")?.country === "Wales";
+}
+
 function unavailable(base, R, key) {
   return {
     ...base, status: "error",
@@ -34,17 +39,16 @@ const CHECKS = [
   { id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)", deps: ["surfaceWater", "floodNational"], build: checkSurfaceWater },
   { id: "coal", group: "ground", title: "Coal mining", deps: ["coal"], build: checkCoal },
   { id: "radon", group: "ground", title: "Radon gas", deps: ["radon"], build: checkRadon },
-  { id: "landuse", group: "ground", title: "Past use of the land: landfill and contamination", deps: ["landfill", "planningPoint", "planningNearby"], build: checkLanduse },
+  { id: "landuse", group: "ground", title: "Past use of the land: landfill and contamination", deps: ["landfill", "planningPoint", "planningNearby", "coalTips"], build: checkLanduse },
   { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },
   { id: "coastal", group: "ground", title: "Coastal erosion", deps: ["coastal"], build: checkCoastal },
   { id: "noise", group: "living", title: "Noise: road, railway and aircraft", deps: ["noise", "railNoise"], build: checkNoise },
-  { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air"], build: checkAir },
+  { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air", "walesSites"], build: checkAir },
   { id: "amenities", group: "living", title: "Schools, doctors and transport", deps: ["amenities"], build: checkAmenities },
   { id: "crime", group: "living", title: "Reported crime", deps: ["crime", "crimeArea"], build: checkCrime },
   { id: "soldprices", group: "living", title: "Recent sale prices nearby", deps: ["soldPrices"], build: checkSoldPrices },
-  { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby"], build: checkPlanning },
-  { id: "trees", group: "planning", title: "Protected trees and Article 4 areas", deps: ["planningPoint", "trees"], build: checkTrees },
-  { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby"], build: checkNature }
+  { id: "planning", group: "planning", title: "Planning restrictions and heritage", deps: ["planningPoint", "planningNearby", "walesSites"], build: checkPlanning },
+  { id: "nature", group: "planning", title: "Protected nature sites", deps: ["planningPoint", "planningNearby", "walesSites"], build: checkNature }
 ];
 
 // The viewing checklist ("At the viewing"): things to see or hear on the day, for topics rated
@@ -58,8 +62,7 @@ const VIEWING_LOOK = {
   landslides: ["Cracks in walls, paths or garden walls, leaning walls or fences, and wet or slipping slopes."],
   coastal: ["How far the house is from the cliff edge or shore, and the state of any sea defences."],
   noise: ["Listen inside and in the garden with a window open, and look at the glazing on the noisy side."],
-  air: ["Busy roads, junctions or works close by, and which rooms face them."],
-  trees: ["Large trees close to the house, and cracks near them (tree roots can affect the ground)."]
+  air: ["Busy roads, junctions or works close by, and which rooms face them."]
 };
 const VIEWING_GENERAL = {
   look: [
@@ -82,7 +85,7 @@ const TOPIC_ICONS = {
   flood: ["🌊", "Flood"], coal: ["⛏️", "Coal"], radon: ["☢️", "Radon"], landuse: ["🗑️", "Land use"],
   landslides: ["⛰️", "Ground"], noise: ["🔊", "Noise"],
   air: ["💨", "Air"], crime: ["🚓", "Crime"], planning: ["🏛️", "Planning"], nature: ["🌳", "Nature"],
-  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"], trees: ["🌲", "Trees"], coastal: ["🏖️", "Coast"],
+  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"], coastal: ["🏖️", "Coast"],
   soldprices: ["💷", "Prices"]
 };
 
@@ -93,8 +96,8 @@ CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
 // "Check yourself" and links to the right national service, instead of a
 // misleading "No issue found".
 const COVERAGE = {
-  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England"], coastal: ["England"], soldprices: ["England", "Wales"], noise: ["England"],
-  air: ["England"], planning: ["England"], trees: ["England"], nature: ["England"],
+  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England", "Wales"], coastal: ["England", "Wales"], soldprices: ["England", "Wales"], noise: ["England", "Wales"],
+  air: ["England", "Wales"], planning: ["England", "Wales"], nature: ["England", "Wales"],
   crime: ["England", "Wales", "Northern Ireland"],
   coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"]
 };
@@ -123,7 +126,7 @@ function notCovered(c, country, place) {
   if (c.id === "flood" && n.flood) service = n.flood;
   if (c.id === "crime" && n.police) service = n.police;
   const covered = COVERAGE[c.id].join(", ").replace(/, ([^,]*)$/, " and $1");
-  const actions = (c.id === "planning" || c.id === "nature" || c.id === "trees")
+  const actions = (c.id === "planning" || c.id === "nature")
     ? [`Ask ${escapeHTML(council)}'s planning service about restrictions and protected sites.`]
     : service ? [`Check this on ${link(service[1], service[0])}.`] : [];
   return topicResult(c, {

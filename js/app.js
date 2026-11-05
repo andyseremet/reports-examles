@@ -172,6 +172,7 @@ function initMap() {
         <li><span class="dot" style="background:${MAP_COLOURS.contaminated}"></span>Contaminated land</li>
         <li><span class="dot" style="background:${MAP_COLOURS.hazard}"></span>Major hazard site</li>
         <li><span class="dot" style="background:${MAP_COLOURS.landslide}"></span>Recorded landslide</li>
+        <li><span class="dot" style="background:${MAP_COLOURS.coalTip}"></span>Disused coal tip (Wales)</li>
       </ul>`;
     pop.querySelectorAll('input[name="basemap"]').forEach(radio =>
       radio.addEventListener("change", () => setBasemap(radio.value)));
@@ -761,7 +762,7 @@ function onTaskSettled(key) {
     if (slot) { slot.innerHTML = renderCheck(result); prepareTables(slot, c.title); }
   });
   if (key === "place") renderMeta();
-  if (["landfill", "landslides", "planningNearby"].includes(key)) replotFeatures();
+  if (["landfill", "landslides", "planningNearby", "coalTips"].includes(key)) replotFeatures();
   if (TASKS.every(([k]) => run.R[k])) finishRun();
   else renderSummary();
 }
@@ -790,7 +791,7 @@ function saveSnapshot() {
   store.set(snapKey(reportKey(run.loc)), {
     savedAt: new Date().toISOString(), loc: run.loc,
     results: orderedResults(),
-    R: { place: R.place, landfill: R.landfill, landslides: R.landslides, planningNearby: nearby }
+    R: { place: R.place, landfill: R.landfill, landslides: R.landslides, coalTips: R.coalTips, planningNearby: nearby }
   });
 }
 
@@ -938,6 +939,7 @@ function plotFeatures(layer, R) {
   [
     [okValue(R, "landfill"), MAP_COLOURS.landfill, "Old landfill site", s => s.site_name || "Unnamed"],
     [okValue(R, "landslides"), MAP_COLOURS.landslide, "Recorded landslide", s => s.name],
+    [okValue(R, "coalTips"), MAP_COLOURS.coalTip, "Disused coal tip", s => [s.id || "Unnamed tip", s.category && "category " + s.category].filter(Boolean).join(", ")],
     [byDataset(nearby, "control-of-major-accident-hazards-site"), MAP_COLOURS.hazard, "Major hazard site", s => s.name || ""],
     [byDataset(nearby, "contaminated-land"), MAP_COLOURS.contaminated, "Contaminated land", s => s.name || ""]
   ].forEach(([sites, colour, label, name]) => (sites || []).forEach(s => s.lat != null &&
@@ -1156,7 +1158,9 @@ function renderSummary() {
           <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul>` : ""}
     ${dataGapsBox(results)}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
-      Some official data only covers England. Those topics are marked “Check yourself”, with a link to the right national service.</div>` : ""}`;
+      ${p.country === "Wales"
+        ? "Topics use Welsh data where England's stops at the border. Where Wales publishes nothing (for example old landfill sites), the topic says “Check yourself”."
+        : "Some official data only covers England. Those topics are marked “Check yourself”, with a link to the right national service."}</div>` : ""}`;
   updateToggleAll();
 }
 

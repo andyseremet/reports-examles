@@ -13,6 +13,9 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   check helpers, `CHECKS`, `TOPIC_ICONS`, `COVERAGE`) → `app.js` (map, search, run, report, saved, share, start).
   Code that runs at load time may only use what an earlier file defines. A new JS file must be added to `index.html`
   and to `SHELL` in `sw.js`.
+- **Wales:** land use, coast, noise, air, planning and nature use DataMapWales (`datamap.gov.wales`, paced in
+  `PACED_HOSTS`): `getWalesSites`, `getWalesNoise`, `getWalesCoast`, `getCoalTips` in `js/data.js`, and `isWales(R)`
+  branches in the checks. England-only fetches return early for Wales instead of asking England's servers.
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
   `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
   in `SERVICES` (`tests/live-check.mjs`) also needs its report topics in `SERVICE_TOPICS`.
@@ -45,7 +48,7 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   with the five labels in `STATUS_LABEL`.
 - **Missing data is never good news:** when a source has published nothing (a police force, a council dataset, an
   empty national dataset), rate the topic `"manual"` (Check yourself), not `"low"` (No issue found). See
-  `policeDataMissing`, `checkTrees` and `checkLanduse`.
+  `policeDataMissing` and `checkLanduse`.
 - **Outside data stays live.** Save a copy in `data/` only for a finished official dataset that will never be
   revised (for example Census 2021), and ask the owner first. Say in `README.md` how the file was made.
 - **Sticky bars:** keep focus clear of them with the `:focus` `scroll-margin` rule and `--sticky-top`/`--bottom-clear`

@@ -84,6 +84,7 @@ function checkCoal(R) {
 // (planning.data.gov.uk). In November 2026 the national contaminated land and major hazard datasets held no
 // records at all, so finding none of those proves nothing: the topic never says "No issue found" because of them.
 function checkLanduse(R) {
+  if (isWales(R)) return checkLanduseWales(R);
   const base = {
     source: { name: "Environment Agency Historic Landfill Sites; council brownfield registers on planning.data.gov.uk", url: LINKS.landfill }
   };
@@ -140,6 +141,43 @@ function checkLanduse(R) {
   };
 }
 
+// Wales: old landfill sites and contaminated land are not published nationally, so with no coal tip nearby
+// the topic stays "Check yourself" (missing data is never good news).
+const COAL_TIP_CLOSE_KM = 0.25;
+function checkLanduseWales(R) {
+  const base = { source: { name: "Welsh Government, disused coal tips in Wales (DataMapWales)", url: LINKS.walesCoalTips } };
+  if (!R.coalTips.ok) return unavailable(base, R, "coalTips");
+  const tips = R.coalTips.value || [];
+  const council = okValue(R, "place") ? R.place.value.admin_district + " Council" : "the local council";
+  const within = formatRadius(R.loc.radius);
+  const close = tips.filter(t => t.distanceKm != null && t.distanceKm <= COAL_TIP_CLOSE_KM);
+  const higher = tips.filter(t => t.category === "C" || t.category === "D");
+  const status = close.length ? "medium" : tips.length ? "info" : "manual";
+  const found = tips.length
+    ? `${plural(tips.length, "disused coal tip")} within ${within}${tips[0].distanceKm == null ? "" : `, the nearest about ${formatDistance(tips[0].distanceKm)} away`}${higher.length ? ` (${plural(higher.length, "tip")} in the more often inspected categories C and D)` : ""}. Landfill and contaminated land are not published for Wales.`
+    : `No disused coal tips within ${within}. Old landfill sites and contaminated land are not published for Wales, so check these another way.`;
+  return {
+    ...base, status, found, ...(status === "manual" && { gap: "coverage" }),
+    dataDate: `Coal tip map as of March 2026. Checked live on ${today()}`,
+    details: tips.length ? `<div class="table-wrap"><table><thead><tr><th>Coal tip</th><th>Distance</th><th>Category</th><th>Last inspected</th></tr></thead><tbody>${
+      tips.slice(0, 10).map(t => `<tr><td>${escapeHTML(t.id || "Unnamed tip")}</td><td>${escapeHTML(t.distanceKm == null ? "Nearby" : formatDistance(t.distanceKm))}</td><td>${escapeHTML(COAL_TIP_CATEGORY[t.category] || t.category || "Not recorded")}</td><td>${escapeHTML(t.inspected || "Not recorded")}</td></tr>`).join("")
+    }</tbody></table></div>` : "",
+    meaning: `<p>Wales has more than 2,000 disused coal tips, mostly in the south Wales valleys. The Welsh Government gives each one
+      a category that sets how often it is inspected. Categories C and D are inspected most often, to check drainage and
+      stability. This does not mean they are about to move. Categories A, B and R are much less likely to affect public safety.</p>
+      <p>Rating: a coal tip within 250 m is “Worth checking”; further away it is “For information”. With no coal tip nearby this
+      topic says “Check yourself”, because old landfill sites and contaminated land are not published for Wales.</p>
+      <p>Former factories, petrol stations, railways and gasworks are common sources of contamination. The environmental search
+      your conveyancer orders looks at the past uses of the land.</p>`,
+    actions: [
+      ...(tips.length ? [`See the tips on the ${link(LINKS.walesCoalTips, "Welsh Government's disused coal tips map")}, and ask ${escapeHTML(council)} about any close to the property.`] : []),
+      `Ask ${escapeHTML(council)} for its contaminated land register entry for the area, and Natural Resources Wales about old landfill sites.`
+    ],
+    seller: ["Do you know of any previous industrial use of the land, or any underground fuel or oil tanks?"],
+    conveyancer: ["An environmental search. It covers landfill, contaminated land and former industrial uses of the land."]
+  };
+}
+
 function checkLandslides(R) {
   const base = {
     source: { name: "British Geological Survey, National Landslide Database", url: LINKS.landslides }
@@ -175,13 +213,17 @@ function shorelinePlan(policy) {
 }
 
 function checkCoastal(R) {
+  const wales = isWales(R);
+  const agency = wales ? "Natural Resources Wales" : "the Environment Agency";
   const base = {
-    source: { name: "Environment Agency, National Coastal Erosion Risk Map (NCERM 2024)", url: LINKS.coastalData }
+    source: wales
+      ? { name: "Natural Resources Wales, National Coastal Erosion Risk Map (NCERM, via DataMapWales)", url: LINKS.walesCoast }
+      : { name: "Environment Agency, National Coastal Erosion Risk Map (NCERM 2024)", url: LINKS.coastalData }
   };
   if (!R.coastal.ok) return unavailable(base, R, "coastal");
   const c = R.coastal.value;
   if (c.published) base.dataDate = `Map last updated ${c.published}. Checked live on ${today()}`;
-  const checker = link(LINKS.coastalMap, "Check coastal erosion management in your area");
+  const checker = wales ? link(LINKS.walesCoast, "Natural Resources Wales coastal erosion map") : link(LINKS.coastalMap, "Check coastal erosion management in your area");
   if (!c.nearCoast) {
     return {
       ...base, status: "low",
@@ -190,8 +232,10 @@ function checkCoastal(R) {
     };
   }
   const plan = c.plan.now || c.plan.later;
-  const planLine = plan
-    ? `<p>The local ${term("shoreline management plan", "The long-term plan for this stretch of coast, agreed by the council and the Environment Agency")}
+  const planLine = wales && c.plan.area
+    ? `<p>This stretch of coast is covered by the ${term("shoreline management plan", `The long-term plan for this stretch of coast, agreed by the councils and ${agency}`)} ${escapeHTML(c.plan.area)}.</p>`
+    : plan
+    ? `<p>The local ${term("shoreline management plan", `The long-term plan for this stretch of coast, agreed by the council and ${agency}`)}
       ${c.plan.area ? `(${escapeHTML(c.plan.area)}) ` : ""}says ${shorelinePlan(c.plan.now)} until about 2055${c.plan.later && c.plan.later !== c.plan.now ? `, then ${shorelinePlan(c.plan.later)}` : ""}.</p>`
     : "";
   let status, found;
@@ -215,8 +259,8 @@ function checkCoastal(R) {
     meaning: `<p>Rating: inside the area expected to be lost by 2055 is “Look into this”; by 2105 is “Worth checking”;
       within 200 m of it is “For information”.</p>
       ${planLine}
-      <p>The map assumes the shoreline plan is carried out and the sea level rise the Environment Agency advises planning for.
-      The Environment Agency says it is a national guide and cannot give exact details for a single property.</p>`,
+      <p>${wales ? "The map assumes the shoreline plan is carried out." : "The map assumes the shoreline plan is carried out and the sea level rise the Environment Agency advises planning for."}
+      ${wales ? "Natural Resources Wales" : "The Environment Agency"} says it is a national guide and cannot give exact details for a single property.</p>`,
     actions: status === "low" ? [] : [
       `See the map and the plan for this stretch of coast on ${checker}.`,
       "Ask the council's coastal team how the coast here is changing, and whether the defences will be kept."

@@ -25,6 +25,7 @@ const API = {
   surfaceWater: "https://environment.data.gov.uk/spatialdata/nafra2-risk-of-flooding-from-surface-water/wms",
   sepaFlood: "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer",
   nrwFlood: "https://datamap.gov.wales/geoserver/ows",
+  dataMapWales: "https://datamap.gov.wales/geoserver/ows",
   ods: "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations",
   landRegistry: "https://landregistry.data.gov.uk/landregistry/query",
   msoaBoundary: "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query"
@@ -45,6 +46,14 @@ const LINKS = {
   planningData: "https://www.planning.data.gov.uk/",
   landslides: "https://www.bgs.ac.uk/datasets/national-landslide-database/",
   coastalMap: "https://www.gov.uk/check-coastal-erosion-management-in-your-area",
+  walesCoast: "https://datamap.gov.wales/layers/geonode:nrw_ncerm_all_smp",
+  walesCoalTips: "https://www.gov.wales/find-disused-coal-tips",
+  walesNoise: "https://datamap.gov.wales/layergroups/geonode:Environmental_Noise_Mapping_2022",
+  walesAir: "https://airquality.gov.wales/",
+  cadw: "https://cadw.gov.wales/advice-support/cof-cymru/search-cadw-records",
+  walesNature: "https://naturalresources.wales/guidance-and-advice/environmental-topics/wildlife-and-biodiversity/protected-areas-of-land-and-seas/",
+  walesConservation: "https://datamap.gov.wales/layers/geonode:conservation_areas_wales",
+  dataMapWales: "https://datamap.gov.wales/",
   coastalData: "https://environment.data.gov.uk/dataset/9fede91f-5acd-4fd2-9bd8-98153fa3c2ff",
   geosure: "https://www.bgs.ac.uk/datasets/geosure/",
   police: "https://www.police.uk/",
@@ -68,8 +77,7 @@ const LINKS = {
 };
 
 const PLANNING_AT_POINT = [
-  "flood-risk-zone", "air-quality-management-area", "conservation-area",
-  "article-4-direction-area", "tree-preservation-zone", "green-belt",
+  "flood-risk-zone", "air-quality-management-area", "conservation-area", "green-belt",
   "listed-building-outline", "site-of-special-scientific-interest",
   "ancient-woodland", "area-of-outstanding-natural-beauty", "national-park",
   "world-heritage-site", "contaminated-land", "hs2-safeguarded-area",
@@ -107,10 +115,10 @@ const icon = name => `<svg aria-hidden="true" width="16" height="16" viewBox="0 
 
 const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 };
 
-const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563" };
+const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "1.25.0";
+const APP_VERSION = "1.26.0";
 const APP_UPDATED = "5 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -234,7 +242,9 @@ function once(load) {
 // these are queued: only a few at a time, with a short gap between starts,
 // and a longer wait before trying again if one is refused.
 const PACED_HOSTS = [
-  { prefix: "https://environment.data.gov.uk/spatialdata/", maxAtOnce: 2, gapMs: 300, retryWaitsMs: [2000, 6000], timeoutMs: 35000 }
+  { prefix: "https://environment.data.gov.uk/spatialdata/", maxAtOnce: 2, gapMs: 300, retryWaitsMs: [2000, 6000], timeoutMs: 35000 },
+  // DataMapWales (Welsh Government): a report for a Welsh address asks it about 15 things, so they go a few at a time.
+  { prefix: "https://datamap.gov.wales/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 }
 ];
 const pacing = new Map();
 
