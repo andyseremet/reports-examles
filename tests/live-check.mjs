@@ -536,6 +536,24 @@ async function testDevice(device, [postcode, place]) {
     return `${r.listed} listed buildings near City Hall; Westlink loud; coast ${r.coast.status}`;
   });
 
+  await step("Nearby places: each register only where it covers; Check yourself in Northern Ireland", async () => {
+    // GP surgeries come from an England and Wales register, schools and stops from England only, stations from
+    // Great Britain. Where a register does not reach, the row must say "Not covered", never "None found nearby".
+    const r = await page.evaluate(async () => {
+      const rate = async (lat, lon) => {
+        const loc = { lat, lon, radius: 1000 };
+        const c = checkAmenities({ loc, place: { ok: true, value: await getPlace(loc) }, amenities: { ok: true, value: await getAmenities(loc) } });
+        return { status: c.status, found: c.found, details: c.details || "" };
+      };
+      return { bel: await rate(54.5964, -5.9301), edi: await rate(55.9497, -3.1907), cdf: await rate(51.4816, -3.1791) };
+    });
+    if (r.bel.status !== "manual") throw new Error(`Belfast (no register covers it) rated "${r.bel.status}": ${r.bel.found}`);
+    if (!/GP surgery<\/td><td colspan="3">Not covered in Scotland/.test(r.edi.details)) throw new Error("Edinburgh GP row does not say Not covered");
+    if (!/station/.test(r.edi.found)) throw new Error(`no station near Edinburgh Waverley: ${r.edi.found}`);
+    if (!/GP|pharmacy/.test(r.cdf.found)) throw new Error(`no GP or pharmacy in central Cardiff: ${r.cdf.found}`);
+    return `Belfast ${r.bel.status}; Edinburgh: ${r.edi.found.slice(0, 40)}…; Cardiff: ${r.cdf.found.slice(0, 40)}…`;
+  });
+
   await step("Sold prices: sales in a town, Check yourself where there are none", async () => {
     // Barnsley town centre has home sales every year. Open moorland on Dartmoor has no postcodes within
     // 500 m, so no sales: that must say "Check yourself", never "No issue found".
