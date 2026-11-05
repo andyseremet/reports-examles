@@ -454,6 +454,8 @@ async function testDevice(device, [postcode, place]) {
   await step("Saved property reopens instantly with notes", async () => {
     await page.fill("#notesText", "Automatic test note");
     await page.waitForTimeout(800);
+    const flash = await page.$eval("#notesFlash", x => x.textContent);
+    if (!flash.includes("Saved")) throw new Error(`no "Saved" message after typing a note (got "${flash}")`);
     await page.reload();
     await reportDone(page);
     const instant = await page.$("#refreshBtn") !== null;
@@ -485,6 +487,28 @@ async function testDevice(device, [postcode, place]) {
     if (!share) throw new Error("the saved properties list did not show");
     if (share < 0.55) throw new Error(`names and details are squeezed into ${Math.round(share * 100)}% of the row`);
     return `text uses ${Math.round(share * 100)}% of the row`;
+  });
+
+  await step("Remove a saved property, then Undo puts it back", async () => {
+    const before = await page.$$eval("#savedList li", x => x.length);
+    const key = await page.$eval("#savedList [data-remove]", b => b.dataset.remove);
+    await page.click("#savedList [data-remove]");
+    const r = await page.evaluate(k => ({
+      rows: document.querySelectorAll("#savedList li").length,
+      bar: !document.getElementById("undoBar").classList.contains("hidden"),
+      focus: document.activeElement && document.activeElement.id,
+      snap: localStorage.getItem("plc-snap:" + k) !== null
+    }), key);
+    if (r.rows !== before - 1 || r.snap) throw new Error("Remove did not remove the property");
+    if (!r.bar || r.focus !== "undoBtn") throw new Error("no Undo button offered, or it did not get focus");
+    await page.click("#undoBtn");
+    const back = await page.evaluate(k => ({
+      rows: document.querySelectorAll("#savedList li").length,
+      snap: localStorage.getItem("plc-snap:" + k) !== null,
+      bar: !document.getElementById("undoBar").classList.contains("hidden")
+    }), key);
+    if (back.rows !== before || !back.snap || back.bar) throw new Error("Undo did not put the property and its saved report back");
+    return "ok";
   });
 
   await step("No sideways scrolling", async () =>
