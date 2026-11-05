@@ -92,6 +92,14 @@ const SERVICES = [
     d => Array.isArray(d.features) && d.features.length > 0],
   ["Scotland crime rank (Scottish Government, SIMD 2020)", "https://maps.gov.scot/server/rest/services/ScotGov/PeopleSociety/MapServer/7/query?geometry=-3.1907,55.9497&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=crimerank&returnGeometry=false&f=json",
     d => d.features && d.features.length === 1 && d.features[0].attributes.crimerank > 0],
+  ["Northern Ireland heritage (Department for Communities)", "https://services2.arcgis.com/BdBkthNLO9mzGAMO/arcgis/rest/services/Historic_Environment_Division_GIS_Data/FeatureServer/1/query?geometry=-5.9301,54.5964&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=200&units=esriSRUnit_Meter&returnCountOnly=true&f=json",
+    d => d.count > 0],
+  ["Northern Ireland protected areas (DAERA)", "https://gis.daera-ni.gov.uk/server/rest/services/NIEAEnvironmentViewer/ProtectedAreas/MapServer/2/query?geometry=-5.893,54.212&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=NAME&returnGeometry=false&f=json",
+    d => Array.isArray(d.features) && d.features.length > 0],
+  ["Northern Ireland noise maps (DAERA)", "https://gis.daera-ni.gov.uk/server/rest/services/NoiseMapsRound4/Agglomeration_Roads/MapServer/identify?geometry=-5.946,54.592&geometryType=esriGeometryPoint&sr=4326&layers=all:0&tolerance=0&mapExtent=-5.96,54.58,-5.93,54.60&imageDisplay=200,200,96&returnGeometry=false&f=json",
+    d => Array.isArray(d.results) && Number(d.results[0]?.attributes?.["Classify.Pixel Value"]) > 0],
+  ["Northern Ireland coastal erosion (DfI and DAERA)", "https://gis.daera-ni.gov.uk/server/rest/services/Marine/CoastalErosionStudy/MapServer/3/query?geometry=-5.90,54.66&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=1000&units=esriSRUnit_Meter&outFields=risk&returnGeometry=false&f=json",
+    d => Array.isArray(d.features) && d.features.length > 0],
   ["Address search (OpenStreetMap Nominatim)", "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=Barnsley%20Town%20Hall", d => Array.isArray(d) && d.length > 0],
   ["Schools register (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?dataset=educational-establishment&latitude=${LAT}&longitude=${LON}&limit=1`, d => Array.isArray(d.entities)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
@@ -133,6 +141,10 @@ const SERVICE_TOPICS = {
   "Scotland coastal erosion (Dynamic Coast)": ["Coastal erosion, for homes in Scotland"],
   "Scotland licensed waste sites (SEPA)": ["Past use of the land, for homes in Scotland"],
   "Scotland crime rank (Scottish Government, SIMD 2020)": ["Reported crime, for homes in Scotland"],
+  "Northern Ireland heritage (Department for Communities)": ["Planning restrictions and heritage, for homes in Northern Ireland"],
+  "Northern Ireland protected areas (DAERA)": ["Planning restrictions and heritage, for homes in Northern Ireland", "Protected nature sites, for homes in Northern Ireland"],
+  "Northern Ireland noise maps (DAERA)": ["Noise, for homes in Northern Ireland"],
+  "Northern Ireland coastal erosion (DfI and DAERA)": ["Coastal erosion, for homes in Northern Ireland"],
   "Address search (OpenStreetMap Nominatim)": ["Finding the property by address"],
   "Schools register (planning.data.gov.uk)": ["Schools, doctors and transport"],
   "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
@@ -490,6 +502,38 @@ async function testDevice(device, [postcode, place]) {
     if (!/licensed/.test(r.waste.found)) throw new Error(`no licensed waste site near central Edinburgh: ${r.waste.found}`);
     if (!/expected to be lost by 2100/.test(r.coast.found)) throw new Error(`Portobello coast: ${r.coast.found}`);
     return `Edinburgh: ${r.planning.found.slice(0, 60)}…; Portobello ${r.coast.status}; crime ${r.crime.found.match(/ranked [\d,]+/)[0]}`;
+  });
+
+  await step("Northern Ireland: heritage, nature, noise and coast from NI data; Check yourself where nothing is published", async () => {
+    // Belfast City Hall: listed buildings nearby and road noise; planning must say "Check yourself" because
+    // conservation areas are not published, and air because hotspots are not mapped. Westlink: loud road noise.
+    // Newcastle (Co Down): the Mourne AONB. Strangford Lough: protected nature sites. Belfast Lough shore: High erosion risk.
+    const r = await page.evaluate(async () => {
+      const fns = { coastal: getCoastalErosion, noise: getRoadNoise, railNoise: getRailNoise, niSites: getNISites };
+      const R = async (loc, keys) => {
+        const out = { loc, place: { ok: true, value: await getPlace(loc) } };
+        await Promise.all(keys.map(async k => { out[k] = { ok: true, value: await fns[k](loc) }; }));
+        out.air = { ok: true, value: { no2: 15, pm25: 6 } };
+        return out;
+      };
+      const bel = await R({ lat: 54.5964, lon: -5.9301, radius: 1000 }, ["noise", "railNoise", "niSites"]);
+      const west = await R({ lat: 54.592, lon: -5.946, radius: 1000 }, ["noise", "railNoise"]);
+      const newc = await R({ lat: 54.212, lon: -5.893, radius: 1000 }, ["niSites"]);
+      const str = await R({ lat: 54.47, lon: -5.63, radius: 1000 }, ["niSites"]);
+      const shore = await R({ lat: 54.66, lon: -5.90, radius: 1000 }, ["coastal"]);
+      return { country: bel.place.value.country, listed: bel.niSites.value.listedNear,
+        planning: checkPlanning(bel), air: checkAir(bel), noise: checkNoise(west), park: checkPlanning(newc),
+        nature: checkNature(str), coast: checkCoastal(shore) };
+    });
+    if (r.country !== "Northern Ireland") throw new Error(`postcodes.io says Belfast is in ${r.country}`);
+    if (r.planning.status !== "manual") throw new Error(`Belfast planning with no conservation area data rated "${r.planning.status}", expected Check yourself`);
+    if (!(r.listed > 0)) throw new Error("no listed buildings near Belfast City Hall");
+    if (r.air.status !== "manual") throw new Error(`NI air quality (no hotspot map) rated "${r.air.status}", expected Check yourself`);
+    if (!/Road: loud/.test(r.noise.found)) throw new Error(`Westlink road noise: ${r.noise.found}`);
+    if (!/Area of Outstanding Natural Beauty/.test(r.park.found)) throw new Error(`no Mourne AONB at Newcastle: ${r.park.found}`);
+    if (r.nature.status !== "info") throw new Error(`no protected sites at Strangford Lough: ${r.nature.found}`);
+    if (!/erosion risk/.test(r.coast.found) || r.coast.status === "low") throw new Error(`Belfast Lough shore: ${r.coast.found}`);
+    return `${r.listed} listed buildings near City Hall; Westlink loud; coast ${r.coast.status}`;
   });
 
   await step("Sold prices: sales in a town, Check yourself where there are none", async () => {
