@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.26.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.27.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.26.0)
+## Part 1: What the app does today (version 1.27.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -26,13 +26,20 @@ The [README](README.md) describes each feature in full.
 | Group | Topics | Main sources |
 |---|---|---|
 | Flooding | Rivers and the sea; heavy rain (surface water) | Environment Agency; SEPA; Natural Resources Wales |
-| Ground and land | Radon; coal mining; past use of the land (in Wales, disused coal tips); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales |
-| Living environment | Road and rail noise; air quality; crime; recent sale prices | Defra; Welsh Government; councils; Copernicus CAMS; data.police.uk; ONS; HM Land Registry |
-| Planning and surroundings | Planning restrictions and heritage; protected nature sites; schools, GPs, pharmacies and transport | planning.data.gov.uk; Natural England; Cadw; Natural Resources Wales; DfE; NHS; NaPTAN |
+| Ground and land | Radon; coal mining; past use of the land (in Wales, disused coal tips; in Scotland, licensed waste sites); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales; SEPA; Dynamic Coast |
+| Living environment | Road and rail noise; air quality; crime; recent sale prices | Defra; Welsh Government; Scottish Government; councils; Copernicus CAMS; data.police.uk; ONS; HM Land Registry |
+| Planning and surroundings | Planning restrictions and heritage; protected nature sites; schools, GPs, pharmacies and transport | planning.data.gov.uk; Natural England; Cadw; Natural Resources Wales; Historic Environment Scotland; NatureScot; DfE; NHS; NaPTAN |
 
 **Wales (1.26.0):** land use, coastal erosion, noise, air quality, planning and nature are answered from Welsh data
 (DataMapWales). Old landfill and contaminated land are not published for Wales, so land use says "Check yourself" unless a
 disused coal tip is nearby.
+
+**Scotland (1.27.0):** land use, coastal erosion, noise, air quality, planning, nature and crime are answered from Scottish
+data (Historic Environment Scotland, NatureScot, SEPA, the Scottish Government and the Scottish Air Quality database).
+Land use lists licensed waste sites; old landfill is not published, so with none nearby it says "Check yourself". Coastal
+erosion uses Dynamic Coast's higher-emissions forecast. Crime uses the 2020 deprivation index (crimes recorded in 2017–18),
+because Police Scotland publishes no street-level data. Sale prices stay "Check yourself": Registers of Scotland does not
+publish them free. Scottish and Welsh reports no longer ask the busy Environment Agency map server anything.
 
 Where a source has published nothing, the topic says "Check yourself", never "No issue found". Topics with no free
 live data (for example rail and aircraft noise, Japanese knotweed) link to the official checkers.
@@ -82,7 +89,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ## Part 2: Planned next steps
 
-Nothing is scheduled: every item from the 5 November 2026 quiz has shipped. The next items will be chosen in a new quiz
+Nothing is scheduled: every item from the 5 November 2026 quizzes has shipped, including Scotland (1.27.0). The next items will be chosen in a new quiz
 round (Part 3 lists ideas). Each is planned with a short quiz before it is built, and each version keeps the same habits:
 bump the version number and the offline cache name together, update the README, add new behaviour to the daily check,
 and never weaken a test to get a pass.
