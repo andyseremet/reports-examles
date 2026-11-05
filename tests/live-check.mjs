@@ -386,6 +386,29 @@ async function testDevice(device, [postcode, place]) {
     return `${r.rows} services listed; ${r.verdict.trim()}`;
   });
 
+  await step("Slow report names the service it is waiting for", async () => {
+    // Every outside service answers at once with no data, except "flooding from heavy rain", which is held
+    // back. After 8 seconds the summary must name the Environment Agency and that topic. Nothing is sent
+    // to the outside services in this step.
+    const slowPage = await page.context().newPage();
+    const errors = [];
+    slowPage.on("pageerror", e => errors.push(e.message));
+    await slowPage.route(u => !u.href.startsWith(BASE), async r => {
+      if (r.request().url().includes("risk-of-flooding-from-surface-water")) await new Promise(x => setTimeout(x, 15000));
+      await r.fulfill({ json: { features: [] } }).catch(() => {});
+    });
+    try {
+      await slowPage.goto(new URL("?lat=52.0&lon=-1.5&name=Slow%20test", BASE).href);
+      await slowPage.waitForTimeout(5000);
+      if (await slowPage.locator(".slow-note").count()) throw new Error("the note showed before 8 seconds");
+      await slowPage.waitForSelector(".slow-note", { timeout: 6000 });
+      const text = (await slowPage.locator(".slow-note").innerText()).replace(/\s+/g, " ");
+      if (errors.length) throw new Error("page errors: " + errors.join("; "));
+      if (!/Environment Agency: Flooding from heavy rain/.test(text)) throw new Error("unexpected note: " + text);
+      return text.slice(0, 90) + "…";
+    } finally { await slowPage.close(); }
+  });
+
   await step("Send to my conveyancer", async () => {
     const text = await page.evaluate(() => conveyancerText());
     if (!text.includes("?lat=") || !text.includes("Please could you include these searches")) throw new Error("the email text is incomplete");

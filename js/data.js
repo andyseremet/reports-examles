@@ -494,23 +494,27 @@ async function getSoldPrices(loc) {
   return { postcodes: postcodes.length, sales };
 }
 
+// Each data task: key, topic name, fetch function, and the service it waits for (named in the
+// "Still waiting for" note when a report is slow). Tasks start in this order. The Environment Agency
+// server answers only a few requests at a time (PACED_HOSTS), so its most important topic,
+// flooding from heavy rain, is listed first and road and rail noise last.
 const TASKS = [
-  ["place", "Nearest postcode and council", getPlace],
-  ["planningPoint", "Flood zone and planning rules at the property", getPlanningAtPoint],
-  ["planningNearby", "Things nearby: flood zones, contaminated land, heritage, nature", getPlanningNearby],
-  ["radon", "Radon gas", getRadon],
-  ["coal", "Coal mining", getCoal],
-  ["noise", "Road noise (day, evening, night)", getRoadNoise],
-  ["railNoise", "Railway noise (day, evening, night)", getRailNoise],
-  ["air", "Air quality", getAirModel],
-  ["landfill", "Old landfill sites", getLandfill],
-  ["landslides", "Landslides", getLandslides],
-  ["coastal", "Coastal erosion", getCoastalErosion],
-  ["crime", "Reported crime", getCrime],
-  ["soldPrices", "Recent sale prices nearby", getSoldPrices],
-  ["surfaceWater", "Flooding from heavy rain", getSurfaceWater],
-  ["floodNational", "Scotland and Wales flood maps", getFloodNational],
-  ["amenities", "Schools, doctors and transport", getAmenities],
-  ["trees", "Protected trees and Article 4 areas", getProtectedTrees],
-  ["crimeArea", "Crime compared with England and Wales", getCrimeArea]
+  ["place", "Nearest postcode and council", getPlace, "postcodes.io"],
+  ["surfaceWater", "Flooding from heavy rain", getSurfaceWater, "Environment Agency"],
+  ["landfill", "Old landfill sites", getLandfill, "Environment Agency"],
+  ["coastal", "Coastal erosion", getCoastalErosion, "Environment Agency"],
+  ["planningPoint", "Flood zone and planning rules at the property", getPlanningAtPoint, "planning.data.gov.uk"],
+  ["planningNearby", "Things nearby: flood zones, contaminated land, heritage, nature", getPlanningNearby, "planning.data.gov.uk"],
+  ["radon", "Radon gas", getRadon, "British Geological Survey"],
+  ["coal", "Coal mining", getCoal, "Mining Remediation Authority"],
+  ["air", "Air quality", getAirModel, "Open-Meteo"],
+  ["landslides", "Landslides", getLandslides, "British Geological Survey"],
+  ["crime", "Reported crime", getCrime, "data.police.uk"],
+  ["soldPrices", "Recent sale prices nearby", getSoldPrices, "HM Land Registry"],
+  ["floodNational", "Scotland and Wales flood maps", getFloodNational, "SEPA and Natural Resources Wales"],
+  ["amenities", "Schools, doctors and transport", getAmenities, "NHS and planning.data.gov.uk"],
+  ["trees", "Protected trees and Article 4 areas", getProtectedTrees, "planning.data.gov.uk"],
+  ["crimeArea", "Crime compared with England and Wales", getCrimeArea, "Office for National Statistics"],
+  ["noise", "Road noise", getRoadNoise, "Environment Agency"],
+  ["railNoise", "Railway noise", getRailNoise, "Environment Agency"]
 ];
