@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.15.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.16.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -11,7 +11,7 @@ Property Location Check: what the app does today, and what is planned next.
 
 ---
 
-## Part 1: What the app does today (version 1.15.0)
+## Part 1: What the app does today (version 1.16.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -96,6 +96,9 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 - Privacy: no account, cookies or tracking; "Privacy: what is sent where" explains every outside request.
 
 ### Behind the scenes
+- Since 1.16.0 the code is split into files: `index.html` (the page), `css/app.css` (styles) and `js/` (core,
+  data, one checks file per report section, and the app). Still no build step. Offline support fetches the app files
+  fresh when online, so an update never mixes old and new files.
 - An automatic check runs every day against the live site, and on every pull request before it is merged. It
   tests all 23 outside data services, the 2 data files saved with the app, and the full report on a desktop, a phone
   and a tablet. A failure opens a "Live check failed" issue on GitHub.

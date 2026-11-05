@@ -1,6 +1,6 @@
 # Property Location Check
 
-A free, single-page tool (`index.html`) for anyone buying a house or land in
+A free, single-page tool for anyone buying a house or land in
 England. Pick a location on the map and it checks official data for:
 
 | Check | Source |
@@ -30,7 +30,7 @@ official checkers.
 ## How to use
 
 1. Open the live page: https://andyseremet.github.io/reports-examles/
-   (or open `index.html` in any browser; no installation needed).
+   (or serve a copy with `python3 -m http.server 8080` and open http://localhost:8080/; no installation needed).
 2. Type a postcode, address or place. Pick a suggestion, or press Enter.
 3. Check the pin is on the right property (drag it if not), then press
    **Check this property**.
@@ -94,6 +94,26 @@ See [ROADMAP.md](ROADMAP.md) for the full feature list and the planned next vers
 
 This is a free first look using public data. It does not replace a building
 survey or the searches a conveyancer orders. Most data covers England only.
+
+## How the code is organised
+
+A static site with no build step and no libraries other than Leaflet (the map). GitHub Pages serves it as it is.
+
+| File | What it holds |
+|---|---|
+| `index.html` | The page itself (search, map, report layout, footer). |
+| `css/app.css` | All the page styles, including dark mode and print. |
+| `js/core.js` | Data source addresses, links, settings, the version number and shared helpers. |
+| `js/data.js` | Fetching data from the outside services, and the list of data tasks. |
+| `js/checks/flood.js`, `ground.js`, `living.js`, `planning.js` | The topics in each report section: turning data into plain-English results. |
+| `js/checks/index.js` | Shared check helpers and the list of report topics. |
+| `js/app.js` | The map, search, running the checks, the report, saved properties, sharing and start-up. |
+| `sw.js` | Offline support: keeps the app files so it opens without a connection. |
+| `data/` | Fixed official data saved with the app (see below). |
+| `tests/` | The automatic live check, and the syntax check (`node tests/syntax-check.mjs`). |
+
+The JavaScript files are plain scripts that share one global scope. `index.html` loads them in order, and each file
+can use what earlier files define.
 
 ## Automatic testing
 
