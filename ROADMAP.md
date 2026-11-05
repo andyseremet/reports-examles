@@ -114,27 +114,33 @@ the official checkers. Topics not covered in Wales or Scotland say "Check yourse
 
 ## Part 2: Planned next steps
 
-Chosen from the quiz on 4 November 2026. Each version keeps the same habits: bump the version number and the
-offline cache name together, update the README, add the new topic to the daily check, and never weaken a test to get
-a pass.
+Chosen from the quiz on 5 November 2026, one item per version, in this order. Each is planned with a short quiz
+before it is built. Each version keeps the same habits: bump the version number and the offline cache name together,
+update the README, add new behaviour to the daily check, and never weaken a test to get a pass.
 
-### Chosen next ideas (not yet given a version number)
-
-| Idea | What it does |
-|---|---|
-| Data service health page | A simple page showing which outside data services worked in today's automatic check, so a buyer can see when a topic is down for everyone. |
+| Version | Idea | What it does | Why this order |
+|---|---|---|---|
+| 1.18.0 | Data service health page | A simple page showing which outside data services worked in today's automatic check, so a buyer can see when a topic is down for everyone. | Already planned; small; helps explain "Service not answering" in the data gaps box. |
+| 1.19.0 | Accessibility re-check | Repeat the WCAG 2.2 AA check (light and dark, phone and desktop) after the 1.15.0 to 1.17.0 visual changes: the new menu, folded sections, labels and contrast. | Best done soon after the visual changes, before more are added. |
+| 1.20.0 | Faster reports | Aim for every report in under 10 seconds; while waiting, say which service is slow. Must not add requests to the Environment Agency map server. | Speed helps every visitor on every report. |
+| 1.21.0 | Viewing checklist | A short list of things to look for and ask on the day of a viewing, built from this report's results; easy to use on a phone, and works offline for saved properties. | Turns the report into action at the viewing. |
+| 1.22.0 | Compare up to 3 properties | Compare side by side takes up to three saved properties instead of two; phone layout to be decided. | Builds on the existing compare view. |
+| 1.23.0 | Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales (7 today: land use, coast, noise, air, planning, trees, nature) where Welsh Government or Natural Resources Wales publish live open data. | Largest research task: each source must be checked first. |
 
 ---
 
 ## Part 3: Ideas parked for later
 
-Suggested in the quiz but not chosen this time. They can be picked up in a future round.
+Suggested in a quiz but not chosen. They can be picked up in a future round.
 
 | Idea | Notes |
 |---|---|
-| Compare 3 or more properties | Today the app compares two side by side. |
-| Travel time to a chosen place | Distance and rough walking/driving time to work or a school. |
-| Fuller coverage for Wales | Fill topics that say "Check yourself" in Wales. |
+| Travel time to a chosen place | Distance and rough walking/driving time to work or a school. Offered again on 5 November 2026; needs a routing service. |
+| What changed since last check | When a saved property is refreshed, show which topics changed rating. Offered on 5 November 2026. |
+| Flood warnings now | Environment Agency real-time flood service: is the home in a flood warning or alert area, and is a warning in force today. Live, allows web pages, separate from the busy map server (checked 5 November 2026). |
+| Past floods recorded here | Environment Agency Recorded Flood Outlines. Live, but adds 1 request to the busy Environment Agency map server. |
+| Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
+| Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
 | Fuller coverage for Scotland | Fill topics that say "Check yourself" in Scotland. |
 | Welsh language | Removed on 4 November 2026: the app stays in English only. |
 | Remove "Download report" | Considered on 4 November 2026 and kept; since 1.17.0 it is in the "Save or print" menu. |
