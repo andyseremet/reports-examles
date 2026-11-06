@@ -1053,11 +1053,13 @@ function renderCheck(c) {
 }
 
 function renderSkeleton(loc) {
+  if (reportMap) { reportMap.remove(); reportMap = null; reportFeatureLayer = null; }
   $("report").innerHTML = `
     <div class="cover" id="reportTop">
       <h1>Property Location Report</h1>
       <p class="meta" id="reportMeta"></p>
-      <div id="reportMap" aria-label="Map of the property and nearby features"></div>
+      <p class="map-toggle-row no-print"><button class="secondary icon-label" id="showReportMap" type="button" aria-expanded="false" aria-controls="reportMap">${icon("map")}<span>Show map</span></button></p>
+      <div id="reportMap" hidden aria-label="Map of the property and nearby features"></div>
       <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
       ${infoBox("info-read", `
         <ul class="legend-list">
@@ -1103,7 +1105,6 @@ function renderSkeleton(loc) {
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
   renderMeta();
-  drawReportMap(loc);
   renderSummary();
   watchSections();
   updateNavFade();
@@ -1254,6 +1255,20 @@ document.addEventListener("click", e => {
   renderSummary();
   const again = document.querySelector(`[data-why="${btn.dataset.why}"]`);
   if (again) again.focus();
+});
+
+// The map inside the report is drawn only after "Show map" (the search map above already shows the place).
+function setReportMap(show) {
+  const box = $("reportMap"), btn = $("showReportMap");
+  if (!box || !btn || !run) return;
+  box.hidden = !show;
+  btn.setAttribute("aria-expanded", String(show));
+  btn.querySelector("span").textContent = show ? "Hide map" : "Show map";
+  if (show && !reportMap) { drawReportMap(run.loc); replotFeatures(); }
+  if (show) reportMap.invalidateSize();
+}
+document.addEventListener("click", e => {
+  if (e.target.closest("#showReportMap")) setReportMap($("reportMap").hidden);
 });
 
 function drawReportMap(loc) {
@@ -1853,7 +1868,7 @@ let closedBeforePrint = [];
 window.addEventListener("beforeprint", () => {
   closedBeforePrint = [...document.querySelectorAll("#report details:not([open])")];
   closedBeforePrint.forEach(d => { d.open = true; });
-  if (reportMap) reportMap.invalidateSize();
+  setReportMap(true);
 });
 window.addEventListener("afterprint", () => {
   closedBeforePrint.forEach(d => { d.open = false; });

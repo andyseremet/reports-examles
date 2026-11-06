@@ -259,6 +259,7 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 :focus:not(#reportNav, #reportNav *) {scroll-margin-top:var(--sticky-top);scroll-margin-bottom:var(--bottom-clear)}
 .cover h1 {font-size:26px;color:var(--heading);margin:0}
 .cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
+.map-toggle-row {margin:12px 0 0}
 #reportMap {height:260px;border-radius:8px;border:1px solid var(--border);margin:14px 0;isolation:isolate}
 .verdict {font-size:18px;margin:10px 0}
 .progress-bar {height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin:8px 0 14px}
