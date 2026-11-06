@@ -44,10 +44,32 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Install the test browser
+      - name: Install the test library
+        run: npm install --no-save --no-audit --no-fund playwright@1.49.1
+
+      # The browser is saved between runs (it only changes with the Playwright version above).
+      - name: Restore the saved test browser
+        id: browser-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-1.49.1-${{ runner.os }}
+
+      - name: Download the test browser (only when it is not saved yet)
+        if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
+
+      # GitHub's machines usually have everything the browser needs. Installing the extra system files
+      # took up to 10 minutes on a slow day, so it only happens if the browser does not start without them.
+      - name: Make sure the test browser starts
         run: |
-          npm install --no-save --no-audit --no-fund playwright@1.49.1
-          npx playwright install --with-deps chromium
+          if node -e "require('playwright').chromium.launch().then(b => b.close())"; then
+            echo "The browser starts: no extra system files needed."
+          else
+            echo "The browser did not start: installing its system files."
+            npx playwright install-deps chromium
+            node -e "require('playwright').chromium.launch().then(b => b.close())"
+          fi
 
       - name: Serve the proposed version (pull requests only)
         if: github.event_name == 'pull_request'
