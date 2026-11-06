@@ -26,6 +26,8 @@ const ACTIONS = [
   ["More in a topic", async p => { const b = p.locator("details.check[open] .more-btn").first(); if (await b.count()) await b.click(); }],
   ["Next steps opened", async p => { for (const s of await p.locator(".step-fold > summary").all()) await s.click(); }],
   ["tick", async p => { const b = p.locator("#viewing input[data-tick]").first(); if (await b.count()) await b.check(); }],
+  ["Change (search map shown)", p => p.click("#changePlace")],
+  ["Saved (saved list shown)", p => p.click("#showSaved")],
   ["Move to another device", p => p.click("#moveDevice summary")],
   ["Compare three", async p => {
     await p.evaluate(() => { const l = store.get(SAVED_KEY, []), s = l[0]; if (!s) return;

@@ -260,6 +260,13 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .cover h1 {font-size:26px;color:var(--heading);margin:0}
 .cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
 .map-toggle-row {margin:12px 0 0}
+/* One line above the report: the place, "Change" (search map) and "Saved (3)". */
+.place-bar {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:12px 0;padding:8px 12px;
+  border:1px solid var(--border);border-radius:8px;background:var(--surface);scroll-margin-top:8px}
+.place-name {overflow-wrap:anywhere;min-width:0}
+.place-btns {display:flex;gap:8px;flex-wrap:wrap}
+.place-btns button {display:inline-flex;align-items:center;gap:6px}
+body.hide-search #searchPanel,body.hide-saved #savedPanel {display:none}
 #reportMap {height:260px;border-radius:8px;border:1px solid var(--border);margin:14px 0;isolation:isolate}
 .verdict {font-size:18px;margin:10px 0}
 .progress-bar {height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin:8px 0 14px}

@@ -636,7 +636,8 @@ function runChecks(options = {}) {
   $("toolbar").classList.remove("hidden");
   $("reportNav").classList.remove("hidden");
   $("comparePanel").classList.add("hidden");
-  $("reportPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  showPlaceBar(loc);
+  $("placeBar").scrollIntoView({ behavior: "smooth", block: "start" });
 
   TASKS.forEach(([key]) => startTask(run, key));
 }
@@ -668,6 +669,44 @@ let lastRunKey = null;
 let shownSearch = location.search;   // the ?lat=… part of the address for what is on screen
 const REPORT_PLACEHOLDER = $("report").innerHTML;
 
+// With a report open, the search map and the saved list shrink to one line: "📍 Name · Change · Saved (3)".
+// "Change" and "Saved" open them again above the report; running a new check shrinks them again.
+function showPlaceBar(loc) {
+  $("placeName").textContent = loc.name;
+  $("placeBar").classList.remove("hidden");
+  setPanelOpen("search", false);
+  setPanelOpen("saved", false);
+}
+function hidePlaceBar() {
+  $("placeBar").classList.add("hidden");
+  document.body.classList.remove("hide-search", "hide-saved");
+}
+function setPanelOpen(which, open) {
+  const btn = $(which === "search" ? "changePlace" : "showSaved");
+  document.body.classList.toggle("hide-" + which, !open);
+  btn.setAttribute("aria-expanded", String(open));
+  updatePlaceButtons();
+  if (open && which === "search") setTimeout(() => map.invalidateSize(), 50);
+}
+function updatePlaceButtons() {
+  const n = (store.get(SAVED_KEY, []) || []).length;
+  const searchOpen = !document.body.classList.contains("hide-search");
+  const savedOpen = !document.body.classList.contains("hide-saved");
+  $("changePlace").innerHTML = `${icon("pencil")}<span>${searchOpen ? "Hide map" : "Change"}</span>`;
+  $("showSaved").innerHTML = `${icon("list")}<span>${savedOpen ? "Hide saved" : `Saved (${n})`}</span>`;
+  $("showSaved").classList.toggle("hidden", !n);
+}
+$("changePlace").addEventListener("click", () => {
+  const open = document.body.classList.contains("hide-search");
+  setPanelOpen("search", open);
+  if (open) $("searchPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+$("showSaved").addEventListener("click", () => {
+  const open = document.body.classList.contains("hide-saved");
+  setPanelOpen("saved", open);
+  if (open) $("savedPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 // Back to the search and map, as before the report was run.
 function showSearchView() {
   run = null;
@@ -676,6 +715,7 @@ function showSearchView() {
   if (reportMap) { reportMap.remove(); reportMap = null; }
   featureLayer.clearLayers();
   $("report").innerHTML = REPORT_PLACEHOLDER;
+  hidePlaceBar();
   $("toolbar").classList.add("hidden");
   $("reportNav").classList.add("hidden");
   $("runBtn").disabled = false;
@@ -822,6 +862,7 @@ function showSnapshot(snap, options = {}) {
   replotFeatures();
   $("toolbar").classList.remove("hidden");
   $("reportNav").classList.remove("hidden");
+  showPlaceBar(loc);
   finishRun();
 }
 
@@ -1595,6 +1636,7 @@ function renderSaved() {
   const saved = Array.isArray(raw) ? [...raw].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)) : [];
   $("savedPanel").classList.toggle("hidden", !saved.length && !undoRemove);
   $("backupNote").classList.toggle("hidden", !backupDue(saved.length));
+  updatePlaceButtons();
   $("savedList").innerHTML = saved.map(s => `
     <li>
       <label class="cmp" title="Select to compare"><input type="checkbox" data-compare="${escapeHTML(s.key)}" aria-label="Compare ${escapeHTML(s.name)}"><span aria-hidden="true">Compare</span></label>

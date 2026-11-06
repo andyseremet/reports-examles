@@ -49,6 +49,15 @@
 
 <main class="container">
 
+  <!-- Once a report is open, the search and saved list shrink to this one line. -->
+  <div class="place-bar no-print hidden" id="placeBar">
+    <span class="place-name"><span aria-hidden="true">📍</span> <strong id="placeName"></strong></span>
+    <span class="place-btns">
+      <button class="secondary small-btn" id="changePlace" type="button" aria-expanded="false" aria-controls="searchPanel">Change</button>
+      <button class="secondary small-btn" id="showSaved" type="button" aria-expanded="false" aria-controls="savedPanel">Saved</button>
+    </span>
+  </div>
+
   <!-- ===================== FIND THE PROPERTY ===================== -->
   <section class="panel" id="searchPanel" aria-labelledby="searchTitle">
     <div class="step-label">Step 1 of 2</div>

@@ -814,6 +814,22 @@ async function testDevice(device, [postcode, place]) {
     return download.suggestedFilename();
   });
 
+  await step("One-line bar: the search and saved list shrink above the report", async () => {
+    const hidden = id => page.evaluate(i => getComputedStyle(document.getElementById(i)).display === "none", id);
+    const bar = await page.evaluate(() => ({ shown: !document.getElementById("placeBar").classList.contains("hidden"),
+      name: document.getElementById("placeName").textContent, saved: document.getElementById("showSaved").textContent.trim() }));
+    if (!bar.shown || !bar.name) throw new Error("the one-line bar is not shown above the report");
+    if (!(await hidden("searchPanel")) || !(await hidden("savedPanel"))) throw new Error("the search or saved list is still shown in full");
+    if (!/^Saved \(\d+\)$/.test(bar.saved)) throw new Error(`the saved button says "${bar.saved}"`);
+    await page.click("#changePlace");
+    const mapShown = !(await hidden("searchPanel")) && await page.$eval("#map", m => m.getBoundingClientRect().height > 100);
+    await page.click("#changePlace");
+    if (!mapShown || !(await hidden("searchPanel"))) throw new Error("Change did not show and hide the search map");
+    await page.click("#showSaved");
+    if (await hidden("savedPanel")) throw new Error("Saved did not show the saved list");
+    return `${bar.name} · ${bar.saved}`;
+  });
+
   await step("Saved properties are readable", async () => {
     // The name and details should use most of the row, not a thin column beside the buttons.
     const share = await page.evaluate(() => {
