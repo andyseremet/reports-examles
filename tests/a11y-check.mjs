@@ -65,7 +65,7 @@ for (const [size, opts] of SIZES) for (const scheme of ["light", "dark"]) for (c
   await page.goto(BASE);
   await check(page, `${label} – start page`);
   await page.goto(BASE + "?postcode=SW1A%201AA");
-  await page.waitForSelector("#checklistBox input", { timeout: 60000 });
+  await page.waitForSelector("#checklistBox input", { state: "attached", timeout: 60000 });   // the checklist is built (it starts folded)
   await check(page, `${label} – report`);
   for (const [name, act] of ACTIONS) { await act(page); await check(page, `${label} – after ${name}`); }
   await page.goto(BASE + "status.html");
