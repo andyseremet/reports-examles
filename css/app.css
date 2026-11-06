@@ -95,7 +95,11 @@ header .info-btn {border-color:#cbd8e5;background:transparent;color:#fff}
 header .info-btn[aria-expanded="true"] {background:#fff;color:#10243a}
 .info-body {font-size:14px;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:8px 0 12px}
 .info-body p {margin:4px 0}
-.info-row {display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted)}
+.info-row {margin:10px 0 0;font-size:14px}
+/* "More" inside a topic: the explanation and the data source stay folded until asked for. */
+.more-btn {padding:8px 0;min-height:44px;text-align:left}
+.more-btn::after {content:" ▾" / ""}
+.more-btn[aria-expanded="true"]::after {content:" ▴" / ""}
 h2 .info-btn,h3 .info-btn,p .info-btn {margin-left:6px}
 
 /* ---------- layout ---------- */

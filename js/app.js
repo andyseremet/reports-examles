@@ -1043,7 +1043,7 @@ function renderCheck(c) {
         ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
         <h4>What to do</h4>${actions}
         ${c.dataDate ? `<p class="data-date"><strong>Data:</strong> ${escapeHTML(c.dataDate)}</p>` : ""}
-        <div class="info-row">${infoButton("about-" + c.id, "What this means and where the data comes from")}<span>What this means, and the data source</span></div>
+        <p class="info-row"><button class="link-btn more-btn" type="button" data-info aria-expanded="false" aria-controls="about-${c.id}">More: what this means, and the data source</button></p>
         <div class="info-body" id="about-${c.id}" hidden>
           ${c.meaning || ""}
           <p class="source">Source: ${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}${c.dataDate ? " · " + escapeHTML(c.dataDate) : ""}</p>
