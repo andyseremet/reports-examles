@@ -252,7 +252,7 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .nav-links.more-left {-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 40px),transparent)}
 .nav-links.more-left.more-right {-webkit-mask-image:linear-gradient(to right,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to right,transparent,#000 40px,#000 calc(100% - 40px),transparent)}
 .report-nav button {padding:6px 10px;font-size:13px}
-.cover,.group,#checklist,#viewing,.slot,details.check {scroll-margin-top:calc(var(--sticky-top) + 8px)}
+.cover,.group,.step-fold,.slot,details.check {scroll-margin-top:calc(var(--sticky-top) + 8px)}
 /* Keep keyboard focus clear of the sticky section bar (top) and the "back to top" button (bottom),
    so a focused item is never hidden behind them (WCAG 2.2: 2.4.11). Not on the section bar itself:
    focusing its links must not interrupt the scroll to the chosen section. */
@@ -281,6 +281,20 @@ details.clear-fold > summary::-webkit-details-marker {display:none}
 details.clear-fold > summary:hover {background:var(--hover)}
 .fold-names {font-weight:normal;color:var(--text)}
 details.clear-fold > .fold-body {padding:0 8px 8px}
+/* "Next steps": notes, viewing checklist and checklist, each folded with its count. */
+details.step-fold {border:1px solid var(--border);border-left:5px solid var(--link);border-radius:8px;margin:10px 0;background:var(--surface)}
+details.step-fold > summary {cursor:pointer;list-style:none;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;padding:10px 14px}
+details.step-fold > summary::-webkit-details-marker {display:none}
+details.step-fold > summary:hover {background:var(--hover)}
+details.step-fold > summary h3 {margin:0;font-size:17px}
+.step-count {font-size:14px;color:var(--muted)}
+.step-count.all-done {color:var(--low);font-weight:bold}
+.step-count.all-done::after {content:" ✓"}
+details.step-fold > summary .more {margin-left:auto;display:inline-flex;align-items:center;gap:2px;font-size:14px;font-weight:bold;color:var(--link);white-space:nowrap}
+details.step-fold > summary .more-text::before {content:"Open"}
+details.step-fold[open] > summary .more-text::before {content:"Hide"}
+details.step-fold[open] > summary .more svg {transform:rotate(180deg)}
+details.step-fold > .step-body {padding:0 14px 12px}
 .priority {list-style:none;padding:0;margin:0}
 .priority li {margin:6px 0;padding:10px 12px;border-radius:8px;border:1px solid var(--border);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .priority li a {font-weight:bold}
@@ -350,7 +364,7 @@ table {width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:13px}
 th,td {text-align:left;padding:7px;border-bottom:1px solid var(--border);vertical-align:top}
 th {background:var(--surface-2);color:var(--heading)}
 .table-wrap {overflow-x:auto}
-.checklist h3 {margin-top:16px}
+.checklist .tick-heading {margin:16px 0 4px}
 .tick-count {font-size:13px;font-weight:normal;color:var(--muted);margin-left:6px;white-space:nowrap}
 .tick-count.all-done {color:var(--low);font-weight:bold}
 .tick-count.all-done::after {content:" ✓"}

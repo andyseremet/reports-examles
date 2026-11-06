@@ -675,7 +675,20 @@ async function testDevice(device, [postcode, place]) {
     } finally { await slowPage.close(); }
   });
 
+  await step("Next steps: notes, viewing and checklist folded, each with a count", async () => {
+    const r = await page.evaluate(() => [...document.querySelectorAll("#nextSteps details.step-fold")]
+      .map(d => ({ id: d.id, open: d.open, count: d.querySelector(":scope > summary .step-count").textContent })));
+    const ids = r.map(x => x.id).join(",");
+    if (ids !== "notes,viewing,checklist") throw new Error(`the parts are "${ids}", not notes, viewing, checklist`);
+    const open = r.filter(x => x.open).map(x => x.id);
+    if (open.length) throw new Error(`${open.join(", ")} open before being asked for`);
+    const bad = r.filter(x => !(x.id === "notes" ? /^(Empty|Written)$/ : /^\d+ of \d+ done$/).test(x.count));
+    if (bad.length) throw new Error(bad.map(x => `${x.id} says "${x.count}"`).join("; "));
+    return r.map(x => `${x.id}: ${x.count}`).join(" · ");
+  });
+
   await step("Send to my conveyancer", async () => {
+    await page.click("#checklist > summary");
     const text = await page.evaluate(() => conveyancerText());
     if (!text.includes("?lat=") || !text.includes("Please could you include these searches")) throw new Error("the email text is incomplete");
     await page.click("#emailConveyancer");
@@ -727,10 +740,13 @@ async function testDevice(device, [postcode, place]) {
   });
 
   await step("Saved property reopens instantly with notes", async () => {
+    await page.click("#notes > summary");
     await page.fill("#notesText", "Automatic test note");
     await page.waitForTimeout(800);
     const flash = await page.$eval("#notesFlash", x => x.textContent);
     if (!flash.includes("Saved")) throw new Error(`no "Saved" message after typing a note (got "${flash}")`);
+    const written = await page.$eval("#notes .step-count", x => x.textContent);
+    if (written !== "Written") throw new Error(`the Your notes fold says "${written}", not "Written"`);
     await page.reload();
     await reportDone(page);
     const instant = await page.$("#refreshBtn") !== null;

@@ -836,16 +836,20 @@ $("report").addEventListener("click", e => {
 /* ---------- private notes ---------- */
 const notesKey = () => "plc-notes:" + reportKey(run.loc);
 
+// "Next steps": notes, the viewing checklist and the checklist, each folded with a count so the report ends short.
+function stepFold(id, title, count, body, cls = "") {
+  return `<details class="step-fold ${cls}" id="${id}"><summary><h3>${title}</h3><span class="step-count">${count}</span>${moreToggle()}</summary>
+    <div class="step-body">${body}</div></details>`;
+}
+const notesCount = text => text.trim() ? "Written" : "Empty";
+
 function renderNotes() {
   const text = store.get(notesKey(), "");
-  $("notesBox").innerHTML = `
-    <section class="group notes" id="notes">
-      <h2><label for="notesText" style="display:inline;font-size:inherit">Your notes</label>${infoButton("info-notes", "About notes")}</h2>
-      ${infoBox("info-notes", "<p>Private notes for this property, for example viewing times or questions. Saved only on this device, and included when you print or download the report.</p>")}
-      <textarea id="notesText" rows="4" placeholder="e.g. Viewing on Saturday at 10am. Ask about the damp patch in the back bedroom."></textarea>
+  $("notesBox").innerHTML = stepFold("notes", "Your notes", notesCount(text), `
+      <p class="help">Private notes for this property, for example viewing times or questions. Saved only on this device, and included when you print or download the report.</p>
+      <textarea id="notesText" rows="4" aria-label="Your notes" placeholder="e.g. Viewing on Saturday at 10am. Ask about the damp patch in the back bedroom."></textarea>
       <p class="help notes-status no-print">Saved on this device <span id="notesFlash" aria-live="polite"></span></p>
-      <div class="notes-print" aria-hidden="true"></div>
-    </section>`;
+      <div class="notes-print" aria-hidden="true"></div>`, "notes");
   $("notesText").value = text;
   $("notesBox").querySelector(".notes-print").textContent = text;
 }
@@ -855,6 +859,7 @@ document.addEventListener("input", e => {
   if (e.target.id !== "notesText" || !run) return;
   const text = e.target.value;
   $("notesBox").querySelector(".notes-print").textContent = text;
+  $("notesBox").querySelector(".step-count").textContent = notesCount(text);
   clearTimeout(notesTimer);
   notesTimer = setTimeout(() => {
     const ok = store.set(notesKey(), text);
@@ -1086,18 +1091,14 @@ function renderSkeleton(loc) {
         </section>`).join("")}
     </div>
 
-    <div id="notesBox"></div>
-
-    <div id="checklistBox">
-      <section class="group checklist viewing" id="viewing">
-        <h2>At the viewing</h2>
-        <p class="help">Your viewing checklist appears here when all the checks are finished.</p>
-      </section>
-      <section class="group checklist" id="checklist">
-        <h2>Your checklist</h2>
-        <p class="help">Your checklist appears here when all the checks are finished.</p>
-      </section>
-    </div>
+    <section class="group next-steps" id="nextSteps">
+      <h2>Next steps</h2>
+      <div id="notesBox"></div>
+      <div id="checklistBox">
+        ${stepFold("viewing", "At the viewing", "", `<p class="help">Your viewing checklist appears here when all the checks are finished.</p>`, "checklist viewing")}
+        ${stepFold("checklist", "Your checklist", "", `<p class="help">Your checklist appears here when all the checks are finished.</p>`, "checklist")}
+      </div>
+    </section>
 
     <div id="sourcesBox"></div>
 
@@ -1313,10 +1314,9 @@ function buildChecklist(checks) {
   lastChecklist = { seller: seller.map(plainText), conveyancer: conveyancer.map(plainText) };
   const list = items => `<ul>${items.map(i =>
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(plainText(i))}"><span>${i}</span></label></li>`).join("")}</ul>`;
-  return `
-    <section class="group checklist" id="checklist">
-      <h2>Your checklist${infoButton("info-checklist", "About the checklist")}</h2>
-      ${infoBox("info-checklist", "<p>Everything to follow up, gathered from the checks above. Tick items as you go: your ticks are remembered on this device for this property.</p>")}
+  return stepFold("checklist", "Your checklist", "", `
+      <p class="help">Everything to follow up, gathered from the checks above: questions for the seller, searches for your conveyancer
+        and things to check yourself. Tick items as you go: your ticks are remembered on this device for this property.</p>
       <div class="send-box no-print">
         <p><strong>Send to my conveyancer:</strong> an email, or text to copy, with the link to this report, the topics to look into and the questions below.</p>
         <div class="send-buttons">
@@ -1327,8 +1327,7 @@ function buildChecklist(checks) {
       </div>
       ${tickHeading("Questions to ask the seller or estate agent", seller.length)}${list(seller)}
       ${tickHeading("Searches and reports to ask your conveyancer for", conveyancer.length)}${list(conveyancer)}
-      ${tickHeading("Things to check yourself", yourself.length)}${list(yourself)}
-    </section>`;
+      ${tickHeading("Things to check yourself", yourself.length)}${list(yourself)}`, "checklist");
 }
 
 // "At the viewing": up to about 12 things to look for and ask on the day, the most serious topics first.
@@ -1341,20 +1340,18 @@ function buildViewing(checks) {
   const ask = pick([...flagged.flatMap(c => c.seller || []), ...VIEWING_GENERAL.ask], VIEWING_MAX.ask);
   const list = items => `<ul>${items.map(i =>
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(i)}"><span>${escapeHTML(i)}</span></label></li>`).join("")}</ul>`;
-  return `
-    <section class="group checklist viewing" id="viewing">
-      <h2>At the viewing${infoButton("info-viewing", "About the viewing checklist")}</h2>
-      ${infoBox("info-viewing", "<p>A short list for the day you see the property, built from this report: the topics to look into come first. Tick items as you go: your ticks are remembered on this device for this property, and saved properties open without a signal.</p>")}
+  return stepFold("viewing", "At the viewing", "", `
+      <p class="help">A short list for the day you see the property, built from this report: the topics to look into come first.
+        Your ticks are remembered on this device for this property, and saved properties open without a signal.</p>
       ${tickHeading("Look for", look.length)}${list(look)}
-      ${tickHeading("Ask on the day", ask.length)}${list(ask)}
-    </section>`;
+      ${tickHeading("Ask on the day", ask.length)}${list(ask)}`, "checklist viewing");
 }
 
 let lastChecklist = { seller: [], conveyancer: [] };
 
 // Each list's heading says how many of its items are ticked, e.g. "2 of 7 done".
 function tickHeading(title, total) {
-  return `<h3 class="tick-heading">${title} <span class="tick-count">0 of ${total} done</span></h3>`;
+  return `<h4 class="tick-heading">${title} <span class="tick-count">0 of ${total} done</span></h4>`;
 }
 function updateTickCounts() {
   document.querySelectorAll("#checklistBox .tick-heading").forEach(h => {
@@ -1363,6 +1360,15 @@ function updateTickCounts() {
     const count = h.querySelector(".tick-count");
     count.textContent = `${done} of ${boxes.length} done`;
     count.classList.toggle("all-done", boxes.length > 0 && done === boxes.length);
+  });
+  // Each fold's summary adds up its lists, e.g. "2 of 12 done".
+  document.querySelectorAll("#checklistBox .step-fold").forEach(f => {
+    const boxes = [...f.querySelectorAll("input[data-tick]")];
+    if (!boxes.length) return;
+    const done = boxes.filter(b => b.checked).length;
+    const count = f.querySelector(".step-count");
+    count.textContent = `${done} of ${boxes.length} done`;
+    count.classList.toggle("all-done", done === boxes.length);
   });
 }
 
@@ -1449,7 +1455,7 @@ function watchSections() {
       }
     });
   }, { rootMargin: "-20% 0px -70% 0px" });
-  ["reportTop", "group-flood", "group-ground", "group-living", "group-planning", "viewing", "checklist"].forEach(id => {
+  ["reportTop", "group-flood", "group-ground", "group-living", "group-planning", "nextSteps"].forEach(id => {
     const el = $(id);
     if (el) sectionObserver.observe(el);
   });
@@ -1493,6 +1499,7 @@ document.addEventListener("click", e => {
   const target = document.getElementById(a.getAttribute("href").slice(1));
   if (!target) return;
   e.preventDefault();
+  if (target.tagName === "DETAILS") target.open = true;
   if (a.dataset.open) {
     const d = $(a.dataset.open);
     if (d) {

@@ -22,6 +22,9 @@ const ACTIONS = [
   ["gaps box toggled", async p => { if (await p.locator("#gapsBox > summary").count()) await p.click("#gapsBox > summary"); }],
   ["sources open", p => p.evaluate(() => { const d = document.getElementById("sources"); if (d) d.open = true; })],
   ["Start here link", async p => { const a = p.locator(".priority a[data-open]").first(); if (await a.count()) await a.click(); }],
+  ["Show map", p => p.click("#showReportMap")],
+  ["More in a topic", async p => { const b = p.locator("details.check[open] .more-btn").first(); if (await b.count()) await b.click(); }],
+  ["Next steps opened", async p => { for (const s of await p.locator(".step-fold > summary").all()) await s.click(); }],
   ["tick", async p => { const b = p.locator("#viewing input[data-tick]").first(); if (await b.count()) await b.check(); }],
   ["Move to another device", p => p.click("#moveDevice summary")],
   ["Compare three", async p => {
