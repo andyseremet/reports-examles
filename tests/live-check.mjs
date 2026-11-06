@@ -202,6 +202,168 @@ async function randomEnglishPostcode() {
 
 const reportDone = page => page.waitForFunction(() => typeof run !== "undefined" && run && run.done, null, { timeout: 240000 });
 
+// Map data for Wales, Scotland and Northern Ireland, nearby places and sale prices. These test the data
+// functions, not the screen, so they run once (on a desktop page) instead of on every device. They run
+// during the pause before the first report: none of them uses the Environment Agency map server, and the
+// page counts any request to it, so this part never adds to the requests the pause protects.
+async function testCountryData() {
+  const group = "Country data (desktop)";
+  const context = await browser.newContext({ ...DEVICES[0].options });
+  const page = await context.newPage();
+  let eaRequests = 0;
+  await page.route("https://environment.data.gov.uk/spatialdata/**", r => { eaRequests++; return r.fulfill({ json: { features: [] } }); });
+  const step = async (name, fn) => {
+    try { const info = await fn(); record(group, name, info !== false, info === false ? "" : info || ""); }
+    catch (e) { record(group, name, false, e.message.split("\n")[0]); }
+  };
+  try {
+    await page.goto(BASE, { waitUntil: "load" });
+    await page.waitForFunction(() => typeof getScotlandSites === "function", null, { timeout: 30000 });
+    await step("Wales: coal tips, coast, noise, heritage and nature from Welsh data", async () => {
+      // Treorchy (Rhondda): disused coal tips nearby. Borth: an eroding coast. Cardiff centre: a conservation
+      // area, road noise and an air pollution hotspot nearby. Each must be answered from Welsh data, not "Check yourself".
+      const r = await page.evaluate(async () => {
+        const R = async (loc, keys) => {
+          const out = { loc, place: { ok: true, value: await getPlace(loc) } };
+          const fns = { coalTips: getCoalTips, coastal: getCoastalErosion, noise: getRoadNoise, railNoise: getRailNoise, walesSites: getWalesSites };
+          await Promise.all(keys.map(async k => { out[k] = { ok: true, value: await fns[k](loc) }; }));
+          out.air = { ok: false, error: "not asked" }; out.planningPoint = { ok: false, error: "England only" };
+          return out;
+        };
+        const tre = await R({ lat: 51.653995, lon: -3.520821, radius: 1000 }, ["coalTips"]);
+        const borth = await R({ lat: 52.486107, lon: -4.05112, radius: 1000 }, ["coastal"]);
+        const cdf = await R({ lat: 51.485167, lon: -3.178668, radius: 1000 }, ["noise", "railNoise", "walesSites"]);
+        return {
+          tips: checkLanduse(tre), coast: checkCoastal(borth), noise: checkNoise(cdf),
+          planning: checkPlanning(cdf), nature: checkNature(cdf), air: checkAir(cdf), country: cdf.place.value.country,
+          // Missing hotspot data must never read as "not in a hotspot".
+          airNoHotspotData: checkAir({ ...cdf, walesSites: { ok: false, error: "test" }, air: { ok: true, value: { no2: 10, pm25: 5 } } }).status
+        };
+      });
+      if (r.country !== "Wales") throw new Error(`postcodes.io says Cardiff is in ${r.country}`);
+      if (["low", "info"].includes(r.airNoHotspotData)) throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}"`);
+      const bad = Object.entries(r).filter(([k, c]) => !["country", "airNoHotspotData"].includes(k) && ["manual", "error"].includes(c.status));
+      if (bad.length) throw new Error(bad.map(([k, c]) => `${k}: ${c.found}`).join(" | "));
+      if (!["medium", "info"].includes(r.tips.status)) throw new Error(`no coal tips found near Treorchy: ${r.tips.found}`);
+      if (!/Conservation area/.test(r.planning.found)) throw new Error(`no conservation area in central Cardiff: ${r.planning.found}`);
+      if (!/Road: (moderate|loud)/.test(r.noise.found)) throw new Error(`no road noise in central Cardiff: ${r.noise.found}`);
+      if (r.coast.found.startsWith("Not near the coast")) throw new Error(`Borth not near the coast: ${r.coast.found}`);
+      if (!/hotspot/.test(r.air.found) || !/within/.test(r.air.found)) throw new Error(`no air pollution hotspot near central Cardiff: ${r.air.found}`);
+      return `coal tips ${r.tips.status}; Borth ${r.coast.status}; Cardiff: ${r.planning.found.slice(0, 50)}…`;
+    });
+
+    await step("Scotland: heritage, nature, air, noise, coast, waste sites and crime from Scottish data", async () => {
+      // Edinburgh Old Town: a conservation area, World Heritage Site, listed building, air pollution hotspot, road noise
+      // and a crime rank. Portobello: an eroding soft coast. Insh Marshes (Cairngorms): a National Park and an SSSI.
+      // Oban: rocky coast and no waste site, so land use must say "Check yourself".
+      const r = await page.evaluate(async () => {
+        const fns = { coastal: getCoastalErosion, noise: getRoadNoise, railNoise: getRailNoise, scotlandSites: getScotlandSites, wasteSites: getWasteSites, simdCrime: getSimdCrime };
+        const R = async (loc, keys) => {
+          const out = { loc, place: { ok: true, value: await getPlace(loc) } };
+          await Promise.all(keys.map(async k => { out[k] = { ok: true, value: await fns[k](loc) }; }));
+          out.air = { ok: false, error: "not asked" }; out.planningPoint = { ok: false, error: "England only" };
+          out.crime = { ok: false, error: "England and Wales only" };
+          return out;
+        };
+        const edi = await R({ lat: 55.9497, lon: -3.1907, radius: 1000 }, ["noise", "railNoise", "scotlandSites", "wasteSites", "simdCrime"]);
+        const por = await R({ lat: 55.955, lon: -3.105, radius: 1000 }, ["coastal"]);
+        const insh = await R({ lat: 57.08, lon: -3.95, radius: 1000 }, ["scotlandSites"]);
+        const oban = await R({ lat: 56.415, lon: -5.472, radius: 1000 }, ["wasteSites"]);
+        return {
+          planning: checkPlanning(edi), nature: checkNature(edi), air: checkAir(edi), noise: checkNoise(edi), crime: checkCrime(edi),
+          waste: checkLanduse(edi), coast: checkCoastal(por), park: checkPlanning(insh), sssi: checkNature(insh),
+          country: edi.place.value.country, obanLand: checkLanduse(oban).status,
+          // Missing hotspot data must never read as "not in a hotspot".
+          airNoHotspotData: checkAir({ ...edi, scotlandSites: { ok: false, error: "test" }, air: { ok: true, value: { no2: 10, pm25: 5 } } }).status
+        };
+      });
+      if (r.country !== "Scotland") throw new Error(`postcodes.io says Edinburgh is in ${r.country}`);
+      if (["low", "info"].includes(r.airNoHotspotData)) throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}"`);
+      if (r.obanLand !== "manual") throw new Error(`Oban (no waste sites; old landfill not published) rated "${r.obanLand}", expected Check yourself`);
+      const bad = Object.entries(r).filter(([k, c]) => !["country", "airNoHotspotData", "obanLand"].includes(k) && ["manual", "error"].includes(c.status));
+      if (bad.length) throw new Error(bad.map(([k, c]) => `${k}: ${c.found}`).join(" | "));
+      if (!/Conservation area/.test(r.planning.found) || !/World Heritage Site/.test(r.planning.found)) throw new Error(`Edinburgh Old Town planning: ${r.planning.found}`);
+      if (!/National Park/.test(r.park.found)) throw new Error(`no National Park at Insh Marshes: ${r.park.found}`);
+      if (!/Site of Special Scientific Interest/.test(r.sssi.found)) throw new Error(`no SSSI at Insh Marshes: ${r.sssi.found}`);
+      if (!/Inside an air pollution hotspot/.test(r.air.found)) throw new Error(`Edinburgh centre not in its air pollution hotspot: ${r.air.found}`);
+      if (!/Road: (moderate|loud)/.test(r.noise.found)) throw new Error(`no road noise in central Edinburgh: ${r.noise.found}`);
+      if (!/ranked [\d,]+ of 6,976/.test(r.crime.found)) throw new Error(`no crime rank: ${r.crime.found}`);
+      if (!/licensed/.test(r.waste.found)) throw new Error(`no licensed waste site near central Edinburgh: ${r.waste.found}`);
+      if (!/expected to be lost by 2100/.test(r.coast.found)) throw new Error(`Portobello coast: ${r.coast.found}`);
+      return `Edinburgh: ${r.planning.found.slice(0, 60)}…; Portobello ${r.coast.status}; crime ${r.crime.found.match(/ranked [\d,]+/)[0]}`;
+    });
+
+    await step("Northern Ireland: heritage, nature, noise and coast from NI data; Check yourself where nothing is published", async () => {
+      // Belfast City Hall: listed buildings nearby and road noise; planning must say "Check yourself" because
+      // conservation areas are not published, and air because hotspots are not mapped. Westlink: loud road noise.
+      // Newcastle (Co Down): the Mourne AONB. Strangford Lough: protected nature sites. Belfast Lough shore: High erosion risk.
+      const r = await page.evaluate(async () => {
+        const fns = { coastal: getCoastalErosion, noise: getRoadNoise, railNoise: getRailNoise, niSites: getNISites };
+        const R = async (loc, keys) => {
+          const out = { loc, place: { ok: true, value: await getPlace(loc) } };
+          await Promise.all(keys.map(async k => { out[k] = { ok: true, value: await fns[k](loc) }; }));
+          out.air = { ok: true, value: { no2: 15, pm25: 6 } };
+          return out;
+        };
+        const bel = await R({ lat: 54.5964, lon: -5.9301, radius: 1000 }, ["noise", "railNoise", "niSites"]);
+        const west = await R({ lat: 54.592, lon: -5.946, radius: 1000 }, ["noise", "railNoise"]);
+        const newc = await R({ lat: 54.212, lon: -5.893, radius: 1000 }, ["niSites"]);
+        const str = await R({ lat: 54.47, lon: -5.63, radius: 1000 }, ["niSites"]);
+        const shore = await R({ lat: 54.66, lon: -5.90, radius: 1000 }, ["coastal"]);
+        return { country: bel.place.value.country, listed: bel.niSites.value.listedNear,
+          planning: checkPlanning(bel), air: checkAir(bel), noise: checkNoise(west), park: checkPlanning(newc),
+          nature: checkNature(str), coast: checkCoastal(shore) };
+      });
+      if (r.country !== "Northern Ireland") throw new Error(`postcodes.io says Belfast is in ${r.country}`);
+      if (r.planning.status !== "manual") throw new Error(`Belfast planning with no conservation area data rated "${r.planning.status}", expected Check yourself`);
+      if (!(r.listed > 0)) throw new Error("no listed buildings near Belfast City Hall");
+      if (r.air.status !== "manual") throw new Error(`NI air quality (no hotspot map) rated "${r.air.status}", expected Check yourself`);
+      if (!/Road: loud/.test(r.noise.found)) throw new Error(`Westlink road noise: ${r.noise.found}`);
+      if (!/Area of Outstanding Natural Beauty/.test(r.park.found)) throw new Error(`no Mourne AONB at Newcastle: ${r.park.found}`);
+      if (r.nature.status !== "info") throw new Error(`no protected sites at Strangford Lough: ${r.nature.found}`);
+      if (!/erosion risk/.test(r.coast.found) || r.coast.status === "low") throw new Error(`Belfast Lough shore: ${r.coast.found}`);
+      return `${r.listed} listed buildings near City Hall; Westlink loud; coast ${r.coast.status}`;
+    });
+
+    await step("Nearby places: each register only where it covers; Check yourself in Northern Ireland", async () => {
+      // GP surgeries come from an England and Wales register, schools and stops from England only, stations from
+      // Great Britain. Where a register does not reach, the row must say "Not covered", never "None found nearby".
+      const r = await page.evaluate(async () => {
+        const rate = async (lat, lon) => {
+          const loc = { lat, lon, radius: 1000 };
+          const c = checkAmenities({ loc, place: { ok: true, value: await getPlace(loc) }, amenities: { ok: true, value: await getAmenities(loc) } });
+          return { status: c.status, found: c.found, details: c.details || "" };
+        };
+        return { bel: await rate(54.5964, -5.9301), edi: await rate(55.9497, -3.1907), cdf: await rate(51.4816, -3.1791) };
+      });
+      if (r.bel.status !== "manual") throw new Error(`Belfast (no register covers it) rated "${r.bel.status}": ${r.bel.found}`);
+      if (!/GP surgery<\/td><td colspan="3">Not covered in Scotland/.test(r.edi.details)) throw new Error("Edinburgh GP row does not say Not covered");
+      if (!/station/.test(r.edi.found)) throw new Error(`no station near Edinburgh Waverley: ${r.edi.found}`);
+      if (!/GP|pharmacy/.test(r.cdf.found)) throw new Error(`no GP or pharmacy in central Cardiff: ${r.cdf.found}`);
+      return `Belfast ${r.bel.status}; Edinburgh: ${r.edi.found.slice(0, 40)}…; Cardiff: ${r.cdf.found.slice(0, 40)}…`;
+    });
+
+    await step("Sold prices: sales in a town, Check yourself where there are none", async () => {
+      // Barnsley town centre has home sales every year. Open moorland on Dartmoor has no postcodes within
+      // 500 m, so no sales: that must say "Check yourself", never "No issue found".
+      const r = await page.evaluate(async () => {
+        const rate = async loc => checkSoldPrices({ loc, soldPrices: { ok: true, value: await getSoldPrices(loc) } });
+        const town = await rate({ name: "Barnsley test", lat: 53.5526, lon: -1.4797, radius: 1000 });
+        const moor = await rate({ name: "Dartmoor test", lat: 50.6, lon: -3.96, radius: 1000 });
+        return { town: town.status, townFound: town.found, moor: moor.status };
+      });
+      if (r.town !== "info") throw new Error(`Barnsley rated "${r.town}": ${r.townFound}`);
+      if (r.moor !== "manual") throw new Error(`Dartmoor (no sales) rated "${r.moor}", expected Check yourself`);
+      return r.townFound.replace(/<[^>]+>/g, "").slice(0, 90) + "…";
+    });
+
+    record(group, "No requests to the Environment Agency map server", eaRequests === 0,
+      eaRequests ? `${eaRequests} request(s): a Wales, Scotland or NI address was treated as England` : "none");
+  } finally {
+    await context.close();
+  }
+}
+
 async function testDevice(device, [postcode, place]) {
   const group = `${device.name} – ${postcode}, ${place}`;
   const context = await browser.newContext({ ...device.options, acceptDownloads: true });
@@ -428,144 +590,6 @@ async function testDevice(device, [postcode, place]) {
     if (r.error) throw new Error(r.error);
     if (!["high", "medium"].includes(r.status)) throw new Error(`rated "${r.status}": ${r.found}`);
     return r.found.slice(0, 90) + "…";
-  });
-
-  await step("Wales: coal tips, coast, noise, heritage and nature from Welsh data", async () => {
-    // Treorchy (Rhondda): disused coal tips nearby. Borth: an eroding coast. Cardiff centre: a conservation
-    // area, road noise and an air pollution hotspot nearby. Each must be answered from Welsh data, not "Check yourself".
-    const r = await page.evaluate(async () => {
-      const R = async (loc, keys) => {
-        const out = { loc, place: { ok: true, value: await getPlace(loc) } };
-        const fns = { coalTips: getCoalTips, coastal: getCoastalErosion, noise: getRoadNoise, railNoise: getRailNoise, walesSites: getWalesSites };
-        await Promise.all(keys.map(async k => { out[k] = { ok: true, value: await fns[k](loc) }; }));
-        out.air = { ok: false, error: "not asked" }; out.planningPoint = { ok: false, error: "England only" };
-        return out;
-      };
-      const tre = await R({ lat: 51.653995, lon: -3.520821, radius: 1000 }, ["coalTips"]);
-      const borth = await R({ lat: 52.486107, lon: -4.05112, radius: 1000 }, ["coastal"]);
-      const cdf = await R({ lat: 51.485167, lon: -3.178668, radius: 1000 }, ["noise", "railNoise", "walesSites"]);
-      return {
-        tips: checkLanduse(tre), coast: checkCoastal(borth), noise: checkNoise(cdf),
-        planning: checkPlanning(cdf), nature: checkNature(cdf), air: checkAir(cdf), country: cdf.place.value.country,
-        // Missing hotspot data must never read as "not in a hotspot".
-        airNoHotspotData: checkAir({ ...cdf, walesSites: { ok: false, error: "test" }, air: { ok: true, value: { no2: 10, pm25: 5 } } }).status
-      };
-    });
-    if (r.country !== "Wales") throw new Error(`postcodes.io says Cardiff is in ${r.country}`);
-    if (["low", "info"].includes(r.airNoHotspotData)) throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}"`);
-    const bad = Object.entries(r).filter(([k, c]) => !["country", "airNoHotspotData"].includes(k) && ["manual", "error"].includes(c.status));
-    if (bad.length) throw new Error(bad.map(([k, c]) => `${k}: ${c.found}`).join(" | "));
-    if (!["medium", "info"].includes(r.tips.status)) throw new Error(`no coal tips found near Treorchy: ${r.tips.found}`);
-    if (!/Conservation area/.test(r.planning.found)) throw new Error(`no conservation area in central Cardiff: ${r.planning.found}`);
-    if (!/Road: (moderate|loud)/.test(r.noise.found)) throw new Error(`no road noise in central Cardiff: ${r.noise.found}`);
-    if (r.coast.found.startsWith("Not near the coast")) throw new Error(`Borth not near the coast: ${r.coast.found}`);
-    if (!/hotspot/.test(r.air.found) || !/within/.test(r.air.found)) throw new Error(`no air pollution hotspot near central Cardiff: ${r.air.found}`);
-    return `coal tips ${r.tips.status}; Borth ${r.coast.status}; Cardiff: ${r.planning.found.slice(0, 50)}…`;
-  });
-
-  await step("Scotland: heritage, nature, air, noise, coast, waste sites and crime from Scottish data", async () => {
-    // Edinburgh Old Town: a conservation area, World Heritage Site, listed building, air pollution hotspot, road noise
-    // and a crime rank. Portobello: an eroding soft coast. Insh Marshes (Cairngorms): a National Park and an SSSI.
-    // Oban: rocky coast and no waste site, so land use must say "Check yourself".
-    const r = await page.evaluate(async () => {
-      const fns = { coastal: getCoastalErosion, noise: getRoadNoise, railNoise: getRailNoise, scotlandSites: getScotlandSites, wasteSites: getWasteSites, simdCrime: getSimdCrime };
-      const R = async (loc, keys) => {
-        const out = { loc, place: { ok: true, value: await getPlace(loc) } };
-        await Promise.all(keys.map(async k => { out[k] = { ok: true, value: await fns[k](loc) }; }));
-        out.air = { ok: false, error: "not asked" }; out.planningPoint = { ok: false, error: "England only" };
-        out.crime = { ok: false, error: "England and Wales only" };
-        return out;
-      };
-      const edi = await R({ lat: 55.9497, lon: -3.1907, radius: 1000 }, ["noise", "railNoise", "scotlandSites", "wasteSites", "simdCrime"]);
-      const por = await R({ lat: 55.955, lon: -3.105, radius: 1000 }, ["coastal"]);
-      const insh = await R({ lat: 57.08, lon: -3.95, radius: 1000 }, ["scotlandSites"]);
-      const oban = await R({ lat: 56.415, lon: -5.472, radius: 1000 }, ["wasteSites"]);
-      return {
-        planning: checkPlanning(edi), nature: checkNature(edi), air: checkAir(edi), noise: checkNoise(edi), crime: checkCrime(edi),
-        waste: checkLanduse(edi), coast: checkCoastal(por), park: checkPlanning(insh), sssi: checkNature(insh),
-        country: edi.place.value.country, obanLand: checkLanduse(oban).status,
-        // Missing hotspot data must never read as "not in a hotspot".
-        airNoHotspotData: checkAir({ ...edi, scotlandSites: { ok: false, error: "test" }, air: { ok: true, value: { no2: 10, pm25: 5 } } }).status
-      };
-    });
-    if (r.country !== "Scotland") throw new Error(`postcodes.io says Edinburgh is in ${r.country}`);
-    if (["low", "info"].includes(r.airNoHotspotData)) throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}"`);
-    if (r.obanLand !== "manual") throw new Error(`Oban (no waste sites; old landfill not published) rated "${r.obanLand}", expected Check yourself`);
-    const bad = Object.entries(r).filter(([k, c]) => !["country", "airNoHotspotData", "obanLand"].includes(k) && ["manual", "error"].includes(c.status));
-    if (bad.length) throw new Error(bad.map(([k, c]) => `${k}: ${c.found}`).join(" | "));
-    if (!/Conservation area/.test(r.planning.found) || !/World Heritage Site/.test(r.planning.found)) throw new Error(`Edinburgh Old Town planning: ${r.planning.found}`);
-    if (!/National Park/.test(r.park.found)) throw new Error(`no National Park at Insh Marshes: ${r.park.found}`);
-    if (!/Site of Special Scientific Interest/.test(r.sssi.found)) throw new Error(`no SSSI at Insh Marshes: ${r.sssi.found}`);
-    if (!/Inside an air pollution hotspot/.test(r.air.found)) throw new Error(`Edinburgh centre not in its air pollution hotspot: ${r.air.found}`);
-    if (!/Road: (moderate|loud)/.test(r.noise.found)) throw new Error(`no road noise in central Edinburgh: ${r.noise.found}`);
-    if (!/ranked [\d,]+ of 6,976/.test(r.crime.found)) throw new Error(`no crime rank: ${r.crime.found}`);
-    if (!/licensed/.test(r.waste.found)) throw new Error(`no licensed waste site near central Edinburgh: ${r.waste.found}`);
-    if (!/expected to be lost by 2100/.test(r.coast.found)) throw new Error(`Portobello coast: ${r.coast.found}`);
-    return `Edinburgh: ${r.planning.found.slice(0, 60)}…; Portobello ${r.coast.status}; crime ${r.crime.found.match(/ranked [\d,]+/)[0]}`;
-  });
-
-  await step("Northern Ireland: heritage, nature, noise and coast from NI data; Check yourself where nothing is published", async () => {
-    // Belfast City Hall: listed buildings nearby and road noise; planning must say "Check yourself" because
-    // conservation areas are not published, and air because hotspots are not mapped. Westlink: loud road noise.
-    // Newcastle (Co Down): the Mourne AONB. Strangford Lough: protected nature sites. Belfast Lough shore: High erosion risk.
-    const r = await page.evaluate(async () => {
-      const fns = { coastal: getCoastalErosion, noise: getRoadNoise, railNoise: getRailNoise, niSites: getNISites };
-      const R = async (loc, keys) => {
-        const out = { loc, place: { ok: true, value: await getPlace(loc) } };
-        await Promise.all(keys.map(async k => { out[k] = { ok: true, value: await fns[k](loc) }; }));
-        out.air = { ok: true, value: { no2: 15, pm25: 6 } };
-        return out;
-      };
-      const bel = await R({ lat: 54.5964, lon: -5.9301, radius: 1000 }, ["noise", "railNoise", "niSites"]);
-      const west = await R({ lat: 54.592, lon: -5.946, radius: 1000 }, ["noise", "railNoise"]);
-      const newc = await R({ lat: 54.212, lon: -5.893, radius: 1000 }, ["niSites"]);
-      const str = await R({ lat: 54.47, lon: -5.63, radius: 1000 }, ["niSites"]);
-      const shore = await R({ lat: 54.66, lon: -5.90, radius: 1000 }, ["coastal"]);
-      return { country: bel.place.value.country, listed: bel.niSites.value.listedNear,
-        planning: checkPlanning(bel), air: checkAir(bel), noise: checkNoise(west), park: checkPlanning(newc),
-        nature: checkNature(str), coast: checkCoastal(shore) };
-    });
-    if (r.country !== "Northern Ireland") throw new Error(`postcodes.io says Belfast is in ${r.country}`);
-    if (r.planning.status !== "manual") throw new Error(`Belfast planning with no conservation area data rated "${r.planning.status}", expected Check yourself`);
-    if (!(r.listed > 0)) throw new Error("no listed buildings near Belfast City Hall");
-    if (r.air.status !== "manual") throw new Error(`NI air quality (no hotspot map) rated "${r.air.status}", expected Check yourself`);
-    if (!/Road: loud/.test(r.noise.found)) throw new Error(`Westlink road noise: ${r.noise.found}`);
-    if (!/Area of Outstanding Natural Beauty/.test(r.park.found)) throw new Error(`no Mourne AONB at Newcastle: ${r.park.found}`);
-    if (r.nature.status !== "info") throw new Error(`no protected sites at Strangford Lough: ${r.nature.found}`);
-    if (!/erosion risk/.test(r.coast.found) || r.coast.status === "low") throw new Error(`Belfast Lough shore: ${r.coast.found}`);
-    return `${r.listed} listed buildings near City Hall; Westlink loud; coast ${r.coast.status}`;
-  });
-
-  await step("Nearby places: each register only where it covers; Check yourself in Northern Ireland", async () => {
-    // GP surgeries come from an England and Wales register, schools and stops from England only, stations from
-    // Great Britain. Where a register does not reach, the row must say "Not covered", never "None found nearby".
-    const r = await page.evaluate(async () => {
-      const rate = async (lat, lon) => {
-        const loc = { lat, lon, radius: 1000 };
-        const c = checkAmenities({ loc, place: { ok: true, value: await getPlace(loc) }, amenities: { ok: true, value: await getAmenities(loc) } });
-        return { status: c.status, found: c.found, details: c.details || "" };
-      };
-      return { bel: await rate(54.5964, -5.9301), edi: await rate(55.9497, -3.1907), cdf: await rate(51.4816, -3.1791) };
-    });
-    if (r.bel.status !== "manual") throw new Error(`Belfast (no register covers it) rated "${r.bel.status}": ${r.bel.found}`);
-    if (!/GP surgery<\/td><td colspan="3">Not covered in Scotland/.test(r.edi.details)) throw new Error("Edinburgh GP row does not say Not covered");
-    if (!/station/.test(r.edi.found)) throw new Error(`no station near Edinburgh Waverley: ${r.edi.found}`);
-    if (!/GP|pharmacy/.test(r.cdf.found)) throw new Error(`no GP or pharmacy in central Cardiff: ${r.cdf.found}`);
-    return `Belfast ${r.bel.status}; Edinburgh: ${r.edi.found.slice(0, 40)}…; Cardiff: ${r.cdf.found.slice(0, 40)}…`;
-  });
-
-  await step("Sold prices: sales in a town, Check yourself where there are none", async () => {
-    // Barnsley town centre has home sales every year. Open moorland on Dartmoor has no postcodes within
-    // 500 m, so no sales: that must say "Check yourself", never "No issue found".
-    const r = await page.evaluate(async () => {
-      const rate = async loc => checkSoldPrices({ loc, soldPrices: { ok: true, value: await getSoldPrices(loc) } });
-      const town = await rate({ name: "Barnsley test", lat: 53.5526, lon: -1.4797, radius: 1000 });
-      const moor = await rate({ name: "Dartmoor test", lat: 50.6, lon: -3.96, radius: 1000 });
-      return { town: town.status, townFound: town.found, moor: moor.status };
-    });
-    if (r.town !== "info") throw new Error(`Barnsley rated "${r.town}": ${r.townFound}`);
-    if (r.moor !== "manual") throw new Error(`Dartmoor (no sales) rated "${r.moor}", expected Check yourself`);
-    return r.townFound.replace(/<[^>]+>/g, "").slice(0, 90) + "…";
   });
 
   await step("Data service status page", async () => {
@@ -806,7 +830,9 @@ try {
     // The Environment Agency map server allows only about 15 requests a minute from
     // one address, and one report sends about 7. Pausing before each report keeps
     // the test within that limit, like a person checking one property at a time.
-    await new Promise(r => setTimeout(r, PAUSE_BEFORE_REPORT_MS));
+    const pause = new Promise(r => setTimeout(r, PAUSE_BEFORE_REPORT_MS));
+    if (i === 0) await testCountryData().catch(e => record("Country data (desktop)", "The country data steps crashed", false, e.message));
+    await pause;
     const topics = await testDevice(DEVICES[i], places[i]);
     reports[`${DEVICES[i].name}: ${places[i].join(", ")}`] = topics;
   }
