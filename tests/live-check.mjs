@@ -496,7 +496,7 @@ async function testDevice(device, [postcode, place]) {
       const legend = [...document.querySelectorAll(".rating-legend .chip")].reduce((n, c) => n + parseInt(c.textContent.replace(/\D+/g, " ").trim(), 10), 0);
       const low = results.filter(c => c.status === "low").map(c => c.id).sort();
       const folded = [...document.querySelectorAll(".clear-fold .fold-body .slot")].map(el => el.id.slice(5)).sort();
-      const symbols = [...document.querySelectorAll("#report .chip")].filter(c => !c.querySelector(".chip-symbol")).length;
+      const symbols = [...document.querySelectorAll("#report .chip:is(.high,.medium,.low,.info,.manual,.error)")].filter(c => !c.querySelector(".chip-symbol")).length;
       return { total: results.length, legend, low, folded, symbols, countBoxes: document.querySelectorAll("a.count").length };
     });
     // The legend counts every topic once; the count boxes are gone; every chip has its symbol.

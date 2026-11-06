@@ -323,6 +323,8 @@ details.clear-fold > .fold-body {padding:0 8px 8px}
 details.check > summary {cursor:pointer;padding:12px 14px;list-style:none;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
 /* Long topic names wrap instead of pushing the rating label off narrow screens (WCAG 1.4.10 Reflow). */
 details.check > summary h3 {overflow-wrap:anywhere}
+/* The rating label may wrap too, so its symbol never pushes it off a 320 px screen with large text. */
+details.check > summary .chip {white-space:normal;text-align:center}
 details.check > summary::-webkit-details-marker {display:none}
 details.check > summary .found {grid-column:1;font-size:14px}
 details.check > summary:hover {background:var(--hover)}
