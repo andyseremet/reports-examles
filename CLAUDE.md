@@ -35,8 +35,10 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   Fix any error it reports before going on.
 - Full test: `npm install --no-save playwright@1.49.1 && npx playwright install chromium` (in a cloud session use the
   preinstalled browser instead: `npm install --no-save playwright@$(node -p "require('/opt/node-tools/node_modules/playwright/package.json').version")`), then
-  `BASE=http://localhost:8080/ PAUSE_MS=0 node tests/live-check.mjs` (local copy) or `node tests/live-check.mjs`
-  (live site, about 6 minutes).
+  `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 node tests/live-check.mjs` (local copy) or `QUIET=1 node
+  tests/live-check.mjs` (live site, about 5 minutes). `QUIET=1` prints only warnings, failures and the total.
+- **Saving tokens:** run tests with `QUIET=1`. On a failed GitHub check, read its annotations (one per failed
+  check) or `get_job_logs` with a small `tail_lines`, not the whole log. Search files instead of reading them whole.
 - There is no way to run one test step. To check one behaviour, write a short Playwright script outside the repo,
   and answer `https://environment.data.gov.uk/spatialdata/**` with `{"features":[]}` so the report finishes fast.
 - After a merge: `bash tests/after-merge.sh` (restarts the branch from `origin/main` and pushes it, waits for Pages to
@@ -101,6 +103,9 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   that change `index.html`, `status.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
   Daily and manual runs on `main` then publish `status.json` to the `status` branch for the status page. A failed daily or manual run
   opens or updates a "Live check failed" issue.
+- Steps that only test data functions (no screen layout) belong in `testCountryData()` in `tests/live-check.mjs`:
+  they run once, during the first pause, and must send nothing to the Environment Agency map server. Steps that
+  check the page on a phone, tablet or desktop stay in `testDevice()`.
 - Never skip, remove or loosen a test step to get a pass. The only allowed `"warn"` result is the Environment Agency
   map server refusing GitHub's machines with HTTP 403.
 - Outside services (BGS, Environment Agency, Open-Meteo, data.police.uk) have outages. Before changing code for a

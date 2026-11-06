@@ -136,13 +136,17 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 It checks that all 37 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the count boxes and Open all / Close all, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
-printing and downloads. Results,
+printing and downloads. The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices is tested
+once, on the desktop page, during the pause before the first report (it does not depend on the screen size, and it must
+send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files
+are installed only if it does not start without them. Results,
 screenshots and sample reports are kept for 14 days with each run.
 
 The Environment Agency map server (surface water, noise, landfill, coastal erosion) briefly refuses an address that sends more
 than about 15 requests a minute, which happens to GitHub's shared test machines. The test therefore waits a minute
 before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
-answer and retries a refusal or a slow answer. A topic that still fails is tried once more by the page after 20
+answer and retries a refusal or a slow answer. DataMapWales, Historic Environment Scotland, NatureScot, SEPA and DAERA
+get the same treatment with up to 4 requests at a time and 30 seconds to answer. A topic that still fails is tried once more by the page after 20
 seconds. If it then shows "Try again", the test presses it once, as a person would; a topic that still fails after
 that fails the test.
 
