@@ -1061,10 +1061,11 @@ function renderSkeleton(loc) {
       <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
       ${infoBox("info-read", `
         <ul class="legend-list">
-          <li><span class="chip high">Look into this</span> Something that could affect value, insurance, health or safety. Investigate before you commit.</li>
-          <li><span class="chip medium">Worth checking</span> Something nearby or at a moderate level. Ask questions or order a specialist search.</li>
-          <li><span class="chip low">No issue found</span> Nothing found in the data checked. This is not a guarantee.</li>
-          <li><span class="chip info">For information</span> Useful local facts, for example planning restrictions.</li>
+          <li>${chip("high")} Something that could affect value, insurance, health or safety. Investigate before you commit.</li>
+          <li>${chip("medium")} Something nearby or at a moderate level. Ask questions or order a specialist search.</li>
+          <li>${chip("low")} Nothing found in the data checked. This is not a guarantee.</li>
+          <li>${chip("info")} Useful local facts, for example planning restrictions.</li>
+          <li>${chip("manual")} The data does not cover this place, or nothing is published: check it another way.</li>
         </ul>
         <p><strong>Please note:</strong> this is a free first look using public data. It does not replace a building survey or
           the searches your conveyancer orders. “No issue found” means nothing was found in the data we checked, not that there
@@ -1170,7 +1171,7 @@ function renderSummary() {
         const name = ` ${c.title.toLowerCase()} `.includes(` ${short.toLowerCase()} `) ? c.title : `${short} (${c.title})`;
         return `<li><button type="button" class="topic ${st}" data-why="${c.id}" aria-controls="whyBox"
             aria-expanded="${run.whyId === c.id}" aria-label="${escapeHTML(name)}: ${label}. Show why">
-            ${STATUS_SYMBOL[st] ? `<span class="topic-symbol" aria-hidden="true">${STATUS_SYMBOL[st]}</span>` : ""}<span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
+<span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
       }).join("")}
     </ul>
     ${legend ? `<ul class="rating-legend" aria-label="Topics by rating">${legend}</ul>` : ""}
