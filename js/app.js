@@ -760,7 +760,7 @@ function onTaskSettled(key) {
     const result = buildCheck(c);
     run.results[c.id] = result;
     const slot = $("slot-" + c.id);
-    if (slot) { slot.innerHTML = renderCheck(result); prepareTables(slot, c.title); }
+    showCheck(c, result);
   });
   if (key === "place") renderMeta();
   if (["landfill", "landslides", "planningNearby", "coalTips", "wasteSites"].includes(key)) replotFeatures();
@@ -817,8 +817,7 @@ function showSnapshot(snap, options = {}) {
     const shown = res || topicResult(c, { status: "manual", gap: "saved",
       found: "Not included in these saved results. Press “Refresh” to check it with the latest data." });
     if (!res) run.results[c.id] = shown;
-    slot.innerHTML = renderCheck(shown);
-    prepareTables(slot, c.title);
+    showCheck(c, shown);
   });
   replotFeatures();
   $("toolbar").classList.remove("hidden");
@@ -926,7 +925,7 @@ document.addEventListener("click", e => {
     CHECKS.filter(x => x.deps.includes(k)).forEach(x => {
       delete run.results[x.id];
       const slot = $("slot-" + x.id);
-      if (slot) slot.innerHTML = loadingCard(x);
+      if (slot) showCheck(x, null);
     });
   });
   run.done = false;            // the report is being completed again
@@ -961,8 +960,35 @@ function replotFeatures() {
    REPORT
 ========================================================= */
 
-function chip(status) {
-  return `<span class="chip ${status}">${STATUS_LABEL[status] || "Checking…"}</span>`;
+function chip(status, text) {
+  const symbol = STATUS_SYMBOL[status] ? `<span class="chip-symbol" aria-hidden="true">${STATUS_SYMBOL[status]}</span>` : "";
+  return `<span class="chip ${status}">${symbol}${text || STATUS_LABEL[status] || "Checking…"}</span>`;
+}
+
+// Draw a topic in its slot. Topics with "No issue found" move into their section's folded row; others stay in
+// the section's list, in the order of CHECKS.
+function showCheck(c, result) {
+  const slot = $("slot-" + c.id);
+  if (!slot) return;
+  slot.innerHTML = result ? renderCheck(result) : loadingCard(c);
+  if (result) prepareTables(slot, c.title);
+  placeSlot(c, result ? result.status : "loading");
+}
+function placeSlot(c, status) {
+  const slot = $("slot-" + c.id), group = $("group-" + c.group);
+  if (!slot || !group) return;
+  const target = group.querySelector(status === "low" ? ".fold-body" : ".group-topics");
+  const order = CHECKS.map(x => x.id);
+  const next = [...target.children].find(el => order.indexOf(el.id.slice(5)) > order.indexOf(c.id));
+  if (slot.parentElement !== target || (next && slot.nextElementSibling !== next)) target.insertBefore(slot, next || null);
+  updateFold(group);
+}
+function updateFold(group) {
+  const fold = group.querySelector(".clear-fold");
+  const ids = [...fold.querySelectorAll(".fold-body .slot")].map(el => el.id.slice(5));
+  fold.hidden = !ids.length;
+  const names = ids.map(id => TOPIC_ICONS[id] ? TOPIC_ICONS[id][1] : id).join(", ");
+  fold.querySelector(".fold-title").innerHTML = `<span class="chip-symbol" aria-hidden="true">✓</span>${plural(ids.length, "topic")} with no issue found<span class="fold-names">: ${escapeHTML(names)}</span>`;
 }
 
 function infoButton(targetId, label) {
@@ -1052,7 +1078,8 @@ function renderSkeleton(loc) {
         <section class="group" id="group-${g.id}">
           <h2>${escapeHTML(g.title)}${infoButton("info-group-" + g.id, "About " + g.title)}</h2>
           ${infoBox("info-group-" + g.id, "<p>" + escapeHTML(g.intro) + "</p>")}
-          ${CHECKS.filter(c => c.group === g.id).map(c => `<div class="slot" id="slot-${c.id}">${loadingCard(c)}</div>`).join("")}
+          <div class="group-topics">${CHECKS.filter(c => c.group === g.id).map(c => `<div class="slot" id="slot-${c.id}">${loadingCard(c)}</div>`).join("")}</div>
+          <details class="clear-fold" hidden><summary><span class="fold-title"></span>${moreToggle()}</summary><div class="fold-body"></div></details>
         </section>`).join("")}
     </div>
 
@@ -1101,13 +1128,9 @@ function isOld(savedAt) {
 function renderSummary() {
   const results = orderedResults();
   const n = s => results.filter(c => c.status === s).length;
-  // A count box goes to the first topic with that rating, and opens it. A count of 0 is plain text.
-  const countBox = (s, label) => {
-    const first = results.find(c => c.status === s), inner = `<strong>${n(s)}</strong><span>${label}</span>`;
-    return first
-      ? `<a class="count ${s}" href="#check-${first.id}" data-open="check-${first.id}">${inner}<span class="count-go no-print">Go to first<span aria-hidden="true"> ›</span></span></a>`
-      : `<div class="count ${s}">${inner}</div>`;
-  };
+  // One line under the topic grid: each rating's symbol, colour and count (ratings with no topics are left out).
+  const legend = ["high", "medium", "low", "info", "manual", "error"].filter(s => n(s))
+    .map(s => `<li>${chip(s, `${n(s)} ${STATUS_LABEL[s].toLowerCase()}`)}</li>`).join("");
   const ready = results.length;
   const p = okValue(run.R, "place");
   const outsideEngland = p && p.country && p.country !== "England";
@@ -1137,9 +1160,6 @@ function renderSummary() {
   $("summaryBox").innerHTML = `
     ${savedNote}
     ${verdict}
-    <div class="counts">
-      ${countBox("high", "Look into this")}${countBox("medium", "Worth checking")}${countBox("low", "No issue found")}${countBox("info", "For information")}
-    </div>
     <ul class="topic-strip" aria-label="All topics at a glance">
       ${CHECKS.map(c => {
         const res = run.results[c.id];
@@ -1150,10 +1170,10 @@ function renderSummary() {
         const name = ` ${c.title.toLowerCase()} `.includes(` ${short.toLowerCase()} `) ? c.title : `${short} (${c.title})`;
         return `<li><button type="button" class="topic ${st}" data-why="${c.id}" aria-controls="whyBox"
             aria-expanded="${run.whyId === c.id}" aria-label="${escapeHTML(name)}: ${label}. Show why">
-            <span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
+            ${STATUS_SYMBOL[st] ? `<span class="topic-symbol" aria-hidden="true">${STATUS_SYMBOL[st]}</span>` : ""}<span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
       }).join("")}
     </ul>
-    <p class="help strip-hint no-print">Tap a topic to see why. Colours match the boxes above.</p>
+    ${legend ? `<ul class="rating-legend" aria-label="Topics by rating">${legend}</ul>` : ""}
     ${whyBox()}
     ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
       <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
@@ -1419,15 +1439,18 @@ function watchSections() {
   });
 }
 
-// One button opens every topic, or closes them all when every topic is already open.
-function allTopics() { return [...document.querySelectorAll("#report details.check")]; }
+// One button: "Close all" while any topic is open; otherwise "Open problems", which opens only the topics rated
+// Look into this or Worth checking (opening every topic made a phone report about 28 screens long).
+function allTopics() { return [...document.querySelectorAll("#report details.check, #report details.clear-fold")]; }
+function problemTopics() { return [...document.querySelectorAll("#report details.check.high, #report details.check.medium")]; }
 function updateToggleAll() {
-  const list = allTopics();
-  $("toggleAll").textContent = list.length && list.every(d => d.open) ? "Close all" : "Open all";
+  const anyOpen = allTopics().some(d => d.open);
+  $("toggleAll").textContent = anyOpen ? "Close all" : "Open problems";
+  $("toggleAll").disabled = !anyOpen && !problemTopics().length;
 }
 $("toggleAll").addEventListener("click", () => {
-  const open = $("toggleAll").textContent === "Open all";
-  allTopics().forEach(d => { d.open = open; });
+  if ($("toggleAll").textContent === "Close all") allTopics().forEach(d => { d.open = false; });
+  else problemTopics().forEach(d => { d.open = true; });
   updateToggleAll();
 });
 // Remember whether the person opened or closed the gaps box, so the next redraw keeps it that way.
@@ -1435,7 +1458,7 @@ document.addEventListener("click", e => {
   const sum = e.target.closest && e.target.closest("#gapsBox > summary");
   if (sum && run) run.gapsOpen = !sum.parentElement.open;
 });
-document.addEventListener("toggle", e => { if (e.target.matches && e.target.matches("#report details.check")) updateToggleAll(); }, true);
+document.addEventListener("toggle", e => { if (e.target.matches && e.target.matches("#report details.check, #report details.clear-fold")) updateToggleAll(); }, true);
 
 // Fade the edge of the section links where more of them are hidden to the side.
 function updateNavFade() {
@@ -1456,7 +1479,11 @@ document.addEventListener("click", e => {
   e.preventDefault();
   if (a.dataset.open) {
     const d = $(a.dataset.open);
-    if (d) { d.open = true; const s = d.querySelector("summary"); if (s) s.focus({ preventScroll: true }); }
+    if (d) {
+      const fold = d.closest(".clear-fold");
+      if (fold) fold.open = true;
+      d.open = true; const s = d.querySelector("summary"); if (s) s.focus({ preventScroll: true });
+    }
   }
   target.scrollIntoView({ behavior: "smooth", block: "start" });
 });
@@ -1511,7 +1538,7 @@ function trimSaved(list) {
 
 function countChips(checks) {
   const n = s => checks.filter(c => c.status === s).length;
-  return ["high", "medium", "low"].filter(s => n(s)).map(s => `<span class="chip ${s}">${n(s)} ${STATUS_LABEL[s].toLowerCase()}</span>`).join("");
+  return ["high", "medium", "low"].filter(s => n(s)).map(s => chip(s, `${n(s)} ${STATUS_LABEL[s].toLowerCase()}`)).join("");
 }
 
 function renderSaved() {
