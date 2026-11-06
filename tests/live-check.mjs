@@ -490,34 +490,59 @@ async function testDevice(device, [postcode, place]) {
     return icons >= 13 && active === "Living" ? `${icons} icons, section bar ok` : false;
   });
 
-  await step("Finding your way: count boxes, Open all and Details", async () => {
-    // A count box goes to the first topic with that rating, opens it, and leaves it below the section bar.
-    const box = page.locator("a.count").first();
-    if (!(await box.count())) throw new Error("no count box is a link");
-    const id = await box.getAttribute("data-open");
-    await page.evaluate(i => { document.getElementById(i).open = false; }, id);
-    await box.click();
+  await step("Finding your way: legend, folded no-issue topics, Open problems and Details", async () => {
+    const r0 = await page.evaluate(() => {
+      const results = orderedResults();
+      const legend = [...document.querySelectorAll(".rating-legend .chip")].reduce((n, c) => n + parseInt(c.textContent.replace(/\D+/g, " ").trim(), 10), 0);
+      const low = results.filter(c => c.status === "low").map(c => c.id).sort();
+      const folded = [...document.querySelectorAll(".clear-fold .fold-body .slot")].map(el => el.id.slice(5)).sort();
+      const symbols = [...document.querySelectorAll("#report .chip")].filter(c => !c.querySelector(".chip-symbol")).length;
+      return { total: results.length, legend, low, folded, symbols, countBoxes: document.querySelectorAll("a.count").length };
+    });
+    // The legend counts every topic once; the count boxes are gone; every chip has its symbol.
+    if (r0.legend !== r0.total) throw new Error(`legend counts ${r0.legend} topics, expected ${r0.total}`);
+    if (r0.countBoxes) throw new Error("the old count boxes are still shown");
+    if (r0.symbols) throw new Error(`${r0.symbols} rating chip(s) without a symbol`);
+    // Every "No issue found" topic, and only those, sits in its section's folded row.
+    if (r0.low.join() !== r0.folded.join()) throw new Error(`folded [${r0.folded}] but no-issue topics are [${r0.low}]`);
+    // A link to a topic (here from the "why" box under the grid) opens it, opens its fold if it is folded,
+    // focuses it and leaves it below the section bar.
+    const first = page.locator(".topic-strip .topic").first();
+    await first.click();
+    const link = page.locator("#whyBox a[data-open]");
+    const id = await link.getAttribute("data-open");
+    await page.evaluate(i => { const d = document.getElementById(i); d.open = false; const f = d.closest(".clear-fold"); if (f) f.open = false; }, id);
+    await link.click();
     await page.waitForTimeout(1200);
     const r = await page.evaluate(i => {
       const d = document.getElementById(i), bar = document.getElementById("reportNav").getBoundingClientRect().bottom;
-      return { open: d.open, below: d.getBoundingClientRect().top >= bar - 1, focus: d.contains(document.activeElement),
+      const f = d.closest(".clear-fold");
+      return { open: d.open, foldOpen: !f || f.open, below: d.getBoundingClientRect().top >= bar - 1, focus: d.contains(document.activeElement),
         label: getComputedStyle(d.querySelector(".more-text"), "::before").content };
     }, id);
-    if (!r.open || !r.focus) throw new Error(`the count box did not open and focus ${id}`);
+    if (!r.open || !r.focus || !r.foldOpen) throw new Error(`the link did not open and focus ${id}`);
     if (!r.below) throw new Error(`${id} is hidden under the section bar`);
     if (r.label !== '"Hide"') throw new Error(`an open topic says ${r.label}, not "Hide"`);
-    // One button opens every topic, then closes them all.
-    const toggle = async () => { await page.click("#toggleAll"); return page.evaluate(() =>
-      [document.getElementById("toggleAll").textContent, [...document.querySelectorAll("#report details.check")].filter(d => d.open).length,
-       document.querySelectorAll("#report details.check").length]); };
-    const [t1, open1, all] = await toggle();
-    const [t2, open2] = await toggle();
-    if (t1 !== "Close all" || open1 !== all) throw new Error(`after Open all: "${t1}", ${open1} of ${all} open`);
-    if (t2 !== "Open all" || open2 !== 0) throw new Error(`after Close all: "${t2}", ${open2} still open`);
+    // "Close all" closes every topic and fold; "Open problems" then opens only Look into this and Worth checking.
+    const state = () => page.evaluate(() => {
+      const open = [...document.querySelectorAll("#report details.check, #report details.clear-fold")].filter(d => d.open);
+      return { text: document.getElementById("toggleAll").textContent, disabled: document.getElementById("toggleAll").disabled,
+        open: open.map(d => d.id || "fold").sort().join(),
+        problems: [...document.querySelectorAll("#report details.check.high, #report details.check.medium")].map(d => d.id).sort().join() };
+    });
+    if ((await state()).text !== "Close all") throw new Error("with a topic open, the button does not say Close all");
+    await page.click("#toggleAll");
+    const s1 = await state();
+    if (s1.open || s1.text !== "Open problems") throw new Error(`after Close all: "${s1.text}", still open: ${s1.open}`);
+    if (s1.problems) {
+      await page.click("#toggleAll");
+      const s2 = await state();
+      if (s2.open !== s1.problems || s2.text !== "Close all") throw new Error(`Open problems opened [${s2.open}], expected [${s1.problems}]`);
+    } else if (!s1.disabled) throw new Error("Open problems is not disabled when there are no problems");
     // The button stays on screen, even on a phone.
     const onScreen = await page.$eval("#toggleAll", b => { const x = b.getBoundingClientRect(); return x.left >= 0 && x.right <= innerWidth; });
-    if (!onScreen) throw new Error("the Open all button is off the screen");
-    return `${id.replace("check-", "")} opened; ${all} topics opened and closed`;
+    if (!onScreen) throw new Error("the Open problems button is off the screen");
+    return `${r0.folded.length} no-issue topics folded; ${id.replace("check-", "")} opened; ${s1.problems ? s1.problems.split(",").length : 0} problems opened`;
   });
 
   await step("Data gaps box lists every topic without an answer", async () => {
@@ -528,8 +553,7 @@ async function testDevice(device, [postcode, place]) {
       const rows = [...document.querySelectorAll(".gaps-box li")];
       const inBox = rows.map(li => li.querySelector("[data-open]").dataset.open.replace("check-", "")).sort();
       const noWay = rows.filter(li => li.querySelector(".gap-ask").textContent.replace("Instead:", "").trim().length < 10).length;
-      const inStart = [...document.querySelectorAll(".priority li .chip")].map(x => x.textContent)
-        .filter(t => t === "Check yourself" || t === "Not available").length;
+      const inStart = document.querySelectorAll(".priority li .chip.manual, .priority li .chip.error").length;
       return { want, inBox, noWay, inStart, box: !!document.querySelector(".gaps-box") };
     });
     if (r.want.join() !== r.inBox.join()) throw new Error(`box lists [${r.inBox}] but expected [${r.want}]`);
