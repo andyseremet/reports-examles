@@ -545,6 +545,51 @@ async function testDevice(device, [postcode, place]) {
     return `${r0.folded.length} no-issue topics folded; ${id.replace("check-", "")} opened; ${s1.problems ? s1.problems.split(",").length : 0} problems opened`;
   });
 
+  await step("Shorter report: Show map, More in each topic, long lists show 3 first", async () => {
+    // The map inside the report is drawn only after "Show map".
+    const before = await page.evaluate(() => ({ hidden: document.getElementById("reportMap").hidden,
+      drawn: !!document.querySelector("#reportMap .leaflet-container, #reportMap.leaflet-container") }));
+    if (!before.hidden || before.drawn) throw new Error("the report map is shown before Show map is pressed");
+    await page.click("#showReportMap");
+    await page.waitForTimeout(500);
+    const after = await page.evaluate(() => ({ hidden: document.getElementById("reportMap").hidden,
+      drawn: !!document.querySelector("#reportMap.leaflet-container"), text: document.getElementById("showReportMap").textContent.trim() }));
+    if (after.hidden || !after.drawn || after.text !== "Hide map") throw new Error(`after Show map: hidden ${after.hidden}, drawn ${after.drawn}, button "${after.text}"`);
+    await page.click("#showReportMap");
+    // Inside a topic, "What this means" and the source stay folded until "More".
+    const more = page.locator("details.check[open] .more-btn").first();
+    if (await more.count()) {
+      const box = await more.getAttribute("aria-controls");
+      const hiddenBefore = await page.$eval("#" + box, x => x.hidden);
+      await more.click();
+      const shown = await page.$eval("#" + box, x => !x.hidden && x.textContent.includes("Source:"));
+      await more.click();
+      if (!hiddenBefore || !shown) throw new Error(`"More" in ${box} did not fold and unfold the explanation and source`);
+    }
+    // A list of more than 4 sites or sales shows the first 3, and "Show all N" shows the rest.
+    const lists = await page.evaluate(() => [...document.querySelectorAll("#report .site-list")].map(l => {
+      const rows = [...l.querySelectorAll(":scope > li, tbody > tr")];
+      return { id: l.id, total: rows.length, shown: rows.filter(r => !r.hidden).length };
+    }));
+    const wrong = lists.filter(l => l.shown !== (l.total > 4 ? 3 : l.total));
+    if (wrong.length) throw new Error(wrong.map(l => `a list shows ${l.shown} of ${l.total}`).join("; "));
+    const long = lists.find(l => l.total > 4);
+    if (long) {
+      const all = await page.evaluate(id => {
+        const btn = document.querySelector(`.show-all[aria-controls="${id}"]`);
+        const d = btn.closest("details"); if (d) d.open = true;
+        const f = btn.closest(".clear-fold"); if (f) f.open = true;
+        const label = btn.textContent;
+        btn.click();
+        const shown = [...document.getElementById(id).querySelectorAll(":scope > li, tbody > tr")].filter(r => !r.hidden).length;
+        btn.click();
+        return { label, shown };
+      }, long.id);
+      if (all.label !== `Show all ${long.total}` || all.shown !== long.total) throw new Error(`"${all.label}" showed ${all.shown} of ${long.total}`);
+    }
+    return `map ok; ${lists.length} list(s), ${lists.filter(l => l.total > 4).length} shortened`;
+  });
+
   await step("Data gaps box lists every topic without an answer", async () => {
     // Every "Check yourself" or "Not available" topic must appear in the box, with a way to check it
     // instead, and not in "Start here"; with no such topics, the box is hidden.

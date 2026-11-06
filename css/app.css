@@ -364,6 +364,9 @@ table {width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:13px}
 th,td {text-align:left;padding:7px;border-bottom:1px solid var(--border);vertical-align:top}
 th {background:var(--surface-2);color:var(--heading)}
 .table-wrap {overflow-x:auto}
+.show-all-row {margin:4px 0 8px}
+.show-all {min-height:44px;padding:8px 0}
+tr[hidden],li[hidden] {display:none!important}
 .checklist .tick-heading {margin:16px 0 4px}
 .tick-count {font-size:13px;font-weight:normal;color:var(--muted);margin-left:6px;white-space:nowrap}
 .tick-count.all-done {color:var(--low);font-weight:bold}
@@ -463,6 +466,12 @@ body.has-sticky footer {padding-bottom:100px}
   table.stack-table td[data-label]::before {content:attr(data-label);display:block;font-size:11px;font-weight:bold;
     text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
   table.stack-table td:first-child {font-size:14px}
+  /* Lists of sites and sales: one compact line per row (name · distance · …), not a tall card. */
+  table.stack-table.site-list tr {display:flex;flex-wrap:wrap;gap:0 6px;padding:6px 10px;margin:4px 0}
+  table.stack-table.site-list td {width:auto;padding:0;font-size:14px}
+  table.stack-table.site-list td[data-label]::before {display:none}
+  table.stack-table.site-list td:first-child {font-weight:bold;flex-basis:100%}
+  table.stack-table.site-list td:not(:first-child) + td::before {content:"·" / "";display:inline;margin-right:6px;color:var(--muted)}
   .compare-table td {min-width:0}
 }
 
@@ -490,6 +499,8 @@ body.has-sticky footer {padding-bottom:100px}
   .check,.checklist li,.priority li,.gaps-box li {break-inside:avoid}
   .info-btn,[data-retry] {display:none!important}
   .info-body[hidden] {display:block!important}
+  tr.list-extra[hidden] {display:table-row!important}
+  li.list-extra[hidden] {display:list-item!important}
   .leaflet-control-zoom {display:none}
   @page {size:A4;margin:14mm}
 }

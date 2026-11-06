@@ -976,7 +976,7 @@ function showCheck(c, result) {
   const slot = $("slot-" + c.id);
   if (!slot) return;
   slot.innerHTML = result ? renderCheck(result) : loadingCard(c);
-  if (result) prepareTables(slot, c.title);
+  if (result) { prepareTables(slot, c.title); shortenLists(slot, c.title); }
   placeSlot(c, result ? result.status : "loading");
 }
 function placeSlot(c, status) {
@@ -1025,6 +1025,32 @@ function prepareTables(container, title) {
       [...tr.children].forEach((td, i) => { if (heads[i]) td.setAttribute("data-label", heads[i]); }));
   });
 }
+
+// Lists of sites or sales inside a topic show the first 3 (the nearest, or the most recent), then "Show all N".
+const LIST_SHOWN = 3;
+function shortenLists(container, title) {
+  container.querySelectorAll("table.site-list, ul.site-list").forEach((list, i) => {
+    const rows = [...list.querySelectorAll(list.tagName === "UL" ? ":scope > li" : "tbody > tr")];
+    if (rows.length <= LIST_SHOWN + 1) return;          // showing 3 of 4 would save nothing
+    rows.slice(LIST_SHOWN).forEach(r => { r.hidden = true; r.classList.add("list-extra"); });
+    const id = `${container.id}-list-${i}`;
+    list.id = id;
+    const label = `Show all ${rows.length}`;
+    const btn = `<p class="show-all-row no-print"><button class="link-btn show-all" type="button" aria-expanded="false" aria-controls="${id}"
+      data-label="${label}" aria-label="${label}: ${escapeHTML(title || "list")}">${label}</button></p>`;
+    (list.closest(".table-wrap") || list).insertAdjacentHTML("afterend", btn);
+  });
+}
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".show-all");
+  if (!btn) return;
+  const list = $(btn.getAttribute("aria-controls"));
+  const show = btn.getAttribute("aria-expanded") !== "true";
+  list.querySelectorAll(".list-extra").forEach(r => { r.hidden = !show; });
+  btn.setAttribute("aria-expanded", String(show));
+  btn.textContent = show ? "Show fewer" : btn.dataset.label;
+  btn.setAttribute("aria-label", btn.textContent + btn.getAttribute("aria-label").replace(/^[^:]*/, ""));
+});
 
 // "Details" with a down arrow when closed, "Hide" with an up arrow when open (the words come from css/app.css).
 function moreToggle() {
@@ -1838,7 +1864,7 @@ $("downloadHtml").addEventListener("click", () => {
   if (!reportData) return;
   const copy = $("report").cloneNode(true);
   copy.querySelectorAll("details").forEach(d => d.setAttribute("open", ""));
-  copy.querySelectorAll(".info-body").forEach(d => d.removeAttribute("hidden"));
+  copy.querySelectorAll(".info-body, .list-extra").forEach(d => d.removeAttribute("hidden"));
   copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button, #whyBox, .send-box").forEach(b => b.remove());
   copy.querySelectorAll("#notesText").forEach(t => t.remove());
   copy.querySelectorAll(".notes-print").forEach(d => { d.removeAttribute("aria-hidden"); d.classList.add("notes-download"); });
