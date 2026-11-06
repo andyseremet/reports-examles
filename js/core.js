@@ -133,6 +133,8 @@ const STATUS_LABEL = {
   manual: "Check yourself",
   error: "Not available"
 };
+// A symbol for each rating, shown next to its colour, so the rating does not rely on colour alone.
+const STATUS_SYMBOL = { high: "❗", medium: "⚠️", low: "✓", info: "ℹ️", manual: "?", error: "✕" };
 // Small line icons for buttons (decorative: the button text says what it does).
 const ICON_PATHS = {
   mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/>',
