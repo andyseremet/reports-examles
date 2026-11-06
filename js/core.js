@@ -133,6 +133,8 @@ const STATUS_LABEL = {
   manual: "Check yourself",
   error: "Not available"
 };
+// A symbol for each rating, shown next to its colour, so the rating does not rely on colour alone.
+const STATUS_SYMBOL = { high: "❗", medium: "⚠️", low: "✓", info: "ℹ️", manual: "?", error: "✕" };
 // Small line icons for buttons (decorative: the button text says what it does).
 const ICON_PATHS = {
   mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/>',
@@ -150,7 +152,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "1.28.1";
+const APP_VERSION = "1.29.0";
 const APP_UPDATED = "5 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;

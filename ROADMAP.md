@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.28.1** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.29.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 5 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.28.1)
+## Part 1: What the app does today (version 1.29.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -56,9 +56,11 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 ### The report
 - Five plain-English ratings: **Look into this / Worth checking / No issue found / For information / Check yourself**.
 - Each topic says what it means, what to do next, and how current its data is.
-- Topic cards show **Details ▾** (or **Hide ▴** when open); one **Open all / Close all** button stays on the section
-  bar, which fades at the edge on a phone to show it scrolls (1.23.0).
-- An overall verdict, count boxes that go to the first topic with that rating, a "Start here" list, and a box for every topic with no real answer and who to ask
+- Topic cards show **Details ▾** (or **Hide ▴** when open); one **Open problems / Close all** button stays on the
+  section bar, which fades at the edge on a phone to show it scrolls (1.23.0; Open problems since 1.29.0).
+- Every rating has a symbol as well as a colour (❗ ⚠️ ✓ ℹ️ ?), and topics with no issue found fold into one row at the
+  end of their section (1.29.0). A phone report with topics closed went from 17 to 12 screens.
+- An overall verdict, the topic grid with one legend line of rating counts (1.29.0, replacing the count boxes), a "Start here" list, and a box for every topic with no real answer and who to ask
   instead, which folds away with **Details / Hide** and starts closed when it lists more than 3 topics (1.25.0).
 - **At the viewing:** up to 12 things to look for and ask on the day, reached with the **Viewing** button.
 - A checklist for the seller and conveyancer; ticks are remembered for each property, and each list shows, for
@@ -100,8 +102,14 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ## Part 2: Planned next steps
 
-Nothing is scheduled: every item from the 5 November 2026 quizzes has shipped, including Scotland (1.27.0) and Northern Ireland (1.28.0). The next items will be chosen in a new quiz
-round (Part 3 lists ideas). Each is planned with a short quiz before it is built, and each version keeps the same habits:
+**Shorter reports on phones** (quiz of 6 November 2026). 1.29.0 shipped the summary and topic changes. Still to come:
+- **1.30.0:** once a report is open, the search map and saved list shrink to one line ("Barnsley test · Change · Saved
+  (3)"); notes, the viewing checklist, the conveyancer box and seller questions become one folded "Next steps" section
+  with progress counts; long lists inside topics show one-line rows, the nearest 3 first, then "Show all"; the map
+  inside the report appears after "Show map"; in each topic, "What this means" and the source fold behind "More".
+- **1.31.0:** a bottom bar on phones: Summary · Problems · All topics · Next steps.
+
+Other ideas are listed in Part 3. Each is planned with a short quiz before it is built, and each version keeps the same habits:
 bump the version number and the offline cache name together, update the README, add new behaviour to the daily check,
 and never weaken a test to get a pass.
 

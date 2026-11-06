@@ -259,17 +259,23 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .verdict {font-size:18px;margin:10px 0}
 .progress-bar {height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin:8px 0 14px}
 .progress-bar span {display:block;height:100%;background:var(--teal);transition:width .3s}
-.counts {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0 16px}
-.count {border-radius:8px;padding:10px 12px}
-.count strong {display:block;font-size:24px}
-.count span {font-size:13px}
-.count.high {background:var(--high-bg);color:var(--high)}
-.count.medium {background:var(--med-bg);color:var(--med)}
-.count.low {background:var(--low-bg);color:var(--low)}
-.count.info {background:var(--info-bg);color:var(--info)}
-a.count {text-decoration:none;border:1px solid transparent;display:block}
-a.count:hover {border-color:currentColor}
-.count-go {display:block;font-size:13px;font-weight:bold;margin-top:2px;text-decoration:underline}
+/* One line under the topic grid: each rating's symbol, colour and count. */
+.rating-legend {list-style:none;padding:0;margin:-6px 0 16px;display:flex;flex-wrap:wrap;gap:6px}
+.rating-legend .chip {font-size:13px;padding:3px 10px}
+.chip-symbol {margin-right:4px}
+.topic {position:relative}
+/* The tile's symbol is drawn by CSS with empty alternative text, so it is not part of the button's spoken name. */
+.topic::after {position:absolute;top:3px;right:5px;font-size:11px;line-height:1}
+.topic.high::after {content:"❗" / ""} .topic.medium::after {content:"⚠️" / ""} .topic.low::after {content:"✓" / ""}
+.topic.info::after {content:"ℹ️" / ""} .topic.manual::after {content:"?" / ""} .topic.error::after {content:"✕" / ""}
+/* Topics with "No issue found" fold into one row at the end of their section. */
+details.clear-fold {border:1px solid var(--border);border-left:5px solid var(--low);border-radius:8px;margin:10px 0;background:var(--surface)}
+details.clear-fold > summary {cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 14px;font-weight:bold;color:var(--low)}
+details.clear-fold > summary::-webkit-details-marker {display:none}
+details.clear-fold > summary:hover {background:var(--hover)}
+.fold-names {font-weight:normal;color:var(--text)}
+details.clear-fold > .fold-body {padding:0 8px 8px}
 .priority {list-style:none;padding:0;margin:0}
 .priority li {margin:6px 0;padding:10px 12px;border-radius:8px;border:1px solid var(--border);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .priority li a {font-weight:bold}
@@ -317,16 +323,18 @@ a.count:hover {border-color:currentColor}
 details.check > summary {cursor:pointer;padding:12px 14px;list-style:none;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
 /* Long topic names wrap instead of pushing the rating label off narrow screens (WCAG 1.4.10 Reflow). */
 details.check > summary h3 {overflow-wrap:anywhere}
+/* The rating label may wrap too, so its symbol never pushes it off a 320 px screen with large text. */
+details.check > summary .chip {white-space:normal;text-align:center}
 details.check > summary::-webkit-details-marker {display:none}
 details.check > summary .found {grid-column:1;font-size:14px}
 details.check > summary:hover {background:var(--hover)}
 /* "Details" with a down arrow when closed, "Hide" with an up arrow when open. */
-details.check > summary .more,.gaps-box > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
+details.check > summary .more,.gaps-box > summary .more,.clear-fold > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
   font-size:14px;font-weight:bold;color:var(--link);white-space:nowrap}
-details.check > summary .more-text::before,.gaps-box > summary .more-text::before {content:"Details"}
-details.check[open] > summary .more-text::before,.gaps-box[open] > summary .more-text::before {content:"Hide"}
-details.check > summary .more svg,.gaps-box > summary .more svg {transition:transform .15s}
-details.check[open] > summary .more svg,.gaps-box[open] > summary .more svg {transform:rotate(180deg)}
+details.check > summary .more-text::before,.gaps-box > summary .more-text::before,.clear-fold > summary .more-text::before {content:"Details"}
+details.check[open] > summary .more-text::before,.gaps-box[open] > summary .more-text::before,.clear-fold[open] > summary .more-text::before {content:"Hide"}
+details.check > summary .more svg,.gaps-box > summary .more svg,.clear-fold > summary .more svg {transition:transform .15s}
+details.check[open] > summary .more svg,.gaps-box[open] > summary .more svg,.clear-fold[open] > summary .more svg {transform:rotate(180deg)}
 @media (prefers-reduced-motion:reduce) {details.check > summary .more svg,.gaps-box > summary .more svg {transition:none}}
 .check-body {padding:0 16px 14px;font-size:14px}
 .check-body p {margin:4px 0 8px}
@@ -388,7 +396,6 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
 
 
 /* ---------- topic strip ---------- */
-.strip-hint {margin:-10px 0 14px}
 .topic-strip {display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px;margin:4px 0 16px;padding:0;list-style:none}
 .topic-strip li {display:flex}
 .topic-strip .topic {flex:1}
