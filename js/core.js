@@ -150,7 +150,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "1.28.0";
+const APP_VERSION = "1.28.1";
 const APP_UPDATED = "5 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -284,7 +284,10 @@ const PACED_HOSTS = [
   { prefix: "https://inspire.hes.scot/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 },
   { prefix: "https://ogc.nature.scot/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 },
   // Northern Ireland: DAERA's map server gets about 12 requests for an address there.
-  { prefix: "https://gis.daera-ni.gov.uk/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 }
+  { prefix: "https://gis.daera-ni.gov.uk/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 },
+  // SEPA: a Scottish report asks it about 16 things (flood maps, noise, waste sites), and it sometimes slows to
+  // 10-20 seconds an answer (6 November 2026), so they go a few at a time, with a longer wait and one more try.
+  { prefix: "https://map.sepa.org.uk/", maxAtOnce: 4, gapMs: 100, retryWaitsMs: [1500, 4000], timeoutMs: 30000 }
 ];
 const pacing = new Map();
 

@@ -142,7 +142,8 @@ screenshots and sample reports are kept for 14 days with each run.
 The Environment Agency map server (surface water, noise, landfill, coastal erosion) briefly refuses an address that sends more
 than about 15 requests a minute, which happens to GitHub's shared test machines. The test therefore waits a minute
 before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
-answer and retries a refusal or a slow answer. A topic that still fails is tried once more by the page after 20
+answer and retries a refusal or a slow answer. DataMapWales, Historic Environment Scotland, NatureScot, SEPA and DAERA
+get the same treatment with up to 4 requests at a time and 30 seconds to answer. A topic that still fails is tried once more by the page after 20
 seconds. If it then shows "Try again", the test presses it once, as a person would; a topic that still fails after
 that fails the test.
 
