@@ -22,9 +22,17 @@ mkdirSync(OUT, { recursive: true });
 
 const results = [];
 // pass: true, false, or "warn". A warning is shown in the summary but does not fail the run.
+// QUIET=1 prints only warnings, failures and the total (shorter output to read). On GitHub, each failure
+// and warning is also an annotation, so it shows on the pull request without opening the full log.
+const QUIET = process.env.QUIET === "1";
+const ON_GITHUB = process.env.GITHUB_ACTIONS === "true";
+const annotation = text => String(text).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
 const record = (group, name, pass, info = "") => {
   results.push({ group, name, pass: pass === "warn" ? true : pass, warn: pass === "warn", info: String(info).slice(0, 900) });
-  console.log(`${pass === "warn" ? "WARN" : pass ? "PASS" : "FAIL"}  [${group}] ${name}${info ? "  – " + String(info).slice(0, 160) : ""}`);
+  const label = pass === "warn" ? "WARN" : pass ? "PASS" : "FAIL";
+  if (!QUIET || label !== "PASS") console.log(`${label}  [${group}] ${name}${info ? "  – " + String(info).slice(0, 160) : ""}`);
+  if (ON_GITHUB && label !== "PASS")
+    console.log(`::${label === "FAIL" ? "error" : "warning"} title=${annotation(`[${group}] ${name}`).replace(/[,:]/g, " ")}::${annotation(String(info).slice(0, 300))}`);
 };
 
 // The Environment Agency map server sometimes refuses GitHub's shared test machines
