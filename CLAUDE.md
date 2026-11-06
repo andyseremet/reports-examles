@@ -101,6 +101,9 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   that change `index.html`, `status.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
   Daily and manual runs on `main` then publish `status.json` to the `status` branch for the status page. A failed daily or manual run
   opens or updates a "Live check failed" issue.
+- Steps that only test data functions (no screen layout) belong in `testCountryData()` in `tests/live-check.mjs`:
+  they run once, during the first pause, and must send nothing to the Environment Agency map server. Steps that
+  check the page on a phone, tablet or desktop stay in `testDevice()`.
 - Never skip, remove or loosen a test step to get a pass. The only allowed `"warn"` result is the Environment Agency
   map server refusing GitHub's machines with HTTP 403.
 - Outside services (BGS, Environment Agency, Open-Meteo, data.police.uk) have outages. Before changing code for a
