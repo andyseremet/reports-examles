@@ -48,9 +48,12 @@ official checkers.
 - **Report:** results appear topic by topic as the data arrives. A topic whose data fails is tried once more by itself
   after 20 seconds; if it fails again, it shows a **Try again** button. If the report is still loading after 8
   seconds, the summary names the services it is waiting for, and their topics.
-  A section bar stays at the top while scrolling, with one **Open all / Close all** button that stays in view; on a
-  phone its edge fades to show that it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open), and the
-  count boxes in the summary go to the first topic with that rating. There is also a back-to-top button.
+  A section bar stays at the top while scrolling, with one **Open problems / Close all** button that stays in view
+  (Open problems opens only the topics rated Look into this or Worth checking); on a phone its edge fades to show that
+  it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open). The summary shows the topic grid with one
+  legend line (each rating's symbol, colour and count), then "Start here". Every rating has a symbol as well as a
+  colour (❗ Look into this, ⚠️ Worth checking, ✓ No issue found, ℹ️ For information, ? Check yourself), and topics with
+  no issue found fold into one row at the end of their section. There is also a back-to-top button.
 - **Save and share:** every report is saved on your device (nothing is sent anywhere). Reopen saved properties,
   **compare two or three side by side** (with a switch to show only the topics that differ), tick off the checklists (remembered per property; each list shows, for example, "2 of 7 done"), and share with the phone's share menu.
 - **Clear at a glance:** a row of topic icons shows every result's colour; tap one to see the reason in one line,
@@ -135,7 +138,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 
 It checks that all 37 outside data services and the 2 data files saved with the app still answer and allow web pages to read them, then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
-full screen, the offline message, the section bar, the topic icons, the count boxes and Open all / Close all, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
+full screen, the offline message, the section bar, the topic icons, the rating legend, the no-issue folds and Open problems / Close all, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads. The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices is tested
 once, on the desktop page, during the pause before the first report (it does not depend on the screen size, and it must
 send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files
