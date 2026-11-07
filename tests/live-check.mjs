@@ -634,6 +634,36 @@ async function testDevice(device, [postcode, place]) {
     return `map ok; ${lists.length} list(s), ${lists.filter(l => l.total > 4).length} shortened`;
   });
 
+  await step("Phone tab bar: Summary, Problems, All topics, Next steps", async () => {
+    const phone = await page.evaluate(() => innerWidth <= 600);
+    const shown = await page.$eval("#tabBar", x => getComputedStyle(x).display !== "none");
+    if (!phone) { if (shown) throw new Error("the phone tab bar shows on a wider screen"); return "not shown (wider screen)"; }
+    if (!shown) throw new Error("the tab bar is not shown on a phone");
+    const labels = await page.$$eval("#tabBar a, #tabBar button", x => x.map(b => b.textContent.replace(/\s+/g, " ").trim()));
+    if (labels.length !== 4 || !/Problems \(\d+\)/.test(labels[1])) throw new Error(`the tab bar says: ${labels.join(" | ")}`);
+    // A jump lands below the top bars and above the tab bar; Back to top sits above the tab bar.
+    const landed = async () => page.evaluate(() => {
+      const bar = document.getElementById("tabBar").getBoundingClientRect().top, top = document.getElementById("reportNav").getBoundingClientRect().bottom;
+      const t = document.getElementById("nextSteps").getBoundingClientRect(), up = document.getElementById("toTop").getBoundingClientRect();
+      return { below: t.top >= top - 1, above: t.top < bar, toTop: up.height === 0 || up.bottom <= bar + 1 };
+    });
+    await page.click('#tabBar a[data-tab="nextSteps"]');
+    await page.waitForTimeout(1200);
+    const r = await landed();
+    if (!r.below || !r.above) throw new Error("Next steps did not land between the top bars and the tab bar");
+    if (!r.toTop) throw new Error("the Back to top button covers the tab bar");
+    // "Problems" opens the topics to look into and goes to the first; with none, it is greyed out.
+    const n = await page.evaluate(() => problemTopics().length);
+    if (!n) { if (!(await page.isDisabled("#tabProblems"))) throw new Error("Problems is not greyed out with no problems"); return "no problems here"; }
+    await page.click("#tabProblems");
+    await page.waitForTimeout(1200);
+    const p = await page.evaluate(() => { const d = document.activeElement.closest("details.check");
+      return { id: d && d.id, open: d && d.open, problem: d && (d.classList.contains("high") || d.classList.contains("medium")),
+        visible: d && d.getBoundingClientRect().top >= document.getElementById("reportNav").getBoundingClientRect().bottom - 1 }; });
+    if (!p.problem || !p.open || !p.visible) throw new Error(`Problems went to ${p.id || "nothing"} (open ${p.open}, in view ${p.visible})`);
+    return `${labels.join(" · ")}; Problems went to ${p.id.replace("check-", "")}`;
+  });
+
   await step("Data gaps box lists every topic without an answer", async () => {
     // Every "Check yourself" or "Not available" topic must appear in the box, with a way to check it
     // instead, and not in "Start here"; with no such topics, the box is hidden.

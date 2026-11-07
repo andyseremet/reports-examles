@@ -673,12 +673,14 @@ const REPORT_PLACEHOLDER = $("report").innerHTML;
 // With a report open, the search map and the saved list shrink to one line: "📍 Name · Change · Saved (3)".
 // "Change" and "Saved" open them again above the report; running a new check shrinks them again.
 function showPlaceBar(loc) {
+  document.body.classList.add("report-open");     // also shows the phone tab bar (css/app.css)
   $("placeName").textContent = loc.name;
   $("placeBar").classList.remove("hidden");
   setPanelOpen("search", false);
   setPanelOpen("saved", false);
 }
 function hidePlaceBar() {
+  document.body.classList.remove("report-open");
   $("placeBar").classList.add("hidden");
   document.body.classList.remove("hide-search", "hide-saved");
 }
@@ -1529,6 +1531,8 @@ function watchSections() {
       if (!entry.isIntersecting) return;
       const id = entry.target.id;
       document.querySelectorAll("#reportNav a").forEach(a => a.classList.toggle("active", a.dataset.nav === id));
+      const tab = id.startsWith("group-") ? "group-flood" : id;
+      document.querySelectorAll("#tabBar [data-tab]").forEach(a => a.classList.toggle("active", a.dataset.tab === tab));
       const active = document.querySelector(`#reportNav a[data-nav="${id}"]`);
       if (active) {
         const box = $("navLinks"), l = active.offsetLeft - box.offsetLeft;
@@ -1547,7 +1551,24 @@ function watchSections() {
 // Look into this or Worth checking (opening every topic made a phone report about 28 screens long).
 function allTopics() { return [...document.querySelectorAll("#report details.check, #report details.clear-fold")]; }
 function problemTopics() { return [...document.querySelectorAll("#report details.check.high, #report details.check.medium")]; }
+// Phone tab bar: "Problems (2)" opens the topics rated Look into this or Worth checking and goes to the first one.
+function updateTabBar() {
+  const n = problemTopics().length;
+  $("tabProblemsText").textContent = `Problems (${n})`;
+  $("tabProblems").disabled = !n;
+}
+$("tabProblems").addEventListener("click", () => {
+  const list = problemTopics();
+  if (!list.length) return;
+  list.forEach(d => { d.open = true; });
+  updateToggleAll();
+  const first = list.sort((a, b) => (a.classList.contains("high") ? 0 : 1) - (b.classList.contains("high") ? 0 : 1))[0];
+  first.scrollIntoView({ behavior: "smooth", block: "start" });
+  first.querySelector("summary").focus({ preventScroll: true });
+});
+
 function updateToggleAll() {
+  updateTabBar();
   const anyOpen = allTopics().some(d => d.open);
   $("toggleAll").textContent = anyOpen ? "Close all" : "Open problems";
   $("toggleAll").disabled = !anyOpen && !problemTopics().length;
@@ -1577,7 +1598,7 @@ window.addEventListener("resize", updateNavFade);
 // section without adding steps to the browser history, and open the topic they point to.
 document.addEventListener("click", e => {
   const a = e.target.closest('a[href^="#"]');
-  if (!a || !a.closest("#report, #reportNav, #toolbar")) return;
+  if (!a || !a.closest("#report, #reportNav, #toolbar, #tabBar")) return;
   const target = document.getElementById(a.getAttribute("href").slice(1));
   if (!target) return;
   e.preventDefault();

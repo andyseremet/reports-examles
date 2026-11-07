@@ -26,6 +26,8 @@ const ACTIONS = [
   ["More in a topic", async p => { const b = p.locator("details.check[open] .more-btn").first(); if (await b.count()) await b.click(); }],
   ["Next steps opened", async p => { for (const s of await p.locator(".step-fold > summary").all()) await s.click(); }],
   ["tick", async p => { const b = p.locator("#viewing input[data-tick]").first(); if (await b.count()) await b.check(); }],
+  ["tab bar: Next steps, then Problems", async p => { if (await p.isVisible("#tabBar")) {
+    await p.click('#tabBar a[data-tab="nextSteps"]'); if (await p.isEnabled("#tabProblems")) await p.click("#tabProblems"); } }],
   ["Change (search map shown)", p => p.click("#changePlace")],
   ["Saved (saved list shown)", p => p.click("#showSaved")],
   ["Move to another device", p => p.click("#moveDevice summary")],
