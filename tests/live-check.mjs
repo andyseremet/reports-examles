@@ -951,6 +951,7 @@ async function testDevice(device, [postcode, place]) {
     await page.emulateMedia({ media: "print" });
     await page.evaluate(() => { document.body.classList.add("print-summary"); dispatchEvent(new Event("beforeprint")); });
     await page.waitForTimeout(800);
+    try {   // the page is always put back on screen, even if a check below fails (later steps need it)
     // On paper: page 1 has the at-a-glance table (one row per topic); every page gets the place, date and page number;
     // app instructions, the tappable grid and the "saved results" note are left out.
     const paper = await page.evaluate(() => {
@@ -974,8 +975,10 @@ async function testDevice(device, [postcode, place]) {
     const onPaper = Object.entries({ grid: paper.grid, "how to read": paper.howTo, "saved note": paper.saved, "More button": paper.more, "Try again": paper.tryAgain }).filter(([, v]) => v).map(([k]) => k);
     if (onPaper.length) throw new Error("printed but should not be: " + onPaper.join(", "));
     await page.pdf({ path: `${OUT}/${device.name.replace(/\W+/g, "-")}-summary.pdf`, format: "A4" });
-    await page.emulateMedia({ media: "screen" });
-    await page.evaluate(() => { document.body.classList.remove("print-summary"); dispatchEvent(new Event("afterprint")); });
+    } finally {
+      await page.emulateMedia({ media: "screen" });
+      await page.evaluate(() => { document.body.classList.remove("print-summary"); dispatchEvent(new Event("afterprint")); });
+    }
     // Open the "Save or print" menu, as a person would, then choose Download report.
     await page.click("#saveMenuBtn");
     const [download] = await Promise.all([page.waitForEvent("download"), page.click("#downloadHtml")]);
