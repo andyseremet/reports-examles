@@ -1,20 +1,23 @@
 # CLAUDE.md
 
-Property Location Check: a free report on a home's location in England, Wales, Scotland and Northern Ireland from official open data, for non-technical
-home buyers. Static site with no build step. GitHub Pages serves `main` at https://andyseremet.github.io/reports-examles/.
+Property Location Check: a free report on a home's location in England, Wales, Scotland and Northern Ireland, from
+official open data, for non-technical home buyers. A static site of plain files with **no build step**. GitHub Pages
+serves `main` at https://andyseremet.github.io/reports-examles/.
 
 ## Code layout
 
 - `index.html` (the page), `css/app.css` (all styles), `sw.js` (offline support), `data/` (fixed data saved with the
   app). The README table "How the code is organised" says what each file holds.
-- `js/`: plain scripts that share one global scope (no modules, no build step), loaded by `index.html` in this order:
-  `core.js` (sources, links, settings, `APP_VERSION`, helpers) → `data.js` (fetch functions, `TASKS`) →
-  `checks/flood.js`, `ground.js`, `living.js`, `planning.js` (one per report section) → `checks/index.js` (shared
-  check helpers, `CHECKS`, `TOPIC_ICONS`, `COVERAGE`) → `search.js` (map, search) → `saved.js` (`store`, saved
-  properties, compare, guide) → `report.js` (running the checks, recent answers, the report) → `print.js` (share,
-  download, print) → `app.js` (larger text, install, start-up).
-  Code that runs at load time may only use what an earlier file defines. A new JS file must be added to `index.html`
-  and to `SHELL` in `sw.js`.
+- `js/`: plain scripts sharing one global scope (no modules), loaded by `index.html` in this order:
+  1. `core.js`: sources, links, settings, `APP_VERSION`, helpers (`term()`, `GLOSSARY`)
+  2. `data.js`: fetch functions, backups, `TASKS`
+  3. `checks/flood.js`, `ground.js`, `living.js`, `planning.js`: one per report section
+  4. `checks/index.js`: shared check helpers, `CHECKS`, `TOPIC_ICONS`, `COVERAGE`
+  5. `search.js` (map, search) → `saved.js` (`store`, saved properties, compare, guide) → `report.js` (running the
+     checks, recent answers, the report) → `print.js` (share, download, print) → `app.js` (larger text, install, start-up)
+
+  Code that runs at load time may only use what an earlier file defines. A new JS file goes in `index.html` and in
+  `SHELL` in `sw.js`.
 - **Wales:** land use, coast, noise, air, planning and nature use DataMapWales (`datamap.gov.wales`, paced in
   `PACED_HOSTS`): `getWalesSites`, `getWalesNoise`, `getWalesCoast`, `getCoalTips` in `js/data.js`, and `isWales(R)`
   branches in the checks. England-only fetches return early for Wales instead of asking England's servers.
@@ -25,15 +28,16 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Northern Ireland:** planning, nature, noise and coast use the Department for Communities (Historic Environment
   Division) and DAERA (`gis.daera-ni.gov.uk`): `getNISites`, `getNINoise`, `getNICoast`, and `isNI(R)`. Use the official
   HED service, not the NIE Networks copies on ArcGIS Online. Flood maps, radon, landslides and coal are not open there.
-- **Backups:** when planning.data.gov.uk fails, `withBackup`/`planningBackup` (`js/data.js`) ask Historic England
-  (heritage and conservation areas) and Natural England for nature, and the Environment Agency for the flood zone at the pin (England only, never on a normal day).
-  When postcodes.io fails, `placeFromOsm` gives the country and place from OpenStreetMap; when Nominatim address search
-  fails, Photon answers (`searchPhoton` in `js/search.js`). Every task's answer is kept 7 days per place
-  (`rememberAnswer`/`recentAnswer` in `js/report.js`) and used, dated, only when that service fails. The answer rides on the failure as
-  `R[key].backup`; only `checkPlanning`/`checkNature`/`checkFlood` read it (`backupFor`, `planningList`). Any topic whose service
-  fails shows the place's last saved answer, dated (`savedInstead` in `js/report.js`).
-- `glossary.html`: "What the words mean", plain HTML with no script. `term()` (`js/core.js`) links a word to it through
-  `GLOSSARY` (word → id); every id needs its `<dt id>` on the page (the daily check compares them).
+- **Backups** (used only when a service fails, never on a normal day):
+  - planning.data.gov.uk (England): `withBackup`/`planningBackup` (`js/data.js`) ask Historic England (heritage,
+    conservation areas), Natural England (nature) and the Environment Agency (flood zone at the pin). The answer rides
+    on the failure as `R[key].backup`; only `checkPlanning`/`checkNature`/`checkFlood` read it (`backupFor`, `planningList`).
+  - postcodes.io: `placeFromOsm` gives the country and place from OpenStreetMap. Nominatim address search: Photon
+    (`searchPhoton`, `js/search.js`).
+  - Any service: each task's answer is kept 7 days per place (`rememberAnswer`/`recentAnswer`, `js/report.js`), and the
+    topic shows the place's last saved answer, dated (`savedInstead`).
+- `glossary.html`: "What the words mean", plain HTML with no script. `term()` links a word to it through `GLOSSARY`
+  (word → id); every id needs its `<dt id>` on the page (the daily check compares them).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
   `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
   in `SERVICES` (`tests/live-check.mjs`) also needs its report topics in `SERVICE_TOPICS`.
@@ -46,16 +50,16 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   Fix any error it reports before going on.
 - Full test: `npm install --no-save playwright@1.49.1 && npx playwright install chromium` (in a cloud session use the
   preinstalled browser instead: `npm install --no-save playwright@$(node -p "require('/opt/node-tools/node_modules/playwright/package.json').version")`), then
-  `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 node tests/live-check.mjs` (local copy) or `QUIET=1 node
-  tests/live-check.mjs` (live site, about 5 minutes). `QUIET=1` prints only warnings, failures and the total.
-- **Saving tokens:** run tests with `QUIET=1`. On a failed GitHub check, read its annotations (one per failed
-  check) or `get_job_logs` with a small `tail_lines`, not the whole log. Search files instead of reading them whole.
+  `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 node tests/live-check.mjs` (local copy, about 8 minutes) or
+  `QUIET=1 node tests/live-check.mjs` (live site). Do not edit files while it runs: a mixed run fails at random.
+- **Saving tokens:** `QUIET=1` prints only warnings, failures and the total. On a failed GitHub check, read its
+  annotations or `get_job_logs` with a small `tail_lines`, not the whole log. Search files instead of reading them whole.
 - There is no way to run one test step. To check one behaviour, write a short Playwright script outside the repo,
   and answer `https://environment.data.gov.uk/spatialdata/**` with `{"features":[]}` so the report finishes fast.
-- After a merge: `bash tests/after-merge.sh` (restarts the branch from `origin/main` and pushes it, waits for Pages to
-  serve the new `APP_VERSION`/`CACHE`, runs the live check). Run it in the background; it can take 20 minutes. A stop
-  hook "unpushed commit" warning while it runs is a timing clash: check with `git fetch` + `git rev-list --count
-  origin/<branch>..HEAD` before pushing anything.
+- After a merge: `bash tests/after-merge.sh`, in the background (up to 20 minutes). It restarts the branch from
+  `origin/main` and pushes it, waits for Pages to serve the new `APP_VERSION`/`CACHE`, and runs the live check. Edit
+  nothing while it runs. A stop hook "unpushed commit" warning meanwhile is a timing clash: check with `git fetch` +
+  `git rev-list --count origin/<branch>..HEAD` before pushing anything.
 - Accessibility re-check (by hand, after visual changes; not in CI): `npm install --no-save axe-core`, then
   `node tests/a11y-check.mjs` with the local server running (about 10 minutes). It scans WCAG 2.2 AA on the start
   page, a report, `status.html` and `glossary.html` at 1280 px, 320 px and phone, light and dark, normal and A+ text, and checks
@@ -71,8 +75,6 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   `policeDataMissing` and `checkLanduse`.
 - **Outside data stays live.** Save a copy in `data/` only for a finished official dataset that will never be
   revised (for example Census 2021), and ask the owner first. Say in `README.md` how the file was made.
-- **Sticky bars:** keep focus clear of them with the `:focus` `scroll-margin` rule and `--sticky-top`/`--bottom-clear`
-  in `css/app.css`. Never use `html { scroll-padding }`: it stops the section bar's smooth scroll.
 - **Environment Agency map server** (`environment.data.gov.uk/spatialdata`): it refuses addresses that send more than
   about 15 requests a minute. Do not add requests to it, and keep its pacing in `PACED_HOSTS`. The one agreed exception
   (owner, 7 November 2026): the flood zone backup (`floodZoneBackup`), one request, only when planning.data.gov.uk fails.
@@ -89,7 +91,8 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - Undo, not "Are you sure?": an action that deletes something offers Undo for about 10 seconds.
 - Short messages ("Saved ✓", "Copied", "Removed …") sit in a `role="status"` or `aria-live="polite"` element.
 - A control's spoken name (`aria-label`) starts with its visible words (WCAG 2.5.3, voice control).
-- In-page jumps land below the sticky bars: give the target `scroll-margin-top` (see the rule in `css/app.css`).
+- **Sticky bars:** focus and in-page jumps land clear of them (`scroll-margin`, `--sticky-top`/`--bottom-clear` in
+  `css/app.css`). Never use `html { scroll-padding }`: it stops the section bar's smooth scroll.
 
 ## Visual style (owner, 7 November 2026)
 
@@ -114,14 +117,13 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
 - **Free for everyone:** every feature stays free. Never add a paywall, forced payment, adverts or accounts. Support
   for the app's development is always voluntary, and only ever as a separate optional module that the app reaches
   through hooks, so the app works the same without it (see `MONETISATION.md`).
-- **Steady changes:** improve in small steps; no redesigns, new libraries or build step without asking. English only.
+- **Steady changes:** improve in small steps; ask before a redesign, a new library or a build step. English only.
 - **Small commits:** one change per commit, with a clear message.
-- **Pull requests:** open one only when asked, and never merge or approve; the owner merges. Then watch it
-  (`subscribe_pr_activity` plus one 50-minute safety check-in). After the merge: cancel the check-in and run
-  `tests/after-merge.sh`.
-- **Check the live page after every merge** (`tests/after-merge.sh`) and report the pass count in plain English; an
-  Environment Agency HTTP 403 "warn" is the only allowed non-pass. If Pages has not published within about 10
-  minutes (no new "pages build and deployment" run), ask the owner to press Save in Settings → Pages.
+- **Pull requests:** open one only when asked, and never merge or approve; the owner merges. Watch it
+  (`subscribe_pr_activity` plus one 50-minute safety check-in).
+- **After every merge:** cancel the check-in, run `tests/after-merge.sh` and report the pass count in plain English.
+  If Pages has not published within about 10 minutes (no new "pages build and deployment" run), ask the owner to press
+  Save in Settings → Pages.
 - **Default branch stays `main`:** scheduled runs use the default branch, and the status page publishes only from `main`.
 - **Keep this file current:** at the end of a task, suggest any instruction the owner repeated as a new rule here.
 
@@ -129,16 +131,20 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
 
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
   that change `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
-  Daily and manual runs on `main` then publish `status.json` to the `status` branch for the status page.
-  **Pull requests leave out the 41 report data services** (`DATA_SERVICES=0`; the list is `data/data-services.csv`),
-  at the owner's request: they run daily, and by hand with the "Check the report data services" box (ticked by default).
-  The report steps still use the live services, so an outage can still fail a pull request. A failed daily or manual run
-  opens or updates a "Live check failed" issue.
+  A failed daily or manual run opens or updates a "Live check failed" issue.
+- **Daily and manual runs** check everything live. On `main` they then publish to the `status` branch: `status.json`
+  (the status page) and `recordings.json` (the report pages' outside answers, `RECORD=1`; merged by
+  `tests/merge-recordings.mjs`, each answer kept up to 14 days).
+- **Pull requests** (at the owner's request) leave out the 41 report data services (`DATA_SERVICES=0`; the list is
+  `data/data-services.csv`; they run daily, and by hand with the "Check the report data services" box, ticked by
+  default). Their report pages are answered from `recordings.json` (`REPLAY`), so an outside outage cannot turn them
+  red; a question never recorded (for example a new topic) is asked live and named in the "Report data from the daily
+  recording" result. A test step's own stub (`page.route`) always comes first.
 - Steps that only test data functions (no screen layout) belong in `testCountryData()` in `tests/live-check.mjs`:
   they run once, during the first pause, and must send nothing to the Environment Agency map server. Steps that
   check the page on a phone, tablet or desktop stay in `testDevice()`.
-- Never skip, remove or loosen a test step to get a pass. The only allowed `"warn"` result is the Environment Agency
-  map server refusing GitHub's machines with HTTP 403.
+- Never skip, remove or loosen a test step to get a pass. The only allowed non-pass is a `"warn"` for the Environment
+  Agency map server refusing GitHub's machines with HTTP 403.
 - Outside services (BGS, Environment Agency, Open-Meteo, data.police.uk) have outages. Before changing code for a
   failed check, ask the service directly whether the fault is theirs. If a service refuses GitHub's machines but
   answers directly (HM Land Registry sometimes does; check with `curl` from the session), re-run the job once and
