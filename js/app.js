@@ -892,6 +892,7 @@ function finishRun() {
   renderNotes();
   reportData = buildReportData();
   if (!run.snapshot) { saveCurrentReport(); saveSnapshot(); }
+  if (!store.get(GUIDED_KEY, false)) { store.set(GUIDED_KEY, true); updateGuide(); }
   setExportEnabled(true);
 }
 
@@ -1787,7 +1788,15 @@ function countChips(checks) {
   return ["high", "medium", "low"].filter(s => n(s)).map(s => chip(s, `${n(s)} ${STATUS_LABEL[s].toLowerCase()}`)).join("");
 }
 
+// The 3-step guide shows until the first report is done (or if nothing has been saved yet on this device).
+const GUIDED_KEY = "plc-guided";
+function updateGuide() {
+  const saved = store.get(SAVED_KEY, []);
+  $("guide").classList.toggle("hidden", !!store.get(GUIDED_KEY, false) || (Array.isArray(saved) && saved.length > 0));
+}
+
 function renderSaved() {
+  updateGuide();
   const raw = store.get(SAVED_KEY, []);
   const saved = Array.isArray(raw) ? [...raw].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)) : [];
   $("savedPanel").classList.toggle("hidden", !saved.length && !undoRemove);

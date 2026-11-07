@@ -512,9 +512,11 @@ async function testDevice(device, [postcode, place]) {
   };
   const file = name => `${OUT}/${device.name.replace(/\W+/g, "-")}-${name}.png`;
 
+  let guideAtStart = false;
   await step("Page opens with the search ready", async () => {
     await page.goto(BASE, { waitUntil: "load" });
     await page.waitForTimeout(1500);
+    guideAtStart = await page.$eval("#guide", g => !g.classList.contains("hidden") && g.querySelectorAll("li").length === 3);
     // The search box shows above the map, outside it (1.36.0), and the map's own search button stays hidden.
     const r = await page.evaluate(() => {
       const box = document.getElementById("searchBox"), m = document.getElementById("map");
@@ -605,6 +607,10 @@ async function testDevice(device, [postcode, place]) {
     const auto = await page.evaluate(() => run.autoRetried || []);
     return `${total} topics in ${secs} s` + (auto.length ? ` (retried by itself: ${auto.join(", ")})` : "")
       + (retried.length ? ` (needed Try again: ${retried.join(", ")})` : "");
+  });
+  await step("3-step guide on the first visit, hidden after the first report", async () => {
+    const hiddenNow = await page.$eval("#guide", g => g.classList.contains("hidden"));
+    return guideAtStart && hiddenNow ? "shown, then hidden" : false;
   });
   await page.$eval("#reportTop", x => x.scrollIntoView()).catch(() => {});
   await page.waitForTimeout(1500);

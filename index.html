@@ -60,7 +60,13 @@
 
   <!-- ===================== FIND THE PROPERTY ===================== -->
   <section class="panel" id="searchPanel" aria-labelledby="searchTitle">
-    <div class="step-label">Step 1 of 2</div>
+    <!-- First visit only: hidden once the first report is done (updateGuide in js/app.js). -->
+    <ol class="guide hidden" id="guide" aria-label="How it works">
+      <li><span class="guide-num" aria-hidden="true">1</span> <span><strong>Search</strong> for a postcode, address or place</span></li>
+      <li><span class="guide-num" aria-hidden="true">2</span> <span><strong>Check the pin</strong> is on the right home</span></li>
+      <li><span class="guide-num" aria-hidden="true">3</span> <span><strong>Read your report</strong>, free, in about a minute</span></li>
+    </ol>
+    <div class="step-label">Step 1 of 3</div>
     <h2 id="searchTitle">Find the property<button class="info-btn" type="button" aria-expanded="false" aria-controls="qHelp" aria-label="How to find the property">i</button></h2>
     <div class="info-body zoomable" id="qHelp" hidden>
       <p>Type a postcode, address or place in the box, or tap the map to drop a pin.</p>
@@ -87,7 +93,7 @@
     <div id="map" role="application" aria-label="Map. Tap to choose the property location."></div>
 
     <div id="confirm" class="confirm hidden zoomable" aria-live="polite">
-      <div class="step-label">Step 2 of 2</div>
+      <div class="step-label">Step 2 of 3</div>
       <p><strong>Is the pin on the right property?</strong><button class="info-btn" type="button" aria-expanded="false" aria-controls="info-confirm" aria-label="Why check the pin">i</button><br>
          <span id="confirmText"></span></p>
       <div class="info-body" id="info-confirm" hidden>If not, drag the pin, or tap the exact spot on the map. A postcode covers
