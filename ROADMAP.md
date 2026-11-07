@@ -147,9 +147,9 @@ check) and merged by the owner before the next one starts. Every item below was 
 
 | Step | Priority | What changes | Why |
 |---|---|---|---|
-| **2.0.0 Final** | 4 | **Split `js/app.js`** (about 2,000 lines) into a few smaller files (search, report, saved, print), with no build step and the same behaviour. | Easier and safer to change later. |
-| | 4 | **Steady pull request checks**: reports are built from recorded answers, so outside outages never turn a pull request red. The daily check stays fully live. | During the 6–7 November outage, every pull request was red for reasons outside the app. |
-| | 4 | **Final review**: the app run on places in all four countries, the accessibility check, README and road map brought up to date. | A clean 2.0. |
+| **2.0.0 Final** | 4 | **Split `js/app.js`** (about 2,200 lines) into 5 plain files (quiz of 7 November 2026): `search.js` (map and search), `saved.js` (storage, saved properties, compare), `report.js` (running the checks and the report), `print.js` (share, download and print), `app.js` (comfort and start-up). No build step, same behaviour. | Easier and safer to change later. |
+| | 4 | **Steady pull request checks**: each daily run records the outside services' answers to the `status` branch (like `status.json`); pull requests build reports from that copy, at most a day old. A question never recorded (for example a new topic) is asked live and named in the result. The daily check stays fully live. | During the 6–7 November outage, every pull request was red for reasons outside the app. |
+| | 4 | **Final review**: one place per country (Barnsley, Cardiff, Edinburgh, Belfast), and one place again with a service switched off to confirm the backups and saved answers; the accessibility check; README and road map brought up to date. | A clean 2.0. |
 
 **No open backup exists** (health check, 7 November 2026), so these topics keep saying clearly what could not be
 checked during an outage: Green Belt, HS2 safeguarding, schools (the national school list is only a download file),
