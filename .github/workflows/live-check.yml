@@ -5,9 +5,7 @@
 # - On every pull request that changes the page: tests the proposed version
 #   before it is merged.
 #   Pull requests leave out the 41 outside services that only supply report data
-#   (data/data-services.csv), at the owner's request; the report itself still runs,
-#   answered from the daily run's recording (recordings.json on the "status" branch),
-#   so an outside outage cannot turn a pull request red. Anything not recorded is asked live.
+#   (data/data-services.csv), at the owner's request; the report itself still runs.
 # - Any time: run it by hand from the Actions tab ("Run workflow"), with the
 #   "Check the report data services" box ticked (the default) to test them too.
 
@@ -99,9 +97,6 @@ jobs:
         env:
           BASE: ${{ github.event_name == 'pull_request' && 'http://localhost:8080/index.html' || 'https://andyseremet.github.io/reports-examles/' }}
           DATA_SERVICES: ${{ steps.mode.outputs.data_services }}
-          # Daily and manual runs record the report's outside answers; pull requests replay the latest recording.
-          RECORD: ${{ github.event_name != 'pull_request' && '1' || '0' }}
-          REPLAY: ${{ github.event_name == 'pull_request' && format('https://raw.githubusercontent.com/{0}/status/recordings.json', github.repository) || '' }}
         run: node tests/live-check.mjs
 
       - name: Keep the results, screenshots and sample reports
@@ -155,22 +150,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          prev=none; prevrec=none
+          prev=none
           if git fetch --depth 1 origin status 2>/dev/null; then
             git show FETCH_HEAD:status.json > /tmp/previous.json 2>/dev/null && prev=/tmp/previous.json
-            git show FETCH_HEAD:recordings.json > /tmp/previous-recordings.json 2>/dev/null && prevrec=/tmp/previous-recordings.json
           fi
           node tests/publish-status.mjs test-results/status.json "$prev" /tmp/status.json
-          files="status.json"
-          if [ -f test-results/recordings.json ]; then
-            node tests/merge-recordings.mjs test-results/recordings.json "$prevrec" /tmp/recordings.json
-            files="$files recordings.json"
-          elif [ "$prevrec" != none ]; then
-            cp "$prevrec" /tmp/recordings.json; files="$files recordings.json"   # keep the last recording
-          fi
           git switch --orphan status-new
           git rm -rq --cached . 2>/dev/null || true
-          for f in $files; do cp "/tmp/$f" "$f"; done
-          git add $files
+          cp /tmp/status.json status.json
+          git add status.json
           git commit -qm "Data service status $(date -u +%Y-%m-%d)"
           git push -f origin HEAD:status
