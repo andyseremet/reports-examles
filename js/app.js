@@ -1531,8 +1531,8 @@ function watchSections() {
       if (!entry.isIntersecting) return;
       const id = entry.target.id;
       document.querySelectorAll("#reportNav a").forEach(a => a.classList.toggle("active", a.dataset.nav === id));
-      const tab = id.startsWith("group-") ? "group-flood" : id;
-      document.querySelectorAll("#tabBar [data-tab]").forEach(a => a.classList.toggle("active", a.dataset.tab === tab));
+      document.querySelectorAll("#tabBar [data-tab]").forEach(a =>
+        a.classList.toggle("active", a.dataset.tab === id || (!!a.dataset.tabPrefix && id.startsWith(a.dataset.tabPrefix))));
       const active = document.querySelector(`#reportNav a[data-nav="${id}"]`);
       if (active) {
         const box = $("navLinks"), l = active.offsetLeft - box.offsetLeft;
@@ -1560,11 +1560,10 @@ function updateTabBar() {
 $("tabProblems").addEventListener("click", () => {
   const list = problemTopics();
   if (!list.length) return;
-  list.forEach(d => { d.open = true; });
-  updateToggleAll();
-  const first = list.sort((a, b) => (a.classList.contains("high") ? 0 : 1) - (b.classList.contains("high") ? 0 : 1))[0];
+  list.forEach(d => { d.open = true; });          // each change of "open" refreshes the buttons (toggle listener)
+  const first = list.find(d => d.classList.contains("high")) || list[0];
+  openTopic(first);
   first.scrollIntoView({ behavior: "smooth", block: "start" });
-  first.querySelector("summary").focus({ preventScroll: true });
 });
 
 function updateToggleAll() {
@@ -1603,16 +1602,17 @@ document.addEventListener("click", e => {
   if (!target) return;
   e.preventDefault();
   if (target.tagName === "DETAILS") target.open = true;
-  if (a.dataset.open) {
-    const d = $(a.dataset.open);
-    if (d) {
-      const fold = d.closest(".clear-fold");
-      if (fold) fold.open = true;
-      d.open = true; const s = d.querySelector("summary"); if (s) s.focus({ preventScroll: true });
-    }
-  }
+  if (a.dataset.open && $(a.dataset.open)) openTopic($(a.dataset.open));
   target.scrollIntoView({ behavior: "smooth", block: "start" });
 });
+
+// Open a topic card (and its "no issue found" fold, if it sits in one) and focus its heading.
+function openTopic(d) {
+  const fold = d.closest(".clear-fold");
+  if (fold) fold.open = true;
+  d.open = true;
+  const s = d.querySelector("summary"); if (s) s.focus({ preventScroll: true });
+}
 
 window.addEventListener("scroll", () => {
   $("toTop").classList.toggle("hidden", window.scrollY < 700);

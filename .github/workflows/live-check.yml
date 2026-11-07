@@ -43,7 +43,14 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    outputs:
+      data_services: ${{ steps.mode.outputs.data_services }}
     steps:
+      # Report data services: checked daily and on manual runs with the box ticked; left out on pull requests.
+      - name: Decide whether to check the report data services
+        id: mode
+        run: echo "data_services=${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.data_services)) && '1' || '0' }}" >> "$GITHUB_OUTPUT"
+
       - name: Get the code
         uses: actions/checkout@v6
 
@@ -88,7 +95,7 @@ jobs:
       - name: Run the checks
         env:
           BASE: ${{ github.event_name == 'pull_request' && 'http://localhost:8080/index.html' || 'https://andyseremet.github.io/reports-examles/' }}
-          DATA_SERVICES: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.data_services)) && '1' || '0' }}
+          DATA_SERVICES: ${{ steps.mode.outputs.data_services }}
         run: node tests/live-check.mjs
 
       - name: Keep the results, screenshots and sample reports
@@ -123,7 +130,7 @@ jobs:
   # so main stays clean; the page reads it from raw.githubusercontent.com.
   publish-status:
     needs: check
-    if: always() && needs.check.result != 'cancelled' && github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.data_services))
+    if: always() && needs.check.result != 'cancelled' && github.ref == 'refs/heads/main' && needs.check.outputs.data_services == '1'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

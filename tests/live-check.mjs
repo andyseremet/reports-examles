@@ -12,7 +12,7 @@
 // Exits with code 1 if anything failed.
 
 import { chromium, devices } from "playwright";
-import { mkdirSync, writeFileSync, appendFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, appendFileSync, readFileSync } from "node:fs";
 
 const BASE = process.env.BASE || "https://andyseremet.github.io/reports-examles/";
 const OUT = process.env.OUT || "test-results";
@@ -28,10 +28,9 @@ const QUIET = process.env.QUIET === "1";
 const ON_GITHUB = process.env.GITHUB_ACTIONS === "true";
 // DATA_SERVICES=0 leaves out the outside services that only supply report data (the list in data/data-services.csv):
 // pull requests do this, so they test the app itself. The daily run and manual runs (by default) check them all.
-// The postcode lookup and address search are always checked: the app needs them to find the place.
+// The postcode lookup and address search (marked alwaysChecked) are always checked: the app needs them to find the place.
 const CHECK_DATA_SERVICES = process.env.DATA_SERVICES !== "0";
-const ALWAYS_CHECKED = ["Postcodes (postcodes.io)", "Address search (OpenStreetMap Nominatim)"];
-const isReportDataService = ([name, , , options = {}]) => !ALWAYS_CHECKED.includes(name) && !options.sameSite;
+const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && !options.sameSite;
 const annotation = text => String(text).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
 const record = (group, name, pass, info = "") => {
   results.push({ group, name, pass: pass === "warn" ? true : pass, warn: pass === "warn", info: String(info).slice(0, 900) });
@@ -61,7 +60,7 @@ const wms = (base, layer, lat = LAT, lon = LON, d = 0.0005) => `${base}?` + new 
 const arcgis = (base, extra = "") => `${base}?geometry=${LON},${LAT}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&f=json${extra}`;
 
 const SERVICES = [
-  ["Postcodes (postcodes.io)", `https://api.postcodes.io/postcodes?lon=${LON}&lat=${LAT}&limit=1`, d => d.result && d.result[0].postcode],
+  ["Postcodes (postcodes.io)", `https://api.postcodes.io/postcodes?lon=${LON}&lat=${LAT}&limit=1`, d => d.result && d.result[0].postcode, { alwaysChecked: true }],
   ["Planning data (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?latitude=${LAT}&longitude=${LON}&limit=5`, d => Array.isArray(d.entities)],
   ["Surface water (Environment Agency)", wms("https://environment.data.gov.uk/spatialdata/nafra2-risk-of-flooding-from-surface-water/wms", "rofsw"), d => Array.isArray(d.features)],
   ["Radon (British Geological Survey)", arcgis("https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/radon/MapServer/0/query"), d => d.features && d.features.length === 1],
@@ -77,7 +76,7 @@ const SERVICES = [
     'SELECT ?price WHERE { VALUES ?pc { "S70 2TA" "S70 1SL" "S70 2AT" } ?a lrc:postcode ?pc . ?s ppi:propertyAddress ?a ; ppi:pricePaid ?price } LIMIT 5'),
     d => d.results && d.results.bindings.length > 0],
   ["Air quality model (Open-Meteo)", `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&hourly=pm2_5&past_days=1&forecast_days=0&timeformat=unixtime`, d => d.hourly && d.hourly.pm2_5.length > 0],
-  ["Crime (data.police.uk)", `https://data.police.uk/api/crimes-street/all-crime?lat=${LAT}&lng=${LON}`, d => Array.isArray(d) && d.length > 0],
+  ["Crime (data.police.uk)", `https://data.police.uk/api/crimes-street/all-crime?lat=${LAT}&lng=${LON}`, d => Array.isArray(d) && d.length > 0, { alwaysChecked: true }],
   ["Police force for a place (data.police.uk)", `https://data.police.uk/api/locate-neighbourhood?q=${LAT},${LON}`, d => d.force === "south-yorkshire"],
   ["Census boundaries (ONS)", "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query?where=MSOA21CD%3D%27E02001521%27&outFields=MSOA21CD&returnGeometry=false&f=json", d => d.features && d.features.length === 1],
   ["Scotland flood maps (SEPA)", "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer/2/query?geometry=-3.43,56.404&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnCountOnly=true&f=json", d => Number.isFinite(d.count)],
@@ -1011,9 +1010,14 @@ try {
   const noTopics = SERVICES.map(([name]) => name).filter(name => !SERVICE_TOPICS[name]);
   record("Data services", "Every service lists the report topics it feeds", !noTopics.length,
     noTopics.length ? "missing in SERVICE_TOPICS: " + noTopics.join("; ") : `${SERVICES.length} services`);
-  const leftOut = CHECK_DATA_SERVICES ? [] : SERVICES.filter(isReportDataService);
-  for (const service of SERVICES) if (!leftOut.includes(service)) await checkService(service);
-  if (leftOut.length) console.log(`Left out on request (DATA_SERVICES=0): ${leftOut.length} report data services. Run the check by hand to test them.`);
+  // data/data-services.csv lists the report data services (one per row after the header): keep it in step with SERVICES.
+  const listed = readFileSync(new URL("../data/data-services.csv", import.meta.url), "utf8").trim().split("\n").length - 1;
+  const reportServices = SERVICES.filter(isReportDataService).length;
+  record("Data services", "data/data-services.csv lists every report data service", listed === reportServices,
+    `${listed} rows in the file, ${reportServices} report data services in the test`);
+  const toCheck = CHECK_DATA_SERVICES ? SERVICES : SERVICES.filter(s => !isReportDataService(s));
+  for (const service of toCheck) await checkService(service);
+  if (!CHECK_DATA_SERVICES) console.log(`Left out on request (DATA_SERVICES=0): ${reportServices} report data services. Run the check by hand to test them.`);
   browser = await chromium.launch();
   const randomPlace = await randomEnglishPostcode();
   const places = [FIXED[0], FIXED[1], randomPlace];
