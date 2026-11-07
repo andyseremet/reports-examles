@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.30.1** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.31.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 7 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.30.1)
+## Part 1: What the app does today (version 1.31.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -64,6 +64,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   Change · Saved (3)"); the map inside the report appears after **Show map**; in each topic, "What this means" and the
   source fold behind **More**; lists of sites and sales show the first 3, then **Show all**, as one-line rows on a
   phone. A phone report with topics closed went from 12 to about 8 screens.
+- **Phone tab bar** (1.31.0): Summary · Problems (N) · All topics · Next steps at the bottom of the screen on phones.
+  Problems opens the topics to look into and goes to the first.
 - An overall verdict, the topic grid with one legend line of rating counts (1.29.0, replacing the count boxes), a "Start here" list, and a box for every topic with no real answer and who to ask
   instead, which folds away with **Details / Hide** and starts closed when it lists more than 3 topics (1.25.0).
 - **Next steps** (1.30.0): notes, the viewing checklist and the checklist, each folded with its count ("0 of 11 done").
@@ -110,11 +112,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ## Part 2: Planned next steps
 
-**Shorter reports on phones** (quiz of 6 November 2026). 1.29.0 and 1.30.0 shipped the summary, topic and page
-changes. Still to come:
-- **1.31.0:** a bottom bar on phones: Summary · Problems · All topics · Next steps.
-
-Other ideas are listed in Part 3. Each is planned with a short quiz before it is built, and each version keeps the same habits:
+The "shorter reports on phones" plan (quiz of 6 November 2026) is finished: 1.29.0, 1.30.0 and 1.31.0. Nothing else is
+scheduled yet. Ideas are listed in Part 3. Each is planned with a short quiz before it is built, and each version keeps the same habits:
 bump the version number and the offline cache name together, update the README, add new behaviour to the daily check,
 and never weaken a test to get a pass.
 
