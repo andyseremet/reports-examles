@@ -4,7 +4,7 @@
 #   anything fails, for example a government data service changing its address.
 # - On every pull request that changes the page: tests the proposed version
 #   before it is merged.
-#   Pull requests leave out the 37 outside services that only supply report data
+#   Pull requests leave out the 38 outside services that only supply report data
 #   (data/data-services.csv), at the owner's request; the report itself still runs.
 # - Any time: run it by hand from the Actions tab ("Run workflow"), with the
 #   "Check the report data services" box ticked (the default) to test them too.
@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       data_services:
-        description: "Check the report data services (the 37 in data/data-services.csv)"
+        description: "Check the report data services (the 38 in data/data-services.csv)"
         type: boolean
         default: true
   pull_request:

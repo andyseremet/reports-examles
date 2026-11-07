@@ -24,8 +24,8 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   Division) and DAERA (`gis.daera-ni.gov.uk`): `getNISites`, `getNINoise`, `getNICoast`, and `isNI(R)`. Use the official
   HED service, not the NIE Networks copies on ArcGIS Online. Flood maps, radon, landslides and coal are not open there.
 - **Backups:** when planning.data.gov.uk fails, `withBackup`/`planningBackup` (`js/data.js`) ask Historic England and
-  Natural England for heritage and nature (England only, never on a normal day). The answer rides on the failure as
-  `R[key].backup`; only `checkPlanning`/`checkNature` read it (`backupFor`, `planningList`). Any topic whose service
+  Natural England for heritage and nature, and the Environment Agency for the flood zone at the pin (England only, never on a normal day). The answer rides on the failure as
+  `R[key].backup`; only `checkPlanning`/`checkNature`/`checkFlood` read it (`backupFor`, `planningList`). Any topic whose service
   fails shows the place's last saved answer, dated (`savedInstead` in `js/app.js`).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
   `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
@@ -67,7 +67,8 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Sticky bars:** keep focus clear of them with the `:focus` `scroll-margin` rule and `--sticky-top`/`--bottom-clear`
   in `css/app.css`. Never use `html { scroll-padding }`: it stops the section bar's smooth scroll.
 - **Environment Agency map server** (`environment.data.gov.uk/spatialdata`): it refuses addresses that send more than
-  about 15 requests a minute. Do not add requests to it, and keep its pacing in `PACED_HOSTS`.
+  about 15 requests a minute. Do not add requests to it, and keep its pacing in `PACED_HOSTS`. The one agreed exception
+  (owner, 7 November 2026): the flood zone backup (`floodZoneBackup`), one request, only when planning.data.gov.uk fails.
 - **Adding a topic:** a fetch function and its row in `TASKS` (`js/data.js`), the check in its section's
   `js/checks/` file, rows in `CHECKS`, `TOPIC_ICONS` and `COVERAGE` (if it does not cover all of England, Wales and
   Scotland) in `js/checks/index.js`, and `SERVICES` in `tests/live-check.mjs`.
@@ -106,7 +107,7 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
   that change `index.html`, `status.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
   Daily and manual runs on `main` then publish `status.json` to the `status` branch for the status page.
-  **Pull requests leave out the 37 report data services** (`DATA_SERVICES=0`; the list is `data/data-services.csv`),
+  **Pull requests leave out the 38 report data services** (`DATA_SERVICES=0`; the list is `data/data-services.csv`),
   at the owner's request: they run daily, and by hand with the "Check the report data services" box (ticked by default).
   The report steps still use the live services, so an outage can still fail a pull request. A failed daily or manual run
   opens or updates a "Live check failed" issue.

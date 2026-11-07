@@ -11,9 +11,13 @@ function checkFlood(R) {
     if (!R.floodNational.ok) return unavailable(base, R, "floodNational");
     return country === "Scotland" ? floodScotland(base, R.floodNational.value) : floodWales(base, R.floodNational.value);
   }
-  if (!R.planningPoint.ok) return unavailable(base, R, "planningPoint");
+  // planning.data.gov.uk not answering: the flood zone at the pin can come from the Environment Agency instead.
+  const backup = backupFor(R, "planningPoint");
+  const fromBackup = backup && !backup.missing.includes("flood-risk-zone");
+  if (!R.planningPoint.ok && !fromBackup) return unavailable(base, R, "planningPoint");
+  if (fromBackup) base.source = { name: "Environment Agency Flood Map for Planning (planning.data.gov.uk was not answering)", url: base.source.url };
 
-  const levels = byDataset(R.planningPoint.value, "flood-risk-zone").map(e => Number(e["flood-risk-level"])).filter(Number.isFinite);
+  const levels = byDataset(planningList(R, "planningPoint"), "flood-risk-zone").map(e => Number(e["flood-risk-level"])).filter(Number.isFinite);
   const zone = levels.length ? Math.max(...levels) : 1;
   const nearbyZones = byDataset(okValue(R, "planningNearby"), "flood-risk-zone");
   const rivers = [...new Set(byDataset(okValue(R, "planningNearby"), "main-river").map(r => r.name).filter(Boolean))].slice(0, 5);
@@ -29,6 +33,7 @@ function checkFlood(R) {
   let details = "";
   if (zone < 2 && nearbyZones.length) details += `<p>Land in Flood Zone 2 or 3 lies within ${formatRadius(R.loc.radius)}. Check how close it is on the ${link(LINKS.floodMapPlanning, "official flood map")}, especially for low-lying plots.</p>`;
   if (rivers.length) details += `<p>Main rivers within ${formatRadius(R.loc.radius)}: ${escapeHTML(rivers.join(", "))}.</p>`;
+  if (fromBackup) details = backupNote(backup, ["flood-risk-zone"], ["flood zones and main rivers nearby"]) + details;
 
   return {
     ...base, status, found, details, meaning: `<p>${meaning}</p>`,

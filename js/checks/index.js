@@ -31,10 +31,12 @@ const sitesKey = R => isScotland(R) ? "scotlandSites" : isNI(R) ? "niSites" : "w
 // Returns the entities to use, or null when the main source answered or no backup did.
 const backupFor = (R, key) => R[key] && !R[key].ok && R[key].backup ? R[key].backup : null;
 const planningList = (R, key) => R[key] && R[key].ok ? R[key].value : (backupFor(R, key) ? backupFor(R, key).entities : null);
+// Who answered a topic's datasets from the backup, e.g. "Historic England and Natural England".
+const backupFrom = (backup, datasets) => [...new Set(datasets.map(d => backup.from[d]).filter(Boolean))].join(" and ");
 // A note for a topic answered from the backup, naming what could not be checked.
-function backupNote(backup, missingNames) {
+function backupNote(backup, datasets, missingNames) {
   return `<p class="notice backup-note-topic"><strong>planning.data.gov.uk is not answering</strong>, so this came from
-    ${backup.from.map(escapeHTML).join(" and ")} instead.${missingNames.length ? ` Not checked this time: ${missingNames.map(escapeHTML).join(", ")}.` : ""}
+    ${escapeHTML(backupFrom(backup, datasets))} instead.${missingNames.length ? ` Not checked this time: ${missingNames.map(escapeHTML).join(", ")}.` : ""}
     Try again later for the full check.</p>`;
 }
 
@@ -58,7 +60,7 @@ const GROUPS = [
 const CHECKS = [
   { id: "flood", group: "flood", title: "Flooding from rivers and the sea", deps: ["planningPoint", "planningNearby", "floodNational"], build: checkFlood },
   { id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)", deps: ["surfaceWater", "floodNational"], build: checkSurfaceWater },
-  { id: "coal", group: "ground", title: "Coal mining", deps: ["coal"], build: checkCoal },
+  { id: "coal", group: "ground", title: "Coal mining", deps: ["coal", "place"], build: checkCoal },
   { id: "radon", group: "ground", title: "Radon gas", deps: ["radon"], build: checkRadon },
   { id: "landuse", group: "ground", title: "Past use of the land: landfill and contamination", deps: ["landfill", "planningPoint", "planningNearby", "coalTips", "wasteSites"], build: checkLanduse },
   { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },

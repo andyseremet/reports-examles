@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.31.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.31.1** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 7 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.31.0)
+## Part 1: What the app does today (version 1.31.1)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -26,7 +26,7 @@ The [README](README.md) describes each feature in full.
 | Group | Topics | Main sources |
 |---|---|---|
 | Flooding | Rivers and the sea; heavy rain (surface water) | Environment Agency; SEPA; Natural Resources Wales |
-| Ground and land | Radon; coal mining; past use of the land (in Wales, disused coal tips; in Scotland, licensed waste sites); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales; SEPA; Dynamic Coast |
+| Ground and land | Radon; coal mining (in Cornwall and West Devon, with a pointer to the metal mining search, 1.31.1); past use of the land (in Wales, disused coal tips; in Scotland, licensed waste sites); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales; SEPA; Dynamic Coast |
 | Living environment | Road and rail noise; air quality; crime; recent sale prices | Defra; Welsh Government; Scottish Government; councils; Copernicus CAMS; data.police.uk; ONS; HM Land Registry |
 | Planning and surroundings | Planning restrictions and heritage; protected nature sites; schools, GPs, pharmacies and transport | planning.data.gov.uk; Natural England; Cadw; Natural Resources Wales; Historic Environment Scotland; NatureScot; Department for Communities (NI); DAERA; DfE; NHS; NaPTAN |
 
@@ -78,7 +78,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - A failed topic is tried again after 20 seconds, then offers **Try again**.
 - Backups (1.30.1, after planning.data.gov.uk was down for a day): when it does not answer, heritage and nature come
   from Historic England and Natural England, and the topic names what it could not check. A topic whose service does
-  not answer shows this place's last saved answer, dated, with **Try again**.
+  not answer shows this place's last saved answer, dated, with **Try again**. Since 1.31.1 the flood zone at the pin
+  comes from the Environment Agency's own flood map, and Past use of the land names the sites it could not check.
 - A report still loading after 8 seconds names the services it is waiting for.
 - Careful pacing of requests to the Environment Agency map server, so it does not refuse them.
 - Requests to the Welsh, Scottish and Northern Ireland map servers (including SEPA, since 1.28.1) go a few at a time,
@@ -141,6 +142,7 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 | Idea | Decision |
 |---|---|
 | Welsh language | Removed on 4 November 2026: the app stays in English only. |
+| Air quality backup when planning.data.gov.uk is down | Not possible (7 November 2026): Defra's UK-wide Air Quality Management Area map (ukair.maps.rcdo.co.uk, run by WSP) answers correctly but tells browsers not to let other web pages read it (no CORS). It could be used if Defra opens it to web pages. |
 | Remove "Download report" | Kept (4 November 2026); since 1.17.0 it is in the "Save" menu. |
 | Remove the latitude and longitude boxes | Kept (4 November 2026), in More options. |
 | Remove or reduce railway noise, landslides, aircraft | Kept as they are (4 November 2026). |
@@ -155,6 +157,12 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 The app was run on 8 very different places in England, and odd results were checked with the data services. It
 found missing police data in Greater Manchester, empty national contaminated land data, and parts of topics that
 failed silently; all were fixed in 1.12.0. Road noise flagged too often and is rated more fairly since 1.12.0.
+
+**Second review, 7 November 2026** (1.31.1, while planning.data.gov.uk was down): Cardiff, Leith (Edinburgh), Belfast,
+Camborne (Cornwall), Hull, rural Highlands, Merthyr Tydfil and Happisburgh. Every topic answered or said why not; the
+backups covered heritage, nature and flood zones. Hull centre showed Flood Zone 1: checked with the Environment Agency
+directly, its map has a gap at that spot, with Flood Zone 3 about 100 m away (the topic notes that nearby zones were not
+checked during the outage). Fixed: "1 crimes", the AONB acronym, and the wording of unchecked lists.
 
 **Known issues:** none at the moment.
 

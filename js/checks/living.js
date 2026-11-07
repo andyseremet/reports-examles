@@ -378,7 +378,7 @@ function checkCrime(R) {
   }
   return {
     ...base, status: "info",
-    found: `${c.total} crimes reported within about 1 mile in ${monthName(c.month)}, including ${plural(c.byType["burglary"] || 0, "burglary", "burglaries")}.${compareFound}`,
+    found: `${plural(c.total, "crime")} reported within about 1 mile in ${monthName(c.month)}, including ${plural(c.byType["burglary"] || 0, "burglary", "burglaries")}.${compareFound}`,
     details: `${compare}<div class="table-wrap"><table><thead><tr><th>Types most relevant to residents</th><th>Number</th></tr></thead><tbody>${
       key.map(([k, label]) => `<tr><td>${label}</td><td>${c.byType[k] || 0}</td></tr>`).join("")
     }<tr><td>All other types</td><td>${c.total - keyTotal}</td></tr></tbody></table></div>`,

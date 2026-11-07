@@ -116,6 +116,7 @@ const SERVICES = [
   ["Address search (OpenStreetMap Nominatim)", "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=Barnsley%20Town%20Hall", d => Array.isArray(d) && d.length > 0],
   ["Schools register (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?dataset=educational-establishment&latitude=${LAT}&longitude=${LON}&limit=1`, d => Array.isArray(d.entities)],
   ["Heritage backup (Historic England)", "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/National_Heritage_List_for_England_NHLE_v02_VIEW/FeatureServer/0/query?geometry=-2.3590,51.3811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=100&units=esriSRUnit_Meter&outFields=Name&returnGeometry=false&f=json", d => d.features && d.features.length > 0],
+  ["Flood zone backup (Environment Agency)", wms("https://environment.data.gov.uk/spatialdata/flood-map-for-planning-flood-zones/wms", "Flood_Zones_2_3_Rivers_and_Sea"), d => Array.isArray(d.features)],
   ["Nature backup (Natural England)", arcgis("https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/SSSI_England/FeatureServer/0/query", "&distance=5000&units=esriSRUnit_Meter"), d => Array.isArray(d.features)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
   ["Postcode lookup for many postcodes (postcodes.io)", "https://api.postcodes.io/postcodes", d => Array.isArray(d.result) && d.result[0].result,
@@ -163,6 +164,7 @@ const SERVICE_TOPICS = {
   "Address search (OpenStreetMap Nominatim)": ["Finding the property by address"],
   "Schools register (planning.data.gov.uk)": ["Schools, doctors and transport"],
   "Heritage backup (Historic England)": ["Planning restrictions and heritage, when planning.data.gov.uk is not answering"],
+  "Flood zone backup (Environment Agency)": ["Flooding from rivers and the sea, when planning.data.gov.uk is not answering"],
   "Nature backup (Natural England)": ["Planning restrictions and heritage, and Protected nature sites, when planning.data.gov.uk is not answering"],
   "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
   "Postcode lookup for many postcodes (postcodes.io)": ["Schools, doctors and transport"],
@@ -239,7 +241,11 @@ async function testCountryData() {
     await step("Backups: heritage and nature answer when planning.data.gov.uk does not", async () => {
       // Central Bath, with planning.data.gov.uk pretending to be down: the World Heritage Site, the Roman Baths and
       // listed buildings must come from Historic England, and the topic must name what it could not check.
-      // Flooding and air quality have no backup and must still say "not answering", never "no issue".
+      // The flood zone comes from the Environment Agency's Flood Map for Planning: here a stand-in answer (Flood Zone 3),
+      // so this step sends nothing to its map server (the real service is checked in SERVICES).
+      // Air quality has no backup and must still say "not answering", never "no issue".
+      const floodMap = "**/flood-map-for-planning-flood-zones/**";
+      await page.route(floodMap, r => r.fulfill({ json: { type: "FeatureCollection", features: [{ properties: { flood_zone: "FZ3", flood_source: "river" } }] } }));
       const r = await page.evaluate(async () => {
         const loc = { name: "Bath test", lat: 51.3811, lon: -2.3590, radius: 500 };
         const fail = msg => Promise.reject(new Error(msg));
@@ -255,7 +261,7 @@ async function testCountryData() {
         run = { previous: { savedAt: "2026-11-03T10:00:00Z", results: [{ id: "flood", status: "medium", found: "Flood zone 2." }] } };
         let saved;
         try { saved = savedInstead({ id: "flood" }, { status: "error" }); } finally { run = keep; }
-        return { saved: [saved.status, saved.fromSaved, gapKind(saved)],
+        return { saved: [saved.status, saved.fromSaved, gapKind(saved)], floodSource: flood.source.name,
           planning: [planning.status, planning.found, planning.details.includes("Historic England")],
           nature: nature.status, flood: flood.status, air: air.status,
           listed: (R.planningNearby.backup?.entities || []).filter(e => e.dataset === "listed-building").length,
@@ -267,9 +273,25 @@ async function testCountryData() {
       if (!r.missing.includes("conservation-area")) throw new Error("conservation areas are not named as unchecked");
       if (!r.listed) throw new Error("no listed buildings from Historic England in central Bath");
       if (!["low", "info"].includes(r.nature)) throw new Error(`nature from the backup rated ${r.nature}`);
-      if (r.flood !== "error" || r.air !== "error") throw new Error(`with no backup, flooding is ${r.flood} and air ${r.air}, not "not answering"`);
+      await page.unroute(floodMap);
+      if (r.flood !== "high" || !/Environment Agency/.test(r.floodSource)) throw new Error(`flooding from the backup: ${r.flood} (${r.floodSource})`);
+      if (r.air !== "error") throw new Error(`with no backup, air quality is ${r.air}, not "not answering"`);
       if (r.saved.join() !== "medium,2026-11-03T10:00:00Z,down") throw new Error(`the saved answer came back as ${r.saved.join(", ")}`);
       return `${r.planning[1]} ${r.listed} listed buildings nearby`;
+    });
+
+    await step("Cornwall and West Devon: the coal topic points to the metal mining search", async () => {
+      // Outside the coalfield, the coal check says nothing about tin and copper mines: in Cornwall, the Isles of Scilly and
+      // West Devon it must say so and add the mining search to the checklist; elsewhere it must not.
+      const r = await page.evaluate(() => {
+        const at = district => checkCoal({ coal: { ok: true, value: {} }, place: { ok: true, value: { admin_district: district } } });
+        const cornwall = at("Cornwall"), barnsley = at("Barnsley");
+        return { status: cornwall.status, found: cornwall.found, list: cornwall.conveyancer.join(" "), other: barnsley.found + barnsley.conveyancer.join(" ") };
+      });
+      if (r.status !== "low" || !/tin and copper/.test(r.found) || !/Cornwall and West Devon mining search/.test(r.list))
+        throw new Error(`Cornwall: ${r.status}: ${r.found} | checklist: ${r.list}`);
+      if (/Cornwall/.test(r.other)) throw new Error("the Cornwall note shows outside Cornwall and West Devon");
+      return r.found;
     });
 
     await step("Wales: coal tips, coast, noise, heritage and nature from Welsh data", async () => {
