@@ -1324,11 +1324,14 @@ function renderSummary() {
       <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${CHECKS.length}" aria-valuenow="${ready}">
         <span style="width:${Math.round(ready / CHECKS.length * 100)}%"></span></div>${slowNote()}`;
   } else if (n("high") || n("medium")) {
-    verdict = `<p class="verdict">We found <strong>${plural(n("high"), "thing")} to look into</strong> and
-      <strong>${n("medium")} worth checking</strong>. ${plural(n("low"), "check")} found no issue.${notCoveredText}</p>`;
+    // One clear sentence, then the rest in smaller words underneath.
+    const found = [n("high") && `<strong>${plural(n("high"), "thing")} to look into</strong>`,
+      n("medium") && `<strong>${n("medium")} worth checking</strong>`].filter(Boolean).join(" and ");
+    verdict = `<p class="verdict">We found ${found}.</p>
+      <p class="verdict-sub">${plural(n("low"), "check")} found no issue.${notCoveredText}</p>`;
   } else {
-    verdict = `<p class="verdict"><strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran.${notCoveredText}
-      Still go through the checklist at the end.</p>`;
+    verdict = `<p class="verdict"><strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran.</p>
+      <p class="verdict-sub">${notCoveredText.trim()} Still go through the checklist at the end.</p>`;
   }
 
   const old = run.snapshot && isOld(run.snapshot.savedAt);
