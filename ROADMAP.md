@@ -135,6 +135,7 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 |---|---|
 | Past floods recorded here | Environment Agency Recorded Flood Outlines. Live, but adds 1 request to the busy Environment Agency map server. |
 | Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
+| Metal mining in Cornwall and Devon | The coal topic says "outside the coalfield" in Camborne, but tin and copper mining is common there. A note pointing to the Cornwall mining search (ordered by the conveyancer) would help. Found in the 7 November review. |
 | Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
 
 ### Decided against
@@ -156,6 +157,12 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 The app was run on 8 very different places in England, and odd results were checked with the data services. It
 found missing police data in Greater Manchester, empty national contaminated land data, and parts of topics that
 failed silently; all were fixed in 1.12.0. Road noise flagged too often and is rated more fairly since 1.12.0.
+
+**Second review, 7 November 2026** (1.31.1, while planning.data.gov.uk was down): Cardiff, Leith (Edinburgh), Belfast,
+Camborne (Cornwall), Hull, rural Highlands, Merthyr Tydfil and Happisburgh. Every topic answered or said why not; the
+backups covered heritage, nature and flood zones. Hull centre showed Flood Zone 1: checked with the Environment Agency
+directly, its map has a gap at that spot, with Flood Zone 3 about 100 m away (the topic notes that nearby zones were not
+checked during the outage). Fixed: "1 crimes", the AONB acronym, and the wording of unchecked lists.
 
 **Known issues:** none at the moment.
 
