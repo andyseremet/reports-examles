@@ -2,8 +2,8 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.30.0** (live at https://andyseremet.github.io/reports-examles/)
-- Last updated: 6 November 2026
+- Current version: **1.30.1** (live at https://andyseremet.github.io/reports-examles/)
+- Last updated: 7 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
 - Free for everyone: every feature stays free; support for the app's development is always voluntary (see
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.30.0)
+## Part 1: What the app does today (version 1.30.1)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -74,6 +74,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Reliability
 - A failed topic is tried again after 20 seconds, then offers **Try again**.
+- Backups (1.30.1, after planning.data.gov.uk was down for a day): when it does not answer, heritage and nature come
+  from Historic England and Natural England, and the topic names what it could not check. A topic whose service does
+  not answer shows this place's last saved answer, dated, with **Try again**.
 - A report still loading after 8 seconds names the services it is waiting for.
 - Careful pacing of requests to the Environment Agency map server, so it does not refuse them.
 - Requests to the Welsh, Scottish and Northern Ireland map servers (including SEPA, since 1.28.1) go a few at a time,
