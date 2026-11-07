@@ -88,6 +88,9 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 
 - **Plan first for larger work:** before a new topic, a new version, or a change across several files, give a short
   plan and ask quiz-style questions (with a recommended answer). Small fixes need no quiz.
+- **Small decisions follow the recommendation** (owner, 7 November 2026): for small choices inside an agreed plan
+  (wording, a rating detail, which file to change), take the recommended option without a quiz and say what was chosen.
+  Still ask for new topics, new outside services, changes to ratings or tests, and anything that sends extra requests.
 - **Free for everyone:** every feature stays free. Never add a paywall, forced payment, adverts or accounts. Support
   for the app's development is always voluntary, and only ever as a separate optional module that the app reaches
   through hooks, so the app works the same without it (see `MONETISATION.md`).
