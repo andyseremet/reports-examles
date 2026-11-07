@@ -26,6 +26,12 @@ const results = [];
 // and warning is also an annotation, so it shows on the pull request without opening the full log.
 const QUIET = process.env.QUIET === "1";
 const ON_GITHUB = process.env.GITHUB_ACTIONS === "true";
+// DATA_SERVICES=0 leaves out the outside services that only supply report data (the list in data/data-services.csv):
+// pull requests do this, so they test the app itself. The daily run and manual runs (by default) check them all.
+// The postcode lookup and address search are always checked: the app needs them to find the place.
+const CHECK_DATA_SERVICES = process.env.DATA_SERVICES !== "0";
+const ALWAYS_CHECKED = ["Postcodes (postcodes.io)", "Address search (OpenStreetMap Nominatim)"];
+const isReportDataService = ([name, , , options = {}]) => !ALWAYS_CHECKED.includes(name) && !options.sameSite;
 const annotation = text => String(text).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
 const record = (group, name, pass, info = "") => {
   results.push({ group, name, pass: pass === "warn" ? true : pass, warn: pass === "warn", info: String(info).slice(0, 900) });
@@ -1005,7 +1011,9 @@ try {
   const noTopics = SERVICES.map(([name]) => name).filter(name => !SERVICE_TOPICS[name]);
   record("Data services", "Every service lists the report topics it feeds", !noTopics.length,
     noTopics.length ? "missing in SERVICE_TOPICS: " + noTopics.join("; ") : `${SERVICES.length} services`);
-  for (const service of SERVICES) await checkService(service);
+  const leftOut = CHECK_DATA_SERVICES ? [] : SERVICES.filter(isReportDataService);
+  for (const service of SERVICES) if (!leftOut.includes(service)) await checkService(service);
+  if (leftOut.length) console.log(`Left out on request (DATA_SERVICES=0): ${leftOut.length} report data services. Run the check by hand to test them.`);
   browser = await chromium.launch();
   const randomPlace = await randomEnglishPostcode();
   const places = [FIXED[0], FIXED[1], randomPlace];
