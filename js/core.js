@@ -16,6 +16,9 @@ const API = {
   natureEngland: "https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services",
   radon: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/radon/MapServer/0/query",
   landslides: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hazards/MapServer/2/query",
+  // BGS 5 km and 1 km hexagon overviews (Open Government Licence): 6 = shrink-swell clay, 1 = mining other than coal.
+  shrinkSwell: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hex_grids/MapServer/6/query",
+  otherMining: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hex_grids/MapServer/1/query",
   coalHigh: "https://services-eu1.arcgis.com/Qn4lKcPDVHNivEyr/arcgis/rest/services/DevelopmentHighRiskArea/FeatureServer/0/query",
   coalLow: "https://services-eu1.arcgis.com/Qn4lKcPDVHNivEyr/arcgis/rest/services/DevelopmentLowRiskArea/FeatureServer/0/query",
   roadNoise: "https://environment.data.gov.uk/spatialdata/road-noise-all-metrics-england-round-4/wms",
@@ -55,6 +58,8 @@ const LINKS = {
   ukradon: "https://www.ukradon.org/",
   bgsRadon: "https://www.bgs.ac.uk/datasets/radon-data-indicative-atlas-of-radon/",
   coalInfo: "https://www.gov.uk/guidance/using-coal-mining-information",
+  geosure: "https://www.bgs.ac.uk/datasets/geosure/",
+  otherMiningInfo: "https://www.bgs.ac.uk/datasets/mining-hazard-not-including-coal/",
   coalMap: "https://datamine-cauk.hub.arcgis.com/",
   noise: "https://www.gov.uk/government/publications/strategic-noise-mapping-2022",
   ukair: "https://uk-air.defra.gov.uk/aqma/",
@@ -159,7 +164,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "1.31.1";
+const APP_VERSION = "1.32.0";
 const APP_UPDATED = "7 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
