@@ -277,9 +277,8 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 :focus:not(#reportNav, #reportNav *) {scroll-margin-top:var(--sticky-top);scroll-margin-bottom:var(--bottom-clear)}
 .cover h1 {font-size:26px;color:var(--heading);margin:0}
 .cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
-.map-toggle-row {margin:12px 0 0}
 .print-only {display:none}
-body.printing #reportMap {width:404px;height:404px;margin:6mm auto 0}
+body.printing #reportMap {width:520px;height:390px;margin:6mm auto 0}
 /* One line above the report: the place, "Change" (search map) and "Saved (3)". */
 .place-bar {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:12px 0;padding:8px 12px;
   border:1px solid var(--border);border-radius:8px;background:var(--surface);scroll-margin-top:8px}
@@ -287,7 +286,7 @@ body.printing #reportMap {width:404px;height:404px;margin:6mm auto 0}
 .place-btns {display:flex;gap:8px;flex-wrap:wrap}
 .place-btns button {display:inline-flex;align-items:center;gap:6px}
 body.hide-search #searchPanel,body.hide-saved #savedPanel {display:none}
-#reportMap {height:260px;border-radius:8px;border:1px solid var(--border);margin:14px 0;isolation:isolate}
+#reportMap {width:100%;max-width:560px;aspect-ratio:4/3;border-radius:12px;border:1px solid var(--border);margin:16px auto;isolation:isolate}
 .verdict {font-size:18px;margin:10px 0}
 .progress-bar {height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin:8px 0 14px}
 .progress-bar span {display:block;height:100%;background:var(--teal);transition:width .3s}
@@ -567,8 +566,8 @@ body.has-sticky footer {padding-bottom:100px}
   .cover-details {border-collapse:collapse;margin:3mm 0 0;font-size:11px}
   .cover-details th {text-align:left;color:#555;font-weight:normal;padding:1mm 6mm 1mm 0;white-space:nowrap;vertical-align:top}
   .cover-details td {padding:1mm 0;font-weight:bold}
-  #reportMap,body.printing #reportMap {width:404px;height:404px;margin:6mm auto 0;display:block;border:1px solid #999}
-  .map-caption {max-width:404px;margin:2mm auto 6mm;text-align:center;font-size:9.5px;color:#444;font-style:italic}
+  #reportMap,body.printing #reportMap {width:520px;height:390px;margin:6mm auto 0;display:block;border:1px solid #999}
+  .map-caption {max-width:520px;margin:2mm auto 6mm;text-align:center;font-size:9.5px;color:#444;font-style:italic}
   .group-topics > .slot,.fold-body > .slot {margin:0 0 5mm}
   details.clear-fold {margin:5mm 0}
   .fold-body {padding-top:3mm!important}
@@ -791,7 +790,7 @@ body.has-sticky footer {padding-bottom:100px}
   body.print-summary .glance-table .glance-group th {padding-top:2mm}
   body.print-summary #report > p.help {font-size:8.5px;margin:2mm 0}
 }
-body.print-summary.printing #reportMap {width:320px;height:320px}
+body.print-summary.printing #reportMap {width:400px;height:300px}
 @media print {
   span.print-only {display:inline!important}   /* a word shown only on paper stays in its sentence */
   body.print-summary .map-caption {margin-bottom:3mm}

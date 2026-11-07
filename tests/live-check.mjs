@@ -679,17 +679,15 @@ async function testDevice(device, [postcode, place]) {
     return `${r0.folded.length} no-issue topics folded; ${id.replace("check-", "")} opened; ${s1.problems ? s1.problems.split(",").length : 0} problems opened`;
   });
 
-  await step("Shorter report: Show map, More in each topic, long lists show 3 first", async () => {
-    // The map inside the report is drawn only after "Show map".
-    const before = await page.evaluate(() => ({ hidden: document.getElementById("reportMap").hidden,
-      drawn: !!document.querySelector("#reportMap .leaflet-container, #reportMap.leaflet-container") }));
-    if (!before.hidden || before.drawn) throw new Error("the report map is shown before Show map is pressed");
-    await page.click("#showReportMap");
-    await page.waitForTimeout(500);
-    const after = await page.evaluate(() => ({ hidden: document.getElementById("reportMap").hidden,
-      drawn: !!document.querySelector("#reportMap.leaflet-container"), text: document.getElementById("showReportMap").textContent.trim() }));
-    if (after.hidden || !after.drawn || after.text !== "Hide map") throw new Error(`after Show map: hidden ${after.hidden}, drawn ${after.drawn}, button "${after.text}"`);
-    await page.click("#showReportMap");
+  await step("Shorter report: map always shown at 4:3, More in each topic, long lists show 3 first", async () => {
+    // The map inside the report is always shown and drawn (owner, 7 November 2026: a hidden map could print blank),
+    // 4:3 and centred, with its map pictures loaded.
+    const m = await page.evaluate(() => { const el = document.getElementById("reportMap"), r = el.getBoundingClientRect();
+      return { hidden: el.hidden || r.height === 0, drawn: el.classList.contains("leaflet-container"), ratio: r.width / r.height,
+        tiles: el.querySelectorAll(".leaflet-tile-loaded").length, button: !!document.getElementById("showReportMap") }; });
+    if (m.hidden || !m.drawn || m.button) throw new Error(`report map: hidden ${m.hidden}, drawn ${m.drawn}, Show map button ${m.button}`);
+    if (Math.abs(m.ratio - 4 / 3) > 0.03) throw new Error(`report map is ${m.ratio.toFixed(2)}:1, expected 4:3`);
+    if (!m.tiles) throw new Error("no map pictures loaded in the report map");
     // Inside a topic, "What we found" and "What this means" stay folded until "More" (sources and dates are in the table at the end).
     const more = page.locator("details.check[open] .more-btn").first();
     if (await more.count()) {
@@ -1007,7 +1005,7 @@ async function testDevice(device, [postcode, place]) {
         tryAgain: shown(".gaps-box [data-retry]"), checklists: shown(".next-steps"), notesPage: shown(".notes-page") };
     });
     if (!paper.table || paper.rows !== paper.topics) throw new Error(`the at-a-glance table shows ${paper.rows} of ${paper.topics} topics (visible: ${paper.table})`);
-    if (paper.map[0] < 300 || Math.abs(paper.map[0] - paper.map[1]) > 2 || !paper.caption) throw new Error(`printed map ${paper.map.join("×")} px, caption shown: ${paper.caption} (expected a square with "Figure 1." caption)`);
+    if (paper.map[0] < 300 || Math.abs(paper.map[0] / paper.map[1] - 4 / 3) > 0.03 || !paper.caption) throw new Error(`printed map ${paper.map.join("×")} px, caption shown: ${paper.caption} (expected 4:3 with "Figure 1." caption)`);
     if (!paper.cover || !paper.liveLink || !paper.qr) throw new Error(`printed cover: details table ${paper.cover}, live report link ${paper.liveLink}, QR code ${paper.qr}`);
     const wantKey = Math.min(3, paper.problems);
     if (paper.keyFindings !== wantKey || (wantKey && !paper.keyShown)) throw new Error(`Key findings lists ${paper.keyFindings}, expected ${wantKey} (shown: ${paper.keyShown})`);

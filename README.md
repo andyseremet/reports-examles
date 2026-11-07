@@ -61,8 +61,8 @@ official checkers.
   legend line (each rating's symbol, colour and count), then "Key findings". Every rating has a symbol as well as a
   colour (❗ Look into this, ⚠️ Worth checking, ✓ No issue found, ℹ️ For information, ? Check yourself), and topics with
   no issue found fold into one row at the end of their section. Once a report is open, the search map and saved list
-  shrink to one line above it ("📍 Barnsley test · Change · Saved (3)"). The map inside the report appears after
-  **Show map**; each topic opens with its finding in bold and "What to do", with "What we found" and "What this means"
+  shrink to one line above it ("📍 Barnsley test · Change · Saved (3)"). The map inside the report is always shown (4:3), so it
+  is ready when printed; each topic opens with its finding in bold and "What to do", with "What we found" and "What this means"
   behind **More**; lists of sites and sales show
   the first 3, then **Show all** (one line per row on a phone). Notes, the viewing checklist and the checklist sit in
   one **Next steps** section, each folded with its count. On a phone, a bar at the bottom of the screen jumps to
@@ -101,7 +101,7 @@ official checkers.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
   message at the top, and starts by itself when the signal returns.
 - **Save or print:** one menu with Download report, Print summary (2 pages: the cover, key findings and the topic table) and Print full
-  report, each with a one-line description. Printouts open with the property's details, a square map with a caption, a
+  report, each with a one-line description. Printouts open with the property's details, a centred 4:3 map with a caption, a
   "Key findings" box (the most serious results), a table of every topic grouped by section (rating and finding, with a
   key) and a link and QR code to the live report. The full report adds a one-line contents and a lined notes page at the end. Sections are numbered and run on with space between them; the viewing checklist
   prints as its own page to take along; each rating also has its own border pattern for black-and-white printers; the
@@ -159,7 +159,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 
 It checks that all 45 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 41 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
-full screen, the offline message, the section bar, the topic icons, the rating legend, the no-issue folds and Open problems / Close all, the one-line bar above the report, Show map, More and Show all, the folded Next steps, the phone tab bar, the Historic England and Natural England backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
+full screen, the offline message, the section bar, the topic icons, the rating legend, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England and Natural England backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads. The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices is tested
 once, on the desktop page, during the pause before the first report (it does not depend on the screen size, and it must
 send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files

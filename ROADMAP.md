@@ -73,7 +73,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - Every rating has a symbol as well as a colour (❗ ⚠️ ✓ ℹ️ ?), and topics with no issue found fold into one row at the
   end of their section (1.29.0). A phone report with topics closed went from 17 to 12 screens.
 - Shorter reports (1.30.0): once a report is open, the search map and saved list shrink to one line ("Barnsley test ·
-  Change · Saved (3)"); the map inside the report appears after **Show map**; in each topic, "What this means" and the
+  Change · Saved (3)"); the map inside the report appeared after **Show map** (always shown again, 4:3, since 1.36.0 so it prints with its pictures loaded); in each topic, "What this means" and the
   source fold behind **More**; lists of sites and sales show the first 3, then **Show all**, as one-line rows on a
   phone. A phone report with topics closed went from 12 to about 8 screens.
 - **Phone tab bar** (1.31.0): Summary · Problems (N) · All topics · Next steps at the bottom of the screen on phones.
@@ -98,7 +98,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - More backups (1.34.0, first step to 2.0): conservation areas from Historic England's map when planning.data.gov.uk
   is down; the country and place from OpenStreetMap when postcodes.io is down; Photon when the address search is down;
   and each service's answer for a place kept on the device for 7 days, used (dated) only if that service fails.
-- Printed report (1.35.0): page 1 has the property's details, a centred square map with a "Figure 1" caption, the
+- Printed report (1.35.0): page 1 has the property's details, a centred map (4:3 since 1.36.0) with a "Figure 1" caption, the
   verdict and a table of every topic grouped by section, with a key to the ratings; sections are numbered, topic cards
   have more space between them, and rating colours always print; a "Key findings" box, a link and QR code to the live report,
   the viewing checklist as its own page, a neat sources table and black-and-white friendly border patterns, all in a

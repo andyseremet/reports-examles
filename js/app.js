@@ -1209,8 +1209,7 @@ function renderSkeleton(loc) {
       <h1>Property Location Report</h1>
       <p class="meta" id="reportMeta"></p>
       <div id="coverDetails"></div>
-      <p class="map-toggle-row no-print"><button class="secondary icon-label" id="showReportMap" type="button" aria-expanded="false" aria-controls="reportMap">${icon("map")}<span>Show map</span></button></p>
-      <div id="reportMap" hidden aria-label="Map of the property and nearby features"></div>
+      <div id="reportMap" aria-label="Map of the property and nearby features"></div>
       <p class="map-caption print-only" id="mapCaption"></p>
       <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
       ${infoBox("info-read", `
@@ -1256,6 +1255,8 @@ function renderSkeleton(loc) {
     <p class="help">Created with Property Location Check (version ${APP_VERSION}). Contains public sector information licensed under the Open Government
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
+  // Drawn straight away (not behind a button), so its map pictures have loaded by the time the report is printed.
+  drawReportMap(loc);
   renderMeta();
   renderSummary();
   watchSections();
@@ -1457,20 +1458,6 @@ document.addEventListener("click", e => {
   renderSummary();
   const again = document.querySelector(`[data-why="${btn.dataset.why}"]`);
   if (again) again.focus();
-});
-
-// The map inside the report is drawn only after "Show map" (the search map above already shows the place).
-function setReportMap(show) {
-  const box = $("reportMap"), btn = $("showReportMap");
-  if (!box || !btn || !run) return;
-  box.hidden = !show;
-  btn.setAttribute("aria-expanded", String(show));
-  btn.querySelector("span").textContent = show ? "Hide map" : "Show map";
-  if (show && !reportMap) { drawReportMap(run.loc); replotFeatures(); }
-  if (show) reportMap.invalidateSize();
-}
-document.addEventListener("click", e => {
-  if (e.target.closest("#showReportMap")) setReportMap($("reportMap").hidden);
 });
 
 // Fit the search circle to the map's current size (after it changes, for example for printing).
@@ -2114,8 +2101,7 @@ let closedBeforePrint = [];
 window.addEventListener("beforeprint", () => {
   closedBeforePrint = [...document.querySelectorAll("#report details:not([open])")];
   closedBeforePrint.forEach(d => { d.open = true; });
-  document.body.classList.add("printing");      // the map becomes the printed square (css/app.css) before it is redrawn
-  setReportMap(true);
+  document.body.classList.add("printing");      // the map takes its printed 4:3 size (css/app.css) before it is refitted
   fitReportMap();
   if (run) {
     const style = document.createElement("style");
