@@ -152,10 +152,11 @@ function initMap() {
     transparent: true, opacity: 0.55, attribution: "Road noise: Defra (OGL)"
   });
 
-  // Top left: search. The search box from the page is moved inside it.
-  searchControl = iconControl("topleft", ICONS.search, "Search for a postcode, address or place",
-    pop => pop.appendChild($("searchBox")));
+  // Top left: search, shown only in full screen. The page's search box moves inside it then
+  // (placeSearchBox), and back above the map when full screen closes.
+  searchControl = iconControl("topleft", ICONS.search, "Search for a postcode, address or place", () => {});
   searchControl.addTo(map);
+  searchControl.box.classList.add("search-ctl");
 
   // Top right: layers and map key, then full screen.
   layersControl = iconControl("topright", ICONS.layers, "Map layers and key", pop => {
@@ -265,6 +266,7 @@ function setMapFull(on, fromHistory) {
   }
   mapIsFull = on;
   $("map").classList.toggle("map-full", on);
+  placeSearchBox();
   document.body.classList.toggle("no-scroll", on);
   if (COARSE_POINTER) { if (on) map.dragging.enable(); else map.dragging.disable(); }
   fullControl.btn.innerHTML = on ? ICONS.collapse : ICONS.expand;
@@ -279,6 +281,19 @@ function setMapFull(on, fromHistory) {
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && mapIsFull) setMapFull(false);
 });
+
+// The search box sits above the map, or inside the map's search button in full screen.
+function placeSearchBox() {
+  const box = $("searchBox");
+  if (mapIsFull) searchControl.box.querySelector(".map-pop").appendChild(box);
+  else { setControlOpen(searchControl, false); $("searchPanel").insertBefore(box, $("searchStatus")); }
+}
+
+// Take the reader to the search box: on the page, or opened on the full-screen map.
+function openSearch() {
+  if (mapIsFull) setControlOpen(searchControl, true);
+  else { $("searchBox").scrollIntoView({ block: "nearest" }); $("q").focus(); }
+}
 
 function updateMapRunButton() {
   const btn = $("mapRunBtn");
@@ -417,7 +432,7 @@ $("q").addEventListener("keydown", e => {
   else if (e.key === "ArrowUp" && open) { e.preventDefault(); moveActive(-1); }
   else if (e.key === "Escape") {
     if (open) hideSuggestions();
-    else { setControlOpen(searchControl, false); searchControl.btn.focus(); }
+    else if (mapIsFull) { setControlOpen(searchControl, false); searchControl.btn.focus(); }
   }
   else if (e.key === "Enter") {
     e.preventDefault();
@@ -615,7 +630,7 @@ let reportFeatureLayer = null;  // dots on the report map
 $("runBtn").addEventListener("click", () => runChecks());
 
 function runChecks(options = {}) {
-  if (!selected) { setControlOpen(searchControl, true); return; }
+  if (!selected) { openSearch(); return; }
   if (!navigator.onLine) {                 // no signal: start by itself once it is back
     queuedRun = { options, name: $("siteName").value.trim() || selected.label || "this location" };
     updateOfflineBar();
@@ -2184,7 +2199,5 @@ window.addEventListener("load", async () => {
   if (params.has("postcode")) {
     await lookupPostcode(params.get("postcode"));
     if (selected) runChecks({ fromLoad: true });
-  } else {
-    setControlOpen(searchControl, true);   // first visit: show where to type
   }
 });

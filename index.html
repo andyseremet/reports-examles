@@ -63,15 +63,14 @@
     <div class="step-label">Step 1 of 2</div>
     <h2 id="searchTitle">Find the property<button class="info-btn" type="button" aria-expanded="false" aria-controls="qHelp" aria-label="How to find the property">i</button></h2>
     <div class="info-body zoomable" id="qHelp" hidden>
-      <p>Use the search button <span aria-hidden="true">🔍</span> at the top left of the map to find a postcode, address or place,
-         or tap the map to drop a pin.</p>
+      <p>Type a postcode, address or place in the box, or tap the map to drop a pin.</p>
       <p>On a phone, scroll the page with one finger and move the map with two. On a computer, hold Ctrl (⌘ on Mac) while
          scrolling to zoom the map. The <strong>full-screen</strong> button makes the map fill the screen, where one finger moves it.</p>
       <p>The layers button changes the background map and shows road noise and the map key. The location button puts the pin
          where you are.</p>
     </div>
 
-    <!-- Moved into the map's top-left search button when the page loads. -->
+    <!-- Always above the map; moved into the map's search button only while the map is full screen. -->
     <div class="search-box" id="searchBox">
       <label for="q">Postcode, address or place</label>
       <div class="search-row">

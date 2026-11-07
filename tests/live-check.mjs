@@ -515,7 +515,14 @@ async function testDevice(device, [postcode, place]) {
   await step("Page opens with the search ready", async () => {
     await page.goto(BASE, { waitUntil: "load" });
     await page.waitForTimeout(1500);
-    return (await page.$eval(".leaflet-top.leaflet-left .map-ctrl", x => x.classList.contains("open"))) ? "search open" : false;
+    // The search box shows above the map, outside it (1.36.0), and the map's own search button stays hidden.
+    const r = await page.evaluate(() => {
+      const box = document.getElementById("searchBox"), m = document.getElementById("map");
+      const b = box.getBoundingClientRect(), mb = m.getBoundingClientRect();
+      return { visible: b.height > 0 && getComputedStyle(box).visibility !== "hidden", above: b.bottom <= mb.top + 1,
+        outside: !m.contains(box), mapBtn: getComputedStyle(document.querySelector(".search-ctl")).display };
+    });
+    return r.visible && r.above && r.outside && r.mapBtn === "none" ? "search box above the map" : false;
   });
 
   await step("Search finds the postcode", async () => {
@@ -533,10 +540,13 @@ async function testDevice(device, [postcode, place]) {
     await page.waitForTimeout(600);
     const r = await page.evaluate(() => { const b = document.getElementById("map").getBoundingClientRect(); return [b.left, b.top, b.width, b.height, innerWidth, innerHeight].map(Math.round); });
     if (!(await page.$eval("#confirmText", x => x.textContent)).includes(postcode)) throw new Error("pressing the full-screen button moved the pin");
+    const searchInMap = await page.evaluate(() => document.getElementById("map").contains(document.getElementById("searchBox"))
+      && getComputedStyle(document.querySelector(".search-ctl")).display !== "none");
+    if (!searchInMap) throw new Error("the full-screen map has no search button");
     await page.screenshot({ path: file("fullscreen") });
     await page.click(".leaflet-top.leaflet-right .map-ctrl:nth-child(2) .map-btn");
     await page.waitForTimeout(600);
-    const closed = !(await page.evaluate(() => mapIsFull));
+    const closed = !(await page.evaluate(() => mapIsFull)) && await page.evaluate(() => !document.getElementById("map").contains(document.getElementById("searchBox")));
     if (!(await page.$eval("#confirmText", x => x.textContent)).includes(postcode)) throw new Error("closing full screen moved the pin");
     return r[0] === 0 && r[1] === 0 && Math.abs(r[2] - r[4]) <= 1 && Math.abs(r[3] - r[5]) <= 1 && closed ? `map ${r[2]}×${r[3]}` : false;
   });

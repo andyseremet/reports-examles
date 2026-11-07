@@ -124,6 +124,9 @@ button:disabled {opacity:.5;cursor:not-allowed}
 /* ---------- search ---------- */
 .step-label {font-size:13px;font-weight:bold;color:var(--teal);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .search-box {position:relative}
+#searchPanel > .search-box {margin:4px 0 12px}
+.search-ctl {display:none}               /* the map's search button: full screen only */
+.map-full .search-ctl {display:block}
 .search-box label {font-size:13px}
 .search-row {display:flex;gap:6px}
 .search-row input {flex:1;min-width:0;font-size:16px;padding:10px}
