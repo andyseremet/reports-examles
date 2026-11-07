@@ -31,6 +31,70 @@ const ON_GITHUB = process.env.GITHUB_ACTIONS === "true";
 // The postcode lookup and address search (marked alwaysChecked) are always checked: the app needs them to find the place.
 const CHECK_DATA_SERVICES = process.env.DATA_SERVICES !== "0";
 const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && !options.sameSite;
+
+// Steady pull request checks (2.0.0, quiz of 7 November 2026). RECORD=1 (daily and manual runs) saves each answer the
+// report pages get from outside data services to recordings.json, which the workflow publishes to the "status" branch.
+// REPLAY=<address or file> (pull requests) answers the report pages from that copy, so an outside outage cannot turn a
+// pull request red. A question that was never recorded (for example a new topic) is asked live and named in the result.
+// Only data requests (fetch/XHR) to other sites are recorded or replayed: map pictures and the app's own files stay live.
+// A test step's own stub (page.route) always comes first, so stubs are never recorded and still apply on replay.
+const RECORD = process.env.RECORD === "1";
+const REPLAY = process.env.REPLAY || "";
+const recorded = {};
+let replayData = null, replayed = 0;
+const askedLive = new Set();
+const recKey = req => {
+  const dated = s => String(s || "").replace(/\d{4}-\d{2}-\d{2}/g, "DATE");   // a date in a query (sale prices since…) changes daily
+  return `${req.method()} ${dated(req.url())}${req.postData() ? " " + dated(req.postData()) : ""}`;
+};
+const isOutsideData = req => {
+  if (!["fetch", "xhr"].includes(req.resourceType())) return false;
+  const host = new URL(req.url()).host;
+  return host !== new URL(BASE).host && host !== "raw.githubusercontent.com";
+};
+const TEXT_TYPE = /json|text|xml|javascript/;
+async function loadReplay() {
+  if (!REPLAY) return;
+  try {
+    replayData = /^https?:/.test(REPLAY) ? await (await fetch(REPLAY, { headers: { "User-Agent": UA } })).json()
+      : JSON.parse(readFileSync(REPLAY, "utf8"));
+    if (!replayData || !replayData.answers) throw new Error("no answers in the file");
+  } catch (e) {
+    replayData = null;
+    console.log(`No recorded answers (${e.message}): every outside service is asked live.`);
+  }
+}
+// Called for every browser context the test opens.
+async function steadyContext(context) {
+  if (!RECORD && !replayData) return;
+  const goneLive = new WeakSet();
+  await context.route(() => true, route => {
+    const req = route.request();
+    if (!isOutsideData(req)) return route.fallback();
+    if (replayData) {
+      const hit = replayData.answers[recKey(req)];
+      if (hit) {
+        replayed++;
+        return route.fulfill({ status: hit.status, contentType: hit.type, headers: { "access-control-allow-origin": "*" },
+          body: hit.text !== undefined ? hit.text : Buffer.from(hit.base64, "base64") });
+      }
+      askedLive.add(new URL(req.url()).host);
+    }
+    goneLive.add(req);
+    return route.fallback();
+  });
+  if (RECORD) context.on("requestfinished", async req => {
+    if (!goneLive.has(req)) return;
+    try {
+      const res = await req.response();
+      if (!res || res.status() >= 400) return;          // only working answers are kept
+      const type = res.headers()["content-type"] || "application/octet-stream";
+      const body = await res.body();
+      recorded[recKey(req)] = { at: new Date().toISOString(), status: res.status(), type,
+        ...(TEXT_TYPE.test(type) ? { text: body.toString("utf8") } : { base64: body.toString("base64") }) };
+    } catch (e) { /* the page was closed before the answer was read */ }
+  });
+}
 const annotation = text => String(text).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
 const record = (group, name, pass, info = "") => {
   results.push({ group, name, pass: pass === "warn" ? true : pass, warn: pass === "warn", info: String(info).slice(0, 900) });
@@ -238,6 +302,7 @@ const reportDone = page => page.waitForFunction(() => typeof run !== "undefined"
 async function testCountryData() {
   const group = "Country data (desktop)";
   const context = await browser.newContext({ ...DEVICES[0].options });
+  await steadyContext(context);
   const page = await context.newPage();
   let eaRequests = 0;
   await page.route("https://environment.data.gov.uk/spatialdata/**", r => { eaRequests++; return r.fulfill({ json: { features: [] } }); });
@@ -489,6 +554,7 @@ async function testCountryData() {
 async function testDevice(device, [postcode, place]) {
   const group = `${device.name} – ${postcode}, ${place}`;
   const context = await browser.newContext({ ...device.options, acceptDownloads: true });
+  await steadyContext(context);
   const page = await context.newPage();
   const pageErrors = [];
   page.on("pageerror", e => pageErrors.push(e.message));
@@ -1162,7 +1228,9 @@ try {
   for (const service of toCheck) await checkService(service);
   if (!CHECK_DATA_SERVICES) console.log(`Left out on request (DATA_SERVICES=0): ${reportServices} report data services. Run the check by hand to test them.`);
   browser = await chromium.launch();
-  const randomPlace = await randomEnglishPostcode();
+  await loadReplay();
+  // On replay, the third report uses the place the daily run picked, so its answers are recorded too.
+  const randomPlace = replayData && replayData.randomPlace ? replayData.randomPlace : await randomEnglishPostcode();
   const places = [FIXED[0], FIXED[1], randomPlace];
   for (let i = 0; i < DEVICES.length; i++) {
     // The Environment Agency map server allows only about 15 requests a minute from
@@ -1174,6 +1242,10 @@ try {
     const topics = await testDevice(DEVICES[i], places[i]);
     reports[`${DEVICES[i].name}: ${places[i].join(", ")}`] = topics;
   }
+  if (replayData) record("Test run", "Report data from the daily recording", true,
+    `${replayed} answers from the recording of ${String(replayData.recorded).slice(0, 10)}` +
+    (askedLive.size ? `; asked live (not recorded): ${[...askedLive].sort().join(", ")}` : "; nothing asked live"));
+  if (RECORD) writeFileSync(`${OUT}/recordings.json`, JSON.stringify({ recorded: new Date().toISOString(), base: BASE, randomPlace, answers: recorded }));
 } catch (e) {
   record("Test run", "The test itself crashed", false, e.message);
 } finally {
