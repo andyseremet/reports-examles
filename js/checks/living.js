@@ -98,7 +98,7 @@ function checkSoldPrices(R) {
     details: `<div class="table-wrap"><table><thead><tr><th>Type</th><th>Sales</th><th>Median price</th><th>Range</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
       <p><strong>Most recent sales</strong></p>
-      <div class="table-wrap"><table><thead><tr><th>Sold</th><th>Price</th><th>Type</th><th>Street</th></tr></thead>
+      <div class="table-wrap"><table class="site-list"><thead><tr><th>Sold</th><th>Price</th><th>Type</th><th>Street</th></tr></thead>
       <tbody>${recent}</tbody></table></div>`,
     meaning: `<p>These are completed sales of houses and flats at market value, recorded by HM Land Registry. Sales of
       shops, offices and homes bought in bulk are left out. Prices depend on size, condition and the exact street, so use

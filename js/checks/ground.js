@@ -124,7 +124,7 @@ function checkLanduse(R) {
 
   return {
     ...base, status, found: parts.join(" "),
-    details: (sites.length ? `<div class="table-wrap"><table><thead><tr><th>Old landfill site</th><th>Distance</th><th>Waste</th><th>Years used</th></tr></thead><tbody>${
+    details: (sites.length ? `<div class="table-wrap"><table class="site-list"><thead><tr><th>Old landfill site</th><th>Distance</th><th>Waste</th><th>Years used</th></tr></thead><tbody>${
       sites.slice(0, 10).map(s => `<tr><td>${escapeHTML(s.site_name || "Unnamed site")}</td><td>${escapeHTML(formatDistance(s.distanceKm))}</td><td>${escapeHTML(wasteTypes(s))}</td><td>${escapeHTML(years(s))}</td></tr>`).join("")
     }</tbody></table></div>` : "") + (lines.length ? `<ul>${lines.join("")}</ul>` : ""),
     meaning: `<p>Old landfill can give off gas or affect the ground. Sites within 250 m usually get a closer look. Household and hazardous
@@ -160,7 +160,7 @@ function checkLanduseWales(R) {
   return {
     ...base, status, found, ...(status === "manual" && { gap: "coverage" }),
     dataDate: `Coal tip map as of March 2026. Checked live on ${today()}`,
-    details: tips.length ? `<div class="table-wrap"><table><thead><tr><th>Coal tip</th><th>Distance</th><th>Category</th><th>Last inspected</th></tr></thead><tbody>${
+    details: tips.length ? `<div class="table-wrap"><table class="site-list"><thead><tr><th>Coal tip</th><th>Distance</th><th>Category</th><th>Last inspected</th></tr></thead><tbody>${
       tips.slice(0, 10).map(t => `<tr><td>${escapeHTML(t.id || "Unnamed tip")}</td><td>${escapeHTML(t.distanceKm == null ? "Nearby" : formatDistance(t.distanceKm))}</td><td>${escapeHTML(COAL_TIP_CATEGORY[t.category] || t.category || "Not recorded")}</td><td>${escapeHTML(t.inspected || "Not recorded")}</td></tr>`).join("")
     }</tbody></table></div>` : "",
     meaning: `<p>Wales has more than 2,000 disused coal tips, mostly in the south Wales valleys. The Welsh Government gives each one
@@ -200,7 +200,7 @@ function checkLanduseScotland(R) {
   ].filter(Boolean).join(" ");
   return {
     ...base, status, found, ...(status === "manual" && { gap: "coverage" }),
-    details: sites.length ? `<div class="table-wrap"><table><thead><tr><th>Waste site</th><th>Distance</th><th>Activity</th></tr></thead><tbody>${
+    details: sites.length ? `<div class="table-wrap"><table class="site-list"><thead><tr><th>Waste site</th><th>Distance</th><th>Activity</th></tr></thead><tbody>${
       sites.slice(0, 10).map(s => `<tr><td>${escapeHTML(s.name || "Unnamed site")}</td><td>${escapeHTML(formatDistance(s.distanceKm))}</td><td>${escapeHTML(s.kinds.join(", ") || "Not recorded")}</td></tr>`).join("")
     }</tbody></table></div>` : "",
     meaning: `<p>These are sites SEPA licenses to handle waste today, including landfill. Landfill can give off gas or affect the ground.
@@ -230,7 +230,7 @@ function checkLandslides(R) {
     found: s.length
       ? `${plural(s.length, "recorded landslide")} within ${formatRadius(R.loc.radius)}. The nearest is about ${formatDistance(s[0].distanceKm)} away.`
       : `No recorded landslides within ${formatRadius(R.loc.radius)}.`,
-    details: s.length ? `<ul>${s.slice(0, 5).map(x => `<li>${escapeHTML(x.name)} (${escapeHTML(formatDistance(x.distanceKm))})</li>`).join("")}</ul>` : "",
+    details: s.length ? `<ul class="site-list">${s.slice(0, 5).map(x => `<li>${escapeHTML(x.name)} (${escapeHTML(formatDistance(x.distanceKm))})</li>`).join("")}</ul>` : "",
     meaning: `<p>Rating: a recorded landslide within 500 m is “Worth checking”; further away it is “For information”.</p>
       <p>This check does not cover clay soil that shrinks and swells in dry and wet weather. That is the most common
       cause of subsidence in England, especially in the South East.</p>`,

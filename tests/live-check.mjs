@@ -545,6 +545,51 @@ async function testDevice(device, [postcode, place]) {
     return `${r0.folded.length} no-issue topics folded; ${id.replace("check-", "")} opened; ${s1.problems ? s1.problems.split(",").length : 0} problems opened`;
   });
 
+  await step("Shorter report: Show map, More in each topic, long lists show 3 first", async () => {
+    // The map inside the report is drawn only after "Show map".
+    const before = await page.evaluate(() => ({ hidden: document.getElementById("reportMap").hidden,
+      drawn: !!document.querySelector("#reportMap .leaflet-container, #reportMap.leaflet-container") }));
+    if (!before.hidden || before.drawn) throw new Error("the report map is shown before Show map is pressed");
+    await page.click("#showReportMap");
+    await page.waitForTimeout(500);
+    const after = await page.evaluate(() => ({ hidden: document.getElementById("reportMap").hidden,
+      drawn: !!document.querySelector("#reportMap.leaflet-container"), text: document.getElementById("showReportMap").textContent.trim() }));
+    if (after.hidden || !after.drawn || after.text !== "Hide map") throw new Error(`after Show map: hidden ${after.hidden}, drawn ${after.drawn}, button "${after.text}"`);
+    await page.click("#showReportMap");
+    // Inside a topic, "What this means" and the source stay folded until "More".
+    const more = page.locator("details.check[open] .more-btn").first();
+    if (await more.count()) {
+      const box = await more.getAttribute("aria-controls");
+      const hiddenBefore = await page.$eval("#" + box, x => x.hidden);
+      await more.click();
+      const shown = await page.$eval("#" + box, x => !x.hidden && x.textContent.includes("Source:"));
+      await more.click();
+      if (!hiddenBefore || !shown) throw new Error(`"More" in ${box} did not fold and unfold the explanation and source`);
+    }
+    // A list of more than 4 sites or sales shows the first 3, and "Show all N" shows the rest.
+    const lists = await page.evaluate(() => [...document.querySelectorAll("#report .site-list")].map(l => {
+      const rows = [...l.querySelectorAll(":scope > li, tbody > tr")];
+      return { id: l.id, total: rows.length, shown: rows.filter(r => !r.hidden).length };
+    }));
+    const wrong = lists.filter(l => l.shown !== (l.total > 4 ? 3 : l.total));
+    if (wrong.length) throw new Error(wrong.map(l => `a list shows ${l.shown} of ${l.total}`).join("; "));
+    const long = lists.find(l => l.total > 4);
+    if (long) {
+      const all = await page.evaluate(id => {
+        const btn = document.querySelector(`.show-all[aria-controls="${id}"]`);
+        const d = btn.closest("details"); if (d) d.open = true;
+        const f = btn.closest(".clear-fold"); if (f) f.open = true;
+        const label = btn.textContent;
+        btn.click();
+        const shown = [...document.getElementById(id).querySelectorAll(":scope > li, tbody > tr")].filter(r => !r.hidden).length;
+        btn.click();
+        return { label, shown };
+      }, long.id);
+      if (all.label !== `Show all ${long.total}` || all.shown !== long.total) throw new Error(`"${all.label}" showed ${all.shown} of ${long.total}`);
+    }
+    return `map ok; ${lists.length} list(s), ${lists.filter(l => l.total > 4).length} shortened`;
+  });
+
   await step("Data gaps box lists every topic without an answer", async () => {
     // Every "Check yourself" or "Not available" topic must appear in the box, with a way to check it
     // instead, and not in "Start here"; with no such topics, the box is hidden.
@@ -675,7 +720,20 @@ async function testDevice(device, [postcode, place]) {
     } finally { await slowPage.close(); }
   });
 
+  await step("Next steps: notes, viewing and checklist folded, each with a count", async () => {
+    const r = await page.evaluate(() => [...document.querySelectorAll("#nextSteps details.step-fold")]
+      .map(d => ({ id: d.id, open: d.open, count: d.querySelector(":scope > summary .step-count").textContent })));
+    const ids = r.map(x => x.id).join(",");
+    if (ids !== "notes,viewing,checklist") throw new Error(`the parts are "${ids}", not notes, viewing, checklist`);
+    const open = r.filter(x => x.open).map(x => x.id);
+    if (open.length) throw new Error(`${open.join(", ")} open before being asked for`);
+    const bad = r.filter(x => !(x.id === "notes" ? /^(Empty|Written)$/ : /^\d+ of \d+ done$/).test(x.count));
+    if (bad.length) throw new Error(bad.map(x => `${x.id} says "${x.count}"`).join("; "));
+    return r.map(x => `${x.id}: ${x.count}`).join(" · ");
+  });
+
   await step("Send to my conveyancer", async () => {
+    await page.click("#checklist > summary");
     const text = await page.evaluate(() => conveyancerText());
     if (!text.includes("?lat=") || !text.includes("Please could you include these searches")) throw new Error("the email text is incomplete");
     await page.click("#emailConveyancer");
@@ -727,10 +785,13 @@ async function testDevice(device, [postcode, place]) {
   });
 
   await step("Saved property reopens instantly with notes", async () => {
+    await page.click("#notes > summary");
     await page.fill("#notesText", "Automatic test note");
     await page.waitForTimeout(800);
     const flash = await page.$eval("#notesFlash", x => x.textContent);
     if (!flash.includes("Saved")) throw new Error(`no "Saved" message after typing a note (got "${flash}")`);
+    const written = await page.$eval("#notes .step-count", x => x.textContent);
+    if (written !== "Written") throw new Error(`the Your notes fold says "${written}", not "Written"`);
     await page.reload();
     await reportDone(page);
     const instant = await page.$("#refreshBtn") !== null;
@@ -751,6 +812,22 @@ async function testDevice(device, [postcode, place]) {
     if (await page.$eval("#saveMenu", d => d.open)) throw new Error("the Save or print menu stayed open after choosing");
     await download.saveAs(`${OUT}/${device.name.replace(/\W+/g, "-")}-report.html`);
     return download.suggestedFilename();
+  });
+
+  await step("One-line bar: the search and saved list shrink above the report", async () => {
+    const hidden = id => page.evaluate(i => getComputedStyle(document.getElementById(i)).display === "none", id);
+    const bar = await page.evaluate(() => ({ shown: !document.getElementById("placeBar").classList.contains("hidden"),
+      name: document.getElementById("placeName").textContent, saved: document.getElementById("showSaved").textContent.trim() }));
+    if (!bar.shown || !bar.name) throw new Error("the one-line bar is not shown above the report");
+    if (!(await hidden("searchPanel")) || !(await hidden("savedPanel"))) throw new Error("the search or saved list is still shown in full");
+    if (!/^Saved \(\d+\)$/.test(bar.saved)) throw new Error(`the saved button says "${bar.saved}"`);
+    await page.click("#changePlace");
+    const mapShown = !(await hidden("searchPanel")) && await page.$eval("#map", m => m.getBoundingClientRect().height > 100);
+    await page.click("#changePlace");
+    if (!mapShown || !(await hidden("searchPanel"))) throw new Error("Change did not show and hide the search map");
+    await page.click("#showSaved");
+    if (await hidden("savedPanel")) throw new Error("Saved did not show the saved list");
+    return `${bar.name} · ${bar.saved}`;
   });
 
   await step("Saved properties are readable", async () => {

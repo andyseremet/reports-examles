@@ -22,7 +22,12 @@ const ACTIONS = [
   ["gaps box toggled", async p => { if (await p.locator("#gapsBox > summary").count()) await p.click("#gapsBox > summary"); }],
   ["sources open", p => p.evaluate(() => { const d = document.getElementById("sources"); if (d) d.open = true; })],
   ["Start here link", async p => { const a = p.locator(".priority a[data-open]").first(); if (await a.count()) await a.click(); }],
+  ["Show map", p => p.click("#showReportMap")],
+  ["More in a topic", async p => { const b = p.locator("details.check[open] .more-btn").first(); if (await b.count()) await b.click(); }],
+  ["Next steps opened", async p => { for (const s of await p.locator(".step-fold > summary").all()) await s.click(); }],
   ["tick", async p => { const b = p.locator("#viewing input[data-tick]").first(); if (await b.count()) await b.check(); }],
+  ["Change (search map shown)", p => p.click("#changePlace")],
+  ["Saved (saved list shown)", p => p.click("#showSaved")],
   ["Move to another device", p => p.click("#moveDevice summary")],
   ["Compare three", async p => {
     await p.evaluate(() => { const l = store.get(SAVED_KEY, []), s = l[0]; if (!s) return;
@@ -60,7 +65,7 @@ for (const [size, opts] of SIZES) for (const scheme of ["light", "dark"]) for (c
   await page.goto(BASE);
   await check(page, `${label} – start page`);
   await page.goto(BASE + "?postcode=SW1A%201AA");
-  await page.waitForSelector("#checklistBox input", { timeout: 60000 });
+  await page.waitForSelector("#checklistBox input", { state: "attached", timeout: 60000 });   // the checklist is built (it starts folded)
   await check(page, `${label} – report`);
   for (const [name, act] of ACTIONS) { await act(page); await check(page, `${label} – after ${name}`); }
   await page.goto(BASE + "status.html");

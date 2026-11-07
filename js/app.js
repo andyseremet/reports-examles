@@ -636,7 +636,8 @@ function runChecks(options = {}) {
   $("toolbar").classList.remove("hidden");
   $("reportNav").classList.remove("hidden");
   $("comparePanel").classList.add("hidden");
-  $("reportPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  showPlaceBar(loc);
+  $("placeBar").scrollIntoView({ behavior: "smooth", block: "start" });
 
   TASKS.forEach(([key]) => startTask(run, key));
 }
@@ -668,6 +669,44 @@ let lastRunKey = null;
 let shownSearch = location.search;   // the ?lat=… part of the address for what is on screen
 const REPORT_PLACEHOLDER = $("report").innerHTML;
 
+// With a report open, the search map and the saved list shrink to one line: "📍 Name · Change · Saved (3)".
+// "Change" and "Saved" open them again above the report; running a new check shrinks them again.
+function showPlaceBar(loc) {
+  $("placeName").textContent = loc.name;
+  $("placeBar").classList.remove("hidden");
+  setPanelOpen("search", false);
+  setPanelOpen("saved", false);
+}
+function hidePlaceBar() {
+  $("placeBar").classList.add("hidden");
+  document.body.classList.remove("hide-search", "hide-saved");
+}
+function setPanelOpen(which, open) {
+  const btn = $(which === "search" ? "changePlace" : "showSaved");
+  document.body.classList.toggle("hide-" + which, !open);
+  btn.setAttribute("aria-expanded", String(open));
+  updatePlaceButtons();
+  if (open && which === "search") setTimeout(() => map.invalidateSize(), 50);
+}
+function updatePlaceButtons() {
+  const n = (store.get(SAVED_KEY, []) || []).length;
+  const searchOpen = !document.body.classList.contains("hide-search");
+  const savedOpen = !document.body.classList.contains("hide-saved");
+  $("changePlace").innerHTML = `${icon("pencil")}<span>${searchOpen ? "Hide map" : "Change"}</span>`;
+  $("showSaved").innerHTML = `${icon("list")}<span>${savedOpen ? "Hide saved" : `Saved (${n})`}</span>`;
+  $("showSaved").classList.toggle("hidden", !n);
+}
+$("changePlace").addEventListener("click", () => {
+  const open = document.body.classList.contains("hide-search");
+  setPanelOpen("search", open);
+  if (open) $("searchPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+$("showSaved").addEventListener("click", () => {
+  const open = document.body.classList.contains("hide-saved");
+  setPanelOpen("saved", open);
+  if (open) $("savedPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 // Back to the search and map, as before the report was run.
 function showSearchView() {
   run = null;
@@ -676,6 +715,7 @@ function showSearchView() {
   if (reportMap) { reportMap.remove(); reportMap = null; }
   featureLayer.clearLayers();
   $("report").innerHTML = REPORT_PLACEHOLDER;
+  hidePlaceBar();
   $("toolbar").classList.add("hidden");
   $("reportNav").classList.add("hidden");
   $("runBtn").disabled = false;
@@ -822,6 +862,7 @@ function showSnapshot(snap, options = {}) {
   replotFeatures();
   $("toolbar").classList.remove("hidden");
   $("reportNav").classList.remove("hidden");
+  showPlaceBar(loc);
   finishRun();
 }
 
@@ -836,16 +877,20 @@ $("report").addEventListener("click", e => {
 /* ---------- private notes ---------- */
 const notesKey = () => "plc-notes:" + reportKey(run.loc);
 
+// "Next steps": notes, the viewing checklist and the checklist, each folded with a count so the report ends short.
+function stepFold(id, title, count, body, cls = "") {
+  return `<details class="step-fold ${cls}" id="${id}"><summary><h3>${title}</h3><span class="step-count">${count}</span>${moreToggle()}</summary>
+    <div class="step-body">${body}</div></details>`;
+}
+const notesCount = text => text.trim() ? "Written" : "Empty";
+
 function renderNotes() {
   const text = store.get(notesKey(), "");
-  $("notesBox").innerHTML = `
-    <section class="group notes" id="notes">
-      <h2><label for="notesText" style="display:inline;font-size:inherit">Your notes</label>${infoButton("info-notes", "About notes")}</h2>
-      ${infoBox("info-notes", "<p>Private notes for this property, for example viewing times or questions. Saved only on this device, and included when you print or download the report.</p>")}
-      <textarea id="notesText" rows="4" placeholder="e.g. Viewing on Saturday at 10am. Ask about the damp patch in the back bedroom."></textarea>
+  $("notesBox").innerHTML = stepFold("notes", "Your notes", notesCount(text), `
+      <p class="help">Private notes for this property, for example viewing times or questions. Saved only on this device, and included when you print or download the report.</p>
+      <textarea id="notesText" rows="4" aria-label="Your notes" placeholder="e.g. Viewing on Saturday at 10am. Ask about the damp patch in the back bedroom."></textarea>
       <p class="help notes-status no-print">Saved on this device <span id="notesFlash" aria-live="polite"></span></p>
-      <div class="notes-print" aria-hidden="true"></div>
-    </section>`;
+      <div class="notes-print" aria-hidden="true"></div>`, "notes");
   $("notesText").value = text;
   $("notesBox").querySelector(".notes-print").textContent = text;
 }
@@ -855,6 +900,7 @@ document.addEventListener("input", e => {
   if (e.target.id !== "notesText" || !run) return;
   const text = e.target.value;
   $("notesBox").querySelector(".notes-print").textContent = text;
+  $("notesBox").querySelector(".step-count").textContent = notesCount(text);
   clearTimeout(notesTimer);
   notesTimer = setTimeout(() => {
     const ok = store.set(notesKey(), text);
@@ -971,7 +1017,7 @@ function showCheck(c, result) {
   const slot = $("slot-" + c.id);
   if (!slot) return;
   slot.innerHTML = result ? renderCheck(result) : loadingCard(c);
-  if (result) prepareTables(slot, c.title);
+  if (result) { prepareTables(slot, c.title); shortenLists(slot, c.title); }
   placeSlot(c, result ? result.status : "loading");
 }
 function placeSlot(c, status) {
@@ -1021,6 +1067,32 @@ function prepareTables(container, title) {
   });
 }
 
+// Lists of sites or sales inside a topic show the first 3 (the nearest, or the most recent), then "Show all N".
+const LIST_SHOWN = 3;
+function shortenLists(container, title) {
+  container.querySelectorAll("table.site-list, ul.site-list").forEach((list, i) => {
+    const rows = [...list.querySelectorAll(list.tagName === "UL" ? ":scope > li" : "tbody > tr")];
+    if (rows.length <= LIST_SHOWN + 1) return;          // showing 3 of 4 would save nothing
+    rows.slice(LIST_SHOWN).forEach(r => { r.hidden = true; r.classList.add("list-extra"); });
+    const id = `${container.id}-list-${i}`;
+    list.id = id;
+    const label = `Show all ${rows.length}`;
+    const btn = `<p class="show-all-row no-print"><button class="link-btn show-all" type="button" aria-expanded="false" aria-controls="${id}"
+      data-label="${label}" aria-label="${label}: ${escapeHTML(title || "list")}">${label}</button></p>`;
+    (list.closest(".table-wrap") || list).insertAdjacentHTML("afterend", btn);
+  });
+}
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".show-all");
+  if (!btn) return;
+  const list = $(btn.getAttribute("aria-controls"));
+  const show = btn.getAttribute("aria-expanded") !== "true";
+  list.querySelectorAll(".list-extra").forEach(r => { r.hidden = !show; });
+  btn.setAttribute("aria-expanded", String(show));
+  btn.textContent = show ? "Show fewer" : btn.dataset.label;
+  btn.setAttribute("aria-label", btn.textContent + btn.getAttribute("aria-label").replace(/^[^:]*/, ""));
+});
+
 // "Details" with a down arrow when closed, "Hide" with an up arrow when open (the words come from css/app.css).
 function moreToggle() {
   return `<span class="more no-print" aria-hidden="true"><span class="more-text"></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
@@ -1043,7 +1115,7 @@ function renderCheck(c) {
         ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
         <h4>What to do</h4>${actions}
         ${c.dataDate ? `<p class="data-date"><strong>Data:</strong> ${escapeHTML(c.dataDate)}</p>` : ""}
-        <div class="info-row">${infoButton("about-" + c.id, "What this means and where the data comes from")}<span>What this means, and the data source</span></div>
+        <p class="info-row"><button class="link-btn more-btn" type="button" data-info aria-expanded="false" aria-controls="about-${c.id}">More: what this means, and the data source</button></p>
         <div class="info-body" id="about-${c.id}" hidden>
           ${c.meaning || ""}
           <p class="source">Source: ${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}${c.dataDate ? " · " + escapeHTML(c.dataDate) : ""}</p>
@@ -1053,11 +1125,13 @@ function renderCheck(c) {
 }
 
 function renderSkeleton(loc) {
+  if (reportMap) { reportMap.remove(); reportMap = null; reportFeatureLayer = null; }
   $("report").innerHTML = `
     <div class="cover" id="reportTop">
       <h1>Property Location Report</h1>
       <p class="meta" id="reportMeta"></p>
-      <div id="reportMap" aria-label="Map of the property and nearby features"></div>
+      <p class="map-toggle-row no-print"><button class="secondary icon-label" id="showReportMap" type="button" aria-expanded="false" aria-controls="reportMap">${icon("map")}<span>Show map</span></button></p>
+      <div id="reportMap" hidden aria-label="Map of the property and nearby features"></div>
       <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
       ${infoBox("info-read", `
         <ul class="legend-list">
@@ -1084,18 +1158,14 @@ function renderSkeleton(loc) {
         </section>`).join("")}
     </div>
 
-    <div id="notesBox"></div>
-
-    <div id="checklistBox">
-      <section class="group checklist viewing" id="viewing">
-        <h2>At the viewing</h2>
-        <p class="help">Your viewing checklist appears here when all the checks are finished.</p>
-      </section>
-      <section class="group checklist" id="checklist">
-        <h2>Your checklist</h2>
-        <p class="help">Your checklist appears here when all the checks are finished.</p>
-      </section>
-    </div>
+    <section class="group next-steps" id="nextSteps">
+      <h2>Next steps</h2>
+      <div id="notesBox"></div>
+      <div id="checklistBox">
+        ${stepFold("viewing", "At the viewing", "", `<p class="help">Your viewing checklist appears here when all the checks are finished.</p>`, "checklist viewing")}
+        ${stepFold("checklist", "Your checklist", "", `<p class="help">Your checklist appears here when all the checks are finished.</p>`, "checklist")}
+      </div>
+    </section>
 
     <div id="sourcesBox"></div>
 
@@ -1103,7 +1173,6 @@ function renderSkeleton(loc) {
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
   renderMeta();
-  drawReportMap(loc);
   renderSummary();
   watchSections();
   updateNavFade();
@@ -1256,6 +1325,20 @@ document.addEventListener("click", e => {
   if (again) again.focus();
 });
 
+// The map inside the report is drawn only after "Show map" (the search map above already shows the place).
+function setReportMap(show) {
+  const box = $("reportMap"), btn = $("showReportMap");
+  if (!box || !btn || !run) return;
+  box.hidden = !show;
+  btn.setAttribute("aria-expanded", String(show));
+  btn.querySelector("span").textContent = show ? "Hide map" : "Show map";
+  if (show && !reportMap) { drawReportMap(run.loc); replotFeatures(); }
+  if (show) reportMap.invalidateSize();
+}
+document.addEventListener("click", e => {
+  if (e.target.closest("#showReportMap")) setReportMap($("reportMap").hidden);
+});
+
 function drawReportMap(loc) {
   if (reportMap) { reportMap.remove(); reportMap = null; }
   reportMap = L.map("reportMap", {
@@ -1298,10 +1381,9 @@ function buildChecklist(checks) {
   lastChecklist = { seller: seller.map(plainText), conveyancer: conveyancer.map(plainText) };
   const list = items => `<ul>${items.map(i =>
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(plainText(i))}"><span>${i}</span></label></li>`).join("")}</ul>`;
-  return `
-    <section class="group checklist" id="checklist">
-      <h2>Your checklist${infoButton("info-checklist", "About the checklist")}</h2>
-      ${infoBox("info-checklist", "<p>Everything to follow up, gathered from the checks above. Tick items as you go: your ticks are remembered on this device for this property.</p>")}
+  return stepFold("checklist", "Your checklist", "", `
+      <p class="help">Everything to follow up, gathered from the checks above: questions for the seller, searches for your conveyancer
+        and things to check yourself. Tick items as you go: your ticks are remembered on this device for this property.</p>
       <div class="send-box no-print">
         <p><strong>Send to my conveyancer:</strong> an email, or text to copy, with the link to this report, the topics to look into and the questions below.</p>
         <div class="send-buttons">
@@ -1312,8 +1394,7 @@ function buildChecklist(checks) {
       </div>
       ${tickHeading("Questions to ask the seller or estate agent", seller.length)}${list(seller)}
       ${tickHeading("Searches and reports to ask your conveyancer for", conveyancer.length)}${list(conveyancer)}
-      ${tickHeading("Things to check yourself", yourself.length)}${list(yourself)}
-    </section>`;
+      ${tickHeading("Things to check yourself", yourself.length)}${list(yourself)}`, "checklist");
 }
 
 // "At the viewing": up to about 12 things to look for and ask on the day, the most serious topics first.
@@ -1326,20 +1407,18 @@ function buildViewing(checks) {
   const ask = pick([...flagged.flatMap(c => c.seller || []), ...VIEWING_GENERAL.ask], VIEWING_MAX.ask);
   const list = items => `<ul>${items.map(i =>
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(i)}"><span>${escapeHTML(i)}</span></label></li>`).join("")}</ul>`;
-  return `
-    <section class="group checklist viewing" id="viewing">
-      <h2>At the viewing${infoButton("info-viewing", "About the viewing checklist")}</h2>
-      ${infoBox("info-viewing", "<p>A short list for the day you see the property, built from this report: the topics to look into come first. Tick items as you go: your ticks are remembered on this device for this property, and saved properties open without a signal.</p>")}
+  return stepFold("viewing", "At the viewing", "", `
+      <p class="help">A short list for the day you see the property, built from this report: the topics to look into come first.
+        Your ticks are remembered on this device for this property, and saved properties open without a signal.</p>
       ${tickHeading("Look for", look.length)}${list(look)}
-      ${tickHeading("Ask on the day", ask.length)}${list(ask)}
-    </section>`;
+      ${tickHeading("Ask on the day", ask.length)}${list(ask)}`, "checklist viewing");
 }
 
 let lastChecklist = { seller: [], conveyancer: [] };
 
 // Each list's heading says how many of its items are ticked, e.g. "2 of 7 done".
 function tickHeading(title, total) {
-  return `<h3 class="tick-heading">${title} <span class="tick-count">0 of ${total} done</span></h3>`;
+  return `<h4 class="tick-heading">${title} <span class="tick-count">0 of ${total} done</span></h4>`;
 }
 function updateTickCounts() {
   document.querySelectorAll("#checklistBox .tick-heading").forEach(h => {
@@ -1348,6 +1427,15 @@ function updateTickCounts() {
     const count = h.querySelector(".tick-count");
     count.textContent = `${done} of ${boxes.length} done`;
     count.classList.toggle("all-done", boxes.length > 0 && done === boxes.length);
+  });
+  // Each fold's summary adds up its lists, e.g. "2 of 12 done".
+  document.querySelectorAll("#checklistBox .step-fold").forEach(f => {
+    const boxes = [...f.querySelectorAll("input[data-tick]")];
+    if (!boxes.length) return;
+    const done = boxes.filter(b => b.checked).length;
+    const count = f.querySelector(".step-count");
+    count.textContent = `${done} of ${boxes.length} done`;
+    count.classList.toggle("all-done", done === boxes.length);
   });
 }
 
@@ -1434,7 +1522,7 @@ function watchSections() {
       }
     });
   }, { rootMargin: "-20% 0px -70% 0px" });
-  ["reportTop", "group-flood", "group-ground", "group-living", "group-planning", "viewing", "checklist"].forEach(id => {
+  ["reportTop", "group-flood", "group-ground", "group-living", "group-planning", "nextSteps"].forEach(id => {
     const el = $(id);
     if (el) sectionObserver.observe(el);
   });
@@ -1478,6 +1566,7 @@ document.addEventListener("click", e => {
   const target = document.getElementById(a.getAttribute("href").slice(1));
   if (!target) return;
   e.preventDefault();
+  if (target.tagName === "DETAILS") target.open = true;
   if (a.dataset.open) {
     const d = $(a.dataset.open);
     if (d) {
@@ -1547,6 +1636,7 @@ function renderSaved() {
   const saved = Array.isArray(raw) ? [...raw].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)) : [];
   $("savedPanel").classList.toggle("hidden", !saved.length && !undoRemove);
   $("backupNote").classList.toggle("hidden", !backupDue(saved.length));
+  updatePlaceButtons();
   $("savedList").innerHTML = saved.map(s => `
     <li>
       <label class="cmp" title="Select to compare"><input type="checkbox" data-compare="${escapeHTML(s.key)}" aria-label="Compare ${escapeHTML(s.name)}"><span aria-hidden="true">Compare</span></label>
@@ -1816,7 +1906,7 @@ $("downloadHtml").addEventListener("click", () => {
   if (!reportData) return;
   const copy = $("report").cloneNode(true);
   copy.querySelectorAll("details").forEach(d => d.setAttribute("open", ""));
-  copy.querySelectorAll(".info-body").forEach(d => d.removeAttribute("hidden"));
+  copy.querySelectorAll(".info-body, .list-extra").forEach(d => d.removeAttribute("hidden"));
   copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button, #whyBox, .send-box").forEach(b => b.remove());
   copy.querySelectorAll("#notesText").forEach(t => t.remove());
   copy.querySelectorAll(".notes-print").forEach(d => { d.removeAttribute("aria-hidden"); d.classList.add("notes-download"); });
@@ -1853,7 +1943,7 @@ let closedBeforePrint = [];
 window.addEventListener("beforeprint", () => {
   closedBeforePrint = [...document.querySelectorAll("#report details:not([open])")];
   closedBeforePrint.forEach(d => { d.open = true; });
-  if (reportMap) reportMap.invalidateSize();
+  setReportMap(true);
 });
 window.addEventListener("afterprint", () => {
   closedBeforePrint.forEach(d => { d.open = false; });

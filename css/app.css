@@ -95,7 +95,11 @@ header .info-btn {border-color:#cbd8e5;background:transparent;color:#fff}
 header .info-btn[aria-expanded="true"] {background:#fff;color:#10243a}
 .info-body {font-size:14px;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:8px 0 12px}
 .info-body p {margin:4px 0}
-.info-row {display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted)}
+.info-row {margin:10px 0 0;font-size:14px}
+/* "More" inside a topic: the explanation and the data source stay folded until asked for. */
+.more-btn {padding:8px 0;min-height:44px;text-align:left}
+.more-btn::after {content:" ▾" / ""}
+.more-btn[aria-expanded="true"]::after {content:" ▴" / ""}
 h2 .info-btn,h3 .info-btn,p .info-btn {margin-left:6px}
 
 /* ---------- layout ---------- */
@@ -248,13 +252,21 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .nav-links.more-left {-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 40px),transparent)}
 .nav-links.more-left.more-right {-webkit-mask-image:linear-gradient(to right,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to right,transparent,#000 40px,#000 calc(100% - 40px),transparent)}
 .report-nav button {padding:6px 10px;font-size:13px}
-.cover,.group,#checklist,#viewing,.slot,details.check {scroll-margin-top:calc(var(--sticky-top) + 8px)}
+.cover,.group,.step-fold,.slot,details.check {scroll-margin-top:calc(var(--sticky-top) + 8px)}
 /* Keep keyboard focus clear of the sticky section bar (top) and the "back to top" button (bottom),
    so a focused item is never hidden behind them (WCAG 2.2: 2.4.11). Not on the section bar itself:
    focusing its links must not interrupt the scroll to the chosen section. */
 :focus:not(#reportNav, #reportNav *) {scroll-margin-top:var(--sticky-top);scroll-margin-bottom:var(--bottom-clear)}
 .cover h1 {font-size:26px;color:var(--heading);margin:0}
 .cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
+.map-toggle-row {margin:12px 0 0}
+/* One line above the report: the place, "Change" (search map) and "Saved (3)". */
+.place-bar {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:12px 0;padding:8px 12px;
+  border:1px solid var(--border);border-radius:8px;background:var(--surface);scroll-margin-top:8px}
+.place-name {overflow-wrap:anywhere;min-width:0}
+.place-btns {display:flex;gap:8px;flex-wrap:wrap}
+.place-btns button {display:inline-flex;align-items:center;gap:6px}
+body.hide-search #searchPanel,body.hide-saved #savedPanel {display:none}
 #reportMap {height:260px;border-radius:8px;border:1px solid var(--border);margin:14px 0;isolation:isolate}
 .verdict {font-size:18px;margin:10px 0}
 .progress-bar {height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin:8px 0 14px}
@@ -276,6 +288,20 @@ details.clear-fold > summary::-webkit-details-marker {display:none}
 details.clear-fold > summary:hover {background:var(--hover)}
 .fold-names {font-weight:normal;color:var(--text)}
 details.clear-fold > .fold-body {padding:0 8px 8px}
+/* "Next steps": notes, viewing checklist and checklist, each folded with its count. */
+details.step-fold {border:1px solid var(--border);border-left:5px solid var(--link);border-radius:8px;margin:10px 0;background:var(--surface)}
+details.step-fold > summary {cursor:pointer;list-style:none;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;padding:10px 14px}
+details.step-fold > summary::-webkit-details-marker {display:none}
+details.step-fold > summary:hover {background:var(--hover)}
+details.step-fold > summary h3 {margin:0;font-size:17px}
+.step-count {font-size:14px;color:var(--muted)}
+.step-count.all-done {color:var(--low);font-weight:bold}
+.step-count.all-done::after {content:" ✓"}
+details.step-fold > summary .more {margin-left:auto;display:inline-flex;align-items:center;gap:2px;font-size:14px;font-weight:bold;color:var(--link);white-space:nowrap}
+details.step-fold > summary .more-text::before {content:"Open"}
+details.step-fold[open] > summary .more-text::before {content:"Hide"}
+details.step-fold[open] > summary .more svg {transform:rotate(180deg)}
+details.step-fold > .step-body {padding:0 14px 12px}
 .priority {list-style:none;padding:0;margin:0}
 .priority li {margin:6px 0;padding:10px 12px;border-radius:8px;border:1px solid var(--border);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .priority li a {font-weight:bold}
@@ -345,7 +371,10 @@ table {width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:13px}
 th,td {text-align:left;padding:7px;border-bottom:1px solid var(--border);vertical-align:top}
 th {background:var(--surface-2);color:var(--heading)}
 .table-wrap {overflow-x:auto}
-.checklist h3 {margin-top:16px}
+.show-all-row {margin:4px 0 8px}
+.show-all {min-height:44px;padding:8px 0}
+tr[hidden],li[hidden] {display:none!important}
+.checklist .tick-heading {margin:16px 0 4px}
 .tick-count {font-size:13px;font-weight:normal;color:var(--muted);margin-left:6px;white-space:nowrap}
 .tick-count.all-done {color:var(--low);font-weight:bold}
 .tick-count.all-done::after {content:" ✓"}
@@ -444,6 +473,12 @@ body.has-sticky footer {padding-bottom:100px}
   table.stack-table td[data-label]::before {content:attr(data-label);display:block;font-size:11px;font-weight:bold;
     text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
   table.stack-table td:first-child {font-size:14px}
+  /* Lists of sites and sales: one compact line per row (name · distance · …), not a tall card. */
+  table.stack-table.site-list tr {display:flex;flex-wrap:wrap;gap:0 6px;padding:6px 10px;margin:4px 0}
+  table.stack-table.site-list td {width:auto;padding:0;font-size:14px}
+  table.stack-table.site-list td[data-label]::before {display:none}
+  table.stack-table.site-list td:first-child {font-weight:bold;flex-basis:100%}
+  table.stack-table.site-list td:not(:first-child) + td::before {content:"·" / "";display:inline;margin-right:6px;color:var(--muted)}
   .compare-table td {min-width:0}
 }
 
@@ -471,6 +506,8 @@ body.has-sticky footer {padding-bottom:100px}
   .check,.checklist li,.priority li,.gaps-box li {break-inside:avoid}
   .info-btn,[data-retry] {display:none!important}
   .info-body[hidden] {display:block!important}
+  tr.list-extra[hidden] {display:table-row!important}
+  li.list-extra[hidden] {display:list-item!important}
   .leaflet-control-zoom {display:none}
   @page {size:A4;margin:14mm}
 }

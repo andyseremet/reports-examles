@@ -61,7 +61,7 @@ function checkNature(R) {
     found: inSssi
       ? "The property is inside a Site of Special Scientific Interest."
       : found.length ? `${plural(found.length, "protected nature site")} within ${formatRadius(R.loc.radius)}.` : `No protected nature sites within ${formatRadius(R.loc.radius)}.`,
-    details: found.length ? `<ul>${found.slice(0, 8).map(e => `<li>${escapeHTML(sets[e.dataset])}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}</ul>` : "",
+    details: found.length ? `<ul class="site-list">${found.slice(0, 8).map(e => `<li>${escapeHTML(sets[e.dataset])}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}</ul>` : "",
     meaning: "<p>Nature sites are usually a plus for buyers, but they can limit building work or land use nearby." +
       (inSssi ? " Inside a Site of Special Scientific Interest, many activities need consent from Natural England." : "") + "</p>"
   };
@@ -145,7 +145,7 @@ function checkNatureDevolved(R) {
     found: inSssi
       ? `The property is inside ${ni ? "an Area" : "a Site"} of Special Scientific Interest (${w.sssi[0]}).`
       : found.length ? `${counted} ${within}.` : `No protected nature sites ${within}.`,
-    details: found.length ? `<ul>${sites.slice(0, 8).map(e => `<li>${escapeHTML(e.kind)}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}${
+    details: found.length ? `<ul class="site-list">${sites.slice(0, 8).map(e => `<li>${escapeHTML(e.kind)}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}${
       woods.length ? `<li>Ancient woodland: ${plural(woods.length, "area")}</li>` : ""}</ul>` : "",
     meaning: "<p>Nature sites are usually a plus for buyers, but they can limit building work or land use nearby." +
       (inSssi ? ` Inside ${ni ? "an Area" : "a Site"} of Special Scientific Interest, many activities need consent from ${scot ? "NatureScot" : ni ? "DAERA" : "Natural Resources Wales"}.` : "") + "</p>" +
