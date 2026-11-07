@@ -147,7 +147,7 @@ function checkLanduse(R) {
   const contaminated = byDataset(nearby, "contaminated-land");
   const comah = byDataset(nearby, "control-of-major-accident-hazards-site");
   const brownfield = byDataset(nearby, "brownfield-land");
-  const council = okValue(R, "place") ? R.place.value.admin_district + " Council" : "the local council";
+  const council = okValue(R, "place")?.admin_district ? R.place.value.admin_district + " Council" : "the local council";
   const within = formatRadius(R.loc.radius);
 
   // Landfill sets the rating: within 250 m "Look into this", up to 1 km "Worth checking", further "For information".
@@ -201,7 +201,7 @@ function checkLanduseWales(R) {
   const base = { source: { name: "Welsh Government, disused coal tips in Wales (DataMapWales)", url: LINKS.walesCoalTips } };
   if (!R.coalTips.ok) return unavailable(base, R, "coalTips");
   const tips = R.coalTips.value || [];
-  const council = okValue(R, "place") ? R.place.value.admin_district + " Council" : "the local council";
+  const council = okValue(R, "place")?.admin_district ? R.place.value.admin_district + " Council" : "the local council";
   const within = formatRadius(R.loc.radius);
   const close = tips.filter(t => t.distanceKm != null && t.distanceKm <= COAL_TIP_CLOSE_KM);
   const higher = tips.filter(t => t.category === "C" || t.category === "D");
@@ -237,7 +237,7 @@ function checkLanduseScotland(R) {
   const base = { source: { name: "SEPA, licensed waste sites (waste management licences and permits)", url: LINKS.sepaPermits } };
   if (!R.wasteSites.ok) return unavailable(base, R, "wasteSites");
   const sites = R.wasteSites.value || [];
-  const council = okValue(R, "place") ? R.place.value.admin_district + " Council" : "the local council";
+  const council = okValue(R, "place")?.admin_district ? R.place.value.admin_district + " Council" : "the local council";
   const within = formatRadius(R.loc.radius);
   const landfill = sites.filter(s => s.landfill);
   // Landfill uses the England rule: within 250 m "Look into this", up to 1 km "Worth checking". Other waste sites are for information.

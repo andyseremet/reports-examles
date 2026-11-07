@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.33.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.34.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 7 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.33.0)
+## Part 1: What the app does today (version 1.34.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -83,6 +83,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - Air quality (1.33.0, owner's request): the Open-Meteo area estimate is the main source and the council hotspot list
   (planning.data.gov.uk in England) adds to it, so the topic still answers when either is down. Only with both answering
   can it say "No issue found".
+- More backups (1.34.0, first step to 2.0): conservation areas from Historic England's map when planning.data.gov.uk
+  is down; the country and place from OpenStreetMap when postcodes.io is down; Photon when the address search is down;
+  and each service's answer for a place kept on the device for 7 days, used (dated) only if that service fails.
 - A report still loading after 8 seconds names the services it is waiting for.
 - Careful pacing of requests to the Environment Agency map server, so it does not refuse them.
 - Requests to the Welsh, Scottish and Northern Ireland map servers (including SEPA, since 1.28.1) go a few at a time,
@@ -116,10 +119,36 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ## Part 2: Planned next steps
 
-The "shorter reports on phones" plan (quiz of 6 November 2026) is finished: 1.29.0, 1.30.0 and 1.31.0. Nothing else is
-scheduled yet. Ideas are listed in Part 3. Each is planned with a short quiz before it is built, and each version keeps the same habits:
-bump the version number and the offline cache name together, update the README, add new behaviour to the daily check,
-and never weaken a test to get a pass.
+### Priority: the road to version 2.0 (health check and quiz of 7 November 2026)
+
+Version 2.0 is the planned final version. It comes in four steps (1.34.0, the backups, shipped on 7 November 2026); each is built, tested (full check and accessibility
+check) and merged by the owner before the next one starts. Every item below was chosen in the quiz.
+
+| Step | Priority | What changes | Why |
+|---|---|---|---|
+| **1.35.0 Printed report** | 2 | **At-a-glance page**: property details, the verdict and one table of every topic (symbol, rating, one-line finding). | A buyer, conveyancer or surveyor sees the whole picture on page 1. |
+| | 2 | **Page footer** on every page: address, date, "Page 2 of 6" and a one-line disclaimer. | A professional look, and loose pages stay identifiable. |
+| | 2 | **Print only what matters**: no app instructions, buttons or "saved results" note on paper; fix the "Instead: or use…" glitch. | Found in the health check: the printout still says "tap a heading" and "the i buttons". |
+| | 2 | **New page per section**: Flooding, Ground, Living, Planning and Next steps each start on a new page. | Easier to read and to hand over one section. |
+| **1.36.0 Ease of use** | 3 | **Visible search box** above the map, always shown (today it sits behind the map's 🔍 button). | First-time users looked for a search box and missed the button. |
+| | 3 | **3-step guide** on the first visit: 1 Search · 2 Check the pin · 3 Read your report; hidden after the first report. | Anyone can start without reading help text. |
+| | 3 | **Plain-words glossary**: its own "What the words mean" page (like the status page), linked from each term, the report and the footer, and printable. | One place for flood zone, radon, AQMA, CON29M, conservation area and the rest. |
+| | 3 | **Fewer "i" buttons**: one short visible sentence instead, keeping "i" only for long explanations. | Fewer taps and less hidden text. |
+| **2.0.0 Final** | 4 | **Split `js/app.js`** (about 2,000 lines) into a few smaller files (search, report, saved, print), with no build step and the same behaviour. | Easier and safer to change later. |
+| | 4 | **Steady pull request checks**: reports are built from recorded answers, so outside outages never turn a pull request red. The daily check stays fully live. | During the 6–7 November outage, every pull request was red for reasons outside the app. |
+| | 4 | **Final review**: the app run on places in all four countries, the accessibility check, README and road map brought up to date. | A clean 2.0. |
+
+**No open backup exists** (health check, 7 November 2026), so these topics keep saying clearly what could not be
+checked during an outage: Green Belt, HS2 safeguarding, schools (the national school list is only a download file),
+bus and tram stops (the NaPTAN service does not let web pages read it), council air pollution hotspots in England
+(Defra's map does not let web pages read it; air quality still answers from the Open-Meteo estimate), contaminated land,
+noise, radon, coal, police data and sale prices.
+
+**Health check notes:** all 65 help links open (police.uk, Ofcom, NHS inform and Historic England refuse automated
+checks but open for people); issue #46 "Live check failed" is the planning.data.gov.uk outage and closes when it recovers.
+
+Each step keeps the same habits: plan first, bump the version number and the offline cache name together, update the
+README, add new behaviour to the daily check, and never weaken a test to get a pass. Other ideas are listed in Part 3.
 
 ### Voluntary support (not scheduled)
 

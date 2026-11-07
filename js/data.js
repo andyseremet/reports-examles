@@ -10,12 +10,26 @@ const placeCache = new Map();
 function getPlace(loc) {
   const key = Number(loc.lat).toFixed(5) + "," + Number(loc.lon).toFixed(5);
   if (!placeCache.has(key)) {
+    // postcodes.io first; if it does not answer, OpenStreetMap's reverse lookup gives the country and council.
     const promise = fetchJSON(API.postcodes + "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=2000&limit=1")
-      .then(d => (d.result && d.result[0]) || null);
+      .then(d => (d.result && d.result[0]) || null, () => placeFromOsm(loc));
     promise.catch(() => placeCache.delete(key));   // try again next time if it failed
     placeCache.set(key, promise);
   }
   return placeCache.get(key);
+}
+
+// Backup for getPlace: the country (from the ISO region code), postcode and council-level place name from OpenStreetMap.
+// It has no ward or census area codes, so crime per 1,000 residents is left out while postcodes.io is down.
+const OSM_COUNTRY = { "GB-ENG": "England", "GB-SCT": "Scotland", "GB-WLS": "Wales", "GB-NIR": "Northern Ireland" };
+async function placeFromOsm(loc) {
+  const d = await fetchJSON(`${API.nominatimReverse}?format=json&zoom=18&addressdetails=1&lat=${loc.lat}&lon=${loc.lon}`);
+  const a = (d && d.address) || {};
+  const country = OSM_COUNTRY[a["ISO3166-2-lvl4"]];
+  if (!country) return null;
+  const postcode = a.postcode || "";
+  return { country, postcode, outcode: postcode.split(" ")[0], admin_district: a.city || a.county || "",   // a council-level name only (a town or region would name the wrong council)
+    admin_ward: "", fromBackup: "OpenStreetMap" };
 }
 
 // Ask a WMS map service what is at the centre pixel of a small square around the pin.
@@ -209,9 +223,9 @@ async function getPlanningNearby(loc) {
 }
 
 // When planning.data.gov.uk does not answer (England only), heritage and nature are asked from the original publishers:
-// Historic England (National Heritage List for England) and Natural England, and the flood zone at the pin from the
+// Historic England (National Heritage List for England, and its conservation areas map) and Natural England, and the flood zone at the pin from the
 // Environment Agency (one request to its paced map server, agreed by the owner for outages only). Nothing is asked from
-// them otherwise. Nearby flood zones, main rivers, air quality areas, conservation areas, Green Belt, contaminated land
+// them otherwise. Nearby flood zones, main rivers, air quality areas, Green Belt, HS2, contaminated land
 // and the other sets have no second open source, so they stay "not available". The backup answer travels with the failure (R[key].backup), so only the
 // checks that read it (planning, nature) use it; every other check still sees planning.data.gov.uk as not answering.
 const BACKUP_LAYERS = {
@@ -219,6 +233,7 @@ const BACKUP_LAYERS = {
   "listed-building-outline": ["Historic England", API.heritageEngland + "/3/query", "Name"],
   "scheduled-monument": ["Historic England", API.heritageEngland + "/6/query", "Name"],
   "world-heritage-site": ["Historic England", API.heritageEngland + "/10/query", "Name"],
+  "conservation-area": ["Historic England", API.conservationEngland, "NAME"],
   "site-of-special-scientific-interest": ["Natural England", API.natureEngland + "/SSSI_England/FeatureServer/0/query", "NAME"],
   "special-area-of-conservation": ["Natural England", API.natureEngland + "/Special_Areas_of_Conservation_England/FeatureServer/0/query", "SAC_NAME"],
   "special-protection-area": ["Natural England", API.natureEngland + "/Special_Protection_Areas_England/FeatureServer/0/query", "SPA_NAME"],
