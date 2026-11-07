@@ -322,9 +322,6 @@ details.step-fold > summary .more-text::before {content:"Open"}
 details.step-fold[open] > summary .more-text::before {content:"Hide"}
 details.step-fold[open] > summary .more svg {transform:rotate(180deg)}
 details.step-fold > .step-body {padding:0 14px 12px}
-.priority {list-style:none;padding:0;margin:0}
-.priority li {margin:6px 0;padding:10px 12px;border-radius:8px;border:1px solid var(--border);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
-.priority li a {font-weight:bold}
 .gaps-box {margin:16px 0;padding:12px 14px;border:1px solid var(--border);border-left:4px solid #6b7280;border-radius:8px;background:var(--surface-2)}
 .gaps-box h3 {margin:0 0 4px}
 .gaps-box p {margin:0;font-size:14px}
@@ -385,8 +382,6 @@ details.check[open] > summary .more svg,.gaps-box[open] > summary .more svg,.cle
 .check-body {padding:0 16px 14px;font-size:14px}
 .check-body p {margin:4px 0 8px}
 .check-body ul {margin:4px 0 8px;padding-left:20px}
-.data-date {font-size:13px;color:var(--muted);margin:10px 0 0}
-.source {font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;margin-top:10px}
 table {width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:13px}
 th,td {text-align:left;padding:7px;border-bottom:1px solid var(--border);vertical-align:top}
 th {background:var(--surface-2);color:var(--heading)}
@@ -537,7 +532,7 @@ body.has-sticky footer {padding-bottom:100px}
   a {color:#222;text-decoration:none}
   .details-start {margin-top:10mm}
   /* Long topic cards may continue on the next page (avoiding that left half-empty pages); a heading stays with its text. */
-  .checklist li,.priority li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
+  .checklist li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
   details.check > summary,.check-body h4 {break-after:avoid}
   .info-row {display:none!important}
   .info-btn,[data-retry] {display:none!important}
@@ -548,7 +543,8 @@ body.has-sticky footer {padding-bottom:100px}
   @page {size:A4;margin:14mm 14mm 16mm}
   /* Paper shows what a reader needs: the at-a-glance table instead of the tappable grid, no app instructions. */
   .print-only {display:block!important}
-  .topic-strip,.start-here,.saved-note,#info-read,.rating-legend {display:none!important}
+  .topic-strip,.saved-note,#info-read,.rating-legend {display:none!important}
+  .key-findings a {color:inherit;text-decoration:none}
   .glance-table {width:100%;border-collapse:collapse;font-size:11px}
   .glance-table th,.glance-table td {border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}
   .glance-table th {background:#eee}
@@ -582,7 +578,6 @@ body.has-sticky footer {padding-bottom:100px}
   .glance-key .chip {font-size:9.5px}
   .verdict {font-size:13px}
   .gaps-box {break-inside:avoid}
-  .check-body .info-body::before {content:"What this means";display:block;font-weight:bold;color:var(--navy);margin-bottom:1mm}
   /* Full report: each section starts on a new page. */
   /* The report runs on continuously: extra space before each section, and its heading stays with what follows. */
   .details-start > .group,#nextSteps,#sourcesBox {margin-top:12mm}
@@ -672,11 +667,9 @@ body.has-sticky footer {padding-bottom:100px}
   .check-body {padding:0 5mm 4mm}
   .check-body h4 {font-size:10.5px;font-weight:650;color:#1d1d1f;margin:4mm 0 1.5mm}
   .check-body .info-body {background:#f5f5f7;border:0;border-radius:10px;padding:3mm 4mm;margin:3mm 0 0}
-  .check-body .info-body::before {color:#1d1d1f;font-weight:650}
   .check-body .table-wrap table {border-collapse:collapse;width:100%}
   .check-body .table-wrap th,.check-body .table-wrap td {border:0;border-bottom:.5px solid #e5e5ea;padding:1.5mm 2mm}
   .check-body .table-wrap th {color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.03em}
-  .data-date {color:#86868b}
 
   /* "No issue found" folds: a soft grey panel holding white cards. */
   details.clear-fold {border:0;background:#f5f5f7;border-radius:16px;margin:7mm 0;padding:0 4mm 1mm}
@@ -696,8 +689,8 @@ body.has-sticky footer {padding-bottom:100px}
 @media print {
   /* One text size inside cards and panels, smaller than the card heading. */
   details.check > summary .found,.check-body p,.check-body li,.check-body td,.check-body .info-body,.gaps-box p,.gaps-box li,
-  .step-body p,.step-body li,.priority li,.key-findings li {font-size:10.5px;line-height:1.5}
-  .check-body .info-body p,.check-body .source {font-size:10px}
+  .step-body p,.step-body li,.key-findings li {font-size:10.5px;line-height:1.5}
+  .check-body .info-body p {font-size:10px}
   .cover-details th {background:none}
   /* A section heading and its intro stay with the first card. */
   .group > h2,.group > .info-body {break-after:avoid}
@@ -722,8 +715,6 @@ body.has-sticky footer {padding-bottom:100px}
 
   /* Explanations as plain text with a small label; dates and sources are in the table at the end. */
   .check-body .info-body {background:none;border:0;border-radius:0;padding:0;margin:4mm 0 0}
-  .check-body .info-body::before {font-size:10.5px;margin-bottom:1mm}
-  .check-body .info-body .source,.check-body .data-date {display:none!important}
 
   /* "No issue found" groups: a quiet subheading, then the cards as usual. */
   details.clear-fold {background:none;border:0;border-radius:0;padding:0;margin:9mm 0 0}
@@ -766,8 +757,18 @@ body.has-sticky footer {padding-bottom:100px}
   .verdict-sub:empty {display:none}
   .rating-legend .chip {font-weight:600}
   .chip {font-weight:600}
-  .priority li {border-radius:12px}
+  .key-findings {background:var(--surface-2);border-radius:14px;padding:16px 20px;margin:16px 0}
+  .key-findings h3 {margin:0 0 8px}
+  .key-findings ol {margin:0;padding-left:20px}
+  .key-findings li {margin:8px 0;max-width:70ch}
+  .key-findings li a {color:var(--heading)}
+  .key-findings p {margin:8px 0 0;color:var(--muted)}
   .info-body {border-radius:12px}
+
+  /* Easier reading: the finding first in bold once a topic is open, then "What to do"; lines of about 70 characters. */
+  details.check[open] > summary .found {font-weight:600;color:var(--heading)}
+  details.check > summary .found,.check-body p,.check-body li,.check-body h4,.group-intro,.verdict,.verdict-sub {max-width:70ch}
+  .check-body .more-body h4:first-child {margin-top:4px}
 
   /* Start page: the search, map and pin check read as one clean panel. */
   #map {border-radius:12px}

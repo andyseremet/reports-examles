@@ -1191,14 +1191,13 @@ function renderCheck(c) {
         ${c.fromSaved ? `<p class="notice saved-answer">The data service is not answering right now, so this is <strong>your saved result
           from ${escapeHTML(savedDate(c.fromSaved))}</strong>. It may be out of date.</p>` : ""}
         ${c.status === "error" || c.fromSaved ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
-        ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
         <h4>What to do</h4>${actions}
-        ${c.dataDate ? `<p class="data-date"><strong>Data:</strong> ${escapeHTML(c.dataDate)}</p>` : ""}
-        <p class="info-row"><button class="link-btn more-btn" type="button" data-info aria-expanded="false" aria-controls="about-${c.id}">More: what this means, and the data source</button></p>
-        <div class="info-body" id="about-${c.id}" hidden>
-          ${c.meaning || ""}
-          <p class="source">Source: ${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}${c.dataDate ? " · " + escapeHTML(c.dataDate) : ""}</p>
-        </div>
+        ${c.details || c.meaning ? `
+        <p class="info-row"><button class="link-btn more-btn" type="button" data-info aria-expanded="false" aria-controls="about-${c.id}">More: what we found and what it means</button></p>
+        <div class="info-body more-body" id="about-${c.id}" hidden>
+          ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
+          ${c.meaning ? `<h4>What this means</h4>${c.meaning}` : ""}
+        </div>` : ""}
       </div>
     </details>`;
 }
@@ -1356,14 +1355,11 @@ function renderSummary() {
       }).join("")}
     </ul>
     ${legend ? `<ul class="rating-legend" aria-label="Topics by rating">${legend}</ul>` : ""}
-    ${run.done && priority.length ? `<div class="key-findings print-only"><h3>Key findings</h3><ol>${priority.slice(0, 3).map(c =>
-      `<li>${chip(c.status)} <strong>${escapeHTML(c.title)}:</strong> ${escapeHTML(c.found)}</li>`).join("")}</ol>${priority.length > 3
-      ? `<p>And ${plural(priority.length - 3, "more topic")} to look into or check: see the table below.</p>` : ""}</div>` : ""}
+    ${run.done && priority.length ? `<div class="key-findings"><h3>Key findings</h3><ol>${priority.slice(0, 3).map(c =>
+      `<li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}"><strong>${escapeHTML(c.title)}</strong></a>: ${escapeHTML(c.found)}</li>`).join("")}</ol>${priority.length > 3
+      ? `<p>And ${plural(priority.length - 3, "more topic")} to look into or check: see the <span class="print-only">table</span><span class="no-print">sections</span> below.</p>` : ""}</div>` : ""}
     ${glanceTable(results)}
     ${whyBox()}
-    ${priority.length ? `<div class="start-here"><h3>Start here</h3><ul class="priority">${priority.map(c => `
-      <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
-          <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul></div>` : ""}
     ${dataGapsBox(results)}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
       ${p.country === "Wales"
@@ -1719,7 +1715,7 @@ function updateNavFade() {
 $("navLinks").addEventListener("scroll", updateNavFade, { passive: true });
 window.addEventListener("resize", updateNavFade);
 
-// Links within the report (section bar, topic icons, "Start here") scroll to their
+// Links within the report (section bar, topic icons, "Key findings") scroll to their
 // section without adding steps to the browser history, and open the topic they point to.
 document.addEventListener("click", e => {
   const a = e.target.closest('a[href^="#"]');

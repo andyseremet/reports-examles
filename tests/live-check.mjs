@@ -690,15 +690,15 @@ async function testDevice(device, [postcode, place]) {
       drawn: !!document.querySelector("#reportMap.leaflet-container"), text: document.getElementById("showReportMap").textContent.trim() }));
     if (after.hidden || !after.drawn || after.text !== "Hide map") throw new Error(`after Show map: hidden ${after.hidden}, drawn ${after.drawn}, button "${after.text}"`);
     await page.click("#showReportMap");
-    // Inside a topic, "What this means" and the source stay folded until "More".
+    // Inside a topic, "What we found" and "What this means" stay folded until "More" (sources and dates are in the table at the end).
     const more = page.locator("details.check[open] .more-btn").first();
     if (await more.count()) {
       const box = await more.getAttribute("aria-controls");
       const hiddenBefore = await page.$eval("#" + box, x => x.hidden);
       await more.click();
-      const shown = await page.$eval("#" + box, x => !x.hidden && x.textContent.includes("Source:"));
+      const shown = await page.$eval("#" + box, x => !x.hidden && /What we found|What this means/.test(x.textContent));
       await more.click();
-      if (!hiddenBefore || !shown) throw new Error(`"More" in ${box} did not fold and unfold the explanation and source`);
+      if (!hiddenBefore || !shown) throw new Error(`"More" in ${box} did not fold and unfold what was found and what it means`);
     }
     // A list of more than 4 sites or sales shows the first 3, and "Show all N" shows the rest.
     const lists = await page.evaluate(() => [...document.querySelectorAll("#report .site-list")].map(l => {
@@ -756,18 +756,18 @@ async function testDevice(device, [postcode, place]) {
 
   await step("Data gaps box lists every topic without an answer", async () => {
     // Every "Check yourself" or "Not available" topic must appear in the box, with a way to check it
-    // instead, and not in "Start here"; with no such topics, the box is hidden.
+    // instead, and not in "Key findings"; with no such topics, the box is hidden.
     const r = await page.evaluate(() => {
       const want = orderedResults().filter(c => ["manual", "error"].includes(c.status)).map(c => c.id).sort();
       const rows = [...document.querySelectorAll(".gaps-box li")];
       const inBox = rows.map(li => li.querySelector("[data-open]").dataset.open.replace("check-", "")).sort();
       const noWay = rows.filter(li => li.querySelector(".gap-ask").textContent.replace("Instead:", "").trim().length < 10).length;
-      const inStart = document.querySelectorAll(".priority li .chip.manual, .priority li .chip.error").length;
+      const inStart = document.querySelectorAll(".key-findings li .chip.manual, .key-findings li .chip.error").length;
       return { want, inBox, noWay, inStart, box: !!document.querySelector(".gaps-box") };
     });
     if (r.want.join() !== r.inBox.join()) throw new Error(`box lists [${r.inBox}] but expected [${r.want}]`);
     if (r.noWay) throw new Error(`${r.noWay} row(s) do not say how to check instead`);
-    if (r.inStart) throw new Error(`${r.inStart} gap topic(s) still in "Start here"`);
+    if (r.inStart) throw new Error(`${r.inStart} gap topic(s) in "Key findings"`);
     if (!r.want.length && r.box) throw new Error("box shown with no gaps");
     if (r.want.length) {
       // The box folds away with Details / Hide: open for up to 3 topics, closed for more, and the
@@ -796,13 +796,17 @@ async function testDevice(device, [postcode, place]) {
     return text.startsWith("Radon") && text.length > 25 && expanded === "true" && closed ? text.slice(0, 70) + "…" : false;
   });
 
-  await step("Each topic says how current its data is", async () => {
-    const missing = await page.evaluate(() => orderedResults()
-      .filter(c => !["manual", "error"].includes(c.status))
-      .filter(c => { const d = document.querySelector(`#check-${c.id} .data-date`); return !d || d.textContent.trim().length < 12; })
-      .map(c => c.id));
-    if (missing.length) throw new Error("no data date on: " + missing.join(", "));
-    return await page.$eval("#check-crime .data-date", x => x.textContent.trim()).catch(() => "ok");
+  await step("Each topic says how current its data is (in the sources table at the end)", async () => {
+    const r = await page.evaluate(() => {
+      const rows = new Map([...document.querySelectorAll("#sources tbody tr")].map(tr => [tr.cells[0].textContent.trim(), tr.cells[2].textContent.trim()]));
+      const missing = orderedResults().filter(c => !["manual", "error"].includes(c.status))
+        .filter(c => !c.dataDate || c.dataDate.length < 12 || rows.get(c.title) !== c.dataDate).map(c => c.id);
+      const inCards = document.querySelectorAll("details.check .data-date, details.check .source").length;
+      return { missing, inCards, crime: rows.get((orderedResults().find(c => c.id === "crime") || {}).title) };
+    });
+    if (r.missing.length) throw new Error("no data date in the sources table for: " + r.missing.join(", "));
+    if (r.inCards) throw new Error(`${r.inCards} date or source line(s) still inside topics`);
+    return r.crime || "ok";
   });
 
   await step("Crime where the police publish no data", async () => {
