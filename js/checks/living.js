@@ -231,37 +231,42 @@ function checkNoise(R) {
 function checkAir(R) {
   const wales = isWales(R) || isScotland(R);   // Welsh or Scottish hotspot data, in the same shape
   const ni = isNI(R);   // no hotspot map: the area estimate only
+  // Open-Meteo (Copernicus CAMS model) is the main source; the council hotspot list (planning.data.gov.uk in England,
+  // DataMapWales in Wales, the Scottish Air Quality database in Scotland) adds to it, and stands in if the model fails.
+  // Only with both answering can it be "No issue found"; with either missing it is at most "For information".
+  const hotspotName = ni ? "council Air Quality Management Areas are not mapped for Northern Ireland"
+    : isScotland(R) ? "council Air Quality Management Areas (Scottish Air Quality database)"
+    : wales ? "council Air Quality Management Areas (Welsh Government, via DataMapWales)"
+    : "council Air Quality Management Areas (via planning.data.gov.uk)";
   const base = {
-    source: ni
-      ? { name: "Copernicus CAMS air quality model (via Open-Meteo); council Air Quality Management Areas are not mapped for Northern Ireland", url: LINKS.niAir }
-      : isScotland(R)
-      ? { name: "Council Air Quality Management Areas in Scotland (Scottish Air Quality database); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.scotAir }
-      : wales
-      ? { name: "Council Air Quality Management Areas in Wales (Welsh Government, via DataMapWales); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.walesAir }
-      : { name: "Council Air Quality Management Areas (via planning.data.gov.uk); Copernicus CAMS air quality model (via Open-Meteo)", url: LINKS.ukair }
+    source: { name: "Copernicus CAMS air quality model (via Open-Meteo); " + hotspotName,
+      url: ni ? LINKS.niAir : isScotland(R) ? LINKS.scotAir : wales ? LINKS.walesAir : LINKS.ukair }
   };
-  // Without the council hotspot data we cannot say "not in a hotspot" (missing data is never good news).
-  const hotspots = ni ? "air" : wales ? sitesKey(R) : "planningPoint";
-  if (!R[hotspots].ok) return unavailable(base, R, hotspots);
-
-  const ws = wales ? okValue(R, hotspots) : null;
-  const here = ni ? [] : wales ? (ws ? ws.aqma.map(name => ({ name })) : []) : byDataset(okValue(R, "planningPoint"), "air-quality-management-area");
-  const near = ni ? [] : wales ? (ws ? ws.aqmaNear.filter(n => !ws.aqma.includes(n)).map(name => ({ name })) : []) : byDataset(okValue(R, "planningNearby"), "air-quality-management-area");
   const m = okValue(R, "air");
+  const hotspots = ni ? null : wales ? sitesKey(R) : "planningPoint";
+  const hotspotsKnown = !!hotspots && R[hotspots].ok;
+  if (!m && !hotspotsKnown) return unavailable(base, R, !R.air.ok || !hotspots ? "air" : hotspots);
+
+  const ws = wales && hotspotsKnown ? okValue(R, hotspots) : null;
+  const here = !hotspotsKnown ? [] : wales ? ws.aqma.map(name => ({ name })) : byDataset(okValue(R, "planningPoint"), "air-quality-management-area");
+  const near = !hotspotsKnown ? [] : wales ? ws.aqmaNear.filter(n => !ws.aqma.includes(n)).map(name => ({ name })) : byDataset(okValue(R, "planningNearby"), "air-quality-management-area");
   // Scotland's yearly limit for fine particles (PM2.5) is 10 µg/m³ (Air Quality (Scotland) Amendment Regulations 2016); the UK's is 20.
   const scot = isScotland(R), pm25Limit = scot ? 10 : 20, limitName = scot ? "Scottish legal limit" : "UK legal limit";
   const overLegal = m && ((m.no2 ?? 0) > 40 || (m.pm25 ?? 0) > pm25Limit);
 
-  let status = "low";
-  let found = "Not in an air pollution hotspot declared by the council.";
-  if (here.length) { status = "medium"; found = "Inside an air pollution hotspot declared by the council (an Air Quality Management Area)."; }
-  else if (near.length) found += ` There is one within ${formatRadius(R.loc.radius)}.`;
-  if (ni) {
-    status = "manual";
-    found = "Council air pollution hotspots are not mapped for Northern Ireland, so check with the council." +
-      (m && !overLegal ? " Area pollution levels are estimated to be within UK legal limits." : "");
+  let status = !m || !hotspotsKnown ? "info" : "low";
+  const parts = [];
+  if (m) parts.push(`Area pollution levels are estimated to be ${overLegal ? "above" : "within"} ${scot ? "Scottish" : "UK"} legal limits.`);
+  else parts.push("The area pollution estimate could not be retrieved right now.");
+  if (hotspotsKnown) {
+    if (here.length) { status = "medium"; parts.push("Inside an air pollution hotspot declared by the council (an Air Quality Management Area)."); }
+    else parts.push("Not in an air pollution hotspot declared by the council." + (near.length ? ` There is one within ${formatRadius(R.loc.radius)}.` : ""));
+  } else {
+    parts.push(ni ? "Council air pollution hotspots are not mapped for Northern Ireland, so check with the council."
+      : "Council air pollution hotspots could not be checked right now.");
   }
-  if (overLegal) { status = "high"; found += ` Area pollution levels are estimated to be above ${scot ? "Scottish" : "UK"} legal limits.`; }
+  if (overLegal) status = "high";
+  const found = parts.join(" ");
 
   let details = "";
   const names = [...new Set([...here, ...near].map(a => a.name).filter(Boolean))].slice(0, 3);
@@ -287,7 +292,6 @@ function checkAir(R) {
       <p>The WHO recommendations are the yearly averages in the ${link(LINKS.whoAir, "WHO Global Air Quality Guidelines (2021)")}.
       ${scot ? "Scotland's legal limits are higher, though its fine-particle limit is half the UK's." : "UK legal limits are higher."} ${scot ? "Many places in Scotland are" : ni ? "Many places in Northern Ireland are" : wales ? "Most of Wales is" : "Most of England is"} above the WHO level. The model works on squares about 10 km
       across, so it describes the wider area, not your street. Levels beside busy roads are usually higher.</p>`,
-    ...(status === "manual" && { gap: "coverage" }),
     actions: [ni ? `See the council's hotspots and local monitoring results on ${link(LINKS.niAir, "Northern Ireland Air")}.` : scot ? `See local monitoring results and hotspots on ${link(LINKS.scotAir, "Air Quality in Scotland")}.` : wales ? `See local monitoring results and hotspots on ${link(LINKS.walesAir, "Air Quality in Wales")}.` : `See local monitoring results and hotspots on ${link(LINKS.ukair, "UK-AIR (Defra)")}.`]
   };
 }
