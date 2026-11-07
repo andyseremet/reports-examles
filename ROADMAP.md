@@ -126,8 +126,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Comfort and access
 - Dark mode, larger text (**A+ Text size**), and install as an app on a phone.
-- Checked against accessibility standard WCAG 2.2 AA; last re-checked on 5 November 2026 (1.25.0, after the UX review
-  changes in 1.22.0 to 1.24.0 and Compare up to 3).
+- Checked against accessibility standard WCAG 2.2 AA; last re-checked on 7 November 2026 (1.36.0, after the calm screen,
+  the glossary page and the always-shown report map; one fix: topic header lines now wrap at 320 px with A+ text).
 - Privacy: no account, cookies or tracking.
 - A **Data service status** page shows each data service's result in this morning's automatic check.
 
