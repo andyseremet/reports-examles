@@ -4,7 +4,10 @@
 #   anything fails, for example a government data service changing its address.
 # - On every pull request that changes the page: tests the proposed version
 #   before it is merged.
-# - Any time: run it by hand from the Actions tab ("Run workflow").
+#   Pull requests leave out the 37 outside services that only supply report data
+#   (data/data-services.csv), at the owner's request; the report itself still runs.
+# - Any time: run it by hand from the Actions tab ("Run workflow"), with the
+#   "Check the report data services" box ticked (the default) to test them too.
 
 name: Live check
 
@@ -12,6 +15,11 @@ on:
   schedule:
     - cron: "17 5 * * *"          # every day at 05:17 UTC
   workflow_dispatch:
+    inputs:
+      data_services:
+        description: "Check the report data services (the 37 in data/data-services.csv)"
+        type: boolean
+        default: true
   pull_request:
     paths:
       - "index.html"
@@ -35,7 +43,14 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    outputs:
+      data_services: ${{ steps.mode.outputs.data_services }}
     steps:
+      # Report data services: checked daily and on manual runs with the box ticked; left out on pull requests.
+      - name: Decide whether to check the report data services
+        id: mode
+        run: echo "data_services=${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.data_services)) && '1' || '0' }}" >> "$GITHUB_OUTPUT"
+
       - name: Get the code
         uses: actions/checkout@v6
 
@@ -80,6 +95,7 @@ jobs:
       - name: Run the checks
         env:
           BASE: ${{ github.event_name == 'pull_request' && 'http://localhost:8080/index.html' || 'https://andyseremet.github.io/reports-examles/' }}
+          DATA_SERVICES: ${{ steps.mode.outputs.data_services }}
         run: node tests/live-check.mjs
 
       - name: Keep the results, screenshots and sample reports
@@ -114,7 +130,7 @@ jobs:
   # so main stays clean; the page reads it from raw.githubusercontent.com.
   publish-status:
     needs: check
-    if: always() && needs.check.result != 'cancelled' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: always() && needs.check.result != 'cancelled' && github.ref == 'refs/heads/main' && needs.check.outputs.data_services == '1'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

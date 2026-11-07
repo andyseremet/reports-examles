@@ -12,7 +12,7 @@
 // Exits with code 1 if anything failed.
 
 import { chromium, devices } from "playwright";
-import { mkdirSync, writeFileSync, appendFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, appendFileSync, readFileSync } from "node:fs";
 
 const BASE = process.env.BASE || "https://andyseremet.github.io/reports-examles/";
 const OUT = process.env.OUT || "test-results";
@@ -26,6 +26,11 @@ const results = [];
 // and warning is also an annotation, so it shows on the pull request without opening the full log.
 const QUIET = process.env.QUIET === "1";
 const ON_GITHUB = process.env.GITHUB_ACTIONS === "true";
+// DATA_SERVICES=0 leaves out the outside services that only supply report data (the list in data/data-services.csv):
+// pull requests do this, so they test the app itself. The daily run and manual runs (by default) check them all.
+// The postcode lookup and address search (marked alwaysChecked) are always checked: the app needs them to find the place.
+const CHECK_DATA_SERVICES = process.env.DATA_SERVICES !== "0";
+const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && !options.sameSite;
 const annotation = text => String(text).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
 const record = (group, name, pass, info = "") => {
   results.push({ group, name, pass: pass === "warn" ? true : pass, warn: pass === "warn", info: String(info).slice(0, 900) });
@@ -55,7 +60,7 @@ const wms = (base, layer, lat = LAT, lon = LON, d = 0.0005) => `${base}?` + new 
 const arcgis = (base, extra = "") => `${base}?geometry=${LON},${LAT}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&f=json${extra}`;
 
 const SERVICES = [
-  ["Postcodes (postcodes.io)", `https://api.postcodes.io/postcodes?lon=${LON}&lat=${LAT}&limit=1`, d => d.result && d.result[0].postcode],
+  ["Postcodes (postcodes.io)", `https://api.postcodes.io/postcodes?lon=${LON}&lat=${LAT}&limit=1`, d => d.result && d.result[0].postcode, { alwaysChecked: true }],
   ["Planning data (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?latitude=${LAT}&longitude=${LON}&limit=5`, d => Array.isArray(d.entities)],
   ["Surface water (Environment Agency)", wms("https://environment.data.gov.uk/spatialdata/nafra2-risk-of-flooding-from-surface-water/wms", "rofsw"), d => Array.isArray(d.features)],
   ["Radon (British Geological Survey)", arcgis("https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/radon/MapServer/0/query"), d => d.features && d.features.length === 1],
@@ -71,7 +76,7 @@ const SERVICES = [
     'SELECT ?price WHERE { VALUES ?pc { "S70 2TA" "S70 1SL" "S70 2AT" } ?a lrc:postcode ?pc . ?s ppi:propertyAddress ?a ; ppi:pricePaid ?price } LIMIT 5'),
     d => d.results && d.results.bindings.length > 0],
   ["Air quality model (Open-Meteo)", `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&hourly=pm2_5&past_days=1&forecast_days=0&timeformat=unixtime`, d => d.hourly && d.hourly.pm2_5.length > 0],
-  ["Crime (data.police.uk)", `https://data.police.uk/api/crimes-street/all-crime?lat=${LAT}&lng=${LON}`, d => Array.isArray(d) && d.length > 0],
+  ["Crime (data.police.uk)", `https://data.police.uk/api/crimes-street/all-crime?lat=${LAT}&lng=${LON}`, d => Array.isArray(d) && d.length > 0, { alwaysChecked: true }],
   ["Police force for a place (data.police.uk)", `https://data.police.uk/api/locate-neighbourhood?q=${LAT},${LON}`, d => d.force === "south-yorkshire"],
   ["Census boundaries (ONS)", "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3/FeatureServer/0/query?where=MSOA21CD%3D%27E02001521%27&outFields=MSOA21CD&returnGeometry=false&f=json", d => d.features && d.features.length === 1],
   ["Scotland flood maps (SEPA)", "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer/2/query?geometry=-3.43,56.404&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnCountOnly=true&f=json", d => Number.isFinite(d.count)],
@@ -634,6 +639,36 @@ async function testDevice(device, [postcode, place]) {
     return `map ok; ${lists.length} list(s), ${lists.filter(l => l.total > 4).length} shortened`;
   });
 
+  await step("Phone tab bar: Summary, Problems, All topics, Next steps", async () => {
+    const phone = await page.evaluate(() => innerWidth <= 600);
+    const shown = await page.$eval("#tabBar", x => getComputedStyle(x).display !== "none");
+    if (!phone) { if (shown) throw new Error("the phone tab bar shows on a wider screen"); return "not shown (wider screen)"; }
+    if (!shown) throw new Error("the tab bar is not shown on a phone");
+    const labels = await page.$$eval("#tabBar a, #tabBar button", x => x.map(b => b.textContent.replace(/\s+/g, " ").trim()));
+    if (labels.length !== 4 || !/Problems \(\d+\)/.test(labels[1])) throw new Error(`the tab bar says: ${labels.join(" | ")}`);
+    // A jump lands below the top bars and above the tab bar; Back to top sits above the tab bar.
+    const landed = async () => page.evaluate(() => {
+      const bar = document.getElementById("tabBar").getBoundingClientRect().top, top = document.getElementById("reportNav").getBoundingClientRect().bottom;
+      const t = document.getElementById("nextSteps").getBoundingClientRect(), up = document.getElementById("toTop").getBoundingClientRect();
+      return { below: t.top >= top - 1, above: t.top < bar, toTop: up.height === 0 || up.bottom <= bar + 1 };
+    });
+    await page.click('#tabBar a[data-tab="nextSteps"]');
+    await page.waitForTimeout(1200);
+    const r = await landed();
+    if (!r.below || !r.above) throw new Error("Next steps did not land between the top bars and the tab bar");
+    if (!r.toTop) throw new Error("the Back to top button covers the tab bar");
+    // "Problems" opens the topics to look into and goes to the first; with none, it is greyed out.
+    const n = await page.evaluate(() => problemTopics().length);
+    if (!n) { if (!(await page.isDisabled("#tabProblems"))) throw new Error("Problems is not greyed out with no problems"); return "no problems here"; }
+    await page.click("#tabProblems");
+    await page.waitForTimeout(1200);
+    const p = await page.evaluate(() => { const d = document.activeElement.closest("details.check");
+      return { id: d && d.id, open: d && d.open, problem: d && (d.classList.contains("high") || d.classList.contains("medium")),
+        visible: d && d.getBoundingClientRect().top >= document.getElementById("reportNav").getBoundingClientRect().bottom - 1 }; });
+    if (!p.problem || !p.open || !p.visible) throw new Error(`Problems went to ${p.id || "nothing"} (open ${p.open}, in view ${p.visible})`);
+    return `${labels.join(" · ")}; Problems went to ${p.id.replace("check-", "")}`;
+  });
+
   await step("Data gaps box lists every topic without an answer", async () => {
     // Every "Check yourself" or "Not available" topic must appear in the box, with a way to check it
     // instead, and not in "Start here"; with no such topics, the box is hidden.
@@ -975,7 +1010,14 @@ try {
   const noTopics = SERVICES.map(([name]) => name).filter(name => !SERVICE_TOPICS[name]);
   record("Data services", "Every service lists the report topics it feeds", !noTopics.length,
     noTopics.length ? "missing in SERVICE_TOPICS: " + noTopics.join("; ") : `${SERVICES.length} services`);
-  for (const service of SERVICES) await checkService(service);
+  // data/data-services.csv lists the report data services (one per row after the header): keep it in step with SERVICES.
+  const listed = readFileSync(new URL("../data/data-services.csv", import.meta.url), "utf8").trim().split("\n").length - 1;
+  const reportServices = SERVICES.filter(isReportDataService).length;
+  record("Data services", "data/data-services.csv lists every report data service", listed === reportServices,
+    `${listed} rows in the file, ${reportServices} report data services in the test`);
+  const toCheck = CHECK_DATA_SERVICES ? SERVICES : SERVICES.filter(s => !isReportDataService(s));
+  for (const service of toCheck) await checkService(service);
+  if (!CHECK_DATA_SERVICES) console.log(`Left out on request (DATA_SERVICES=0): ${reportServices} report data services. Run the check by hand to test them.`);
   browser = await chromium.launch();
   const randomPlace = await randomEnglishPostcode();
   const places = [FIXED[0], FIXED[1], randomPlace];

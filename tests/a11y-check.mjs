@@ -17,7 +17,8 @@ const SIZES = [["1280 px", { viewport: { width: 1280, height: 900 } }], ["320 px
 
 // Controls used one after another on the report; each is followed by a scan and a sideways-scroll check.
 const ACTIONS = [
-  ["Close all, then Open problems", async p => { await p.click("#toggleAll"); await p.click("#toggleAll"); }],
+  // With no problem topics (for example while a data service is down), "Open problems" is greyed out: skip that press.
+  ["Close all, then Open problems", async p => { for (let i = 0; i < 2; i++) if (await p.isEnabled("#toggleAll")) await p.click("#toggleAll"); }],
   ["no-issue fold opened", async p => { const f = p.locator(".clear-fold:not([hidden]) > summary").first(); if (await f.count()) await f.click(); }],
   ["gaps box toggled", async p => { if (await p.locator("#gapsBox > summary").count()) await p.click("#gapsBox > summary"); }],
   ["sources open", p => p.evaluate(() => { const d = document.getElementById("sources"); if (d) d.open = true; })],
@@ -26,6 +27,8 @@ const ACTIONS = [
   ["More in a topic", async p => { const b = p.locator("details.check[open] .more-btn").first(); if (await b.count()) await b.click(); }],
   ["Next steps opened", async p => { for (const s of await p.locator(".step-fold > summary").all()) await s.click(); }],
   ["tick", async p => { const b = p.locator("#viewing input[data-tick]").first(); if (await b.count()) await b.check(); }],
+  ["tab bar: Next steps, then Problems", async p => { if (await p.isVisible("#tabBar")) {
+    await p.click('#tabBar a[data-tab="nextSteps"]'); if (await p.isEnabled("#tabProblems")) await p.click("#tabProblems"); } }],
   ["Change (search map shown)", p => p.click("#changePlace")],
   ["Saved (saved list shown)", p => p.click("#showSaved")],
   ["Move to another device", p => p.click("#moveDevice summary")],
