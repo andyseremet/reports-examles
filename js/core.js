@@ -11,6 +11,9 @@ const API = {
   postcodes: "https://api.postcodes.io/postcodes",
   places: "https://api.postcodes.io/places",
   planning: "https://www.planning.data.gov.uk/entity.json",
+  // Backups when planning.data.gov.uk does not answer: the original publishers' own map services.
+  heritageEngland: "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/National_Heritage_List_for_England_NHLE_v02_VIEW/FeatureServer",
+  natureEngland: "https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services",
   radon: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/radon/MapServer/0/query",
   landslides: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hazards/MapServer/2/query",
   coalHigh: "https://services-eu1.arcgis.com/Qn4lKcPDVHNivEyr/arcgis/rest/services/DevelopmentHighRiskArea/FeatureServer/0/query",

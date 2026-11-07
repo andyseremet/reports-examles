@@ -199,11 +199,63 @@ async function getCrimeArea(loc) {
 }
 
 function getPlanningAtPoint(loc) {
-  return planningEntities({ latitude: loc.lat, longitude: loc.lon, limit: 200, exclude_field: "geometry" }, PLANNING_AT_POINT);
+  return withBackup(() => planningEntities({ latitude: loc.lat, longitude: loc.lon, limit: 200, exclude_field: "geometry" }, PLANNING_AT_POINT),
+    loc, 0, PLANNING_AT_POINT);
 }
 
 async function getPlanningNearby(loc) {
-  return (await planningEntities(inCircle(loc, loc.radius), PLANNING_NEARBY)).map(e => ({ ...e, ...pointFrom(loc, e.point) }));
+  return withBackup(async () => (await planningEntities(inCircle(loc, loc.radius), PLANNING_NEARBY)).map(e => ({ ...e, ...pointFrom(loc, e.point) })),
+    loc, loc.radius, PLANNING_NEARBY);
+}
+
+// When planning.data.gov.uk does not answer (England only), heritage and nature are asked from the original publishers:
+// Historic England (National Heritage List for England) and Natural England. Nothing is asked from them otherwise.
+// Flood zones, air quality areas, conservation areas, Green Belt, contaminated land and the other sets have no second
+// open source, so they stay "not available". The backup answer travels with the failure (R[key].backup), so only the
+// checks that read it (planning, nature) use it; every other check still sees planning.data.gov.uk as not answering.
+const BACKUP_LAYERS = {
+  "listed-building": ["Historic England", API.heritageEngland + "/0/query", "Name", true],
+  "listed-building-outline": ["Historic England", API.heritageEngland + "/3/query", "Name"],
+  "scheduled-monument": ["Historic England", API.heritageEngland + "/6/query", "Name"],
+  "world-heritage-site": ["Historic England", API.heritageEngland + "/10/query", "Name"],
+  "site-of-special-scientific-interest": ["Natural England", API.natureEngland + "/SSSI_England/FeatureServer/0/query", "NAME"],
+  "special-area-of-conservation": ["Natural England", API.natureEngland + "/Special_Areas_of_Conservation_England/FeatureServer/0/query", "SAC_NAME"],
+  "special-protection-area": ["Natural England", API.natureEngland + "/Special_Protection_Areas_England/FeatureServer/0/query", "SPA_NAME"],
+  "ancient-woodland": ["Natural England", API.natureEngland + "/Ancient_Woodland_England/FeatureServer/0/query", "NAME"],
+  "local-nature-reserve": ["Natural England", API.natureEngland + "/Local_Nature_Reserves_England/FeatureServer/0/query", "NAME"],
+  "national-park": ["Natural England", API.natureEngland + "/National_Parks_England/FeatureServer/0/query", "NAME"],
+  "area-of-outstanding-natural-beauty": ["Natural England", API.natureEngland + "/Areas_of_Outstanding_Natural_Beauty_England/FeatureServer/0/query", "NAME"]
+};
+
+async function planningBackup(loc, radiusM, datasets) {
+  if (await inWales(loc) || await inScotland(loc) || await inNI(loc)) return null;
+  const wanted = datasets.filter(d => BACKUP_LAYERS[d]);
+  const answers = await Promise.allSettled(wanted.map(async d => {
+    const [, url, nameField, points] = BACKUP_LAYERS[d];
+    const features = await arcgisQuery(url, loc, radiusM, { outFields: nameField, returnGeometry: String(!!points), outSR: "4326", resultRecordCount: "200" });
+    return features.map(f => {
+      const g = f.geometry, xy = g && (g.points ? g.points[0] : g.x != null ? [g.x, g.y] : null);
+      const p = xy ? { lon: xy[0], lat: xy[1] } : null;
+      return { dataset: d, name: f.attributes[nameField] || "", ...(p ? { ...p, distanceKm: distanceKm(loc, p) } : { distanceKm: null }) };
+    });
+  }));
+  const answered = wanted.filter((d, i) => answers[i].status === "fulfilled");
+  if (!answered.length) return null;
+  return {
+    entities: answers.flatMap(a => a.status === "fulfilled" ? a.value : []),
+    from: [...new Set(answered.map(d => BACKUP_LAYERS[d][0]))],
+    missing: datasets.filter(d => !answered.includes(d))
+  };
+}
+
+async function withBackup(primary, loc, radiusM, datasets) {
+  try {
+    return await primary();
+  } catch (error) {
+    const backup = await planningBackup(loc, radiusM, datasets).catch(() => null);
+    if (backup) error.backup = backup;
+    throw error;
+  }
 }
 
 async function getRadon(loc) {

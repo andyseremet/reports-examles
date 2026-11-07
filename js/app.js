@@ -616,7 +616,8 @@ function runChecks(options = {}) {
     lat: selected.lat, lon: selected.lon, radius: Number($("radius").value)
   };
 
-  run = { loc, R: { loc }, results: {}, done: false, startedAt: Date.now() };
+  // The last saved results for this place: a topic whose service does not answer shows its earlier answer, dated.
+  run = { loc, R: { loc }, results: {}, done: false, startedAt: Date.now(), previous: findSnapshot(loc) };
   const thisRun = run;
   setTimeout(() => { if (run === thisRun && !run.done) renderSummary(); }, SLOW_NOTE_MS);
   reportData = null;
@@ -775,7 +776,7 @@ function startTask(r, key, autoRetry = true) {
         if (r === run) { r.autoRetried = [...(r.autoRetried || []), key]; startTask(r, key, false); }
         return "retrying";
       }
-      r.R[key] = { ok: false, error: error.message || "unknown error" };
+      r.R[key] = { ok: false, error: error.message || "unknown error", ...(error.backup && { backup: error.backup }) };
     }
   ).then(state => { if (state !== "retrying" && r === run) onTaskSettled(key); });
 }
@@ -791,9 +792,21 @@ function buildCheck(c) {
   const place = okValue(run.R, "place");
   const country = place && place.country;
   if (country && COVERAGE[c.id] && !COVERAGE[c.id].includes(country)) return notCovered(c, country, place);
-  try { return topicResult(c, { dataDate: "Checked live on " + today(), ...c.build(run.R) }); }
-  catch (e) { return topicResult(c, { status: "error", found: "This check failed: " + e.message }); }
+  let result;
+  try { result = topicResult(c, { dataDate: "Checked live on " + today(), ...c.build(run.R) }); }
+  catch (e) { result = topicResult(c, { status: "error", found: "This check failed: " + e.message }); }
+  return result.status === "error" ? savedInstead(c, result) : result;
 }
+
+// A service that does not answer: if this place was checked before, show that earlier answer, clearly dated,
+// with "Try again" (an answer that was itself saved earlier keeps its first date).
+function savedInstead(c, failed) {
+  const prev = run.previous && run.previous.results.find(r => r.id === c.id && r.status !== "error");
+  if (!prev) return failed;
+  const from = prev.fromSaved || run.previous.savedAt;
+  return { ...prev, fromSaved: from };
+}
+const savedDate = iso => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 function onTaskSettled(key) {
   CHECKS.filter(c => c.deps.includes(key) && depsReady(c)).forEach(c => {
@@ -1107,11 +1120,13 @@ function renderCheck(c) {
     <details class="check ${c.status}" id="check-${c.id}" ${open ? "open" : ""}>
       <summary>
         <h3>${escapeHTML(c.title)}</h3>${chip(c.status)}
-        <span class="found">${escapeHTML(c.found)}</span>
+        <span class="found">${c.fromSaved ? `<strong>Saved result from ${escapeHTML(savedDate(c.fromSaved))}:</strong> ` : ""}${escapeHTML(c.found)}</span>
         ${moreToggle()}
       </summary>
       <div class="check-body">
-        ${c.status === "error" ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
+        ${c.fromSaved ? `<p class="notice saved-answer">The data service is not answering right now, so this is <strong>your saved result
+          from ${escapeHTML(savedDate(c.fromSaved))}</strong>. It may be out of date.</p>` : ""}
+        ${c.status === "error" || c.fromSaved ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
         ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
         <h4>What to do</h4>${actions}
         ${c.dataDate ? `<p class="data-date"><strong>Data:</strong> ${escapeHTML(c.dataDate)}</p>` : ""}
@@ -1269,7 +1284,7 @@ const GAP_REASON = {
 };
 
 function gapKind(c) {
-  if (c.status === "error") return "down";
+  if (c.status === "error" || c.fromSaved) return "down";
   return c.status === "manual" ? (c.gap || "nodata") : null;
 }
 
