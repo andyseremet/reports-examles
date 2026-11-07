@@ -362,13 +362,13 @@ details.step-fold > .step-body {padding:0 14px 12px}
 .check.loading .skeleton {height:10px;border-radius:6px;margin-top:8px;width:min(420px,60vw);
   background:linear-gradient(90deg,var(--surface-2) 25%,var(--border) 50%,var(--surface-2) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
 @keyframes shimmer {to {background-position:-200% 0}}
-details.check > summary {cursor:pointer;padding:12px 14px;list-style:none;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+details.check > summary {cursor:pointer;padding:12px 14px;list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}
 /* Long topic names wrap instead of pushing the rating label off narrow screens (WCAG 1.4.10 Reflow). */
 details.check > summary h3 {overflow-wrap:anywhere}
 /* The rating label may wrap too, so its symbol never pushes it off a 320 px screen with large text. */
 details.check > summary .chip {white-space:normal;text-align:center}
 details.check > summary::-webkit-details-marker {display:none}
-details.check > summary .found {grid-column:1;font-size:14px}
+details.check > summary .found {grid-column:1;font-size:14px;overflow-wrap:anywhere}
 details.check > summary:hover {background:var(--hover)}
 /* "Details" with a down arrow when closed, "Hide" with an up arrow when open. */
 details.check > summary .more,.gaps-box > summary .more,.clear-fold > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
