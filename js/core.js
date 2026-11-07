@@ -218,6 +218,9 @@ function formatRadius(m) {
   return m >= 1000 ? (m / 1000) + " km" : m + " m";
 }
 
+// "a, b and c"
+const andList = items => items.length < 2 ? items.join("") : items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+
 function plural(n, one, many) {
   return n + " " + (n === 1 ? one : (many || one + "s"));
 }
