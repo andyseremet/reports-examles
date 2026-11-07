@@ -60,7 +60,7 @@ const GROUPS = [
 const CHECKS = [
   { id: "flood", group: "flood", title: "Flooding from rivers and the sea", deps: ["planningPoint", "planningNearby", "floodNational"], build: checkFlood },
   { id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)", deps: ["surfaceWater", "floodNational"], build: checkSurfaceWater },
-  { id: "coal", group: "ground", title: "Coal mining", deps: ["coal"], build: checkCoal },
+  { id: "coal", group: "ground", title: "Coal mining", deps: ["coal", "place"], build: checkCoal },
   { id: "radon", group: "ground", title: "Radon gas", deps: ["radon"], build: checkRadon },
   { id: "landuse", group: "ground", title: "Past use of the land: landfill and contamination", deps: ["landfill", "planningPoint", "planningNearby", "coalTips", "wasteSites"], build: checkLanduse },
   { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },

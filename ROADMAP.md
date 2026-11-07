@@ -26,7 +26,7 @@ The [README](README.md) describes each feature in full.
 | Group | Topics | Main sources |
 |---|---|---|
 | Flooding | Rivers and the sea; heavy rain (surface water) | Environment Agency; SEPA; Natural Resources Wales |
-| Ground and land | Radon; coal mining; past use of the land (in Wales, disused coal tips; in Scotland, licensed waste sites); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales; SEPA; Dynamic Coast |
+| Ground and land | Radon; coal mining (in Cornwall and West Devon, with a pointer to the metal mining search, 1.31.1); past use of the land (in Wales, disused coal tips; in Scotland, licensed waste sites); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales; SEPA; Dynamic Coast |
 | Living environment | Road and rail noise; air quality; crime; recent sale prices | Defra; Welsh Government; Scottish Government; councils; Copernicus CAMS; data.police.uk; ONS; HM Land Registry |
 | Planning and surroundings | Planning restrictions and heritage; protected nature sites; schools, GPs, pharmacies and transport | planning.data.gov.uk; Natural England; Cadw; Natural Resources Wales; Historic Environment Scotland; NatureScot; Department for Communities (NI); DAERA; DfE; NHS; NaPTAN |
 
@@ -135,7 +135,6 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 |---|---|
 | Past floods recorded here | Environment Agency Recorded Flood Outlines. Live, but adds 1 request to the busy Environment Agency map server. |
 | Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
-| Metal mining in Cornwall and Devon | The coal topic says "outside the coalfield" in Camborne, but tin and copper mining is common there. A note pointing to the Cornwall mining search (ordered by the conveyancer) would help. Found in the 7 November review. |
 | Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
 
 ### Decided against
@@ -143,6 +142,7 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 | Idea | Decision |
 |---|---|
 | Welsh language | Removed on 4 November 2026: the app stays in English only. |
+| Air quality backup when planning.data.gov.uk is down | Not possible (7 November 2026): Defra's UK-wide Air Quality Management Area map (ukair.maps.rcdo.co.uk, run by WSP) answers correctly but tells browsers not to let other web pages read it (no CORS). It could be used if Defra opens it to web pages. |
 | Remove "Download report" | Kept (4 November 2026); since 1.17.0 it is in the "Save" menu. |
 | Remove the latitude and longitude boxes | Kept (4 November 2026), in More options. |
 | Remove or reduce railway noise, landslides, aircraft | Kept as they are (4 November 2026). |

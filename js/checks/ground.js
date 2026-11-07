@@ -67,16 +67,27 @@ function checkCoal(R) {
     found = "Outside the coalfield: no recorded coal mining here.";
     meaning = "No coal mining search is needed. Other kinds of mining (for example tin, lead, salt or chalk) are not covered by this check.";
   }
+  // Cornwall and West Devon: tin, copper and other metal mines are common, and outside the coal check. Conveyancers
+  // there order a separate mining search, so say so (found in the app review of 7 November 2026).
+  const district = okValue(R, "place")?.admin_district || "";
+  const metalMining = ["Cornwall", "Isles of Scilly", "West Devon"].includes(district);
+  if (metalMining) found += " This area has many old tin and copper mines, which this check does not cover: ask for a Cornwall and West Devon mining search.";
   return {
     ...base, status, found,
     details: !c.highAtPoint && c.highNearby ? `<p>A coal mining high-risk area lies within ${formatRadius(R.loc.radius)}.</p>` : "",
     meaning: `<p>${meaning}</p>`,
-    actions: status === "low" ? [] : [
-      `See old mine shafts and shallow workings on the ${link(LINKS.coalMap, "Mining Remediation Authority map")}.`,
-      "Tell your surveyor, so they can look for signs of ground movement."
+    actions: [
+      ...(metalMining ? ["Ask your conveyancer for a Cornwall and West Devon mining search. It covers old metal mines and shafts, which are common here."] : []),
+      ...(status === "low" ? [] : [
+        `See old mine shafts and shallow workings on the ${link(LINKS.coalMap, "Mining Remediation Authority map")}.`,
+        "Tell your surveyor, so they can look for signs of ground movement."
+      ])
     ],
     seller: status === "low" ? [] : ["Have there been any subsidence or mining damage claims?"],
-    conveyancer: status === "low" ? [] : ["A coal mining report (CON29M). It lists mine shafts, past subsidence claims and future mining plans."]
+    conveyancer: [
+      ...(status === "low" ? [] : ["A coal mining report (CON29M). It lists mine shafts, past subsidence claims and future mining plans."]),
+      ...(metalMining ? ["A Cornwall and West Devon mining search, for old metal mines and shafts."] : [])
+    ]
   };
 }
 

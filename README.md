@@ -8,7 +8,7 @@ England, Wales, Scotland and Northern Ireland (some topics cover Great Britain o
 | Flooding from rivers and the sea (Flood Zones 1–3) | Environment Agency, via planning.data.gov.uk; SEPA (Scotland); Natural Resources Wales |
 | Flooding from heavy rain (surface water) | Environment Agency (2025); SEPA (Scotland); Natural Resources Wales |
 | Radon gas | BGS / UKHSA Radon Indicative Atlas |
-| Coal mining | Mining Remediation Authority (formerly the Coal Authority) |
+| Coal mining (in Cornwall, the Isles of Scilly and West Devon, it also points to the mining search for old tin and copper mines) | Mining Remediation Authority (formerly the Coal Authority) |
 | Road and railway noise (day and night) | Defra strategic noise mapping, Round 4; Welsh Government noise mapping 2022 (Wales); Scottish Government noise mapping, 2021 traffic, published by SEPA (Scotland); DAERA noise mapping, Round 4 (Northern Ireland) |
 | Air quality | Council Air Quality Management Areas (England via planning.data.gov.uk; Wales via DataMapWales; Scotland via the Scottish Air Quality database, with Scotland's own PM2.5 limit; Northern Ireland: no hotspot map, so the area estimate is shown and the topic says "Check yourself"); Copernicus CAMS model via Open-Meteo |
 | Past use of the land: old landfill, brownfield sites, and contaminated land or major hazard (COMAH) sites where published; in Wales, disused coal tips; in Scotland, licensed waste sites | Environment Agency Historic Landfill Sites; planning.data.gov.uk; Welsh Government disused coal tips map (Wales); SEPA licensed waste sites (Scotland) |

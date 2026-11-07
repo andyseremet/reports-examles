@@ -280,6 +280,20 @@ async function testCountryData() {
       return `${r.planning[1]} ${r.listed} listed buildings nearby`;
     });
 
+    await step("Cornwall and West Devon: the coal topic points to the metal mining search", async () => {
+      // Outside the coalfield, the coal check says nothing about tin and copper mines: in Cornwall, the Isles of Scilly and
+      // West Devon it must say so and add the mining search to the checklist; elsewhere it must not.
+      const r = await page.evaluate(() => {
+        const at = district => checkCoal({ coal: { ok: true, value: {} }, place: { ok: true, value: { admin_district: district } } });
+        const cornwall = at("Cornwall"), barnsley = at("Barnsley");
+        return { status: cornwall.status, found: cornwall.found, list: cornwall.conveyancer.join(" "), other: barnsley.found + barnsley.conveyancer.join(" ") };
+      });
+      if (r.status !== "low" || !/tin and copper/.test(r.found) || !/Cornwall and West Devon mining search/.test(r.list))
+        throw new Error(`Cornwall: ${r.status}: ${r.found} | checklist: ${r.list}`);
+      if (/Cornwall/.test(r.other)) throw new Error("the Cornwall note shows outside Cornwall and West Devon");
+      return r.found;
+    });
+
     await step("Wales: coal tips, coast, noise, heritage and nature from Welsh data", async () => {
       // Treorchy (Rhondda): disused coal tips nearby. Borth: an eroding coast. Cardiff centre: a conservation
       // area, road noise and an air pollution hotspot nearby. Each must be answered from Welsh data, not "Check yourself".
