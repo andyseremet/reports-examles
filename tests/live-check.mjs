@@ -1004,7 +1004,7 @@ async function testDevice(device, [postcode, place]) {
         keyShown: shown(".key-findings"), qr: shown(".cover-qr svg"),
         table: shown(".glance-table"), footer: (document.getElementById("printFooter") || {}).textContent || "",
         grid: shown(".topic-strip"), howTo: shown("#info-read"), saved: shown(".saved-note"), more: shown(".info-row"),
-        tryAgain: shown(".gaps-box [data-retry]") };
+        tryAgain: shown(".gaps-box [data-retry]"), checklists: shown(".next-steps"), notesPage: shown(".notes-page") };
     });
     if (!paper.table || paper.rows !== paper.topics) throw new Error(`the at-a-glance table shows ${paper.rows} of ${paper.topics} topics (visible: ${paper.table})`);
     if (paper.map[0] < 300 || Math.abs(paper.map[0] - paper.map[1]) > 2 || !paper.caption) throw new Error(`printed map ${paper.map.join("×")} px, caption shown: ${paper.caption} (expected a square with "Figure 1." caption)`);
@@ -1014,7 +1014,18 @@ async function testDevice(device, [postcode, place]) {
     if (!/counter\(page\)/.test(paper.footer) || !/counter\(pages\)/.test(paper.footer)) throw new Error("no page numbers in the printed footer");
     const onPaper = Object.entries({ grid: paper.grid, "how to read": paper.howTo, "saved note": paper.saved, "More button": paper.more, "Try again": paper.tryAgain }).filter(([, v]) => v).map(([k]) => k);
     if (onPaper.length) throw new Error("printed but should not be: " + onPaper.join(", "));
-    await page.pdf({ path: `${OUT}/${device.name.replace(/\W+/g, "-")}-summary.pdf`, format: "A4" });
+    // The short printout is 2 pages: the cover, key findings and the topic table; checklists and the notes page are left out.
+    if (paper.checklists || paper.notesPage) throw new Error("the short printout includes the checklists or the notes page");
+    const pdf = await page.pdf({ path: `${OUT}/${device.name.replace(/\W+/g, "-")}-summary.pdf`, format: "A4" });
+    const pages = (pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) || []).length;
+    if (pages < 1 || pages > 2) throw new Error(`the short printout is ${pages} pages (expected 2 at most)`);
+    // The full printout adds a one-line contents under the summary and a lined notes page at the end.
+    await page.evaluate(() => document.body.classList.remove("print-summary"));   // beforeprint already ran: only the mode changes
+    const full = await page.evaluate(() => ({
+      contents: [...document.querySelectorAll(".print-contents")].some(el => el.getClientRects().length > 0) && /Next steps/.test(document.querySelector(".print-contents").textContent),
+      lines: document.querySelectorAll(".notes-page .note-line").length,
+      notesShown: document.querySelector(".notes-page").getClientRects().length > 0 }));
+    if (!full.contents || !full.notesShown || full.lines < 20) throw new Error(`full printout: contents line ${full.contents}, notes page ${full.notesShown} with ${full.lines} lines`);
     } finally {
       await page.emulateMedia({ media: "screen" });
       await page.evaluate(() => { document.body.classList.remove("print-summary"); dispatchEvent(new Event("afterprint")); });

@@ -1226,6 +1226,8 @@ function renderSkeleton(loc) {
           is no risk. Results are for the pin location. Tap a heading to open or close a topic. Words with a dotted line link to
           their meaning.</p>`)}
       <div id="summaryBox" aria-live="polite"></div>
+      <p class="print-only print-contents"><strong>Contents:</strong> Summary · ${GROUPS.map(g => escapeHTML(g.title)).join(" · ")}
+        · Next steps · Data sources and dates · Notes</p>
     </div>
 
     <div class="details-start">
@@ -1250,6 +1252,7 @@ function renderSkeleton(loc) {
     <div id="sourcesBox"></div>
 
     <p class="help print-only live-link">Live report, with the latest data: ${escapeHTML(location.href)}</p>
+    <section class="print-only notes-page" aria-hidden="true"><h2>Notes</h2>${'<div class="note-line"></div>'.repeat(24)}</section>
     <p class="help">Created with Property Location Check (version ${APP_VERSION}). Contains public sector information licensed under the Open Government
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
@@ -2155,7 +2158,7 @@ document.addEventListener("keydown", e => {
 
 $("printReport").addEventListener("click", () => window.print());
 
-// Short printout: cover, summary, notes and checklist only.
+// Short printout (2 pages): the cover, key findings and the topic table. The checklists stay in the full report.
 $("printSummary").addEventListener("click", () => {
   document.body.classList.add("print-summary");
   window.print();
