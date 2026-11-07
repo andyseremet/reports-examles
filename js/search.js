@@ -412,6 +412,13 @@ $("usePinBtn").addEventListener("click", () => {
      (OpenStreetMap Nominatim does not allow search-as-you-type).
 ========================================================= */
 
+// The message under the search box ("Finding your location…", "No match found", …); empty hides it.
+function showSearchStatus(message, isError) {
+  const el = $("searchStatus");
+  el.textContent = message || "";
+  el.className = "status" + (isError ? " error" : "") + (message ? "" : " hidden");
+}
+
 const POSTCODE_START = /^[A-Za-z]{1,2}\d/;
 const FULL_POSTCODE = /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s*\d[A-Za-z]{2}$/;
 let suggestTimer = null;

@@ -11,9 +11,10 @@ const store = {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
     catch (e) { return fallback; }
   },
-  set(key, value) {
+  // quiet: for optional data (recent answers), a full or blocked storage fails silently instead of showing the bar.
+  set(key, value, { quiet = false } = {}) {
     try { localStorage.setItem(key, JSON.stringify(value)); return true; }
-    catch (e) { showStorageProblem(); return false; }   // storage full or blocked
+    catch (e) { if (!quiet) showStorageProblem(); return false; }   // storage full or blocked
   },
   remove(key) {
     try { localStorage.removeItem(key); } catch (e) { /* storage blocked: nothing to remove */ }
@@ -30,7 +31,7 @@ function askToKeepData() {
   try {
     if (navigator.storage && navigator.storage.persist && !store.get("plc-persist-asked", false)) {
       navigator.storage.persist().catch(() => {});
-      localStorage.setItem("plc-persist-asked", "true");
+      store.set("plc-persist-asked", true, { quiet: true });
     }
   } catch (e) {}
 }

@@ -185,16 +185,13 @@ const RECENT_DAYS = 7, RECENT_PLACES = 10, RECENT_MAX_CHARS = 200000, RECENT_IND
 const recentKey = key => "plc-recent:" + key;
 function rememberAnswer(loc, task, value) {
   const k = recentKey(reportKey(loc));
-  try {
-    const json = JSON.stringify(value === undefined ? null : value);
-    if (json.length > RECENT_MAX_CHARS) return;
-    const all = JSON.parse(localStorage.getItem(k) || "{}");
-    all[task] = { at: new Date().toISOString(), value };
-    const index = [k, ...JSON.parse(localStorage.getItem(RECENT_INDEX) || "[]").filter(x => x !== k)];
-    index.slice(RECENT_PLACES).forEach(x => localStorage.removeItem(x));
-    localStorage.setItem(RECENT_INDEX, JSON.stringify(index.slice(0, RECENT_PLACES)));
-    localStorage.setItem(k, JSON.stringify(all));
-  } catch (e) { /* storage full or blocked: the cache is optional */ }
+  if (JSON.stringify(value === undefined ? null : value).length > RECENT_MAX_CHARS) return;
+  const all = store.get(k, {});
+  all[task] = { at: new Date().toISOString(), value };
+  const index = [k, ...store.get(RECENT_INDEX, []).filter(x => x !== k)];
+  index.slice(RECENT_PLACES).forEach(x => store.remove(x));
+  store.set(RECENT_INDEX, index.slice(0, RECENT_PLACES), { quiet: true });
+  store.set(k, all, { quiet: true });
 }
 function recentAnswer(loc, task) {
   const a = store.get(recentKey(reportKey(loc)), {})[task];

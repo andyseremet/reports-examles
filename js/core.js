@@ -412,9 +412,3 @@ function arcgisRequest(base, loc, distanceM, extra = {}) {
   });
 }
 const arcgisQuery = (base, loc, distanceM, extra) => arcgisRequest(base, loc, distanceM, extra).then(d => d.features || []);
-
-function showSearchStatus(message, isError) {
-  const el = $("searchStatus");
-  el.textContent = message || "";
-  el.className = "status" + (isError ? " error" : "") + (message ? "" : " hidden");
-}
