@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.31.1** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.32.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 7 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.31.1)
+## Part 1: What the app does today (version 1.32.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -26,7 +26,7 @@ The [README](README.md) describes each feature in full.
 | Group | Topics | Main sources |
 |---|---|---|
 | Flooding | Rivers and the sea; heavy rain (surface water) | Environment Agency; SEPA; Natural Resources Wales |
-| Ground and land | Radon; coal mining (in Cornwall and West Devon, with a pointer to the metal mining search, 1.31.1); past use of the land (in Wales, disused coal tips; in Scotland, licensed waste sites); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales; SEPA; Dynamic Coast |
+| Ground and land | Radon; mining, coal and other (tin, copper, lead, iron and so on, from the British Geological Survey, 1.32.0); shrinking and swelling clay (1.32.0); past use of the land (in Wales, disused coal tips; in Scotland, licensed waste sites); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales; SEPA; Dynamic Coast |
 | Living environment | Road and rail noise; air quality; crime; recent sale prices | Defra; Welsh Government; Scottish Government; councils; Copernicus CAMS; data.police.uk; ONS; HM Land Registry |
 | Planning and surroundings | Planning restrictions and heritage; protected nature sites; schools, GPs, pharmacies and transport | planning.data.gov.uk; Natural England; Cadw; Natural Resources Wales; Historic Environment Scotland; NatureScot; Department for Communities (NI); DAERA; DfE; NHS; NaPTAN |
 
