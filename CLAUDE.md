@@ -107,7 +107,7 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
   that change `index.html`, `status.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
   Daily and manual runs on `main` then publish `status.json` to the `status` branch for the status page.
-  **Pull requests leave out the 38 report data services** (`DATA_SERVICES=0`; the list is `data/data-services.csv`),
+  **Pull requests leave out the 40 report data services** (`DATA_SERVICES=0`; the list is `data/data-services.csv`),
   at the owner's request: they run daily, and by hand with the "Check the report data services" box (ticked by default).
   The report steps still use the live services, so an outage can still fail a pull request. A failed daily or manual run
   opens or updates a "Live check failed" issue.

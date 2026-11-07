@@ -283,6 +283,22 @@ async function getCoal(loc) {
   return { highAtPoint: highAtPoint.length > 0, lowAtPoint: lowAtPoint.length > 0, highNearby: highNearby.length > 0 };
 }
 
+// British Geological Survey hexagon overviews (Great Britain only; null in Northern Ireland).
+// Shrink-swell clay: class 1 Low, 2 Moderate, 3 Significant; "localised" when parts of the hexagon are rated Significant.
+async function getShrinkSwell(loc) {
+  if (await inNI(loc)) return null;
+  const f = await arcgisQuery(API.shrinkSwell, loc, 0, { outFields: "CLASS,Legend,Advisory" });
+  if (!f[0]) return null;
+  const a = f[0].attributes;
+  return { level: Number(a.CLASS), localised: /localised significant/i.test(a.Advisory || "") };
+}
+// Mining other than coal (tin, lead, iron, salt and so on): Significant, Moderate, Low or NA (no known record).
+async function getOtherMining(loc) {
+  if (await inNI(loc)) return null;
+  const f = await arcgisQuery(API.otherMining, loc, 0, { outFields: "Class,Legend" });
+  return f[0] ? { level: f[0].attributes.Class, legend: f[0].attributes.Legend } : null;
+}
+
 // Noise periods used by Defra's 2022 noise maps.
 const NOISE_PERIODS = [
   { key: "lday",   metric: "Lday",   name: "Daytime",         when: "7am to 7pm, includes the morning and evening rush hours" },
@@ -926,6 +942,8 @@ const TASKS = [
   ["coal", "Coal mining", getCoal, "Mining Remediation Authority"],
   ["air", "Air quality", getAirModel, "Open-Meteo"],
   ["landslides", "Landslides", getLandslides, "British Geological Survey"],
+  ["shrinkSwell", "Shrinking and swelling clay", getShrinkSwell, "British Geological Survey"],
+  ["otherMining", "Mining other than coal", getOtherMining, "British Geological Survey"],
   ["crime", "Reported crime", getCrime, "data.police.uk"],
   ["soldPrices", "Recent sale prices nearby", getSoldPrices, "HM Land Registry"],
   ["floodNational", "Scotland and Wales flood maps", getFloodNational, "SEPA and Natural Resources Wales"],

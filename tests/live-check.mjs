@@ -116,6 +116,8 @@ const SERVICES = [
   ["Address search (OpenStreetMap Nominatim)", "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=Barnsley%20Town%20Hall", d => Array.isArray(d) && d.length > 0],
   ["Schools register (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?dataset=educational-establishment&latitude=${LAT}&longitude=${LON}&limit=1`, d => Array.isArray(d.entities)],
   ["Heritage backup (Historic England)", "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/National_Heritage_List_for_England_NHLE_v02_VIEW/FeatureServer/0/query?geometry=-2.3590,51.3811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=100&units=esriSRUnit_Meter&outFields=Name&returnGeometry=false&f=json", d => d.features && d.features.length > 0],
+  ["Clay shrink-swell (British Geological Survey)", arcgis("https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hex_grids/MapServer/6/query"), d => d.features && d.features.length === 1],
+  ["Mining other than coal (British Geological Survey)", arcgis("https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hex_grids/MapServer/1/query"), d => d.features && d.features.length === 1],
   ["Flood zone backup (Environment Agency)", wms("https://environment.data.gov.uk/spatialdata/flood-map-for-planning-flood-zones/wms", "Flood_Zones_2_3_Rivers_and_Sea"), d => Array.isArray(d.features)],
   ["Nature backup (Natural England)", arcgis("https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/SSSI_England/FeatureServer/0/query", "&distance=5000&units=esriSRUnit_Meter"), d => Array.isArray(d.features)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
@@ -133,7 +135,7 @@ const SERVICE_TOPICS = {
   "Surface water (Environment Agency)": ["Flooding from heavy rain (surface water)"],
   "Radon (British Geological Survey)": ["Radon gas"],
   "Landslides (British Geological Survey)": ["Landslides and ground movement"],
-  "Coal mining (Mining Remediation Authority)": ["Coal mining"],
+  "Coal mining (Mining Remediation Authority)": ["Mining (coal and other)"],
   "Road noise (Defra)": ["Noise: road, railway and aircraft"],
   "Rail noise (Defra)": ["Noise: road, railway and aircraft"],
   "Historic landfill (Environment Agency)": ["Past use of the land"],
@@ -164,6 +166,8 @@ const SERVICE_TOPICS = {
   "Address search (OpenStreetMap Nominatim)": ["Finding the property by address"],
   "Schools register (planning.data.gov.uk)": ["Schools, doctors and transport"],
   "Heritage backup (Historic England)": ["Planning restrictions and heritage, when planning.data.gov.uk is not answering"],
+  "Clay shrink-swell (British Geological Survey)": ["Shrinking and swelling clay"],
+  "Mining other than coal (British Geological Survey)": ["Mining (coal and other)"],
   "Flood zone backup (Environment Agency)": ["Flooding from rivers and the sea, when planning.data.gov.uk is not answering"],
   "Nature backup (Natural England)": ["Planning restrictions and heritage, and Protected nature sites, when planning.data.gov.uk is not answering"],
   "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
@@ -280,18 +284,26 @@ async function testCountryData() {
       return `${r.planning[1]} ${r.listed} listed buildings nearby`;
     });
 
-    await step("Cornwall and West Devon: the coal topic points to the metal mining search", async () => {
-      // Outside the coalfield, the coal check says nothing about tin and copper mines: in Cornwall, the Isles of Scilly and
-      // West Devon it must say so and add the mining search to the checklist; elsewhere it must not.
-      const r = await page.evaluate(() => {
-        const at = district => checkCoal({ coal: { ok: true, value: {} }, place: { ok: true, value: { admin_district: district } } });
-        const cornwall = at("Cornwall"), barnsley = at("Barnsley");
-        return { status: cornwall.status, found: cornwall.found, list: cornwall.conveyancer.join(" "), other: barnsley.found + barnsley.conveyancer.join(" ") };
+    await step("Clay and other mining from the British Geological Survey", async () => {
+      // Islington (London Clay): clay "significant" → Worth checking. Camborne (Cornwall): old tin and copper mines →
+      // the mining topic is Worth checking and asks for a mining search. Cotswolds: no known mining, so no such note.
+      const r = await page.evaluate(async () => {
+        const at = async (lat, lon) => { const loc = { lat, lon, radius: 1000 };
+          const [ss, om, coal] = await Promise.all([getShrinkSwell(loc), getOtherMining(loc), getCoal(loc)]);
+          return { clay: checkClay({ loc, shrinkSwell: { ok: true, value: ss } }),
+            mining: checkCoal({ loc, coal: { ok: true, value: coal }, otherMining: { ok: true, value: om } }) }; };
+        const [islington, camborne, cotswolds] = await Promise.all([at(51.5465, -0.1058), at(50.2132, -5.2977), at(52.0, -1.5)]);
+        // With the other-mining overview not answering, a place outside the coalfield must not say "No issue found".
+        const down = checkCoal({ loc: {}, coal: { ok: true, value: {} }, otherMining: { ok: false, error: "test" } });
+        return { islington: islington.clay.status, camborne: [camborne.mining.status, camborne.mining.found, camborne.mining.conveyancer.join(" ")],
+          cotswolds: cotswolds.mining.found + cotswolds.mining.conveyancer.join(" "), down: down.status };
       });
-      if (r.status !== "low" || !/tin and copper/.test(r.found) || !/Cornwall and West Devon mining search/.test(r.list))
-        throw new Error(`Cornwall: ${r.status}: ${r.found} | checklist: ${r.list}`);
-      if (/Cornwall/.test(r.other)) throw new Error("the Cornwall note shows outside Cornwall and West Devon");
-      return r.found;
+      if (r.islington !== "medium") throw new Error(`Islington clay rated ${r.islington}, not Worth checking`);
+      if (r.camborne[0] !== "medium" || !/tin, copper/.test(r.camborne[1]) || !/mining search/.test(r.camborne[2]))
+        throw new Error(`Camborne mining: ${r.camborne.join(" | ")}`);
+      if (/other than coal/.test(r.cotswolds)) throw new Error("the other-mining note shows in the Cotswolds");
+      if (r.down !== "manual") throw new Error(`with other mining not answering, the topic is ${r.down}, not Check yourself`);
+      return "Islington clay: Worth checking; Camborne: other mining Worth checking";
     });
 
     await step("Wales: coal tips, coast, noise, heritage and nature from Welsh data", async () => {

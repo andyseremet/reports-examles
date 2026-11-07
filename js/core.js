@@ -16,6 +16,9 @@ const API = {
   natureEngland: "https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services",
   radon: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/radon/MapServer/0/query",
   landslides: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hazards/MapServer/2/query",
+  // BGS 5 km and 1 km hexagon overviews (Open Government Licence): 6 = shrink-swell clay, 1 = mining other than coal.
+  shrinkSwell: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hex_grids/MapServer/6/query",
+  otherMining: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hex_grids/MapServer/1/query",
   coalHigh: "https://services-eu1.arcgis.com/Qn4lKcPDVHNivEyr/arcgis/rest/services/DevelopmentHighRiskArea/FeatureServer/0/query",
   coalLow: "https://services-eu1.arcgis.com/Qn4lKcPDVHNivEyr/arcgis/rest/services/DevelopmentLowRiskArea/FeatureServer/0/query",
   roadNoise: "https://environment.data.gov.uk/spatialdata/road-noise-all-metrics-england-round-4/wms",
@@ -55,6 +58,8 @@ const LINKS = {
   ukradon: "https://www.ukradon.org/",
   bgsRadon: "https://www.bgs.ac.uk/datasets/radon-data-indicative-atlas-of-radon/",
   coalInfo: "https://www.gov.uk/guidance/using-coal-mining-information",
+  geosure: "https://www.bgs.ac.uk/datasets/geosure/",
+  otherMiningInfo: "https://www.bgs.ac.uk/datasets/mining-hazard-not-including-coal/",
   coalMap: "https://datamine-cauk.hub.arcgis.com/",
   noise: "https://www.gov.uk/government/publications/strategic-noise-mapping-2022",
   ukair: "https://uk-air.defra.gov.uk/aqma/",

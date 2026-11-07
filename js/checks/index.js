@@ -60,10 +60,11 @@ const GROUPS = [
 const CHECKS = [
   { id: "flood", group: "flood", title: "Flooding from rivers and the sea", deps: ["planningPoint", "planningNearby", "floodNational"], build: checkFlood },
   { id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)", deps: ["surfaceWater", "floodNational"], build: checkSurfaceWater },
-  { id: "coal", group: "ground", title: "Coal mining", deps: ["coal", "place"], build: checkCoal },
+  { id: "coal", group: "ground", title: "Mining (coal and other)", deps: ["coal", "otherMining"], build: checkCoal },
   { id: "radon", group: "ground", title: "Radon gas", deps: ["radon"], build: checkRadon },
   { id: "landuse", group: "ground", title: "Past use of the land: landfill and contamination", deps: ["landfill", "planningPoint", "planningNearby", "coalTips", "wasteSites"], build: checkLanduse },
   { id: "landslides", group: "ground", title: "Landslides and ground movement", deps: ["landslides"], build: checkLandslides },
+  { id: "clay", group: "ground", title: "Shrinking and swelling clay", deps: ["shrinkSwell"], build: checkClay },
   { id: "coastal", group: "ground", title: "Coastal erosion", deps: ["coastal"], build: checkCoastal },
   { id: "noise", group: "living", title: "Noise: road, railway and aircraft", deps: ["noise", "railNoise"], build: checkNoise },
   { id: "air", group: "living", title: "Air quality", deps: ["planningPoint", "planningNearby", "air", "walesSites", "scotlandSites", "niSites"], build: checkAir },
@@ -83,6 +84,7 @@ const VIEWING_LOOK = {
   radon: ["A radon sump or a small vent pipe outside, or a radon test result the seller can show you."],
   landuse: ["Signs of past industrial use nearby: bare or patchy ground, vent pipes or fenced-off land."],
   landslides: ["Cracks in walls, paths or garden walls, leaning walls or fences, and wet or slipping slopes."],
+  clay: ["Cracks wider than a coin near doors and windows, and big trees close to the house (their roots dry out clay)."],
   coastal: ["How far the house is from the cliff edge or shore, and the state of any sea defences."],
   noise: ["Listen inside and in the garden with a window open, and look at the glazing on the noisy side."],
   air: ["Busy roads, junctions or works close by, and which rooms face them."]
@@ -105,8 +107,8 @@ const TASK_FN = Object.fromEntries(TASKS.map(([key, , fn]) => [key, fn]));
 
 // Short names and symbols for the row of topic icons in the summary.
 const TOPIC_ICONS = {
-  flood: ["🌊", "Flood"], coal: ["⛏️", "Coal"], radon: ["☢️", "Radon"], landuse: ["🗑️", "Land use"],
-  landslides: ["⛰️", "Ground"], noise: ["🔊", "Noise"],
+  flood: ["🌊", "Flood"], coal: ["⛏️", "Mining"], radon: ["☢️", "Radon"], landuse: ["🗑️", "Land use"],
+  landslides: ["⛰️", "Ground"], clay: ["🧱", "Clay"], noise: ["🔊", "Noise"],
   air: ["💨", "Air"], crime: ["🚓", "Crime"], planning: ["🏛️", "Planning"], nature: ["🌳", "Nature"],
   surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"], coastal: ["🏖️", "Coast"],
   soldprices: ["💷", "Prices"]
@@ -124,7 +126,7 @@ const COVERAGE = {
   air: ["England", "Scotland", "Wales", "Northern Ireland"], planning: ["England", "Scotland", "Wales", "Northern Ireland"],
   nature: ["England", "Scotland", "Wales", "Northern Ireland"],
   crime: ["England", "Scotland", "Wales", "Northern Ireland"],
-  coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"]
+  coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"], clay: ["England", "Wales", "Scotland"]
 };
 
 const NATIONAL = {

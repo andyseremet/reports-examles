@@ -49,7 +49,7 @@ function checkRadon(R) {
 
 function checkCoal(R) {
   const base = {
-    source: { name: "Mining Remediation Authority (formerly the Coal Authority)", url: LINKS.coalInfo }
+    source: { name: "Mining Remediation Authority (formerly the Coal Authority); British Geological Survey, mining other than coal (1 km overview)", url: LINKS.coalInfo }
   };
   if (!R.coal.ok) return unavailable(base, R, "coal");
   const c = R.coal.value;
@@ -65,29 +65,68 @@ function checkCoal(R) {
   } else {
     status = "low";
     found = "Outside the coalfield: no recorded coal mining here.";
-    meaning = "No coal mining search is needed. Other kinds of mining (for example tin, lead, salt or chalk) are not covered by this check.";
+    meaning = "No coal mining search is needed.";
   }
-  // Cornwall and West Devon: tin, copper and other metal mines are common, and outside the coal check. Conveyancers
-  // there order a separate mining search, so say so (found in the app review of 7 November 2026).
-  const district = okValue(R, "place")?.admin_district || "";
-  const metalMining = ["Cornwall", "Isles of Scilly", "West Devon"].includes(district);
-  if (metalMining) found += " This area has many old tin and copper mines, which this check does not cover: ask for a Cornwall and West Devon mining search.";
+  // Mining other than coal (tin, copper, lead, iron, salt and so on): the British Geological Survey's 1 km overview.
+  // Where underground mining is known or likely, a mining search is worth ordering; it is never good news if unknown.
+  const other = R.otherMining.ok ? R.otherMining.value : undefined;
+  const otherNotes = {
+    Significant: "Other underground mining (for example tin, copper, lead or iron) is known or considered likely in this area.",
+    Moderate: "Small-scale underground mining other than coal may have happened in this area.",
+    Low: "Localised small-scale mining other than coal may have happened in this area."
+  };
+  const otherSignificant = other && other.level === "Significant";
+  if (other && otherNotes[other.level]) found += " " + otherNotes[other.level];
+  if (otherSignificant && status === "low") status = "medium";
+  else if (other && other.level === "Moderate" && status === "low") status = "info";
+  if (other === undefined && status === "low") {     // the other-mining overview did not answer: not "No issue found"
+    status = "manual";
+    found += " Mining other than coal could not be checked right now.";
+  }
+  meaning += " Mining other than coal comes from the British Geological Survey's overview in 1 km hexagons, so it describes the area, not the exact plot.";
   return {
+    ...(status === "manual" && { gap: "down" }),
     ...base, status, found,
     details: !c.highAtPoint && c.highNearby ? `<p>A coal mining high-risk area lies within ${formatRadius(R.loc.radius)}.</p>` : "",
     meaning: `<p>${meaning}</p>`,
     actions: [
-      ...(metalMining ? ["Ask your conveyancer for a Cornwall and West Devon mining search. It covers old metal mines and shafts, which are common here."] : []),
-      ...(status === "low" ? [] : [
+      ...(otherSignificant ? [`Ask your conveyancer for a mining search that covers mining other than coal (in Cornwall and West Devon, the Cornwall and West Devon mining search). See the ${link(LINKS.otherMiningInfo, "British Geological Survey's mining hazard data")}.`] : []),
+      ...(!c.highAtPoint && !c.lowAtPoint ? [] : [
         `See old mine shafts and shallow workings on the ${link(LINKS.coalMap, "Mining Remediation Authority map")}.`,
         "Tell your surveyor, so they can look for signs of ground movement."
       ])
     ],
     seller: status === "low" ? [] : ["Have there been any subsidence or mining damage claims?"],
     conveyancer: [
-      ...(status === "low" ? [] : ["A coal mining report (CON29M). It lists mine shafts, past subsidence claims and future mining plans."]),
-      ...(metalMining ? ["A Cornwall and West Devon mining search, for old metal mines and shafts."] : [])
+      ...(!c.highAtPoint && !c.lowAtPoint ? [] : ["A coal mining report (CON29M). It lists mine shafts, past subsidence claims and future mining plans."]),
+      ...(otherSignificant ? ["A mining search covering mining other than coal (in Cornwall and West Devon, the Cornwall and West Devon mining search)."] : [])
     ]
+  };
+}
+
+// Shrinking and swelling clay: the British Geological Survey's 5 km overview (GeoSure, version 8). Significant →
+// Worth checking; Moderate → For information; Low → No issue found, unless parts of the hexagon are rated Significant.
+function checkClay(R) {
+  const base = { source: { name: "British Geological Survey, GeoSure shrink-swell (5 km overview)", url: LINKS.geosure } };
+  if (!R.shrinkSwell.ok) return unavailable(base, R, "shrinkSwell");
+  const v = R.shrinkSwell.value;
+  if (!v) return { ...base, status: "manual", gap: "nodata", found: "No clay data was found for this spot. Ask your surveyor about the soil." };
+  const word = { 1: "low", 2: "moderate", 3: "significant" }[v.level] || "unknown";
+  const status = v.level === 3 ? "medium" : v.level === 2 || v.localised ? "info" : "low";
+  const found = `The chance of clay soil shrinking and swelling is ${word} in this area.` +
+    (v.localised && v.level < 3 ? " Some spots nearby are rated significant." : "");
+  return {
+    ...base, status, found,
+    meaning: `<p>Some clay soils shrink in dry summers and swell when wet. This can move foundations and crack walls, and it is the
+      most common cause of subsidence in England, especially in the South East. Trees close to a house make it worse, because
+      their roots dry the clay out.</p>
+      <p>This is an overview for an area about 5 km across, not a survey of this plot. Rating: significant “Worth checking”,
+      moderate (or significant spots nearby) “For information”, low “No issue found”.</p>`,
+    actions: status === "low" ? [] : [
+      "Ask your surveyor to look for subsidence cracks and to note any large trees close to the house.",
+      "Ask your buildings insurer whether the area affects the price or the cover."
+    ],
+    seller: status === "medium" ? ["Has the house ever had subsidence, underpinning or an insurance claim for cracks?"] : []
   };
 }
 
@@ -245,8 +284,8 @@ function checkLandslides(R) {
       : `No recorded landslides within ${formatRadius(R.loc.radius)}.`,
     details: s.length ? `<ul class="site-list">${s.slice(0, 5).map(x => `<li>${escapeHTML(x.name)} (${escapeHTML(formatDistance(x.distanceKm))})</li>`).join("")}</ul>` : "",
     meaning: `<p>Rating: a recorded landslide within 500 m is “Worth checking”; further away it is “For information”.</p>
-      <p>This check does not cover clay soil that shrinks and swells in dry and wet weather. That is the most common
-      cause of subsidence in England, especially in the South East.</p>`,
+      <p>Clay soil that shrinks and swells in dry and wet weather, the most common cause of subsidence in England, is
+      covered by its own topic, “Shrinking and swelling clay”.</p>`,
     actions: [`For clay soil, sinkholes and other ground hazards, the environmental search or a ${link(LINKS.geosure, "BGS GeoSure")} report can help.`],
     seller: ["Has there been any subsidence, cracking or underpinning?"]
   };
