@@ -99,7 +99,7 @@ official checkers.
 - **Save or print:** one menu with Download report, Print summary (the summary, notes, viewing list and checklist) and Print full
   report, each with a one-line description. Printouts open with the property's details, a square map with a caption, a
   "Key findings" box (the most serious results), a table of every topic grouped by section (rating and finding, with a
-  key) and a link to the live report. Sections are numbered and run on with space between them; the viewing checklist
+  key) and a link and QR code to the live report. Sections are numbered and run on with space between them; the viewing checklist
   prints as its own page to take along; each rating also has its own border pattern for black-and-white printers; the
   sources form a neat table at the end; app instructions are left out. Every page carries the place, date, a short
   disclaimer and page numbers (Chrome and Edge).
@@ -124,7 +124,7 @@ survey or the searches a conveyancer orders. Most data covers England only.
 
 ## How the code is organised
 
-A static site with no build step and no libraries other than Leaflet (the map). GitHub Pages serves it as it is.
+A static site with no build step and two small libraries: Leaflet (the map) and qrcode-generator (the QR code on the printed report, added 1.35.0 with the owner's OK). GitHub Pages serves it as it is.
 
 | File | What it holds |
 |---|---|

@@ -88,7 +88,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   and each service's answer for a place kept on the device for 7 days, used (dated) only if that service fails.
 - Printed report (1.35.0): page 1 has the property's details, a centred square map with a "Figure 1" caption, the
   verdict and a table of every topic grouped by section, with a key to the ratings; sections are numbered, topic cards
-  have more space between them, and rating colours always print; a "Key findings" box, a link to the live report,
+  have more space between them, and rating colours always print; a "Key findings" box, a link and QR code to the live report,
   the viewing checklist as its own page, a neat sources table and black-and-white friendly border patterns; every page
   shows the place, date, "A first look from public data, not a survey" and "Page 2 of 6" (Chrome and Edge); no app
   instructions on paper; the sections run on continuously, with extra space before each one.

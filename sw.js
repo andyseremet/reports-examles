@@ -21,7 +21,8 @@ const SHELL = [
   "./icons/icon-512.png",
   "./data/rail-stations.json",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
-  "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"
 ];
 const FIXED_DATA = ["./data/census2021-msoa-residents.json"];   // kept once used, not downloaded up front
 

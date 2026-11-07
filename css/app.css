@@ -545,6 +545,10 @@ body.has-sticky footer {padding-bottom:100px}
   #report {counter-reset:section}
   .details-start > .group > h2::before,#nextSteps > h2::before {counter-increment:section;content:counter(section) ". "}
   .meta {display:none}
+  .cover-row {display:flex!important;gap:6mm;align-items:flex-start;justify-content:space-between}
+  .cover-qr {margin:3mm 0 0;text-align:center;flex:none}
+  .cover-qr svg {width:30mm;height:30mm;display:block}
+  .cover-qr figcaption {font-size:8.5px;color:#444;margin-top:1mm}
   .cover-details {border-collapse:collapse;margin:3mm 0 0;font-size:11px}
   .cover-details th {text-align:left;color:#555;font-weight:normal;padding:1mm 6mm 1mm 0;white-space:nowrap;vertical-align:top}
   .cover-details td {padding:1mm 0;font-weight:bold}

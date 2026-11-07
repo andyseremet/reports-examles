@@ -960,14 +960,14 @@ async function testDevice(device, [postcode, place]) {
         map: [Math.round(map.width), Math.round(map.height)], caption: shown("#mapCaption") && /^Figure 1\./.test(document.getElementById("mapCaption").textContent),
         cover: shown(".cover-details"), liveLink: [...document.querySelectorAll(".cover-details td")].some(td => td.textContent === location.href),
         keyFindings: document.querySelectorAll(".key-findings li").length, problems: orderedResults().filter(c => ["high", "medium"].includes(c.status)).length,
-        keyShown: shown(".key-findings"),
+        keyShown: shown(".key-findings"), qr: shown(".cover-qr svg"),
         table: shown(".glance-table"), footer: (document.getElementById("printFooter") || {}).textContent || "",
         grid: shown(".topic-strip"), howTo: shown("#info-read"), saved: shown(".saved-note"), more: shown(".info-row"),
         tryAgain: shown(".gaps-box [data-retry]") };
     });
     if (!paper.table || paper.rows !== paper.topics) throw new Error(`the at-a-glance table shows ${paper.rows} of ${paper.topics} topics (visible: ${paper.table})`);
     if (paper.map[0] < 300 || Math.abs(paper.map[0] - paper.map[1]) > 2 || !paper.caption) throw new Error(`printed map ${paper.map.join("×")} px, caption shown: ${paper.caption} (expected a square with "Figure 1." caption)`);
-    if (!paper.cover || !paper.liveLink) throw new Error(`printed cover: details table ${paper.cover}, live report link ${paper.liveLink}`);
+    if (!paper.cover || !paper.liveLink || !paper.qr) throw new Error(`printed cover: details table ${paper.cover}, live report link ${paper.liveLink}, QR code ${paper.qr}`);
     const wantKey = Math.min(3, paper.problems);
     if (paper.keyFindings !== wantKey || (wantKey && !paper.keyShown)) throw new Error(`Key findings lists ${paper.keyFindings}, expected ${wantKey} (shown: ${paper.keyShown})`);
     if (!/counter\(page\)/.test(paper.footer) || !/counter\(pages\)/.test(paper.footer)) throw new Error("no page numbers in the printed footer");

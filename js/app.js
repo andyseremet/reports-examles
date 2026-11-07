@@ -1266,7 +1266,20 @@ function coverDetails(loc, p) {
     ["Made with", `Property Location Check, version ${APP_VERSION}, from official open data`],
     ["Live report", location.href]       // the latest data for this place, opened from the printout
   ].filter(Boolean);
-  return `<table class="cover-details print-only">${rows.map(([k, v]) => `<tr><th scope="row">${escapeHTML(k)}</th><td>${escapeHTML(v)}</td></tr>`).join("")}</table>`;
+  return `<div class="cover-row print-only"><table class="cover-details">${rows.map(([k, v]) =>
+    `<tr><th scope="row">${escapeHTML(k)}</th><td>${escapeHTML(v)}</td></tr>`).join("")}</table>${liveQr()}</div>`;
+}
+
+// A QR code for the live report (qrcode-generator, loaded by index.html). Left out if the library did not load.
+function liveQr() {
+  if (typeof qrcode !== "function") return "";
+  try {
+    const qr = qrcode(0, "M");
+    qr.addData(location.href);
+    qr.make();
+    return `<figure class="cover-qr">${qr.createSvgTag({ cellSize: 2, margin: 0, scalable: true, alt: "QR code for the live report" })}
+      <figcaption>Scan for the live report</figcaption></figure>`;
+  } catch (e) { return ""; }
 }
 
 // Saved results older than this are flagged, with a suggestion to refresh them.
