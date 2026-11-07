@@ -24,6 +24,7 @@ on:
     paths:
       - "index.html"
       - "status.html"
+      - "glossary.html"
       - "css/**"
       - "js/**"
       - "sw.js"

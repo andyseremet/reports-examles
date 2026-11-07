@@ -1,7 +1,7 @@
 // Accessibility re-check, run by hand after visual changes (not in the daily check).
 //   npm install --no-save axe-core   (Playwright as for the full test; see CLAUDE.md)
 //   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 10 minutes)
-// Scans WCAG 2.2 AA with axe-core on the start page, a full report and status.html, at 1280 px, 320 px and phone,
+// Scans WCAG 2.2 AA with axe-core on the start page, a full report, status.html and glossary.html, at 1280 px, 320 px and phone,
 // light and dark, normal and A+ text. In the report it also scans after using controls (Open problems, the no-issue fold, the gaps box, a Start here link,
 // a tick, Move to another device, Compare three, Remove), and checks for sideways scrolling before and after each.
 // Environment Agency map requests are answered empty so the report finishes fast. Exit code 1 on any problem.
@@ -73,6 +73,8 @@ for (const [size, opts] of SIZES) for (const scheme of ["light", "dark"]) for (c
   for (const [name, act] of ACTIONS) { await act(page); await check(page, `${label} – after ${name}`); }
   await page.goto(BASE + "status.html");
   await check(page, `${label} – status page`);
+  await page.goto(BASE + "glossary.html");
+  await check(page, `${label} – glossary page`);
   await context.close();
 }
 await browser.close();

@@ -1000,6 +1000,8 @@ function renderSources() {
       <td>${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}</td>
       <td>${escapeHTML(c.dataDate || "Checked live on " + today())}</td></tr>`).join("");
   $("sourcesBox").innerHTML = `
+    <p class="glossary-link">Not sure what a word means? ${link(GLOSSARY_PAGE, "What the words mean")} explains flood zones,
+      radon, conservation areas and the other words in this report.</p>
     <details class="group sources-fold" id="sources">
       <summary><h2>Data sources and dates <span class="muted-count">(${plural(orderedResults().filter(c => c.source && c.source.name).length, "topic")})</span></h2></summary>
       <div class="table-wrap"><table><thead><tr><th>Topic</th><th>Source</th><th>Data date</th></tr></thead><tbody>${rows}</tbody></table></div>

@@ -191,8 +191,24 @@ function link(url, text) {
   return `<a href="${escapeHTML(url)}" target="_blank" rel="noopener">${escapeHTML(text)}</a>`;
 }
 
-// A plain word with the technical meaning shown on hover.
+// Words explained on the "What the words mean" page (glossary.html): the word as written → its id there.
+const GLOSSARY = {
+  "aqma": "aqma", "ancient woodland": "ancient-woodland", "brownfield": "brownfield", "con29m": "coal-mining-report",
+  "coal tip": "coal-tip", "comah": "comah", "conservation area": "conservation-area", "contaminated land": "contaminated-land",
+  "conveyancer": "conveyancer", "data zone": "data-zone", "deprivation": "deprivation", "environmental search": "environmental-search",
+  "flood defence": "flood-defence", "flood zone": "flood-zone", "green belt": "green-belt", "groundwater flooding": "groundwater-flooding",
+  "hs2": "hs2", "landfill": "landfill", "landslide": "landslide", "lden": "lden", "listed building": "listed-building",
+  "local search": "local-search", "median": "median", "national landscape": "national-landscape", "no2": "no2", "pm2.5": "pm25",
+  "radon": "radon", "scheduled monument": "scheduled-monument", "shoreline management plan": "shoreline-management-plan",
+  "shrink-swell": "shrink-swell", "special area of conservation": "special-area", "sssi": "sssi", "surface water": "surface-water"
+};
+// A full address, so the links still work in a downloaded report.
+const GLOSSARY_PAGE = new URL("glossary.html", location.href).href;
+
+// A plain word with the technical meaning shown on hover. A word on the glossary page links to it.
 function term(text, explanation) {
+  const id = GLOSSARY[String(text).toLowerCase()];
+  if (id) return `<a class="term" href="${GLOSSARY_PAGE}#${id}" target="_blank" rel="noopener" title="${escapeHTML(explanation)}">${escapeHTML(text)}</a>`;
   return `<abbr title="${escapeHTML(explanation)}">${escapeHTML(text)}</abbr>`;
 }
 

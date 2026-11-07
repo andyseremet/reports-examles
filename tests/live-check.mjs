@@ -861,6 +861,26 @@ async function testDevice(device, [postcode, place]) {
     return `${r.rows} services listed; ${r.verdict.trim()}`;
   });
 
+  await step("What the words mean: every linked word has its meaning, linked from the report and footer", async () => {
+    const ids = await page.evaluate(() => [...new Set(Object.values(GLOSSARY))]);
+    const links = await page.evaluate(() => ({
+      footer: !!document.querySelector('footer a[href="glossary.html"]'),
+      report: !!document.querySelector('#sourcesBox a[href$="glossary.html"]'),
+      term: term("radon", "x").includes("glossary.html#radon")
+    }));
+    const g = await page.context().newPage();
+    await g.goto(new URL("glossary.html", BASE).href);
+    const r = await g.evaluate(ids => ({
+      missing: ids.filter(id => !document.querySelector(`.glossary dt[id="${id}"] + dd`)),
+      entries: document.querySelectorAll(".glossary dt").length,
+      back: !!document.querySelector('a[href="./"]')
+    }), ids);
+    await g.close();
+    if (r.missing.length) throw new Error("no meaning on the page for: " + r.missing.join(", "));
+    if (!links.footer || !links.report || !links.term || !r.back) throw new Error("missing link: " + JSON.stringify({ ...links, back: r.back }));
+    return `${r.entries} words explained`;
+  });
+
   await step("Slow report names the service it is waiting for", async () => {
     // Every outside service answers at once with no data, except "flooding from heavy rain", which is held
     // back. After 8 seconds the summary must name the Environment Agency and that topic. Nothing is sent
