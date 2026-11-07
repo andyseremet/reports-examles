@@ -114,6 +114,8 @@ function checkLanduse(R) {
   else if (contaminated.length) { if (status !== "high") status = "medium"; parts.push(`${plural(contaminated.length, "contaminated land site")} recorded nearby.`); }
   if (comah.length) { if (status !== "high") status = "medium"; parts.push(`${plural(comah.length, "major hazard site")} nearby.`); }
   if (!here.length && !contaminated.length) parts.push("Contaminated land is not published nationally: ask the council or rely on the environmental search.");
+  // planning.data.gov.uk not answering: say so, rather than let these sites silently look absent.
+  if (!R.planningNearby.ok || !R.planningPoint.ok) parts.push("Major hazard sites, brownfield land and council contaminated land records could not be checked right now (planning.data.gov.uk is not answering).");
 
   const wasteTypes = s => [s.household && "household", s.special && "hazardous (“special”)", s.industrial && "industrial",
     s.commercial && "commercial", s.inert && "inert (soil, rubble)"].filter(Boolean).join(", ") || "not recorded";

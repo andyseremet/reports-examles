@@ -9,7 +9,7 @@ function checkPlanning(R) {
   };
   const backup = backupFor(R, "planningPoint");
   if (!R.planningPoint.ok && !backup) return unavailable(base, R, "planningPoint");
-  if (backup) base.source = { name: backup.from.join(" and ") + " (planning.data.gov.uk was not answering)", url: LINKS.historicEngland };
+  if (backup) base.source = { name: backupFrom(backup, PLANNING_AT_POINT.filter(d => d !== "flood-risk-zone")) + " (planning.data.gov.uk was not answering)", url: LINKS.historicEngland };
 
   const here = planningList(R, "planningPoint");
   const rules = [
@@ -36,7 +36,7 @@ function checkPlanning(R) {
       : unchecked.length
       ? `No listed building, scheduled monument or protected landscape found here, but ${unchecked.join(", ")} could not be checked right now.`
       : "No conservation area, listed building, Green Belt or similar restriction found here.",
-    details: (backup ? backupNote(backup, unchecked) : "") + (applies.length ? `<ul>${applies.map(a => `<li><strong>${escapeHTML(a.name)}</strong>${a.detail ? " (" + escapeHTML(a.detail) + ")" : ""}: ${escapeHTML(a.what)}</li>`).join("")}</ul>` : "") +
+    details: (backup ? backupNote(backup, rules.map(([ds]) => ds), unchecked) : "") + (applies.length ? `<ul>${applies.map(a => `<li><strong>${escapeHTML(a.name)}</strong>${a.detail ? " (" + escapeHTML(a.detail) + ")" : ""}: ${escapeHTML(a.what)}</li>`).join("")}</ul>` : "") +
       (listedNear.length ? `<p>${plural(listedNear.length, "listed building")} within 200 m.</p>` : ""),
     meaning: "<p>These rules mainly matter if you plan to extend, alter or build. Not every council publishes this data yet.</p>",
     actions: [
@@ -72,7 +72,7 @@ function checkNature(R) {
       : found.length ? `${plural(found.length, "protected nature site")} within ${formatRadius(R.loc.radius)}.`
       : unchecked.length ? `No protected nature sites found within ${formatRadius(R.loc.radius)}, but ${unchecked.join(", ")} could not be checked right now.`
       : `No protected nature sites within ${formatRadius(R.loc.radius)}.`,
-    details: (backup ? backupNote(backup, unchecked) : "") + (found.length ? `<ul class="site-list">${found.slice(0, 8).map(e => `<li>${escapeHTML(sets[e.dataset])}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}</ul>` : ""),
+    details: (backup ? backupNote(backup, Object.keys(sets), unchecked) : "") + (found.length ? `<ul class="site-list">${found.slice(0, 8).map(e => `<li>${escapeHTML(sets[e.dataset])}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}</ul>` : ""),
     meaning: "<p>Nature sites are usually a plus for buyers, but they can limit building work or land use nearby." +
       (inSssi ? " Inside a Site of Special Scientific Interest, many activities need consent from Natural England." : "") + "</p>"
   };

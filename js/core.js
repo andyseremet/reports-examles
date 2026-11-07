@@ -26,6 +26,8 @@ const API = {
   crime: "https://data.police.uk/api/crimes-street/all-crime",
   police: "https://data.police.uk/api/",
   surfaceWater: "https://environment.data.gov.uk/spatialdata/nafra2-risk-of-flooding-from-surface-water/wms",
+  // Backup only (planning.data.gov.uk not answering): the Environment Agency's own Flood Map for Planning.
+  floodZones: "https://environment.data.gov.uk/spatialdata/flood-map-for-planning-flood-zones/wms",
   sepaFlood: "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer",
   nrwFlood: "https://datamap.gov.wales/geoserver/ows",
   dataMapWales: "https://datamap.gov.wales/geoserver/ows",
@@ -157,7 +159,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "1.31.0";
+const APP_VERSION = "1.31.1";
 const APP_UPDATED = "7 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
