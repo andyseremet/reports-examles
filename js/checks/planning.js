@@ -34,7 +34,7 @@ function checkPlanning(R) {
     found: applies.length
       ? "Planning restrictions here: " + applies.map(a => a.name).join(", ") + "."
       : unchecked.length
-      ? `No listed building, scheduled monument or protected landscape found here, but ${andList(unchecked.map(n => n.replace(/^Conservation area$/, "conservation areas").replace(/^HS2 safeguarded area$/, "the HS2 safeguarded area")))} could not be checked right now.`
+      ? `No conservation area, listed building, scheduled monument or protected landscape found here, but ${andList(unchecked.map(n => n.replace(/^Conservation area$/, "conservation areas").replace(/^HS2 safeguarded area$/, "the HS2 safeguarded area")))} could not be checked right now.`
       : "No conservation area, listed building, Green Belt or similar restriction found here.",
     details: (backup ? backupNote(backup, rules.map(([ds]) => ds), unchecked) : "") + (applies.length ? `<ul>${applies.map(a => `<li><strong>${escapeHTML(a.name)}</strong>${a.detail ? " (" + escapeHTML(a.detail) + ")" : ""}: ${escapeHTML(a.what)}</li>`).join("")}</ul>` : "") +
       (listedNear.length ? `<p>${plural(listedNear.length, "listed building")} within 200 m.</p>` : ""),

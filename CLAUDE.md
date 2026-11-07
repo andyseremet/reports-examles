@@ -23,8 +23,11 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Northern Ireland:** planning, nature, noise and coast use the Department for Communities (Historic Environment
   Division) and DAERA (`gis.daera-ni.gov.uk`): `getNISites`, `getNINoise`, `getNICoast`, and `isNI(R)`. Use the official
   HED service, not the NIE Networks copies on ArcGIS Online. Flood maps, radon, landslides and coal are not open there.
-- **Backups:** when planning.data.gov.uk fails, `withBackup`/`planningBackup` (`js/data.js`) ask Historic England and
-  Natural England for heritage and nature, and the Environment Agency for the flood zone at the pin (England only, never on a normal day). The answer rides on the failure as
+- **Backups:** when planning.data.gov.uk fails, `withBackup`/`planningBackup` (`js/data.js`) ask Historic England
+  (heritage and conservation areas) and Natural England for nature, and the Environment Agency for the flood zone at the pin (England only, never on a normal day).
+  When postcodes.io fails, `placeFromOsm` gives the country and place from OpenStreetMap; when Nominatim address search
+  fails, Photon answers (`searchPhoton` in `js/app.js`). Every task's answer is kept 7 days per place
+  (`rememberAnswer`/`recentAnswer` in `js/app.js`) and used, dated, only when that service fails. The answer rides on the failure as
   `R[key].backup`; only `checkPlanning`/`checkNature`/`checkFlood` read it (`backupFor`, `planningList`). Any topic whose service
   fails shows the place's last saved answer, dated (`savedInstead` in `js/app.js`).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
@@ -110,7 +113,7 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
   that change `index.html`, `status.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
   Daily and manual runs on `main` then publish `status.json` to the `status` branch for the status page.
-  **Pull requests leave out the 40 report data services** (`DATA_SERVICES=0`; the list is `data/data-services.csv`),
+  **Pull requests leave out the 41 report data services** (`DATA_SERVICES=0`; the list is `data/data-services.csv`),
   at the owner's request: they run daily, and by hand with the "Check the report data services" box (ticked by default).
   The report steps still use the live services, so an outage can still fail a pull request. A failed daily or manual run
   opens or updates a "Live check failed" issue.

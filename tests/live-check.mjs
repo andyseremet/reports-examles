@@ -118,6 +118,9 @@ const SERVICES = [
   ["Heritage backup (Historic England)", "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/National_Heritage_List_for_England_NHLE_v02_VIEW/FeatureServer/0/query?geometry=-2.3590,51.3811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=100&units=esriSRUnit_Meter&outFields=Name&returnGeometry=false&f=json", d => d.features && d.features.length > 0],
   ["Clay shrink-swell (British Geological Survey)", arcgis("https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hex_grids/MapServer/6/query"), d => d.features && d.features.length === 1],
   ["Mining other than coal (British Geological Survey)", arcgis("https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hex_grids/MapServer/1/query"), d => d.features && d.features.length === 1],
+  ["Conservation areas backup (Historic England)", "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/Conservation_Areas/FeatureServer/0/query?geometry=-2.3590,51.3811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=NAME&returnGeometry=false&f=json", d => d.features && d.features.length > 0],
+  ["Place backup (OpenStreetMap reverse lookup)", `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&lat=${LAT}&lon=${LON}`, d => d.address && d.address["ISO3166-2-lvl4"] === "GB-ENG", { alwaysChecked: true }],
+  ["Address search backup (Photon)", "https://photon.komoot.io/api/?limit=1&q=Barnsley", d => Array.isArray(d.features) && d.features.length > 0, { alwaysChecked: true }],
   ["Flood zone backup (Environment Agency)", wms("https://environment.data.gov.uk/spatialdata/flood-map-for-planning-flood-zones/wms", "Flood_Zones_2_3_Rivers_and_Sea"), d => Array.isArray(d.features)],
   ["Nature backup (Natural England)", arcgis("https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/SSSI_England/FeatureServer/0/query", "&distance=5000&units=esriSRUnit_Meter"), d => Array.isArray(d.features)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
@@ -168,6 +171,9 @@ const SERVICE_TOPICS = {
   "Heritage backup (Historic England)": ["Planning restrictions and heritage, when planning.data.gov.uk is not answering"],
   "Clay shrink-swell (British Geological Survey)": ["Shrinking and swelling clay"],
   "Mining other than coal (British Geological Survey)": ["Mining (coal and other)"],
+  "Conservation areas backup (Historic England)": ["Planning restrictions and heritage, when planning.data.gov.uk is not answering"],
+  "Place backup (OpenStreetMap reverse lookup)": ["Every topic (finds the country), when postcodes.io is not answering"],
+  "Address search backup (Photon)": ["Finding the property by address, when the main address search is not answering"],
   "Flood zone backup (Environment Agency)": ["Flooding from rivers and the sea, when planning.data.gov.uk is not answering"],
   "Nature backup (Natural England)": ["Planning restrictions and heritage, and Protected nature sites, when planning.data.gov.uk is not answering"],
   "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
@@ -274,7 +280,9 @@ async function testCountryData() {
       if (r.planning[0] !== "info" || !/World Heritage Site/.test(r.planning[1]) || !/Scheduled monument/.test(r.planning[1]))
         throw new Error(`planning from the backup: ${r.planning[0]}: ${r.planning[1]}`);
       if (!r.planning[2]) throw new Error("the planning topic does not say it came from Historic England");
-      if (!r.missing.includes("conservation-area")) throw new Error("conservation areas are not named as unchecked");
+      // Conservation areas come from Historic England's map (the City of Bath conservation area); Green Belt has no backup.
+      if (!/Conservation area/.test(r.planning[1])) throw new Error(`no conservation area from Historic England in central Bath: ${r.planning[1]}`);
+      if (r.missing.includes("conservation-area") || !r.missing.includes("green-belt")) throw new Error(`backup coverage is wrong; not checked: ${r.missing.join(", ")}`);
       if (!r.listed) throw new Error("no listed buildings from Historic England in central Bath");
       if (!["low", "info"].includes(r.nature)) throw new Error(`nature from the backup rated ${r.nature}`);
       await page.unroute(floodMap);
@@ -283,6 +291,30 @@ async function testCountryData() {
       if (r.air !== "info" || !/hotspots could not be checked/.test(r.airFound)) throw new Error(`with the hotspot list down, air quality is ${r.air}: ${r.airFound}`);
       if (r.saved.join() !== "medium,2026-11-03T10:00:00Z,down") throw new Error(`the saved answer came back as ${r.saved.join(", ")}`);
       return `${r.planning[1]} ${r.listed} listed buildings nearby`;
+    });
+
+    await step("Backups for the place, the address search and recent answers", async () => {
+      // postcodes.io not answering: OpenStreetMap gives the country (Leith → Scotland). Nominatim not answering: Photon
+      // finds the address. A service that fails reuses its answer from the last 7 days, but never an older one.
+      const r = await page.evaluate(async () => {
+        const place = await placeFromOsm({ lat: 55.9755, lon: -3.17 });
+        const found = await searchPhoton("May Day Green, Barnsley");
+        const loc = { lat: 50.1, lon: -5.1, radius: 1000 };
+        rememberAnswer(loc, "radon", { CLASS_MAX: 3 });
+        const fresh = recentAnswer(loc, "radon");
+        const k = "plc-recent:" + reportKey(loc), all = JSON.parse(localStorage.getItem(k));
+        all.radon.at = new Date(Date.now() - 8 * 864e5).toISOString(); localStorage.setItem(k, JSON.stringify(all));
+        const old = recentAnswer(loc, "radon");
+        forgetAnswers(reportKey(loc));
+        return { country: place && place.country, backup: place && place.fromBackup, photon: found.length, near: found[0] && Math.abs(found[0].lat - 53.55) < 0.1,
+          fresh: !!fresh && fresh.value.CLASS_MAX === 3, old: old === null, gone: localStorage.getItem(k) === null };
+      });
+      if (r.country !== "Scotland" || r.backup !== "OpenStreetMap") throw new Error(`OpenStreetMap place for Leith: ${r.country} (${r.backup})`);
+      if (!r.photon || !r.near) throw new Error(`Photon found ${r.photon} result(s), first near Barnsley: ${r.near}`);
+      if (!r.fresh) throw new Error("a recent answer was not kept");
+      if (!r.old) throw new Error("an answer older than 7 days was still used");
+      if (!r.gone) throw new Error("recent answers were not forgotten with the saved property");
+      return `Leith → Scotland (OpenStreetMap); Photon: ${r.photon} result(s); recent answers kept 7 days`;
     });
 
     await step("Clay and other mining from the British Geological Survey", async () => {

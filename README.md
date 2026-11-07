@@ -145,7 +145,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 - **On every pull request** that changes the page, against the proposed version, before it is merged.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
-It checks that all 42 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 40 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
+It checks that all 45 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 41 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the rating legend, the no-issue folds and Open problems / Close all, the one-line bar above the report, Show map, More and Show all, the folded Next steps, the phone tab bar, the Historic England and Natural England backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads. The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices is tested
@@ -191,7 +191,7 @@ change and do not need refreshing. They were downloaded from
 `https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv?date=latest&geography=TYPE152&c2021_restype_3=0&measures=20100&select=geography_code,obs_value`.
 When the 2031 Census is published, it would be a new, separate file.
 
-`data/data-services.csv` is a reference list, not used by the app: the 40 outside services that supply data for the
-report topics (name, and the exact link the daily check calls, for a test location). It leaves out the postcode lookup
-and address search (the app needs them to find the place) and the two files above. It was made from `SERVICES` in
+`data/data-services.csv` is a reference list, not used by the app: the 41 outside services that supply data for the
+report topics (name, and the exact link the daily check calls, for a test location). It leaves out the postcode lookup, the address search and their backups
+(the app needs them to find the place) and the two files above. It was made from `SERVICES` in
 `tests/live-check.mjs` on 7 November 2026; that list is the one to keep current, so remake this file after changing it.

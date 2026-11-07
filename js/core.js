@@ -8,12 +8,16 @@
 
 const API = {
   nominatim: "https://nominatim.openstreetmap.org/search",
+  // Backups (used only when the main service fails): OpenStreetMap reverse lookup for the place, Photon for address search.
+  nominatimReverse: "https://nominatim.openstreetmap.org/reverse",
+  photon: "https://photon.komoot.io/api/",
   postcodes: "https://api.postcodes.io/postcodes",
   places: "https://api.postcodes.io/places",
   planning: "https://www.planning.data.gov.uk/entity.json",
   // Backups when planning.data.gov.uk does not answer: the original publishers' own map services.
   heritageEngland: "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/National_Heritage_List_for_England_NHLE_v02_VIEW/FeatureServer",
   natureEngland: "https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services",
+  conservationEngland: "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/Conservation_Areas/FeatureServer/0/query",
   radon: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/radon/MapServer/0/query",
   landslides: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hazards/MapServer/2/query",
   // BGS 5 km and 1 km hexagon overviews (Open Government Licence): 6 = shrink-swell clay, 1 = mining other than coal.

@@ -524,19 +524,34 @@ async function lookupPostcode(pc) {
   }
 }
 
+// Address search: OpenStreetMap's Nominatim first; if it does not answer, Photon (also OpenStreetMap data).
+async function searchNominatim(q) {
+  const results = await fetchJSON(API.nominatim + "?format=json&limit=5&countrycodes=gb&q=" + encodeURIComponent(q));
+  return results.map(r => {
+    const parts = r.display_name.split(",").map(s => s.trim());
+    return { type: "place", isAddress: true, label: parts.slice(0, 3).join(", "),
+      hint: parts.slice(3, 6).join(", "), lat: Number(r.lat), lon: Number(r.lon) };
+  });
+}
+async function searchPhoton(q) {
+  const d = await fetchJSON(API.photon + "?limit=5&bbox=-8.7,49.8,1.9,60.9&q=" + encodeURIComponent(q));
+  return (d.features || []).filter(f => f.properties.countrycode === "GB").map(f => {
+    const p = f.properties;
+    const first = [p.housenumber, p.street].filter(Boolean).join(" ");
+    const label = [p.name, first].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(", ") || p.city || "";
+    return { type: "place", isAddress: true, label, hint: [p.city || p.town, p.county, p.postcode].filter(Boolean).join(", "),
+      lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+  });
+}
+
 async function addressSearch(q) {
   showSearchStatus("Searching for “" + q + "”…");
   try {
-    const results = await fetchJSON(API.nominatim + "?format=json&limit=5&countrycodes=gb&q=" + encodeURIComponent(q));
-    if (!results.length) {
+    const items = await searchNominatim(q).catch(() => searchPhoton(q));
+    if (!items.length) {
       showSearchStatus("No match found. Try a postcode, or click the map to drop a pin.", true);
       return;
     }
-    const items = results.map(r => {
-      const parts = r.display_name.split(",").map(s => s.trim());
-      return { type: "place", isAddress: true, label: parts.slice(0, 3).join(", "),
-        hint: parts.slice(3, 6).join(", "), lat: Number(r.lat), lon: Number(r.lon) };
-    });
     if (items.length === 1) return chooseSuggestion(items[0]);
     showSearchStatus("Several matches found. Pick the right one from the list.");
     showSuggestions(items);
@@ -767,10 +782,33 @@ const AUTO_RETRY_MS = 20000;
 const onlineAgain = () => navigator.onLine ? Promise.resolve()
   : new Promise(res => window.addEventListener("online", res, { once: true }));
 
+/* ---------- recent answers: each service's answer for a place, kept 7 days, used only if that service fails ---------- */
+// Optional: if the device runs out of space, the oldest places are dropped quietly (no "storage full" message).
+const RECENT_DAYS = 7, RECENT_PLACES = 10, RECENT_MAX_CHARS = 200000, RECENT_INDEX = "plc-recent-index";
+const recentKey = key => "plc-recent:" + key;
+function rememberAnswer(loc, task, value) {
+  const k = recentKey(reportKey(loc));
+  try {
+    const json = JSON.stringify(value === undefined ? null : value);
+    if (json.length > RECENT_MAX_CHARS) return;
+    const all = JSON.parse(localStorage.getItem(k) || "{}");
+    all[task] = { at: new Date().toISOString(), value };
+    const index = [k, ...JSON.parse(localStorage.getItem(RECENT_INDEX) || "[]").filter(x => x !== k)];
+    index.slice(RECENT_PLACES).forEach(x => localStorage.removeItem(x));
+    localStorage.setItem(RECENT_INDEX, JSON.stringify(index.slice(0, RECENT_PLACES)));
+    localStorage.setItem(k, JSON.stringify(all));
+  } catch (e) { /* storage full or blocked: the cache is optional */ }
+}
+function recentAnswer(loc, task) {
+  const a = store.get(recentKey(reportKey(loc)), {})[task];
+  return a && Date.now() - new Date(a.at).getTime() < RECENT_DAYS * 864e5 ? a : null;
+}
+const forgetAnswers = key => store.remove(recentKey(key));
+
 function startTask(r, key, autoRetry = true) {
   delete r.R[key];
   TASK_FN[key](r.loc).then(
-    value => { r.R[key] = { ok: true, value }; },
+    value => { r.R[key] = { ok: true, value }; rememberAnswer(r.loc, key, value); },
     async error => {
       if (autoRetry && r === run) {
         if (navigator.onLine) await new Promise(res => setTimeout(res, AUTO_RETRY_MS));
@@ -778,7 +816,10 @@ function startTask(r, key, autoRetry = true) {
         if (r === run) { r.autoRetried = [...(r.autoRetried || []), key]; startTask(r, key, false); }
         return "retrying";
       }
-      r.R[key] = { ok: false, error: error.message || "unknown error", ...(error.backup && { backup: error.backup }) };
+      // The service did not answer: use its answer from the last 7 days, if there is one (shown dated on the topic).
+      const recent = recentAnswer(r.loc, key);
+      r.R[key] = recent ? { ok: true, value: recent.value, cachedAt: recent.at }
+        : { ok: false, error: error.message || "unknown error", ...(error.backup && { backup: error.backup }) };
     }
   ).then(state => { if (state !== "retrying" && r === run) onTaskSettled(key); });
 }
@@ -797,7 +838,10 @@ function buildCheck(c) {
   let result;
   try { result = topicResult(c, { dataDate: "Checked live on " + today(), ...c.build(run.R) }); }
   catch (e) { result = topicResult(c, { status: "error", found: "This check failed: " + e.message }); }
-  return result.status === "error" ? savedInstead(c, result) : result;
+  if (result.status === "error") return savedInstead(c, result);
+  // Built partly from recent answers (a service did not answer): say so, with the oldest answer's date.
+  const cached = c.deps.map(k => run.R[k] && run.R[k].cachedAt).filter(Boolean).sort()[0];
+  return cached ? { ...result, fromSaved: cached } : result;
 }
 
 // A service that does not answer: if this place was checked before, show that earlier answer, clearly dated,
@@ -1200,7 +1244,7 @@ function renderMeta() {
   const p = okValue(run.R, "place");
   $("reportMeta").innerHTML = `
     <strong>${escapeHTML(loc.name)}</strong><br>
-    ${p ? `Nearest postcode ${escapeHTML(p.postcode)} · ${escapeHTML(p.admin_district || "")}${p.admin_ward ? " · " + escapeHTML(p.admin_ward) + " ward" : ""}<br>` : ""}
+    ${p ? `Nearest postcode ${escapeHTML(p.postcode)} · ${escapeHTML(p.admin_district || "")}${p.admin_ward ? " · " + escapeHTML(p.admin_ward) + " ward" : ""}${p.fromBackup ? " (from OpenStreetMap: postcodes.io was not answering)" : ""}<br>` : ""}
     Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}`;
 }
 
@@ -1658,7 +1702,7 @@ function trimSaved(list) {
   const starred = list.filter(s => s.starred);
   const others = list.filter(s => !s.starred).slice(0, Math.max(0, MAX_SAVED - starred.length));
   const keep = new Set([...starred, ...others].map(s => s.key));
-  list.filter(s => !keep.has(s.key)).forEach(s => store.remove(snapKey(s.key)));
+  list.filter(s => !keep.has(s.key)).forEach(s => { store.remove(snapKey(s.key)); forgetAnswers(s.key); });
   return list.filter(s => keep.has(s.key));
 }
 
@@ -1799,6 +1843,7 @@ function removeSaved(key) {
 // End the Undo offer: the removal stays. If the Undo button had focus, keep focus in the list.
 function finishUndo(timedOut) {
   if (!undoRemove) return;
+  if (timedOut) forgetAnswers(undoRemove.item.key);     // removed for good: its recent answers go too
   clearTimeout(undoRemove.timer);
   undoRemove = null;
   const hadFocus = document.activeElement === $("undoBtn");
