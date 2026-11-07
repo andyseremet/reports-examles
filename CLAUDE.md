@@ -23,6 +23,10 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Northern Ireland:** planning, nature, noise and coast use the Department for Communities (Historic Environment
   Division) and DAERA (`gis.daera-ni.gov.uk`): `getNISites`, `getNINoise`, `getNICoast`, and `isNI(R)`. Use the official
   HED service, not the NIE Networks copies on ArcGIS Online. Flood maps, radon, landslides and coal are not open there.
+- **Backups:** when planning.data.gov.uk fails, `withBackup`/`planningBackup` (`js/data.js`) ask Historic England and
+  Natural England for heritage and nature (England only, never on a normal day). The answer rides on the failure as
+  `R[key].backup`; only `checkPlanning`/`checkNature` read it (`backupFor`, `planningList`). Any topic whose service
+  fails shows the place's last saved answer, dated (`savedInstead` in `js/app.js`).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
   `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
   in `SERVICES` (`tests/live-check.mjs`) also needs its report topics in `SERVICE_TOPICS`.

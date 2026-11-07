@@ -11,6 +11,9 @@ const API = {
   postcodes: "https://api.postcodes.io/postcodes",
   places: "https://api.postcodes.io/places",
   planning: "https://www.planning.data.gov.uk/entity.json",
+  // Backups when planning.data.gov.uk does not answer: the original publishers' own map services.
+  heritageEngland: "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/National_Heritage_List_for_England_NHLE_v02_VIEW/FeatureServer",
+  natureEngland: "https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services",
   radon: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/radon/MapServer/0/query",
   landslides: "https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/hazards/MapServer/2/query",
   coalHigh: "https://services-eu1.arcgis.com/Qn4lKcPDVHNivEyr/arcgis/rest/services/DevelopmentHighRiskArea/FeatureServer/0/query",
@@ -154,8 +157,8 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "1.30.0";
-const APP_UPDATED = "6 November 2026";
+const APP_VERSION = "1.30.1";
+const APP_UPDATED = "7 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
 let selected = null;      // {lat, lon, label}

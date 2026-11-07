@@ -27,6 +27,17 @@ function isNI(R) {
 // The data task with Welsh, Scottish or Northern Ireland heritage, nature and air hotspots for this address.
 const sitesKey = R => isScotland(R) ? "scotlandSites" : isNI(R) ? "niSites" : "walesSites";
 
+// planning.data.gov.uk did not answer, but Historic England and Natural England did (see planningBackup in js/data.js).
+// Returns the entities to use, or null when the main source answered or no backup did.
+const backupFor = (R, key) => R[key] && !R[key].ok && R[key].backup ? R[key].backup : null;
+const planningList = (R, key) => R[key] && R[key].ok ? R[key].value : (backupFor(R, key) ? backupFor(R, key).entities : null);
+// A note for a topic answered from the backup, naming what could not be checked.
+function backupNote(backup, missingNames) {
+  return `<p class="notice backup-note-topic"><strong>planning.data.gov.uk is not answering</strong>, so this came from
+    ${backup.from.map(escapeHTML).join(" and ")} instead.${missingNames.length ? ` Not checked this time: ${missingNames.map(escapeHTML).join(", ")}.` : ""}
+    Try again later for the full check.</p>`;
+}
+
 function unavailable(base, R, key) {
   return {
     ...base, status: "error",

@@ -110,6 +110,8 @@ const SERVICES = [
     d => Array.isArray(d.features) && d.features.length > 0],
   ["Address search (OpenStreetMap Nominatim)", "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=Barnsley%20Town%20Hall", d => Array.isArray(d) && d.length > 0],
   ["Schools register (planning.data.gov.uk)", `https://www.planning.data.gov.uk/entity.json?dataset=educational-establishment&latitude=${LAT}&longitude=${LON}&limit=1`, d => Array.isArray(d.entities)],
+  ["Heritage backup (Historic England)", "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/National_Heritage_List_for_England_NHLE_v02_VIEW/FeatureServer/0/query?geometry=-2.3590,51.3811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=100&units=esriSRUnit_Meter&outFields=Name&returnGeometry=false&f=json", d => d.features && d.features.length > 0],
+  ["Nature backup (Natural England)", arcgis("https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/SSSI_England/FeatureServer/0/query", "&distance=5000&units=esriSRUnit_Meter"), d => Array.isArray(d.features)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
   ["Postcode lookup for many postcodes (postcodes.io)", "https://api.postcodes.io/postcodes", d => Array.isArray(d.result) && d.result[0].result,
     { method: "POST", body: JSON.stringify({ postcodes: ["S70 2TA"] }), headers: { "Content-Type": "application/json" } }],
@@ -155,6 +157,8 @@ const SERVICE_TOPICS = {
   "Northern Ireland coastal erosion (DfI and DAERA)": ["Coastal erosion, for homes in Northern Ireland"],
   "Address search (OpenStreetMap Nominatim)": ["Finding the property by address"],
   "Schools register (planning.data.gov.uk)": ["Schools, doctors and transport"],
+  "Heritage backup (Historic England)": ["Planning restrictions and heritage, when planning.data.gov.uk is not answering"],
+  "Nature backup (Natural England)": ["Planning restrictions and heritage, and Protected nature sites, when planning.data.gov.uk is not answering"],
   "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
   "Postcode lookup for many postcodes (postcodes.io)": ["Schools, doctors and transport"],
   "Railway station list (saved with the app)": ["Schools, doctors and transport"],
@@ -227,6 +231,42 @@ async function testCountryData() {
   try {
     await page.goto(BASE, { waitUntil: "load" });
     await page.waitForFunction(() => typeof getScotlandSites === "function", null, { timeout: 30000 });
+    await step("Backups: heritage and nature answer when planning.data.gov.uk does not", async () => {
+      // Central Bath, with planning.data.gov.uk pretending to be down: the World Heritage Site, the Roman Baths and
+      // listed buildings must come from Historic England, and the topic must name what it could not check.
+      // Flooding and air quality have no backup and must still say "not answering", never "no issue".
+      const r = await page.evaluate(async () => {
+        const loc = { name: "Bath test", lat: 51.3811, lon: -2.3590, radius: 500 };
+        const fail = msg => Promise.reject(new Error(msg));
+        const failed = async (datasets, radius) => {
+          try { await withBackup(() => fail("the data service replied with error 503"), loc, radius, datasets); }
+          catch (e) { return { ok: false, error: e.message, backup: e.backup }; }
+        };
+        const R = { loc, planningPoint: await failed(PLANNING_AT_POINT, 0), planningNearby: await failed(PLANNING_NEARBY, loc.radius),
+          floodNational: { ok: true, value: null }, air: { ok: true, value: null }, place: { ok: true, value: { country: "England" } } };
+        const planning = checkPlanning(R), nature = checkNature(R), flood = checkFlood(R), air = checkAir(R);
+        // A service that does not answer: this place's earlier answer is shown instead, with its date.
+        const keep = run;
+        run = { previous: { savedAt: "2026-11-03T10:00:00Z", results: [{ id: "flood", status: "medium", found: "Flood zone 2." }] } };
+        let saved;
+        try { saved = savedInstead({ id: "flood" }, { status: "error" }); } finally { run = keep; }
+        return { saved: [saved.status, saved.fromSaved, gapKind(saved)],
+          planning: [planning.status, planning.found, planning.details.includes("Historic England")],
+          nature: nature.status, flood: flood.status, air: air.status,
+          listed: (R.planningNearby.backup?.entities || []).filter(e => e.dataset === "listed-building").length,
+          missing: R.planningPoint.backup?.missing || [] };
+      });
+      if (r.planning[0] !== "info" || !/World Heritage Site/.test(r.planning[1]) || !/Scheduled monument/.test(r.planning[1]))
+        throw new Error(`planning from the backup: ${r.planning[0]}: ${r.planning[1]}`);
+      if (!r.planning[2]) throw new Error("the planning topic does not say it came from Historic England");
+      if (!r.missing.includes("conservation-area")) throw new Error("conservation areas are not named as unchecked");
+      if (!r.listed) throw new Error("no listed buildings from Historic England in central Bath");
+      if (!["low", "info"].includes(r.nature)) throw new Error(`nature from the backup rated ${r.nature}`);
+      if (r.flood !== "error" || r.air !== "error") throw new Error(`with no backup, flooding is ${r.flood} and air ${r.air}, not "not answering"`);
+      if (r.saved.join() !== "medium,2026-11-03T10:00:00Z,down") throw new Error(`the saved answer came back as ${r.saved.join(", ")}`);
+      return `${r.planning[1]} ${r.listed} listed buildings nearby`;
+    });
+
     await step("Wales: coal tips, coast, noise, heritage and nature from Welsh data", async () => {
       // Treorchy (Rhondda): disused coal tips nearby. Borth: an eroding coast. Cardiff centre: a conservation
       // area, road noise and an air pollution hotspot nearby. Each must be answered from Welsh data, not "Check yourself".
@@ -460,7 +500,11 @@ async function testDevice(device, [postcode, place]) {
     const retried = failed.map(t => t.id);
     for (const id of retried) {
       await page.waitForTimeout(20000);
-      await page.click(`[data-retry="${id}"]`);
+      // Retrying one topic reloads the data it shares with others, so another topic's button may already be gone
+      // (reloaded or answered). Either way the topic is read again below and must not have failed.
+      const btn = page.locator(`#check-${id} [data-retry="${id}"]`);
+      if (!(await btn.count())) { await reportDone(page); continue; }
+      await btn.click();
       await page.waitForTimeout(500);
       await reportDone(page);
     }
