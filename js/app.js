@@ -1263,7 +1263,8 @@ function coverDetails(loc, p) {
     ["Location", `${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} (latitude, longitude)`],
     ["Nearby search", "within " + formatRadius(loc.radius)],
     ["Report date", today()],
-    ["Made with", `Property Location Check, version ${APP_VERSION}, from official open data`]
+    ["Made with", `Property Location Check, version ${APP_VERSION}, from official open data`],
+    ["Live report", location.href]       // the latest data for this place, opened from the printout
   ].filter(Boolean);
   return `<table class="cover-details print-only">${rows.map(([k, v]) => `<tr><th scope="row">${escapeHTML(k)}</th><td>${escapeHTML(v)}</td></tr>`).join("")}</table>`;
 }
@@ -1325,6 +1326,9 @@ function renderSummary() {
       }).join("")}
     </ul>
     ${legend ? `<ul class="rating-legend" aria-label="Topics by rating">${legend}</ul>` : ""}
+    ${run.done && priority.length ? `<div class="key-findings print-only"><h3>Key findings</h3><ol>${priority.slice(0, 3).map(c =>
+      `<li>${chip(c.status)} <strong>${escapeHTML(c.title)}:</strong> ${escapeHTML(c.found)}</li>`).join("")}</ol>${priority.length > 3
+      ? `<p>And ${plural(priority.length - 3, "more topic")} to look into or check: see the table below.</p>` : ""}</div>` : ""}
     ${glanceTable(results)}
     ${whyBox()}
     ${priority.length ? `<div class="start-here"><h3>Start here</h3><ul class="priority">${priority.map(c => `
@@ -1517,6 +1521,7 @@ function buildViewing(checks) {
   const list = items => `<ul>${items.map(i =>
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(i)}"><span>${escapeHTML(i)}</span></label></li>`).join("")}</ul>`;
   return stepFold("viewing", "At the viewing", "", `
+      <p class="viewing-sheet print-only"><strong>Take this page to the viewing.</strong> Tick each item as you go.</p>
       <p class="help">A short list for the day you see the property, built from this report: the topics to look into come first.<span class="no-print">
         Your ticks are remembered on this device for this property, and saved properties open without a signal.</span></p>
       ${tickHeading("Look for", look.length)}${list(look)}

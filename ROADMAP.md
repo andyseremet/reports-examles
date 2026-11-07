@@ -88,9 +88,10 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   and each service's answer for a place kept on the device for 7 days, used (dated) only if that service fails.
 - Printed report (1.35.0): page 1 has the property's details, a centred square map with a "Figure 1" caption, the
   verdict and a table of every topic grouped by section, with a key to the ratings; sections are numbered, topic cards
-  have more space between them, and rating colours always print; every page
+  have more space between them, and rating colours always print; a "Key findings" box, a link to the live report,
+  the viewing checklist as its own page, a neat sources table and black-and-white friendly border patterns; every page
   shows the place, date, "A first look from public data, not a survey" and "Page 2 of 6" (Chrome and Edge); no app
-  instructions on paper; in the full report each section starts on a new page.
+  instructions on paper; the sections run on continuously, with extra space before each one.
 - A report still loading after 8 seconds names the services it is waiting for.
 - Careful pacing of requests to the Environment Agency map server, so it does not refuse them.
 - Requests to the Welsh, Scottish and Northern Ireland map servers (including SEPA, since 1.28.1) go a few at a time,

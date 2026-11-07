@@ -958,14 +958,18 @@ async function testDevice(device, [postcode, place]) {
       const map = document.getElementById("reportMap").getBoundingClientRect();
       return { rows: document.querySelectorAll(".glance-table tbody tr:not(.glance-group)").length, topics: orderedResults().length,
         map: [Math.round(map.width), Math.round(map.height)], caption: shown("#mapCaption") && /^Figure 1\./.test(document.getElementById("mapCaption").textContent),
-        cover: shown(".cover-details"),
+        cover: shown(".cover-details"), liveLink: [...document.querySelectorAll(".cover-details td")].some(td => td.textContent === location.href),
+        keyFindings: document.querySelectorAll(".key-findings li").length, problems: orderedResults().filter(c => ["high", "medium"].includes(c.status)).length,
+        keyShown: shown(".key-findings"),
         table: shown(".glance-table"), footer: (document.getElementById("printFooter") || {}).textContent || "",
         grid: shown(".topic-strip"), howTo: shown("#info-read"), saved: shown(".saved-note"), more: shown(".info-row"),
         tryAgain: shown(".gaps-box [data-retry]") };
     });
     if (!paper.table || paper.rows !== paper.topics) throw new Error(`the at-a-glance table shows ${paper.rows} of ${paper.topics} topics (visible: ${paper.table})`);
     if (paper.map[0] < 300 || Math.abs(paper.map[0] - paper.map[1]) > 2 || !paper.caption) throw new Error(`printed map ${paper.map.join("×")} px, caption shown: ${paper.caption} (expected a square with "Figure 1." caption)`);
-    if (!paper.cover) throw new Error("no property details table on the printed cover");
+    if (!paper.cover || !paper.liveLink) throw new Error(`printed cover: details table ${paper.cover}, live report link ${paper.liveLink}`);
+    const wantKey = Math.min(3, paper.problems);
+    if (paper.keyFindings !== wantKey || (wantKey && !paper.keyShown)) throw new Error(`Key findings lists ${paper.keyFindings}, expected ${wantKey} (shown: ${paper.keyShown})`);
     if (!/counter\(page\)/.test(paper.footer) || !/counter\(pages\)/.test(paper.footer)) throw new Error("no page numbers in the printed footer");
     const onPaper = Object.entries({ grid: paper.grid, "how to read": paper.howTo, "saved note": paper.saved, "More button": paper.more, "Try again": paper.tryAgain }).filter(([, v]) => v).map(([k]) => k);
     if (onPaper.length) throw new Error("printed but should not be: " + onPaper.join(", "));

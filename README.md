@@ -97,10 +97,12 @@ official checkers.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
   message at the top, and starts by itself when the signal returns.
 - **Save or print:** one menu with Download report, Print summary (the summary, notes, viewing list and checklist) and Print full
-  report, each with a one-line description. Printouts open with the property's details, a square map with a caption and
-  a table of every topic grouped by section (rating and finding, with a key), number the sections, carry the
-  place, date, a short disclaimer and page numbers on every page (Chrome and Edge), leave out app instructions, and in the
-  full report start each section on a new page.
+  report, each with a one-line description. Printouts open with the property's details, a square map with a caption, a
+  "Key findings" box (the most serious results), a table of every topic grouped by section (rating and finding, with a
+  key) and a link to the live report. Sections are numbered and run on with space between them; the viewing checklist
+  prints as its own page to take along; each rating also has its own border pattern for black-and-white printers; the
+  sources form a neat table at the end; app instructions are left out. Every page carries the place, date, a short
+  disclaimer and page numbers (Chrome and Edge).
 - **Comfort:** dark mode follows your device setting; **A+ Text size** makes text larger (just "A+" on a phone); **install as an app** on your phone's
   home screen (on iPhone: Share, then Add to Home Screen).
 

@@ -434,8 +434,8 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
   .saved-note button,#refreshBtn {display:none!important}
   body.print-summary .details-start,body.print-summary #sourcesBox,body.print-summary .topic-strip {display:none!important}
   .app-bar,.why-box,.backup-note {display:none!important}
-  body.print-summary #checklistBox {break-before:page}
-  body.print-summary #checklist {break-before:page}
+  /* "At the viewing" is a sheet to take along: it gets a page of its own. */
+  #viewing {break-before:page;break-after:page}
 }
 
 
@@ -517,7 +517,7 @@ body.has-sticky footer {padding-bottom:100px}
   .container {padding:0;max-width:none}
   .panel {border:0;box-shadow:none;padding:0;margin:0}
   a {color:#222;text-decoration:none}
-  .details-start {break-before:page}
+  .details-start {margin-top:10mm}
   /* Long topic cards may continue on the next page (avoiding that left half-empty pages); a heading stays with its text. */
   .checklist li,.priority li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
   details.check > summary,.check-body h4 {break-after:avoid}
@@ -562,7 +562,29 @@ body.has-sticky footer {padding-bottom:100px}
   .gaps-box {break-inside:avoid}
   .check-body .info-body::before {content:"What this means";display:block;font-weight:bold;color:var(--navy);margin-bottom:1mm}
   /* Full report: each section starts on a new page. */
-  body:not(.print-summary) .details-start > .group,body:not(.print-summary) #nextSteps,body:not(.print-summary) #sourcesBox {break-before:page}
+  /* The report runs on continuously: extra space before each section, and its heading stays with what follows. */
+  .details-start > .group,#nextSteps,#sourcesBox {margin-top:12mm}
+  .group > h2,#nextSteps > h2,.sources-fold h2 {break-after:avoid}
+  /* Key findings: the most serious results, before the table. */
+  .key-findings {border:2px solid var(--navy);border-radius:6px;padding:3mm 4mm;margin:4mm 0;break-inside:avoid}
+  .key-findings h3 {margin:0 0 2mm;color:var(--navy)}
+  .key-findings ol {margin:0;padding-left:5mm}
+  .key-findings li {margin:1.5mm 0}
+  .key-findings p {margin:2mm 0 0;font-size:10px;color:#444}
+  .cover-details td {overflow-wrap:anywhere}
+  .viewing-sheet {font-size:13px;margin:0 0 3mm}
+  /* Sources appendix: a neat, compact table. */
+  #sourcesBox table {width:100%;border-collapse:collapse;font-size:9.5px}
+  #sourcesBox th,#sourcesBox td {border:1px solid #ccc;padding:1.5mm 2mm;text-align:left;vertical-align:top}
+  #sourcesBox th {background:#eee}
+  #sourcesBox td:first-child {width:24%;font-weight:bold}
+  #sourcesBox td:last-child {width:26%}
+  /* Black-and-white friendly: each rating also has its own border pattern (with its symbol on the label). */
+  details.check.high {border-left:7px solid var(--high)}
+  details.check.medium {border-left:6px dashed var(--med)}
+  details.check.info {border-left:6px double var(--info, #1769aa)}
+  details.check.manual {border-left:5px dotted #555}
+  details.check.low {border-left:3px solid var(--low)}
 }
 
 /* ---------- data service status page (status.html) ---------- */
