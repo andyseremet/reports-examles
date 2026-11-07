@@ -97,7 +97,9 @@ official checkers.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
   message at the top, and starts by itself when the signal returns.
 - **Save or print:** one menu with Download report, Print summary (the summary, notes, viewing list and checklist) and Print full
-  report, each with a one-line description.
+  report, each with a one-line description. Printouts open with a table of every topic (rating and finding), carry the
+  place, date, a short disclaimer and page numbers on every page (Chrome and Edge), leave out app instructions, and in the
+  full report start each section on a new page.
 - **Comfort:** dark mode follows your device setting; **A+ Text size** makes text larger (just "A+" on a phone); **install as an app** on your phone's
   home screen (on iPhone: Share, then Add to Home Screen).
 
