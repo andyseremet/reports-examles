@@ -216,11 +216,6 @@ function today() {
   return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function formatDateTime(value) {
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? String(value || "") : d.toLocaleString("en-GB");
-}
-
 function monthName(yyyyMm) {
   if (!yyyyMm) return "the latest month";
   return new Date(yyyyMm + "-01").toLocaleDateString("en-GB", { month: "long", year: "numeric" });
@@ -261,6 +256,7 @@ function circleWkt(lat, lon, radiusM, steps = 24) {
   return "POLYGON((" + pts.join(",") + "))";
 }
 
+// A square around a point, [west, south, east, north] in degrees: the one box used for every map query.
 function boundingBox(lat, lon, radiusM) {
   const dLat = radiusM / 110540;
   const dLon = radiusM / (111320 * Math.cos(lat * Math.PI / 180));

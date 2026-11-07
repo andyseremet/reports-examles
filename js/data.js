@@ -591,16 +591,13 @@ const inScotland = loc => inCountry(loc, "Scotland", SCOTLAND_BOX);
 const NI_BOX = { south: 53.9, north: 55.5, west: -8.3, east: -5.3 };
 const inNI = loc => inCountry(loc, "Northern Ireland", NI_BOX);
 
-// A square around the pin, as a WFS bbox (latitude first).
-function squareAround(loc, metres) {
-  const dLat = metres / 111320, dLon = metres / (111320 * Math.cos(loc.lat * Math.PI / 180));
-  return [loc.lat - dLat, loc.lon - dLon, loc.lat + dLat, loc.lon + dLon, "urn:ogc:def:crs:EPSG::4326"].join(",");
-}
-// Ask a WFS map layer (GeoServer) for the features in a square around the pin.
+// Ask a WFS map layer (GeoServer) for the features in a square around the pin
+// (the same square as boundingBox, written latitude first as WFS 2.0 expects for EPSG:4326).
 async function wfsFeatures(service, layer, loc, metres, extra = {}) {
+  const [west, south, east, north] = boundingBox(loc.lat, loc.lon, metres);
   const params = new URLSearchParams({
     service: "WFS", version: "2.0.0", request: "GetFeature", typeNames: layer, count: 50,
-    bbox: squareAround(loc, metres), outputFormat: "application/json", ...extra
+    bbox: [south, west, north, east, "urn:ogc:def:crs:EPSG::4326"].join(","), outputFormat: "application/json", ...extra
   });
   return (await fetchJSON(service + "?" + params)).features || [];
 }
