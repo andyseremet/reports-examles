@@ -189,3 +189,8 @@ download `https://naptan.api.dft.gov.uk/v1/access-nodes?dataFormat=csv&atcoAreaC
 change and do not need refreshing. They were downloaded from
 `https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv?date=latest&geography=TYPE152&c2021_restype_3=0&measures=20100&select=geography_code,obs_value`.
 When the 2031 Census is published, it would be a new, separate file.
+
+`data/data-services.csv` is a reference list, not used by the app: the 37 outside services that supply data for the
+report topics (name, and the exact link the daily check calls, for a test location). It leaves out the postcode lookup
+and address search (the app needs them to find the place) and the two files above. It was made from `SERVICES` in
+`tests/live-check.mjs` on 7 November 2026; that list is the one to keep current, so remake this file after changing it.
