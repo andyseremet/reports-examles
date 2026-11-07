@@ -49,9 +49,11 @@ official checkers.
 - **Report:** results appear topic by topic as the data arrives. A topic whose data fails is tried once more by itself
   after 20 seconds; if it fails again, it shows a **Try again** button. If this place was checked before, the topic
   shows that saved answer instead, clearly dated, still with **Try again**. When planning.data.gov.uk does not answer
-  (England), heritage and nature are asked from Historic England and Natural England instead, and the flood zone at the
-  pin from the Environment Agency's own flood map; each topic names anything it could not check (air quality areas,
-  conservation areas, Green Belt and nearby flood zones have no second open source). If the report is still loading after 8 seconds, the summary names the services it is waiting for, and their topics.
+  (England), heritage, conservation areas and nature are asked from Historic England and Natural England instead, and
+  the flood zone at the pin from the Environment Agency's own flood map; each topic names anything it could not check
+  (Green Belt, HS2 and nearby flood zones have no second open source). If postcodes.io does not answer, OpenStreetMap
+  gives the country and place; if the address search does not answer, Photon does. Each service's answer for a place is
+  kept on the device for 7 days and used, dated, only if that service fails. If the report is still loading after 8 seconds, the summary names the services it is waiting for, and their topics.
   A section bar stays at the top while scrolling, with one **Open problems / Close all** button that stays in view
   (Open problems opens only the topics rated Look into this or Worth checking); on a phone its edge fades to show that
   it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open). The summary shows the topic grid with one

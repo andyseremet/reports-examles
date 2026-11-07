@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.33.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.34.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 7 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.33.0)
+## Part 1: What the app does today (version 1.34.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -83,6 +83,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - Air quality (1.33.0, owner's request): the Open-Meteo area estimate is the main source and the council hotspot list
   (planning.data.gov.uk in England) adds to it, so the topic still answers when either is down. Only with both answering
   can it say "No issue found".
+- More backups (1.34.0, first step to 2.0): conservation areas from Historic England's map when planning.data.gov.uk
+  is down; the country and place from OpenStreetMap when postcodes.io is down; Photon when the address search is down;
+  and each service's answer for a place kept on the device for 7 days, used (dated) only if that service fails.
 - A report still loading after 8 seconds names the services it is waiting for.
 - Careful pacing of requests to the Environment Agency map server, so it does not refuse them.
 - Requests to the Welsh, Scottish and Northern Ireland map servers (including SEPA, since 1.28.1) go a few at a time,
@@ -118,15 +121,11 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Priority: the road to version 2.0 (health check and quiz of 7 November 2026)
 
-Version 2.0 is the planned final version. It comes in four steps; each is built, tested (full check and accessibility
+Version 2.0 is the planned final version. It comes in four steps (1.34.0, the backups, shipped on 7 November 2026); each is built, tested (full check and accessibility
 check) and merged by the owner before the next one starts. Every item below was chosen in the quiz.
 
 | Step | Priority | What changes | Why |
 |---|---|---|---|
-| **1.34.0 Backups** | 1 | **Conservation areas** from Historic England's official map (8,749 areas in England) when planning.data.gov.uk does not answer. | The biggest remaining planning gap during an outage (planning.data.gov.uk was down for over a day on 6–7 November). |
-| | 1 | **Address search** falls back to Photon (OpenStreetMap-based, open to web pages) when Nominatim is slow or busy. | The search box is the way into the app; today it has one source. |
-| | 1 | **Postcode, council and country** fall back to OpenStreetMap's reverse lookup when postcodes.io does not answer. | Every topic needs the country to pick the right data. |
-| | 1 | **Recent answers cache**: each service's answers for a place are kept on the device for 7 days and used only if that service fails, always dated, and cleared with the saved properties. | Checking the same place again works through an outage, not only for saved properties. |
 | **1.35.0 Printed report** | 2 | **At-a-glance page**: property details, the verdict and one table of every topic (symbol, rating, one-line finding). | A buyer, conveyancer or surveyor sees the whole picture on page 1. |
 | | 2 | **Page footer** on every page: address, date, "Page 2 of 6" and a one-line disclaimer. | A professional look, and loose pages stay identifiable. |
 | | 2 | **Print only what matters**: no app instructions, buttons or "saved results" note on paper; fix the "Instead: or use…" glitch. | Found in the health check: the printout still says "tap a heading" and "the i buttons". |
