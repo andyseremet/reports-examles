@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.34.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.35.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 7 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.34.0)
+## Part 1: What the app does today (version 1.35.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -86,6 +86,13 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - More backups (1.34.0, first step to 2.0): conservation areas from Historic England's map when planning.data.gov.uk
   is down; the country and place from OpenStreetMap when postcodes.io is down; Photon when the address search is down;
   and each service's answer for a place kept on the device for 7 days, used (dated) only if that service fails.
+- Printed report (1.35.0): page 1 has the property's details, a centred square map with a "Figure 1" caption, the
+  verdict and a table of every topic grouped by section, with a key to the ratings; sections are numbered, topic cards
+  have more space between them, and rating colours always print; a "Key findings" box, a link and QR code to the live report,
+  the viewing checklist as its own page, a neat sources table and black-and-white friendly border patterns, all in a
+  calm Apple-like style (system font, hairline borders, rounded panels, generous space between cards and sections); every page
+  shows the place, date, "A first look from public data, not a survey" and "Page 2 of 6" (Chrome and Edge); no app
+  instructions on paper; the sections run on continuously, with extra space before each one.
 - A report still loading after 8 seconds names the services it is waiting for.
 - Careful pacing of requests to the Environment Agency map server, so it does not refuse them.
 - Requests to the Welsh, Scottish and Northern Ireland map servers (including SEPA, since 1.28.1) go a few at a time,
@@ -121,19 +128,18 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Priority: the road to version 2.0 (health check and quiz of 7 November 2026)
 
-Version 2.0 is the planned final version. It comes in four steps (1.34.0, the backups, shipped on 7 November 2026); each is built, tested (full check and accessibility
+Version 2.0 is the planned final version. It comes in four steps (1.34.0 the backups and 1.35.0 the printed report shipped on 7 November 2026); each is built, tested (full check and accessibility
 check) and merged by the owner before the next one starts. Every item below was chosen in the quiz.
 
 | Step | Priority | What changes | Why |
 |---|---|---|---|
-| **1.35.0 Printed report** | 2 | **At-a-glance page**: property details, the verdict and one table of every topic (symbol, rating, one-line finding). | A buyer, conveyancer or surveyor sees the whole picture on page 1. |
-| | 2 | **Page footer** on every page: address, date, "Page 2 of 6" and a one-line disclaimer. | A professional look, and loose pages stay identifiable. |
-| | 2 | **Print only what matters**: no app instructions, buttons or "saved results" note on paper; fix the "Instead: or use…" glitch. | Found in the health check: the printout still says "tap a heading" and "the i buttons". |
-| | 2 | **New page per section**: Flooding, Ground, Living, Planning and Next steps each start on a new page. | Easier to read and to hand over one section. |
 | **1.36.0 Ease of use** | 3 | **Visible search box** above the map, always shown (today it sits behind the map's 🔍 button). | First-time users looked for a search box and missed the button. |
 | | 3 | **3-step guide** on the first visit: 1 Search · 2 Check the pin · 3 Read your report; hidden after the first report. | Anyone can start without reading help text. |
 | | 3 | **Plain-words glossary**: its own "What the words mean" page (like the status page), linked from each term, the report and the footer, and printable. | One place for flood zone, radon, AQMA, CON29M, conservation area and the rest. |
 | | 3 | **Fewer "i" buttons**: one short visible sentence instead, keeping "i" only for long explanations. | Fewer taps and less hidden text. |
+| | 3 | **Calm Apple-like screen** (quiz of 7 November 2026): report cards white, rounded, hairline border and one thin rating accent; the system font everywhere; a softer summary (lighter topic tiles, fewer borders, the verdict as one clear sentence); a quieter start page (map and search in one clean panel). | The same calm look as the printout, following the visual style in CLAUDE.md. |
+| | 3 | **Easier reading on screen**: a "Key findings" panel at the top (replacing "Start here"); data dates and sources only in the table at the end; each topic opens with one plain sentence in bold, then "What to do", with detail behind "More"; text lines of about 70 characters on wide screens. | Less to read before the answer. |
+| | 3 | **Printout extras**: a one-line contents under the summary; a lined notes page at the end; a 2-page compact summary printout (cover, key findings and the topic table; checklists stay in the full report). | Easier to find things and to take notes. |
 | **2.0.0 Final** | 4 | **Split `js/app.js`** (about 2,000 lines) into a few smaller files (search, report, saved, print), with no build step and the same behaviour. | Easier and safer to change later. |
 | | 4 | **Steady pull request checks**: reports are built from recorded answers, so outside outages never turn a pull request red. The daily check stays fully live. | During the 6–7 November outage, every pull request was red for reasons outside the app. |
 | | 4 | **Final review**: the app run on places in all four countries, the accessibility check, README and road map brought up to date. | A clean 2.0. |

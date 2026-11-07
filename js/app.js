@@ -946,7 +946,7 @@ const notesCount = text => text.trim() ? "Written" : "Empty";
 function renderNotes() {
   const text = store.get(notesKey(), "");
   $("notesBox").innerHTML = stepFold("notes", "Your notes", notesCount(text), `
-      <p class="help">Private notes for this property, for example viewing times or questions. Saved only on this device, and included when you print or download the report.</p>
+      <p class="help no-print">Private notes for this property, for example viewing times or questions. Saved only on this device, and included when you print or download the report.</p>
       <textarea id="notesText" rows="4" aria-label="Your notes" placeholder="e.g. Viewing on Saturday at 10am. Ask about the damp patch in the back bedroom."></textarea>
       <p class="help notes-status no-print">Saved on this device <span id="notesFlash" aria-live="polite"></span></p>
       <div class="notes-print" aria-hidden="true"></div>`, "notes");
@@ -1191,8 +1191,10 @@ function renderSkeleton(loc) {
     <div class="cover" id="reportTop">
       <h1>Property Location Report</h1>
       <p class="meta" id="reportMeta"></p>
+      <div id="coverDetails"></div>
       <p class="map-toggle-row no-print"><button class="secondary icon-label" id="showReportMap" type="button" aria-expanded="false" aria-controls="reportMap">${icon("map")}<span>Show map</span></button></p>
       <div id="reportMap" hidden aria-label="Map of the property and nearby features"></div>
+      <p class="map-caption print-only" id="mapCaption"></p>
       <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
       ${infoBox("info-read", `
         <ul class="legend-list">
@@ -1230,6 +1232,7 @@ function renderSkeleton(loc) {
 
     <div id="sourcesBox"></div>
 
+    <p class="help print-only live-link">Live report, with the latest data: ${escapeHTML(location.href)}</p>
     <p class="help">Created with Property Location Check (version ${APP_VERSION}). Contains public sector information licensed under the Open Government
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
@@ -1246,6 +1249,33 @@ function renderMeta() {
     <strong>${escapeHTML(loc.name)}</strong><br>
     ${p ? `Nearest postcode ${escapeHTML(p.postcode)} · ${escapeHTML(p.admin_district || "")}${p.admin_ward ? " · " + escapeHTML(p.admin_ward) + " ward" : ""}${p.fromBackup ? " (from OpenStreetMap: postcodes.io was not answering)" : ""}<br>` : ""}
     Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}`;
+  $("coverDetails").innerHTML = coverDetails(loc, p);
+  $("mapCaption").textContent = `Figure 1. The property and the ${formatRadius(loc.radius)} search area.`;
+}
+
+// Printed cover: the property's details as a small table (shown on paper only).
+function coverDetails(loc, p) {
+  const rows = [
+    ["Property", loc.name],
+    p && p.postcode && ["Nearest postcode", p.postcode],
+    p && (p.admin_district || p.admin_ward) && ["Council and ward", [p.admin_district, p.admin_ward && p.admin_ward + " ward"].filter(Boolean).join(", ")],
+    ["Search area", "within " + formatRadius(loc.radius) + " of the pin"],
+    ["Report date", today()]
+  ].filter(Boolean);
+  return `<div class="cover-row print-only"><table class="cover-details">${rows.map(([k, v]) =>
+    `<tr><th scope="row">${escapeHTML(k)}</th><td>${escapeHTML(v)}</td></tr>`).join("")}</table>${liveQr()}</div>`;
+}
+
+// A QR code for the live report (qrcode-generator, loaded by index.html). Left out if the library did not load.
+function liveQr() {
+  if (typeof qrcode !== "function") return "";
+  try {
+    const qr = qrcode(0, "M");
+    qr.addData(location.href);
+    qr.make();
+    return `<figure class="cover-qr">${qr.createSvgTag({ cellSize: 2, margin: 0, scalable: true, alt: "QR code for the live report" })}
+      <figcaption>Scan for the live report</figcaption></figure>`;   // the full web address is at the end of the report
+  } catch (e) { return ""; }
 }
 
 // Saved results older than this are flagged, with a suggestion to refresh them.
@@ -1305,10 +1335,14 @@ function renderSummary() {
       }).join("")}
     </ul>
     ${legend ? `<ul class="rating-legend" aria-label="Topics by rating">${legend}</ul>` : ""}
+    ${run.done && priority.length ? `<div class="key-findings print-only"><h3>Key findings</h3><ol>${priority.slice(0, 3).map(c =>
+      `<li>${chip(c.status)} <strong>${escapeHTML(c.title)}:</strong> ${escapeHTML(c.found)}</li>`).join("")}</ol>${priority.length > 3
+      ? `<p>And ${plural(priority.length - 3, "more topic")} to look into or check: see the table below.</p>` : ""}</div>` : ""}
+    ${glanceTable(results)}
     ${whyBox()}
-    ${priority.length ? `<h3>Start here</h3><ul class="priority">${priority.map(c => `
+    ${priority.length ? `<div class="start-here"><h3>Start here</h3><ul class="priority">${priority.map(c => `
       <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
-          <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul>` : ""}
+          <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul></div>` : ""}
     ${dataGapsBox(results)}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
       ${p.country === "Wales"
@@ -1319,6 +1353,24 @@ function renderSummary() {
         ? "Heritage, nature, noise and coast use Northern Ireland data. Where nothing is published openly (for example flood maps, radon or old landfill sites), the topic says “Check yourself”, with a link to the right service."
         : "Some official data only covers England. Those topics are marked “Check yourself”, with a link to the right national service."}</div>` : ""}`;
   updateToggleAll();
+}
+
+// Printed report, page 1: every topic in one table (rating symbol and label, and the one-line finding), in report order.
+// On screen the topic grid does this job, so the table is shown on paper only (css/app.css, .print-only).
+function glanceTable(results) {
+  if (!results.length) return "";
+  return `<div class="glance print-only"><h3>All topics at a glance</h3>
+    <table class="glance-table"><thead><tr><th>Topic</th><th>Rating</th><th>What we found</th></tr></thead><tbody>${
+      GROUPS.map(g => {
+        const rows = results.filter(c => c.group === g.id);
+        return rows.length ? `<tr class="glance-group"><th colspan="3" scope="colgroup">${escapeHTML(g.title)}</th></tr>` +
+          rows.map(c => `<tr><td>${escapeHTML(c.title)}</td><td>${chip(c.status)}</td><td>${escapeHTML(c.found)}</td></tr>`).join("") : "";
+      }).join("")
+    }</tbody></table>
+    <p class="glance-key">❗ Look into this: could affect value, insurance, health or safety. ⚠️ Worth checking: ask questions or
+      order a search. ✓ No issue found in the data checked. ℹ️ For information. ? Check yourself: no data here.</p>
+    <p class="glance-note">A free first look using public data. It does not replace a building survey or your conveyancer's
+      searches. “No issue found” means nothing was found in the data we checked, not that there is no risk.</p></div>`;
 }
 
 // Topics with no real answer: why, and who to ask instead. Hidden when every topic has an answer.
@@ -1340,9 +1392,10 @@ function dataGapsBox(results) {
   if (!gaps.length) return "";
   const askInstead = c => {
     if (gapKind(c) === "down") {
-      return `<button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button>` +
-        (c.source && c.source.url ? ` or use ${link(c.source.url, c.source.name)}` : "") +
-        `. Is it down for everyone? See ${link(new URL("status.html", location.href).href, "data service status")}.`;
+      // On paper the button is left out, so the sentence must still read well without it.
+      return `<span class="no-print"><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button>${c.source && c.source.url ? ", or " : ". "}</span>` +
+        (c.source && c.source.url ? `use ${link(c.source.url, c.source.name)}. ` : "") +
+        `Is it down for everyone? See ${link(new URL("status.html", location.href).href, "data service status")}.`;
     }
     if (gapKind(c) === "saved") return "Press “Refresh” above.";
     if (c.actions && c.actions.length) return c.actions[0];
@@ -1400,6 +1453,13 @@ document.addEventListener("click", e => {
   if (e.target.closest("#showReportMap")) setReportMap($("reportMap").hidden);
 });
 
+// Fit the search circle to the map's current size (after it changes, for example for printing).
+function fitReportMap() {
+  if (!reportMap || !run) return;
+  reportMap.invalidateSize();
+  reportMap.fitBounds(L.latLng(run.loc.lat, run.loc.lon).toBounds(run.loc.radius * 2), { padding: [10, 10] });
+}
+
 function drawReportMap(loc) {
   if (reportMap) { reportMap.remove(); reportMap = null; }
   reportMap = L.map("reportMap", {
@@ -1444,7 +1504,7 @@ function buildChecklist(checks) {
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(plainText(i))}"><span>${i}</span></label></li>`).join("")}</ul>`;
   return stepFold("checklist", "Your checklist", "", `
       <p class="help">Everything to follow up, gathered from the checks above: questions for the seller, searches for your conveyancer
-        and things to check yourself. Tick items as you go: your ticks are remembered on this device for this property.</p>
+        and things to check yourself.<span class="no-print"> Tick items as you go: your ticks are remembered on this device for this property.</span></p>
       <div class="send-box no-print">
         <p><strong>Send to my conveyancer:</strong> an email, or text to copy, with the link to this report, the topics to look into and the questions below.</p>
         <div class="send-buttons">
@@ -1469,8 +1529,9 @@ function buildViewing(checks) {
   const list = items => `<ul>${items.map(i =>
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(i)}"><span>${escapeHTML(i)}</span></label></li>`).join("")}</ul>`;
   return stepFold("viewing", "At the viewing", "", `
-      <p class="help">A short list for the day you see the property, built from this report: the topics to look into come first.
-        Your ticks are remembered on this device for this property, and saved properties open without a signal.</p>
+      <p class="viewing-sheet print-only"><strong>Take this page to the viewing.</strong> Tick each item as you go.</p>
+      <p class="help">A short list for the day you see the property, built from this report: the topics to look into come first.<span class="no-print">
+        Your ticks are remembered on this device for this property, and saved properties open without a signal.</span></p>
       ${tickHeading("Look for", look.length)}${list(look)}
       ${tickHeading("Ask on the day", ask.length)}${list(ask)}`, "checklist viewing");
 }
@@ -2002,7 +2063,8 @@ $("downloadHtml").addEventListener("click", () => {
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Property Location Report – ${escapeHTML(loc.name)}</title>
 <style>${css}
-body{max-width:960px;margin:24px auto;padding:0 18px}</style>
+body{max-width:960px;margin:24px auto;padding:0 18px}
+@media print {${pageFooterCss()}}</style>
 </head><body>${copy.innerHTML}<p class="help">Live version: <a href="${escapeHTML(location.href)}">${escapeHTML(location.href)}</a></p></body></html>`;
   downloadFile(fileBase() + ".html", html, "text/html");
 });
@@ -2024,12 +2086,35 @@ let closedBeforePrint = [];
 window.addEventListener("beforeprint", () => {
   closedBeforePrint = [...document.querySelectorAll("#report details:not([open])")];
   closedBeforePrint.forEach(d => { d.open = true; });
+  document.body.classList.add("printing");      // the map becomes the printed square (css/app.css) before it is redrawn
   setReportMap(true);
+  fitReportMap();
+  if (run) {
+    const style = document.createElement("style");
+    style.id = "printFooter";
+    style.textContent = pageFooterCss();
+    document.head.appendChild(style);
+  }
 });
 window.addEventListener("afterprint", () => {
+  const footer = $("printFooter"); if (footer) footer.remove();
+  document.body.classList.remove("printing");
+  if (reportMap) { reportMap.invalidateSize(); fitReportMap(); }
   closedBeforePrint.forEach(d => { d.open = false; });
   document.body.classList.remove("print-summary");
 });
+
+// Every printed page: the place and date (left), a short disclaimer (centre) and "Page 2 of 6" (right). Page margin
+// boxes print in Chrome and Edge; other browsers print the report without them.
+function pageFooterCss() {
+  const cssText = t => JSON.stringify(String(t).replace(/[\n\r]+/g, " "));
+  const box = "font:9px Arial,sans-serif;color:#555";
+  return `@page {
+    @bottom-left { content: ${cssText(run.loc.name + " · " + today())}; ${box} }
+    @bottom-center { content: "A first look from public data, not a survey"; ${box} }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); ${box} }
+  }`;
+}
 
 // "Save or print" menu: close it after a choice, on a click elsewhere, or with Escape.
 // refocus: put keyboard focus back on the menu button (after a choice or Escape, the focused item is hidden).

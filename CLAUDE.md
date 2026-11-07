@@ -87,6 +87,19 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - A control's spoken name (`aria-label`) starts with its visible words (WCAG 2.5.3, voice control).
 - In-page jumps land below the sticky bars: give the target `scroll-margin-top` (see the rule in `css/app.css`).
 
+## Visual style (owner, 7 November 2026)
+
+Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visual change, on screen and in print:
+
+- **Type:** the system font (`-apple-system`, then Helvetica, then Arial); one text size per block; semibold headings
+  with slightly tight letter spacing; muted grey (`#6e6e73`/`#86868b`) for labels, dates and captions.
+- **Lines and panels:** thin hairline borders (`#d2d2d7`/`#e5e5ea`), rounded corners (10–14 px), white cards, soft grey
+  panels (`#f5f5f7`) only where they group something. No heavy borders, boxes inside boxes, or shadows on paper.
+- **Space:** generous white space between cards and before sections; never crowd a page to save space.
+- **Less is more:** show only what the reader needs; move detail (sources, dates, long links) to one place at the end.
+- **Colour with meaning only:** a thin coloured accent per rating, always with its symbol (and a border pattern in
+  print), so it still reads without colour.
+
 ## Working with the owner
 
 - **Plan first for larger work:** before a new topic, a new version, or a change across several files, give a short

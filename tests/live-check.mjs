@@ -951,9 +951,34 @@ async function testDevice(device, [postcode, place]) {
     await page.emulateMedia({ media: "print" });
     await page.evaluate(() => { document.body.classList.add("print-summary"); dispatchEvent(new Event("beforeprint")); });
     await page.waitForTimeout(800);
+    try {   // the page is always put back on screen, even if a check below fails (later steps need it)
+    // On paper: page 1 has the at-a-glance table (one row per topic); every page gets the place, date and page number;
+    // app instructions, the tappable grid and the "saved results" note are left out.
+    const paper = await page.evaluate(() => {
+      const shown = sel => [...document.querySelectorAll(sel)].some(el => el.getClientRects().length > 0);
+      const map = document.getElementById("reportMap").getBoundingClientRect();
+      return { rows: document.querySelectorAll(".glance-table tbody tr:not(.glance-group)").length, topics: orderedResults().length,
+        map: [Math.round(map.width), Math.round(map.height)], caption: shown("#mapCaption") && /^Figure 1\./.test(document.getElementById("mapCaption").textContent),
+        cover: shown(".cover-details"), liveLink: shown(".live-link") && document.querySelector(".live-link").textContent.includes(location.href),
+        keyFindings: document.querySelectorAll(".key-findings li").length, problems: orderedResults().filter(c => ["high", "medium"].includes(c.status)).length,
+        keyShown: shown(".key-findings"), qr: shown(".cover-qr svg"),
+        table: shown(".glance-table"), footer: (document.getElementById("printFooter") || {}).textContent || "",
+        grid: shown(".topic-strip"), howTo: shown("#info-read"), saved: shown(".saved-note"), more: shown(".info-row"),
+        tryAgain: shown(".gaps-box [data-retry]") };
+    });
+    if (!paper.table || paper.rows !== paper.topics) throw new Error(`the at-a-glance table shows ${paper.rows} of ${paper.topics} topics (visible: ${paper.table})`);
+    if (paper.map[0] < 300 || Math.abs(paper.map[0] - paper.map[1]) > 2 || !paper.caption) throw new Error(`printed map ${paper.map.join("×")} px, caption shown: ${paper.caption} (expected a square with "Figure 1." caption)`);
+    if (!paper.cover || !paper.liveLink || !paper.qr) throw new Error(`printed cover: details table ${paper.cover}, live report link ${paper.liveLink}, QR code ${paper.qr}`);
+    const wantKey = Math.min(3, paper.problems);
+    if (paper.keyFindings !== wantKey || (wantKey && !paper.keyShown)) throw new Error(`Key findings lists ${paper.keyFindings}, expected ${wantKey} (shown: ${paper.keyShown})`);
+    if (!/counter\(page\)/.test(paper.footer) || !/counter\(pages\)/.test(paper.footer)) throw new Error("no page numbers in the printed footer");
+    const onPaper = Object.entries({ grid: paper.grid, "how to read": paper.howTo, "saved note": paper.saved, "More button": paper.more, "Try again": paper.tryAgain }).filter(([, v]) => v).map(([k]) => k);
+    if (onPaper.length) throw new Error("printed but should not be: " + onPaper.join(", "));
     await page.pdf({ path: `${OUT}/${device.name.replace(/\W+/g, "-")}-summary.pdf`, format: "A4" });
-    await page.emulateMedia({ media: "screen" });
-    await page.evaluate(() => { document.body.classList.remove("print-summary"); dispatchEvent(new Event("afterprint")); });
+    } finally {
+      await page.emulateMedia({ media: "screen" });
+      await page.evaluate(() => { document.body.classList.remove("print-summary"); dispatchEvent(new Event("afterprint")); });
+    }
     // Open the "Save or print" menu, as a person would, then choose Download report.
     await page.click("#saveMenuBtn");
     const [download] = await Promise.all([page.waitForEvent("download"), page.click("#downloadHtml")]);
