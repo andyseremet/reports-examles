@@ -1232,6 +1232,7 @@ function renderSkeleton(loc) {
 
     <div id="sourcesBox"></div>
 
+    <p class="help print-only live-link">Live report, with the latest data: ${escapeHTML(location.href)}</p>
     <p class="help">Created with Property Location Check (version ${APP_VERSION}). Contains public sector information licensed under the Open Government
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
@@ -1249,9 +1250,7 @@ function renderMeta() {
     ${p ? `Nearest postcode ${escapeHTML(p.postcode)} · ${escapeHTML(p.admin_district || "")}${p.admin_ward ? " · " + escapeHTML(p.admin_ward) + " ward" : ""}${p.fromBackup ? " (from OpenStreetMap: postcodes.io was not answering)" : ""}<br>` : ""}
     Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}`;
   $("coverDetails").innerHTML = coverDetails(loc, p);
-  $("mapCaption").textContent = `Figure 1. The property (pin) and the ${formatRadius(loc.radius)} nearby search area (circle). ` +
-    "Coloured dots mark sites listed in the report, such as old landfill, landslides and major hazard sites. " +
-    "Map: Esri, Maxar, Earthstar Geographics, OpenStreetMap contributors.";
+  $("mapCaption").textContent = `Figure 1. The property and the ${formatRadius(loc.radius)} search area.`;
 }
 
 // Printed cover: the property's details as a small table (shown on paper only).
@@ -1260,11 +1259,8 @@ function coverDetails(loc, p) {
     ["Property", loc.name],
     p && p.postcode && ["Nearest postcode", p.postcode],
     p && (p.admin_district || p.admin_ward) && ["Council and ward", [p.admin_district, p.admin_ward && p.admin_ward + " ward"].filter(Boolean).join(", ")],
-    ["Location", `${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} (latitude, longitude)`],
-    ["Nearby search", "within " + formatRadius(loc.radius)],
-    ["Report date", today()],
-    ["Made with", `Property Location Check, version ${APP_VERSION}, from official open data`],
-    ["Live report", location.href]       // the latest data for this place, opened from the printout
+    ["Search area", "within " + formatRadius(loc.radius) + " of the pin"],
+    ["Report date", today()]
   ].filter(Boolean);
   return `<div class="cover-row print-only"><table class="cover-details">${rows.map(([k, v]) =>
     `<tr><th scope="row">${escapeHTML(k)}</th><td>${escapeHTML(v)}</td></tr>`).join("")}</table>${liveQr()}</div>`;
@@ -1278,7 +1274,7 @@ function liveQr() {
     qr.addData(location.href);
     qr.make();
     return `<figure class="cover-qr">${qr.createSvgTag({ cellSize: 2, margin: 0, scalable: true, alt: "QR code for the live report" })}
-      <figcaption>Scan for the live report</figcaption></figure>`;
+      <figcaption>Scan for the live report</figcaption></figure>`;   // the full web address is at the end of the report
   } catch (e) { return ""; }
 }
 
@@ -1371,9 +1367,8 @@ function glanceTable(results) {
           rows.map(c => `<tr><td>${escapeHTML(c.title)}</td><td>${chip(c.status)}</td><td>${escapeHTML(c.found)}</td></tr>`).join("") : "";
       }).join("")
     }</tbody></table>
-    <p class="glance-key"><strong>Key:</strong> ${chip("high")} could affect value, insurance, health or safety ·
-      ${chip("medium")} ask questions or order a search · ${chip("low")} nothing found in the data checked ·
-      ${chip("info")} useful local facts · ${chip("manual")} no data here: check another way</p>
+    <p class="glance-key">❗ Look into this: could affect value, insurance, health or safety. ⚠️ Worth checking: ask questions or
+      order a search. ✓ No issue found in the data checked. ℹ️ For information. ? Check yourself: no data here.</p>
     <p class="glance-note">A free first look using public data. It does not replace a building survey or your conveyancer's
       searches. “No issue found” means nothing was found in the data we checked, not that there is no risk.</p></div>`;
 }

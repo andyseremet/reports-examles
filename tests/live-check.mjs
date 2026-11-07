@@ -958,7 +958,7 @@ async function testDevice(device, [postcode, place]) {
       const map = document.getElementById("reportMap").getBoundingClientRect();
       return { rows: document.querySelectorAll(".glance-table tbody tr:not(.glance-group)").length, topics: orderedResults().length,
         map: [Math.round(map.width), Math.round(map.height)], caption: shown("#mapCaption") && /^Figure 1\./.test(document.getElementById("mapCaption").textContent),
-        cover: shown(".cover-details"), liveLink: [...document.querySelectorAll(".cover-details td")].some(td => td.textContent === location.href),
+        cover: shown(".cover-details"), liveLink: shown(".live-link") && document.querySelector(".live-link").textContent.includes(location.href),
         keyFindings: document.querySelectorAll(".key-findings li").length, problems: orderedResults().filter(c => ["high", "medium"].includes(c.status)).length,
         keyShown: shown(".key-findings"), qr: shown(".cover-qr svg"),
         table: shown(".glance-table"), footer: (document.getElementById("printFooter") || {}).textContent || "",
