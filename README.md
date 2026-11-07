@@ -138,7 +138,11 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `js/data.js` | Fetching data from the outside services, and the list of data tasks. |
 | `js/checks/flood.js`, `ground.js`, `living.js`, `planning.js` | The topics in each report section: turning data into plain-English results. |
 | `js/checks/index.js` | Shared check helpers and the list of report topics. |
-| `js/app.js` | The map, search, running the checks, the report, saved properties, sharing and start-up. |
+| `js/search.js` | The map and the search box (suggestions, Nominatim and Photon). |
+| `js/saved.js` | Storage on this device, saved properties, compare, and the first-visit guide. |
+| `js/report.js` | Running the checks (with recent answers kept 7 days) and building the report. |
+| `js/print.js` | Share, download and print. |
+| `js/app.js` | Larger text, install as an app, and start-up (shared links). |
 | `status.html`, `js/status.js` | The data service status page: a separate page with its own small script. |
 | `glossary.html` | "What the words mean": a plain page with no script; `GLOSSARY` in `js/core.js` links words to it. |
 | `sw.js` | Offline support: keeps the app files so it opens without a connection. |

@@ -10,7 +10,9 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - `js/`: plain scripts that share one global scope (no modules, no build step), loaded by `index.html` in this order:
   `core.js` (sources, links, settings, `APP_VERSION`, helpers) → `data.js` (fetch functions, `TASKS`) →
   `checks/flood.js`, `ground.js`, `living.js`, `planning.js` (one per report section) → `checks/index.js` (shared
-  check helpers, `CHECKS`, `TOPIC_ICONS`, `COVERAGE`) → `app.js` (map, search, run, report, saved, share, start).
+  check helpers, `CHECKS`, `TOPIC_ICONS`, `COVERAGE`) → `search.js` (map, search) → `saved.js` (`store`, saved
+  properties, compare, guide) → `report.js` (running the checks, recent answers, the report) → `print.js` (share,
+  download, print) → `app.js` (larger text, install, start-up).
   Code that runs at load time may only use what an earlier file defines. A new JS file must be added to `index.html`
   and to `SHELL` in `sw.js`.
 - **Wales:** land use, coast, noise, air, planning and nature use DataMapWales (`datamap.gov.wales`, paced in
@@ -26,10 +28,10 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Backups:** when planning.data.gov.uk fails, `withBackup`/`planningBackup` (`js/data.js`) ask Historic England
   (heritage and conservation areas) and Natural England for nature, and the Environment Agency for the flood zone at the pin (England only, never on a normal day).
   When postcodes.io fails, `placeFromOsm` gives the country and place from OpenStreetMap; when Nominatim address search
-  fails, Photon answers (`searchPhoton` in `js/app.js`). Every task's answer is kept 7 days per place
-  (`rememberAnswer`/`recentAnswer` in `js/app.js`) and used, dated, only when that service fails. The answer rides on the failure as
+  fails, Photon answers (`searchPhoton` in `js/search.js`). Every task's answer is kept 7 days per place
+  (`rememberAnswer`/`recentAnswer` in `js/report.js`) and used, dated, only when that service fails. The answer rides on the failure as
   `R[key].backup`; only `checkPlanning`/`checkNature`/`checkFlood` read it (`backupFor`, `planningList`). Any topic whose service
-  fails shows the place's last saved answer, dated (`savedInstead` in `js/app.js`).
+  fails shows the place's last saved answer, dated (`savedInstead` in `js/report.js`).
 - `glossary.html`: "What the words mean", plain HTML with no script. `term()` (`js/core.js`) links a word to it through
   `GLOSSARY` (word → id); every id needs its `<dt id>` on the page (the daily check compares them).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads

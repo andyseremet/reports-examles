@@ -25,7 +25,7 @@ These principles are also a rule in `CLAUDE.md` ("Free for everyone").
 | `js/support.js` | All support code: the three ways to give, the amounts, the wording, and what is shown at each hook. |
 | `css/support.css` | Its styles. `support.js` adds this stylesheet itself, so the app needs no second line. |
 
-**Switching it on:** add one line to `index.html`, after `js/app.js`:
+**Switching it on:** add one line to `index.html`, after `js/app.js` (the last script):
 
 ```html
 <script src="js/support.js"></script>
