@@ -1191,8 +1191,10 @@ function renderSkeleton(loc) {
     <div class="cover" id="reportTop">
       <h1>Property Location Report</h1>
       <p class="meta" id="reportMeta"></p>
+      <div id="coverDetails"></div>
       <p class="map-toggle-row no-print"><button class="secondary icon-label" id="showReportMap" type="button" aria-expanded="false" aria-controls="reportMap">${icon("map")}<span>Show map</span></button></p>
       <div id="reportMap" hidden aria-label="Map of the property and nearby features"></div>
+      <p class="map-caption print-only" id="mapCaption"></p>
       <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
       ${infoBox("info-read", `
         <ul class="legend-list">
@@ -1246,6 +1248,24 @@ function renderMeta() {
     <strong>${escapeHTML(loc.name)}</strong><br>
     ${p ? `Nearest postcode ${escapeHTML(p.postcode)} · ${escapeHTML(p.admin_district || "")}${p.admin_ward ? " · " + escapeHTML(p.admin_ward) + " ward" : ""}${p.fromBackup ? " (from OpenStreetMap: postcodes.io was not answering)" : ""}<br>` : ""}
     Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}`;
+  $("coverDetails").innerHTML = coverDetails(loc, p);
+  $("mapCaption").textContent = `Figure 1. The property (pin) and the ${formatRadius(loc.radius)} nearby search area (circle). ` +
+    "Coloured dots mark sites listed in the report, such as old landfill, landslides and major hazard sites. " +
+    "Map: Esri, Maxar, Earthstar Geographics, OpenStreetMap contributors.";
+}
+
+// Printed cover: the property's details as a small table (shown on paper only).
+function coverDetails(loc, p) {
+  const rows = [
+    ["Property", loc.name],
+    p && p.postcode && ["Nearest postcode", p.postcode],
+    p && (p.admin_district || p.admin_ward) && ["Council and ward", [p.admin_district, p.admin_ward && p.admin_ward + " ward"].filter(Boolean).join(", ")],
+    ["Location", `${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} (latitude, longitude)`],
+    ["Nearby search", "within " + formatRadius(loc.radius)],
+    ["Report date", today()],
+    ["Made with", `Property Location Check, version ${APP_VERSION}, from official open data`]
+  ].filter(Boolean);
+  return `<table class="cover-details print-only">${rows.map(([k, v]) => `<tr><th scope="row">${escapeHTML(k)}</th><td>${escapeHTML(v)}</td></tr>`).join("")}</table>`;
 }
 
 // Saved results older than this are flagged, with a suggestion to refresh them.
@@ -1328,8 +1348,15 @@ function glanceTable(results) {
   if (!results.length) return "";
   return `<div class="glance print-only"><h3>All topics at a glance</h3>
     <table class="glance-table"><thead><tr><th>Topic</th><th>Rating</th><th>What we found</th></tr></thead><tbody>${
-      results.map(c => `<tr><td>${escapeHTML(c.title)}</td><td>${chip(c.status)}</td><td>${escapeHTML(c.found)}</td></tr>`).join("")
+      GROUPS.map(g => {
+        const rows = results.filter(c => c.group === g.id);
+        return rows.length ? `<tr class="glance-group"><th colspan="3" scope="colgroup">${escapeHTML(g.title)}</th></tr>` +
+          rows.map(c => `<tr><td>${escapeHTML(c.title)}</td><td>${chip(c.status)}</td><td>${escapeHTML(c.found)}</td></tr>`).join("") : "";
+      }).join("")
     }</tbody></table>
+    <p class="glance-key"><strong>Key:</strong> ${chip("high")} could affect value, insurance, health or safety ·
+      ${chip("medium")} ask questions or order a search · ${chip("low")} nothing found in the data checked ·
+      ${chip("info")} useful local facts · ${chip("manual")} no data here: check another way</p>
     <p class="glance-note">A free first look using public data. It does not replace a building survey or your conveyancer's
       searches. “No issue found” means nothing was found in the data we checked, not that there is no risk.</p></div>`;
 }
@@ -1413,6 +1440,13 @@ function setReportMap(show) {
 document.addEventListener("click", e => {
   if (e.target.closest("#showReportMap")) setReportMap($("reportMap").hidden);
 });
+
+// Fit the search circle to the map's current size (after it changes, for example for printing).
+function fitReportMap() {
+  if (!reportMap || !run) return;
+  reportMap.invalidateSize();
+  reportMap.fitBounds(L.latLng(run.loc.lat, run.loc.lon).toBounds(run.loc.radius * 2), { padding: [10, 10] });
+}
 
 function drawReportMap(loc) {
   if (reportMap) { reportMap.remove(); reportMap = null; }
@@ -2039,7 +2073,9 @@ let closedBeforePrint = [];
 window.addEventListener("beforeprint", () => {
   closedBeforePrint = [...document.querySelectorAll("#report details:not([open])")];
   closedBeforePrint.forEach(d => { d.open = true; });
+  document.body.classList.add("printing");      // the map becomes the printed square (css/app.css) before it is redrawn
   setReportMap(true);
+  fitReportMap();
   if (run) {
     const style = document.createElement("style");
     style.id = "printFooter";
@@ -2049,6 +2085,8 @@ window.addEventListener("beforeprint", () => {
 });
 window.addEventListener("afterprint", () => {
   const footer = $("printFooter"); if (footer) footer.remove();
+  document.body.classList.remove("printing");
+  if (reportMap) { reportMap.invalidateSize(); fitReportMap(); }
   closedBeforePrint.forEach(d => { d.open = false; });
   document.body.classList.remove("print-summary");
 });

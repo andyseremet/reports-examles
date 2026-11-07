@@ -86,7 +86,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - More backups (1.34.0, first step to 2.0): conservation areas from Historic England's map when planning.data.gov.uk
   is down; the country and place from OpenStreetMap when postcodes.io is down; Photon when the address search is down;
   and each service's answer for a place kept on the device for 7 days, used (dated) only if that service fails.
-- Printed report (1.35.0): page 1 has the verdict and a table of every topic with its rating and finding; every page
+- Printed report (1.35.0): page 1 has the property's details, a centred square map with a "Figure 1" caption, the
+  verdict and a table of every topic grouped by section, with a key to the ratings; sections are numbered, topic cards
+  have more space between them, and rating colours always print; every page
   shows the place, date, "A first look from public data, not a survey" and "Page 2 of 6" (Chrome and Edge); no app
   instructions on paper; in the full report each section starts on a new page.
 - A report still loading after 8 seconds names the services it is waiting for.

@@ -261,6 +261,7 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
 .map-toggle-row {margin:12px 0 0}
 .print-only {display:none}
+body.printing #reportMap {width:404px;height:404px;margin:6mm auto 0}
 /* One line above the report: the place, "Change" (search map) and "Saved (3)". */
 .place-bar {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:12px 0;padding:8px 12px;
   border:1px solid var(--border);border-radius:8px;background:var(--surface);scroll-margin-top:8px}
@@ -433,7 +434,6 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
   .saved-note button,#refreshBtn {display:none!important}
   body.print-summary .details-start,body.print-summary #sourcesBox,body.print-summary .topic-strip {display:none!important}
   .app-bar,.why-box,.backup-note {display:none!important}
-  body.print-summary #reportMap {height:200px}
   body.print-summary #checklistBox {break-before:page}
   body.print-summary #checklist {break-before:page}
 }
@@ -537,6 +537,30 @@ body.has-sticky footer {padding-bottom:100px}
   .glance-table tr {break-inside:avoid}
   .glance-table .chip {white-space:nowrap}
   .glance-note {font-size:10px;color:#444;margin:6px 0 0}
+  /* A professional printout: calm type, colours that print, room between cards, numbered sections. */
+  * {-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body {font-size:11px;line-height:1.45;color:#1a1a1a}
+  h1 {font-size:24px;margin:0 0 2mm;color:var(--navy)}
+  .group > h2,#nextSteps > h2,.summary-title {font-size:17px;color:var(--navy);border-bottom:2px solid var(--navy);padding-bottom:1.5mm}
+  #report {counter-reset:section}
+  .details-start > .group > h2::before,#nextSteps > h2::before {counter-increment:section;content:counter(section) ". "}
+  .meta {display:none}
+  .cover-details {border-collapse:collapse;margin:3mm 0 0;font-size:11px}
+  .cover-details th {text-align:left;color:#555;font-weight:normal;padding:1mm 6mm 1mm 0;white-space:nowrap;vertical-align:top}
+  .cover-details td {padding:1mm 0;font-weight:bold}
+  #reportMap,body.printing #reportMap {width:404px;height:404px;margin:6mm auto 0;display:block;border:1px solid #999}
+  .map-caption {max-width:404px;margin:2mm auto 6mm;text-align:center;font-size:9.5px;color:#444;font-style:italic}
+  .group-topics > .slot,.fold-body > .slot {margin:0 0 5mm}
+  details.clear-fold {margin:5mm 0}
+  .fold-body {padding-top:3mm!important}
+  details.check {border-width:1px 1px 1px 5px}
+  .glance-table tr:nth-child(even) td {background:#f6f7f9}
+  .glance-table .glance-group th {background:var(--navy);color:#fff;font-size:11px}
+  .glance-key {font-size:9.5px;color:#333;margin:3mm 0 0;line-height:2}
+  .glance-key .chip {font-size:9.5px}
+  .verdict {font-size:13px}
+  .gaps-box {break-inside:avoid}
+  .check-body .info-body::before {content:"What this means";display:block;font-weight:bold;color:var(--navy);margin-bottom:1mm}
   /* Full report: each section starts on a new page. */
   body:not(.print-summary) .details-start > .group,body:not(.print-summary) #nextSteps,body:not(.print-summary) #sourcesBox {break-before:page}
 }
