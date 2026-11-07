@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.32.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.33.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 7 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.32.0)
+## Part 1: What the app does today (version 1.33.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type.
@@ -43,8 +43,8 @@ publish them free. Scottish and Welsh reports no longer ask the busy Environment
 
 **Northern Ireland (1.28.0):** planning and heritage (Department for Communities), protected nature sites, noise (Round 4)
 and coastal erosion risk (DAERA and DfI) are answered from Northern Ireland data. Conservation areas are not published
-nationally, so planning with nothing found says "Check yourself"; air quality shows the area estimate and says "Check
-yourself", because council hotspots are not mapped. Flood maps (DfI Rivers does not release them openly), radon,
+nationally, so planning with nothing found says "Check yourself"; air quality shows the area estimate and, because council hotspots are not mapped,
+says "For information" (since 1.33.0; before, "Check yourself"). Flood maps (DfI Rivers does not release them openly), radon,
 landslides, coal and old mines, land use and sale prices stay "Check yourself", with links to the right service.
 Schools, doctors and transport now shows each register only where it reaches (it used to say "None found nearby" for GPs in
 Scotland and for everything in Northern Ireland); in Northern Ireland it says "Check yourself" with links to nidirect,
@@ -80,6 +80,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   from Historic England and Natural England, and the topic names what it could not check. A topic whose service does
   not answer shows this place's last saved answer, dated, with **Try again**. Since 1.31.1 the flood zone at the pin
   comes from the Environment Agency's own flood map, and Past use of the land names the sites it could not check.
+- Air quality (1.33.0, owner's request): the Open-Meteo area estimate is the main source and the council hotspot list
+  (planning.data.gov.uk in England) adds to it, so the topic still answers when either is down. Only with both answering
+  can it say "No issue found".
 - A report still loading after 8 seconds names the services it is waiting for.
 - Careful pacing of requests to the Environment Agency map server, so it does not refuse them.
 - Requests to the Welsh, Scottish and Northern Ireland map servers (including SEPA, since 1.28.1) go a few at a time,
@@ -142,7 +145,7 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 | Idea | Decision |
 |---|---|
 | Welsh language | Removed on 4 November 2026: the app stays in English only. |
-| Air quality backup when planning.data.gov.uk is down | Not possible (7 November 2026): Defra's UK-wide Air Quality Management Area map (ukair.maps.rcdo.co.uk, run by WSP) answers correctly but tells browsers not to let other web pages read it (no CORS). It could be used if Defra opens it to web pages. |
+| Air quality backup when planning.data.gov.uk is down | Not possible (7 November 2026): Defra's UK-wide Air Quality Management Area map (ukair.maps.rcdo.co.uk, run by WSP) answers correctly but tells browsers not to let other web pages read it (no CORS). It could be used if Defra opens it to web pages. Since 1.33.0 the topic answers from the Open-Meteo estimate during an outage anyway. |
 | Remove "Download report" | Kept (4 November 2026); since 1.17.0 it is in the "Save" menu. |
 | Remove the latitude and longitude boxes | Kept (4 November 2026), in More options. |
 | Remove or reduce railway noise, landslides, aircraft | Kept as they are (4 November 2026). |

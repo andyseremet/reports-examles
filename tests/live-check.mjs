@@ -258,7 +258,7 @@ async function testCountryData() {
           catch (e) { return { ok: false, error: e.message, backup: e.backup }; }
         };
         const R = { loc, planningPoint: await failed(PLANNING_AT_POINT, 0), planningNearby: await failed(PLANNING_NEARBY, loc.radius),
-          floodNational: { ok: true, value: null }, air: { ok: true, value: null }, place: { ok: true, value: { country: "England" } } };
+          floodNational: { ok: true, value: null }, air: { ok: true, value: { no2: 15, pm25: 7 } }, place: { ok: true, value: { country: "England" } } };
         const planning = checkPlanning(R), nature = checkNature(R), flood = checkFlood(R), air = checkAir(R);
         // A service that does not answer: this place's earlier answer is shown instead, with its date.
         const keep = run;
@@ -267,7 +267,7 @@ async function testCountryData() {
         try { saved = savedInstead({ id: "flood" }, { status: "error" }); } finally { run = keep; }
         return { saved: [saved.status, saved.fromSaved, gapKind(saved)], floodSource: flood.source.name,
           planning: [planning.status, planning.found, planning.details.includes("Historic England")],
-          nature: nature.status, flood: flood.status, air: air.status,
+          nature: nature.status, flood: flood.status, air: air.status, airFound: air.found,
           listed: (R.planningNearby.backup?.entities || []).filter(e => e.dataset === "listed-building").length,
           missing: R.planningPoint.backup?.missing || [] };
       });
@@ -279,7 +279,8 @@ async function testCountryData() {
       if (!["low", "info"].includes(r.nature)) throw new Error(`nature from the backup rated ${r.nature}`);
       await page.unroute(floodMap);
       if (r.flood !== "high" || !/Environment Agency/.test(r.floodSource)) throw new Error(`flooding from the backup: ${r.flood} (${r.floodSource})`);
-      if (r.air !== "error") throw new Error(`with no backup, air quality is ${r.air}, not "not answering"`);
+      // Air quality: the Open-Meteo estimate is the main source; without the council hotspot list it is "For information".
+      if (r.air !== "info" || !/hotspots could not be checked/.test(r.airFound)) throw new Error(`with the hotspot list down, air quality is ${r.air}: ${r.airFound}`);
       if (r.saved.join() !== "medium,2026-11-03T10:00:00Z,down") throw new Error(`the saved answer came back as ${r.saved.join(", ")}`);
       return `${r.planning[1]} ${r.listed} listed buildings nearby`;
     });
@@ -328,7 +329,8 @@ async function testCountryData() {
         };
       });
       if (r.country !== "Wales") throw new Error(`postcodes.io says Cardiff is in ${r.country}`);
-      if (["low", "info"].includes(r.airNoHotspotData)) throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}"`);
+      // The Open-Meteo estimate is the main source (owner, 7 November 2026): without hotspot data it is "For information", never "No issue found".
+      if (r.airNoHotspotData !== "info") throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}", not For information`);
       const bad = Object.entries(r).filter(([k, c]) => !["country", "airNoHotspotData"].includes(k) && ["manual", "error"].includes(c.status));
       if (bad.length) throw new Error(bad.map(([k, c]) => `${k}: ${c.found}`).join(" | "));
       if (!["medium", "info"].includes(r.tips.status)) throw new Error(`no coal tips found near Treorchy: ${r.tips.found}`);
@@ -365,7 +367,8 @@ async function testCountryData() {
         };
       });
       if (r.country !== "Scotland") throw new Error(`postcodes.io says Edinburgh is in ${r.country}`);
-      if (["low", "info"].includes(r.airNoHotspotData)) throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}"`);
+      // The Open-Meteo estimate is the main source (owner, 7 November 2026): without hotspot data it is "For information", never "No issue found".
+      if (r.airNoHotspotData !== "info") throw new Error(`with no hotspot data, air quality was rated "${r.airNoHotspotData}", not For information`);
       if (r.obanLand !== "manual") throw new Error(`Oban (no waste sites; old landfill not published) rated "${r.obanLand}", expected Check yourself`);
       const bad = Object.entries(r).filter(([k, c]) => !["country", "airNoHotspotData", "obanLand"].includes(k) && ["manual", "error"].includes(c.status));
       if (bad.length) throw new Error(bad.map(([k, c]) => `${k}: ${c.found}`).join(" | "));
@@ -404,7 +407,7 @@ async function testCountryData() {
       if (r.country !== "Northern Ireland") throw new Error(`postcodes.io says Belfast is in ${r.country}`);
       if (r.planning.status !== "manual") throw new Error(`Belfast planning with no conservation area data rated "${r.planning.status}", expected Check yourself`);
       if (!(r.listed > 0)) throw new Error("no listed buildings near Belfast City Hall");
-      if (r.air.status !== "manual") throw new Error(`NI air quality (no hotspot map) rated "${r.air.status}", expected Check yourself`);
+      if (r.air.status !== "info") throw new Error(`NI air quality (estimate only, no hotspot map) rated "${r.air.status}", expected For information`);
       if (!/Road: loud/.test(r.noise.found)) throw new Error(`Westlink road noise: ${r.noise.found}`);
       if (!/Area of Outstanding Natural Beauty/.test(r.park.found)) throw new Error(`no Mourne AONB at Newcastle: ${r.park.found}`);
       if (r.nature.status !== "info") throw new Error(`no protected sites at Strangford Lough: ${r.nature.found}`);
