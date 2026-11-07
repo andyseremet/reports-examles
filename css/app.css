@@ -260,6 +260,7 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .cover h1 {font-size:26px;color:var(--heading);margin:0}
 .cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
 .map-toggle-row {margin:12px 0 0}
+.print-only {display:none}
 /* One line above the report: the place, "Change" (search map) and "Saved (3)". */
 .place-bar {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:12px 0;padding:8px 12px;
   border:1px solid var(--border);border-radius:8px;background:var(--surface);scroll-margin-top:8px}
@@ -517,13 +518,27 @@ body.has-sticky footer {padding-bottom:100px}
   .panel {border:0;box-shadow:none;padding:0;margin:0}
   a {color:#222;text-decoration:none}
   .details-start {break-before:page}
-  .check,.checklist li,.priority li,.gaps-box li {break-inside:avoid}
+  /* Long topic cards may continue on the next page (avoiding that left half-empty pages); a heading stays with its text. */
+  .checklist li,.priority li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
+  details.check > summary,.check-body h4 {break-after:avoid}
+  .info-row {display:none!important}
   .info-btn,[data-retry] {display:none!important}
   .info-body[hidden] {display:block!important}
   tr.list-extra[hidden] {display:table-row!important}
   li.list-extra[hidden] {display:list-item!important}
   .leaflet-control-zoom {display:none}
-  @page {size:A4;margin:14mm}
+  @page {size:A4;margin:14mm 14mm 16mm}
+  /* Paper shows what a reader needs: the at-a-glance table instead of the tappable grid, no app instructions. */
+  .print-only {display:block!important}
+  .topic-strip,.start-here,.saved-note,#info-read,.rating-legend {display:none!important}
+  .glance-table {width:100%;border-collapse:collapse;font-size:11px}
+  .glance-table th,.glance-table td {border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}
+  .glance-table th {background:#eee}
+  .glance-table tr {break-inside:avoid}
+  .glance-table .chip {white-space:nowrap}
+  .glance-note {font-size:10px;color:#444;margin:6px 0 0}
+  /* Full report: each section starts on a new page. */
+  body:not(.print-summary) .details-start > .group,body:not(.print-summary) #nextSteps,body:not(.print-summary) #sourcesBox {break-before:page}
 }
 
 /* ---------- data service status page (status.html) ---------- */
