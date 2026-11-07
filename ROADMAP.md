@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.35.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.36.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 7 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,10 +15,13 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.35.0)
+## Part 1: What the app does today (version 1.36.0)
 
 ### Finding the property
-- Search by postcode, address or place name, with suggestions as you type.
+- Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
+  map (1.36.0; before, it sat behind the map's 🔍 button), and moves into the map in full screen.
+- A **3-step guide** on the first visit: 1 Search · 2 Check the pin · 3 Read your report; hidden after the first
+  report (1.36.0).
 - Map with street and satellite views, "my location" and full screen; a pin you can drag onto the exact property.
 - Choice of nearby search distance (250 m to 2 km), in "More options".
 
@@ -56,17 +59,26 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 ### The report
 - Five plain-English ratings: **Look into this / Worth checking / No issue found / For information / Check yourself**.
 - Each topic says what it means, what to do next, and how current its data is.
+- **Easier reading** (1.36.0): a "Key findings" panel at the top (replacing "Start here"); each topic opens with its
+  finding in bold, then "What to do", with "What we found" and "What this means" behind **More**; data dates and
+  sources only in the table at the end; lines of about 70 characters on wide screens.
+- **Calm screen** (1.36.0): the system font, white cards with a hairline and one thin rating accent, lighter topic
+  tiles, and the verdict as one clear sentence, following the visual style in CLAUDE.md.
+- **Fewer "i" buttons** (1.36.0): short explanations (checking the pin, saved properties, section intros) are one
+  visible sentence; "i" stays only for long help.
+- **What the words mean** (1.36.0): a printable glossary page of 33 words (flood zone, radon, CON29M, conservation
+  area and more), linked from explained words, the report and the footer.
 - Topic cards show **Details ▾** (or **Hide ▴** when open); one **Open problems / Close all** button stays on the
   section bar, which fades at the edge on a phone to show it scrolls (1.23.0; Open problems since 1.29.0).
 - Every rating has a symbol as well as a colour (❗ ⚠️ ✓ ℹ️ ?), and topics with no issue found fold into one row at the
   end of their section (1.29.0). A phone report with topics closed went from 17 to 12 screens.
 - Shorter reports (1.30.0): once a report is open, the search map and saved list shrink to one line ("Barnsley test ·
-  Change · Saved (3)"); the map inside the report appears after **Show map**; in each topic, "What this means" and the
+  Change · Saved (3)"); the map inside the report appeared after **Show map** (always shown again, 4:3, since 1.36.0 so it prints with its pictures loaded); in each topic, "What this means" and the
   source fold behind **More**; lists of sites and sales show the first 3, then **Show all**, as one-line rows on a
   phone. A phone report with topics closed went from 12 to about 8 screens.
 - **Phone tab bar** (1.31.0): Summary · Problems (N) · All topics · Next steps at the bottom of the screen on phones.
   Problems opens the topics to look into and goes to the first.
-- An overall verdict, the topic grid with one legend line of rating counts (1.29.0, replacing the count boxes), a "Start here" list, and a box for every topic with no real answer and who to ask
+- An overall verdict, the topic grid with one legend line of rating counts (1.29.0, replacing the count boxes), the "Key findings" panel, and a box for every topic with no real answer and who to ask
   instead, which folds away with **Details / Hide** and starts closed when it lists more than 3 topics (1.25.0).
 - **Next steps** (1.30.0): notes, the viewing checklist and the checklist, each folded with its count ("0 of 11 done").
 - **At the viewing:** up to 12 things to look for and ask on the day, reached with the **Viewing** button.
@@ -86,7 +98,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - More backups (1.34.0, first step to 2.0): conservation areas from Historic England's map when planning.data.gov.uk
   is down; the country and place from OpenStreetMap when postcodes.io is down; Photon when the address search is down;
   and each service's answer for a place kept on the device for 7 days, used (dated) only if that service fails.
-- Printed report (1.35.0): page 1 has the property's details, a centred square map with a "Figure 1" caption, the
+- Printed report (1.35.0): page 1 has the property's details, a centred map (4:3 since 1.36.0) with a "Figure 1" caption, the
   verdict and a table of every topic grouped by section, with a key to the ratings; sections are numbered, topic cards
   have more space between them, and rating colours always print; a "Key findings" box, a link and QR code to the live report,
   the viewing checklist as its own page, a neat sources table and black-and-white friendly border patterns, all in a
@@ -109,11 +121,13 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 ### Share, print and export
 - **Share** links and the phone's share menu.
 - **Save** menu: download the report, print a summary, or print the full report (or save as PDF).
+- Printout extras (1.36.0): a one-line contents under the summary, a lined notes page at the end, and a 2-page short
+  printout (the cover, key findings and the topic table; the checklists stay in the full report).
 
 ### Comfort and access
 - Dark mode, larger text (**A+ Text size**), and install as an app on a phone.
-- Checked against accessibility standard WCAG 2.2 AA; last re-checked on 5 November 2026 (1.25.0, after the UX review
-  changes in 1.22.0 to 1.24.0 and Compare up to 3).
+- Checked against accessibility standard WCAG 2.2 AA; last re-checked on 7 November 2026 (1.36.0, after the calm screen,
+  the glossary page and the always-shown report map; one fix: topic header lines now wrap at 320 px with A+ text).
 - Privacy: no account, cookies or tracking.
 - A **Data service status** page shows each data service's result in this morning's automatic check.
 
@@ -128,18 +142,11 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Priority: the road to version 2.0 (health check and quiz of 7 November 2026)
 
-Version 2.0 is the planned final version. It comes in four steps (1.34.0 the backups and 1.35.0 the printed report shipped on 7 November 2026); each is built, tested (full check and accessibility
+Version 2.0 is the planned final version. It comes in four steps (1.34.0 the backups, 1.35.0 the printed report and 1.36.0 ease of use shipped on 7 November 2026); each is built, tested (full check and accessibility
 check) and merged by the owner before the next one starts. Every item below was chosen in the quiz.
 
 | Step | Priority | What changes | Why |
 |---|---|---|---|
-| **1.36.0 Ease of use** | 3 | **Visible search box** above the map, always shown (today it sits behind the map's 🔍 button). | First-time users looked for a search box and missed the button. |
-| | 3 | **3-step guide** on the first visit: 1 Search · 2 Check the pin · 3 Read your report; hidden after the first report. | Anyone can start without reading help text. |
-| | 3 | **Plain-words glossary**: its own "What the words mean" page (like the status page), linked from each term, the report and the footer, and printable. | One place for flood zone, radon, AQMA, CON29M, conservation area and the rest. |
-| | 3 | **Fewer "i" buttons**: one short visible sentence instead, keeping "i" only for long explanations. | Fewer taps and less hidden text. |
-| | 3 | **Calm Apple-like screen** (quiz of 7 November 2026): report cards white, rounded, hairline border and one thin rating accent; the system font everywhere; a softer summary (lighter topic tiles, fewer borders, the verdict as one clear sentence); a quieter start page (map and search in one clean panel). | The same calm look as the printout, following the visual style in CLAUDE.md. |
-| | 3 | **Easier reading on screen**: a "Key findings" panel at the top (replacing "Start here"); data dates and sources only in the table at the end; each topic opens with one plain sentence in bold, then "What to do", with detail behind "More"; text lines of about 70 characters on wide screens. | Less to read before the answer. |
-| | 3 | **Printout extras**: a one-line contents under the summary; a lined notes page at the end; a 2-page compact summary printout (cover, key findings and the topic table; checklists stay in the full report). | Easier to find things and to take notes. |
 | **2.0.0 Final** | 4 | **Split `js/app.js`** (about 2,000 lines) into a few smaller files (search, report, saved, print), with no build step and the same behaviour. | Easier and safer to change later. |
 | | 4 | **Steady pull request checks**: reports are built from recorded answers, so outside outages never turn a pull request red. The daily check stays fully live. | During the 6–7 November outage, every pull request was red for reasons outside the app. |
 | | 4 | **Final review**: the app run on places in all four countries, the accessibility check, README and road map brought up to date. | A clean 2.0. |

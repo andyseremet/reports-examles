@@ -512,10 +512,19 @@ async function testDevice(device, [postcode, place]) {
   };
   const file = name => `${OUT}/${device.name.replace(/\W+/g, "-")}-${name}.png`;
 
+  let guideAtStart = false;
   await step("Page opens with the search ready", async () => {
     await page.goto(BASE, { waitUntil: "load" });
     await page.waitForTimeout(1500);
-    return (await page.$eval(".leaflet-top.leaflet-left .map-ctrl", x => x.classList.contains("open"))) ? "search open" : false;
+    guideAtStart = await page.$eval("#guide", g => !g.classList.contains("hidden") && g.querySelectorAll("li").length === 3);
+    // The search box shows above the map, outside it (1.36.0), and the map's own search button stays hidden.
+    const r = await page.evaluate(() => {
+      const box = document.getElementById("searchBox"), m = document.getElementById("map");
+      const b = box.getBoundingClientRect(), mb = m.getBoundingClientRect();
+      return { visible: b.height > 0 && getComputedStyle(box).visibility !== "hidden", above: b.bottom <= mb.top + 1,
+        outside: !m.contains(box), mapBtn: getComputedStyle(document.querySelector(".search-ctl")).display };
+    });
+    return r.visible && r.above && r.outside && r.mapBtn === "none" ? "search box above the map" : false;
   });
 
   await step("Search finds the postcode", async () => {
@@ -533,10 +542,13 @@ async function testDevice(device, [postcode, place]) {
     await page.waitForTimeout(600);
     const r = await page.evaluate(() => { const b = document.getElementById("map").getBoundingClientRect(); return [b.left, b.top, b.width, b.height, innerWidth, innerHeight].map(Math.round); });
     if (!(await page.$eval("#confirmText", x => x.textContent)).includes(postcode)) throw new Error("pressing the full-screen button moved the pin");
+    const searchInMap = await page.evaluate(() => document.getElementById("map").contains(document.getElementById("searchBox"))
+      && getComputedStyle(document.querySelector(".search-ctl")).display !== "none");
+    if (!searchInMap) throw new Error("the full-screen map has no search button");
     await page.screenshot({ path: file("fullscreen") });
     await page.click(".leaflet-top.leaflet-right .map-ctrl:nth-child(2) .map-btn");
     await page.waitForTimeout(600);
-    const closed = !(await page.evaluate(() => mapIsFull));
+    const closed = !(await page.evaluate(() => mapIsFull)) && await page.evaluate(() => !document.getElementById("map").contains(document.getElementById("searchBox")));
     if (!(await page.$eval("#confirmText", x => x.textContent)).includes(postcode)) throw new Error("closing full screen moved the pin");
     return r[0] === 0 && r[1] === 0 && Math.abs(r[2] - r[4]) <= 1 && Math.abs(r[3] - r[5]) <= 1 && closed ? `map ${r[2]}×${r[3]}` : false;
   });
@@ -595,6 +607,10 @@ async function testDevice(device, [postcode, place]) {
     const auto = await page.evaluate(() => run.autoRetried || []);
     return `${total} topics in ${secs} s` + (auto.length ? ` (retried by itself: ${auto.join(", ")})` : "")
       + (retried.length ? ` (needed Try again: ${retried.join(", ")})` : "");
+  });
+  await step("3-step guide on the first visit, hidden after the first report", async () => {
+    const hiddenNow = await page.$eval("#guide", g => g.classList.contains("hidden"));
+    return guideAtStart && hiddenNow ? "shown, then hidden" : false;
   });
   await page.$eval("#reportTop", x => x.scrollIntoView()).catch(() => {});
   await page.waitForTimeout(1500);
@@ -663,26 +679,24 @@ async function testDevice(device, [postcode, place]) {
     return `${r0.folded.length} no-issue topics folded; ${id.replace("check-", "")} opened; ${s1.problems ? s1.problems.split(",").length : 0} problems opened`;
   });
 
-  await step("Shorter report: Show map, More in each topic, long lists show 3 first", async () => {
-    // The map inside the report is drawn only after "Show map".
-    const before = await page.evaluate(() => ({ hidden: document.getElementById("reportMap").hidden,
-      drawn: !!document.querySelector("#reportMap .leaflet-container, #reportMap.leaflet-container") }));
-    if (!before.hidden || before.drawn) throw new Error("the report map is shown before Show map is pressed");
-    await page.click("#showReportMap");
-    await page.waitForTimeout(500);
-    const after = await page.evaluate(() => ({ hidden: document.getElementById("reportMap").hidden,
-      drawn: !!document.querySelector("#reportMap.leaflet-container"), text: document.getElementById("showReportMap").textContent.trim() }));
-    if (after.hidden || !after.drawn || after.text !== "Hide map") throw new Error(`after Show map: hidden ${after.hidden}, drawn ${after.drawn}, button "${after.text}"`);
-    await page.click("#showReportMap");
-    // Inside a topic, "What this means" and the source stay folded until "More".
+  await step("Shorter report: map always shown at 4:3, More in each topic, long lists show 3 first", async () => {
+    // The map inside the report is always shown and drawn (owner, 7 November 2026: a hidden map could print blank),
+    // 4:3 and centred, with its map pictures loaded.
+    const m = await page.evaluate(() => { const el = document.getElementById("reportMap"), r = el.getBoundingClientRect();
+      return { hidden: el.hidden || r.height === 0, drawn: el.classList.contains("leaflet-container"), ratio: r.width / r.height,
+        tiles: el.querySelectorAll(".leaflet-tile-loaded").length, button: !!document.getElementById("showReportMap") }; });
+    if (m.hidden || !m.drawn || m.button) throw new Error(`report map: hidden ${m.hidden}, drawn ${m.drawn}, Show map button ${m.button}`);
+    if (Math.abs(m.ratio - 4 / 3) > 0.03) throw new Error(`report map is ${m.ratio.toFixed(2)}:1, expected 4:3`);
+    if (!m.tiles) throw new Error("no map pictures loaded in the report map");
+    // Inside a topic, "What we found" and "What this means" stay folded until "More" (sources and dates are in the table at the end).
     const more = page.locator("details.check[open] .more-btn").first();
     if (await more.count()) {
       const box = await more.getAttribute("aria-controls");
       const hiddenBefore = await page.$eval("#" + box, x => x.hidden);
       await more.click();
-      const shown = await page.$eval("#" + box, x => !x.hidden && x.textContent.includes("Source:"));
+      const shown = await page.$eval("#" + box, x => !x.hidden && /What we found|What this means/.test(x.textContent));
       await more.click();
-      if (!hiddenBefore || !shown) throw new Error(`"More" in ${box} did not fold and unfold the explanation and source`);
+      if (!hiddenBefore || !shown) throw new Error(`"More" in ${box} did not fold and unfold what was found and what it means`);
     }
     // A list of more than 4 sites or sales shows the first 3, and "Show all N" shows the rest.
     const lists = await page.evaluate(() => [...document.querySelectorAll("#report .site-list")].map(l => {
@@ -740,18 +754,18 @@ async function testDevice(device, [postcode, place]) {
 
   await step("Data gaps box lists every topic without an answer", async () => {
     // Every "Check yourself" or "Not available" topic must appear in the box, with a way to check it
-    // instead, and not in "Start here"; with no such topics, the box is hidden.
+    // instead, and not in "Key findings"; with no such topics, the box is hidden.
     const r = await page.evaluate(() => {
       const want = orderedResults().filter(c => ["manual", "error"].includes(c.status)).map(c => c.id).sort();
       const rows = [...document.querySelectorAll(".gaps-box li")];
       const inBox = rows.map(li => li.querySelector("[data-open]").dataset.open.replace("check-", "")).sort();
       const noWay = rows.filter(li => li.querySelector(".gap-ask").textContent.replace("Instead:", "").trim().length < 10).length;
-      const inStart = document.querySelectorAll(".priority li .chip.manual, .priority li .chip.error").length;
+      const inStart = document.querySelectorAll(".key-findings li .chip.manual, .key-findings li .chip.error").length;
       return { want, inBox, noWay, inStart, box: !!document.querySelector(".gaps-box") };
     });
     if (r.want.join() !== r.inBox.join()) throw new Error(`box lists [${r.inBox}] but expected [${r.want}]`);
     if (r.noWay) throw new Error(`${r.noWay} row(s) do not say how to check instead`);
-    if (r.inStart) throw new Error(`${r.inStart} gap topic(s) still in "Start here"`);
+    if (r.inStart) throw new Error(`${r.inStart} gap topic(s) in "Key findings"`);
     if (!r.want.length && r.box) throw new Error("box shown with no gaps");
     if (r.want.length) {
       // The box folds away with Details / Hide: open for up to 3 topics, closed for more, and the
@@ -780,13 +794,17 @@ async function testDevice(device, [postcode, place]) {
     return text.startsWith("Radon") && text.length > 25 && expanded === "true" && closed ? text.slice(0, 70) + "…" : false;
   });
 
-  await step("Each topic says how current its data is", async () => {
-    const missing = await page.evaluate(() => orderedResults()
-      .filter(c => !["manual", "error"].includes(c.status))
-      .filter(c => { const d = document.querySelector(`#check-${c.id} .data-date`); return !d || d.textContent.trim().length < 12; })
-      .map(c => c.id));
-    if (missing.length) throw new Error("no data date on: " + missing.join(", "));
-    return await page.$eval("#check-crime .data-date", x => x.textContent.trim()).catch(() => "ok");
+  await step("Each topic says how current its data is (in the sources table at the end)", async () => {
+    const r = await page.evaluate(() => {
+      const rows = new Map([...document.querySelectorAll("#sources tbody tr")].map(tr => [tr.cells[0].textContent.trim(), tr.cells[2].textContent.trim()]));
+      const missing = orderedResults().filter(c => !["manual", "error"].includes(c.status))
+        .filter(c => !c.dataDate || c.dataDate.length < 12 || rows.get(c.title) !== c.dataDate).map(c => c.id);
+      const inCards = document.querySelectorAll("details.check .data-date, details.check .source").length;
+      return { missing, inCards, crime: rows.get((orderedResults().find(c => c.id === "crime") || {}).title) };
+    });
+    if (r.missing.length) throw new Error("no data date in the sources table for: " + r.missing.join(", "));
+    if (r.inCards) throw new Error(`${r.inCards} date or source line(s) still inside topics`);
+    return r.crime || "ok";
   });
 
   await step("Crime where the police publish no data", async () => {
@@ -843,6 +861,26 @@ async function testDevice(device, [postcode, place]) {
     if (r.down !== 1 || !/1 of \d+ services/.test(r.verdict)) throw new Error("the service that did not answer is not shown as such: " + r.verdict);
     if (!r.back) throw new Error("no link back to the app");
     return `${r.rows} services listed; ${r.verdict.trim()}`;
+  });
+
+  await step("What the words mean: every linked word has its meaning, linked from the report and footer", async () => {
+    const ids = await page.evaluate(() => [...new Set(Object.values(GLOSSARY))]);
+    const links = await page.evaluate(() => ({
+      footer: !!document.querySelector('footer a[href="glossary.html"]'),
+      report: !!document.querySelector('#sourcesBox a[href$="glossary.html"]'),
+      term: term("radon", "x").includes("glossary.html#radon")
+    }));
+    const g = await page.context().newPage();
+    await g.goto(new URL("glossary.html", BASE).href);
+    const r = await g.evaluate(ids => ({
+      missing: ids.filter(id => !document.querySelector(`.glossary dt[id="${id}"] + dd`)),
+      entries: document.querySelectorAll(".glossary dt").length,
+      back: !!document.querySelector('a[href="./"]')
+    }), ids);
+    await g.close();
+    if (r.missing.length) throw new Error("no meaning on the page for: " + r.missing.join(", "));
+    if (!links.footer || !links.report || !links.term || !r.back) throw new Error("missing link: " + JSON.stringify({ ...links, back: r.back }));
+    return `${r.entries} words explained`;
   });
 
   await step("Slow report names the service it is waiting for", async () => {
@@ -964,17 +1002,28 @@ async function testDevice(device, [postcode, place]) {
         keyShown: shown(".key-findings"), qr: shown(".cover-qr svg"),
         table: shown(".glance-table"), footer: (document.getElementById("printFooter") || {}).textContent || "",
         grid: shown(".topic-strip"), howTo: shown("#info-read"), saved: shown(".saved-note"), more: shown(".info-row"),
-        tryAgain: shown(".gaps-box [data-retry]") };
+        tryAgain: shown(".gaps-box [data-retry]"), checklists: shown(".next-steps"), notesPage: shown(".notes-page") };
     });
     if (!paper.table || paper.rows !== paper.topics) throw new Error(`the at-a-glance table shows ${paper.rows} of ${paper.topics} topics (visible: ${paper.table})`);
-    if (paper.map[0] < 300 || Math.abs(paper.map[0] - paper.map[1]) > 2 || !paper.caption) throw new Error(`printed map ${paper.map.join("×")} px, caption shown: ${paper.caption} (expected a square with "Figure 1." caption)`);
+    if (paper.map[0] < 300 || Math.abs(paper.map[0] / paper.map[1] - 4 / 3) > 0.03 || !paper.caption) throw new Error(`printed map ${paper.map.join("×")} px, caption shown: ${paper.caption} (expected 4:3 with "Figure 1." caption)`);
     if (!paper.cover || !paper.liveLink || !paper.qr) throw new Error(`printed cover: details table ${paper.cover}, live report link ${paper.liveLink}, QR code ${paper.qr}`);
     const wantKey = Math.min(3, paper.problems);
     if (paper.keyFindings !== wantKey || (wantKey && !paper.keyShown)) throw new Error(`Key findings lists ${paper.keyFindings}, expected ${wantKey} (shown: ${paper.keyShown})`);
     if (!/counter\(page\)/.test(paper.footer) || !/counter\(pages\)/.test(paper.footer)) throw new Error("no page numbers in the printed footer");
     const onPaper = Object.entries({ grid: paper.grid, "how to read": paper.howTo, "saved note": paper.saved, "More button": paper.more, "Try again": paper.tryAgain }).filter(([, v]) => v).map(([k]) => k);
     if (onPaper.length) throw new Error("printed but should not be: " + onPaper.join(", "));
-    await page.pdf({ path: `${OUT}/${device.name.replace(/\W+/g, "-")}-summary.pdf`, format: "A4" });
+    // The short printout is 2 pages: the cover, key findings and the topic table; checklists and the notes page are left out.
+    if (paper.checklists || paper.notesPage) throw new Error("the short printout includes the checklists or the notes page");
+    const pdf = await page.pdf({ path: `${OUT}/${device.name.replace(/\W+/g, "-")}-summary.pdf`, format: "A4" });
+    const pages = (pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) || []).length;
+    if (pages < 1 || pages > 2) throw new Error(`the short printout is ${pages} pages (expected 2 at most)`);
+    // The full printout adds a one-line contents under the summary and a lined notes page at the end.
+    await page.evaluate(() => document.body.classList.remove("print-summary"));   // beforeprint already ran: only the mode changes
+    const full = await page.evaluate(() => ({
+      contents: [...document.querySelectorAll(".print-contents")].some(el => el.getClientRects().length > 0) && /Next steps/.test(document.querySelector(".print-contents").textContent),
+      lines: document.querySelectorAll(".notes-page .note-line").length,
+      notesShown: document.querySelector(".notes-page").getClientRects().length > 0 }));
+    if (!full.contents || !full.notesShown || full.lines < 20) throw new Error(`full printout: contents line ${full.contents}, notes page ${full.notesShown} with ${full.lines} lines`);
     } finally {
       await page.emulateMedia({ media: "screen" });
       await page.evaluate(() => { document.body.classList.remove("print-summary"); dispatchEvent(new Event("afterprint")); });

@@ -152,10 +152,11 @@ function initMap() {
     transparent: true, opacity: 0.55, attribution: "Road noise: Defra (OGL)"
   });
 
-  // Top left: search. The search box from the page is moved inside it.
-  searchControl = iconControl("topleft", ICONS.search, "Search for a postcode, address or place",
-    pop => pop.appendChild($("searchBox")));
+  // Top left: search, shown only in full screen. The page's search box moves inside it then
+  // (placeSearchBox), and back above the map when full screen closes.
+  searchControl = iconControl("topleft", ICONS.search, "Search for a postcode, address or place", () => {});
   searchControl.addTo(map);
+  searchControl.box.classList.add("search-ctl");
 
   // Top right: layers and map key, then full screen.
   layersControl = iconControl("topright", ICONS.layers, "Map layers and key", pop => {
@@ -265,6 +266,7 @@ function setMapFull(on, fromHistory) {
   }
   mapIsFull = on;
   $("map").classList.toggle("map-full", on);
+  placeSearchBox();
   document.body.classList.toggle("no-scroll", on);
   if (COARSE_POINTER) { if (on) map.dragging.enable(); else map.dragging.disable(); }
   fullControl.btn.innerHTML = on ? ICONS.collapse : ICONS.expand;
@@ -279,6 +281,19 @@ function setMapFull(on, fromHistory) {
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && mapIsFull) setMapFull(false);
 });
+
+// The search box sits above the map, or inside the map's search button in full screen.
+function placeSearchBox() {
+  const box = $("searchBox");
+  if (mapIsFull) searchControl.box.querySelector(".map-pop").appendChild(box);
+  else { setControlOpen(searchControl, false); $("searchPanel").insertBefore(box, $("searchStatus")); }
+}
+
+// Take the reader to the search box: on the page, or opened on the full-screen map.
+function openSearch() {
+  if (mapIsFull) setControlOpen(searchControl, true);
+  else { $("searchBox").scrollIntoView({ block: "nearest" }); $("q").focus(); }
+}
 
 function updateMapRunButton() {
   const btn = $("mapRunBtn");
@@ -417,7 +432,7 @@ $("q").addEventListener("keydown", e => {
   else if (e.key === "ArrowUp" && open) { e.preventDefault(); moveActive(-1); }
   else if (e.key === "Escape") {
     if (open) hideSuggestions();
-    else { setControlOpen(searchControl, false); searchControl.btn.focus(); }
+    else if (mapIsFull) { setControlOpen(searchControl, false); searchControl.btn.focus(); }
   }
   else if (e.key === "Enter") {
     e.preventDefault();
@@ -615,7 +630,7 @@ let reportFeatureLayer = null;  // dots on the report map
 $("runBtn").addEventListener("click", () => runChecks());
 
 function runChecks(options = {}) {
-  if (!selected) { setControlOpen(searchControl, true); return; }
+  if (!selected) { openSearch(); return; }
   if (!navigator.onLine) {                 // no signal: start by itself once it is back
     queuedRun = { options, name: $("siteName").value.trim() || selected.label || "this location" };
     updateOfflineBar();
@@ -877,6 +892,7 @@ function finishRun() {
   renderNotes();
   reportData = buildReportData();
   if (!run.snapshot) { saveCurrentReport(); saveSnapshot(); }
+  if (!store.get(GUIDED_KEY, false)) { store.set(GUIDED_KEY, true); updateGuide(); }
   setExportEnabled(true);
 }
 
@@ -984,6 +1000,8 @@ function renderSources() {
       <td>${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}</td>
       <td>${escapeHTML(c.dataDate || "Checked live on " + today())}</td></tr>`).join("");
   $("sourcesBox").innerHTML = `
+    <p class="glossary-link">Not sure what a word means? ${link(GLOSSARY_PAGE, "What the words mean")} explains flood zones,
+      radon, conservation areas and the other words in this report.</p>
     <details class="group sources-fold" id="sources">
       <summary><h2>Data sources and dates <span class="muted-count">(${plural(orderedResults().filter(c => c.source && c.source.name).length, "topic")})</span></h2></summary>
       <div class="table-wrap"><table><thead><tr><th>Topic</th><th>Source</th><th>Data date</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -1173,14 +1191,13 @@ function renderCheck(c) {
         ${c.fromSaved ? `<p class="notice saved-answer">The data service is not answering right now, so this is <strong>your saved result
           from ${escapeHTML(savedDate(c.fromSaved))}</strong>. It may be out of date.</p>` : ""}
         ${c.status === "error" || c.fromSaved ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
-        ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
         <h4>What to do</h4>${actions}
-        ${c.dataDate ? `<p class="data-date"><strong>Data:</strong> ${escapeHTML(c.dataDate)}</p>` : ""}
-        <p class="info-row"><button class="link-btn more-btn" type="button" data-info aria-expanded="false" aria-controls="about-${c.id}">More: what this means, and the data source</button></p>
-        <div class="info-body" id="about-${c.id}" hidden>
-          ${c.meaning || ""}
-          <p class="source">Source: ${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}${c.dataDate ? " · " + escapeHTML(c.dataDate) : ""}</p>
-        </div>
+        ${c.details || c.meaning ? `
+        <p class="info-row"><button class="link-btn more-btn" type="button" data-info aria-expanded="false" aria-controls="about-${c.id}">More: what we found and what it means</button></p>
+        <div class="info-body more-body" id="about-${c.id}" hidden>
+          ${c.details ? `<h4>What we found</h4>${c.details}` : ""}
+          ${c.meaning ? `<h4>What this means</h4>${c.meaning}` : ""}
+        </div>` : ""}
       </div>
     </details>`;
 }
@@ -1192,8 +1209,7 @@ function renderSkeleton(loc) {
       <h1>Property Location Report</h1>
       <p class="meta" id="reportMeta"></p>
       <div id="coverDetails"></div>
-      <p class="map-toggle-row no-print"><button class="secondary icon-label" id="showReportMap" type="button" aria-expanded="false" aria-controls="reportMap">${icon("map")}<span>Show map</span></button></p>
-      <div id="reportMap" hidden aria-label="Map of the property and nearby features"></div>
+      <div id="reportMap" aria-label="Map of the property and nearby features"></div>
       <p class="map-caption print-only" id="mapCaption"></p>
       <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
       ${infoBox("info-read", `
@@ -1206,16 +1222,18 @@ function renderSkeleton(loc) {
         </ul>
         <p><strong>Please note:</strong> this is a free first look using public data. It does not replace a building survey or
           the searches your conveyancer orders. “No issue found” means nothing was found in the data we checked, not that there
-          is no risk. Results are for the pin location. Tap a heading to open or close a topic, and the
-          <strong>i</strong> buttons for explanations.</p>`)}
+          is no risk. Results are for the pin location. Tap a heading to open or close a topic. Words with a dotted line link to
+          their meaning.</p>`)}
       <div id="summaryBox" aria-live="polite"></div>
+      <p class="print-only print-contents"><strong>Contents:</strong> Summary · ${GROUPS.map(g => escapeHTML(g.title)).join(" · ")}
+        · Next steps · Data sources and dates · Notes</p>
     </div>
 
     <div class="details-start">
       ${GROUPS.map(g => `
         <section class="group" id="group-${g.id}">
-          <h2>${escapeHTML(g.title)}${infoButton("info-group-" + g.id, "About " + g.title)}</h2>
-          ${infoBox("info-group-" + g.id, "<p>" + escapeHTML(g.intro) + "</p>")}
+          <h2>${escapeHTML(g.title)}</h2>
+          <p class="group-intro">${escapeHTML(g.intro)}</p>
           <div class="group-topics">${CHECKS.filter(c => c.group === g.id).map(c => `<div class="slot" id="slot-${c.id}">${loadingCard(c)}</div>`).join("")}</div>
           <details class="clear-fold" hidden><summary><span class="fold-title"></span>${moreToggle()}</summary><div class="fold-body"></div></details>
         </section>`).join("")}
@@ -1233,9 +1251,12 @@ function renderSkeleton(loc) {
     <div id="sourcesBox"></div>
 
     <p class="help print-only live-link">Live report, with the latest data: ${escapeHTML(location.href)}</p>
+    <section class="print-only notes-page" aria-hidden="true"><h2>Notes</h2>${'<div class="note-line"></div>'.repeat(24)}</section>
     <p class="help">Created with Property Location Check (version ${APP_VERSION}). Contains public sector information licensed under the Open Government
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
+  // Drawn straight away (not behind a button), so its map pictures have loaded by the time the report is printed.
+  drawReportMap(loc);
   renderMeta();
   renderSummary();
   watchSections();
@@ -1306,11 +1327,14 @@ function renderSummary() {
       <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${CHECKS.length}" aria-valuenow="${ready}">
         <span style="width:${Math.round(ready / CHECKS.length * 100)}%"></span></div>${slowNote()}`;
   } else if (n("high") || n("medium")) {
-    verdict = `<p class="verdict">We found <strong>${plural(n("high"), "thing")} to look into</strong> and
-      <strong>${n("medium")} worth checking</strong>. ${plural(n("low"), "check")} found no issue.${notCoveredText}</p>`;
+    // One clear sentence, then the rest in smaller words underneath.
+    const found = [n("high") && `<strong>${plural(n("high"), "thing")} to look into</strong>`,
+      n("medium") && `<strong>${n("medium")} worth checking</strong>`].filter(Boolean).join(" and ");
+    verdict = `<p class="verdict">We found ${found}.</p>
+      <p class="verdict-sub">${plural(n("low"), "check")} found no issue.${notCoveredText}</p>`;
   } else {
-    verdict = `<p class="verdict"><strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran.${notCoveredText}
-      Still go through the checklist at the end.</p>`;
+    verdict = `<p class="verdict"><strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran.</p>
+      <p class="verdict-sub">${notCoveredText.trim()} Still go through the checklist at the end.</p>`;
   }
 
   const old = run.snapshot && isOld(run.snapshot.savedAt);
@@ -1335,14 +1359,11 @@ function renderSummary() {
       }).join("")}
     </ul>
     ${legend ? `<ul class="rating-legend" aria-label="Topics by rating">${legend}</ul>` : ""}
-    ${run.done && priority.length ? `<div class="key-findings print-only"><h3>Key findings</h3><ol>${priority.slice(0, 3).map(c =>
-      `<li>${chip(c.status)} <strong>${escapeHTML(c.title)}:</strong> ${escapeHTML(c.found)}</li>`).join("")}</ol>${priority.length > 3
-      ? `<p>And ${plural(priority.length - 3, "more topic")} to look into or check: see the table below.</p>` : ""}</div>` : ""}
+    ${run.done && priority.length ? `<div class="key-findings"><h3>Key findings</h3><ol>${priority.slice(0, 3).map(c =>
+      `<li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}"><strong>${escapeHTML(c.title)}</strong></a>: ${escapeHTML(c.found)}</li>`).join("")}</ol>${priority.length > 3
+      ? `<p>And ${plural(priority.length - 3, "more topic")} to look into or check: see the <span class="print-only">table</span><span class="no-print">sections</span> below.</p>` : ""}</div>` : ""}
     ${glanceTable(results)}
     ${whyBox()}
-    ${priority.length ? `<div class="start-here"><h3>Start here</h3><ul class="priority">${priority.map(c => `
-      <li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
-          <span>${escapeHTML(c.found)}</span></li>`).join("")}</ul></div>` : ""}
     ${dataGapsBox(results)}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
       ${p.country === "Wales"
@@ -1437,20 +1458,6 @@ document.addEventListener("click", e => {
   renderSummary();
   const again = document.querySelector(`[data-why="${btn.dataset.why}"]`);
   if (again) again.focus();
-});
-
-// The map inside the report is drawn only after "Show map" (the search map above already shows the place).
-function setReportMap(show) {
-  const box = $("reportMap"), btn = $("showReportMap");
-  if (!box || !btn || !run) return;
-  box.hidden = !show;
-  btn.setAttribute("aria-expanded", String(show));
-  btn.querySelector("span").textContent = show ? "Hide map" : "Show map";
-  if (show && !reportMap) { drawReportMap(run.loc); replotFeatures(); }
-  if (show) reportMap.invalidateSize();
-}
-document.addEventListener("click", e => {
-  if (e.target.closest("#showReportMap")) setReportMap($("reportMap").hidden);
 });
 
 // Fit the search circle to the map's current size (after it changes, for example for printing).
@@ -1698,7 +1705,7 @@ function updateNavFade() {
 $("navLinks").addEventListener("scroll", updateNavFade, { passive: true });
 window.addEventListener("resize", updateNavFade);
 
-// Links within the report (section bar, topic icons, "Start here") scroll to their
+// Links within the report (section bar, topic icons, "Key findings") scroll to their
 // section without adding steps to the browser history, and open the topic they point to.
 document.addEventListener("click", e => {
   const a = e.target.closest('a[href^="#"]');
@@ -1772,7 +1779,15 @@ function countChips(checks) {
   return ["high", "medium", "low"].filter(s => n(s)).map(s => chip(s, `${n(s)} ${STATUS_LABEL[s].toLowerCase()}`)).join("");
 }
 
+// The 3-step guide shows until the first report is done (or if nothing has been saved yet on this device).
+const GUIDED_KEY = "plc-guided";
+function updateGuide() {
+  const saved = store.get(SAVED_KEY, []);
+  $("guide").classList.toggle("hidden", !!store.get(GUIDED_KEY, false) || (Array.isArray(saved) && saved.length > 0));
+}
+
 function renderSaved() {
+  updateGuide();
   const raw = store.get(SAVED_KEY, []);
   const saved = Array.isArray(raw) ? [...raw].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)) : [];
   $("savedPanel").classList.toggle("hidden", !saved.length && !undoRemove);
@@ -2086,8 +2101,7 @@ let closedBeforePrint = [];
 window.addEventListener("beforeprint", () => {
   closedBeforePrint = [...document.querySelectorAll("#report details:not([open])")];
   closedBeforePrint.forEach(d => { d.open = true; });
-  document.body.classList.add("printing");      // the map becomes the printed square (css/app.css) before it is redrawn
-  setReportMap(true);
+  document.body.classList.add("printing");      // the map takes its printed 4:3 size (css/app.css) before it is refitted
   fitReportMap();
   if (run) {
     const style = document.createElement("style");
@@ -2130,7 +2144,7 @@ document.addEventListener("keydown", e => {
 
 $("printReport").addEventListener("click", () => window.print());
 
-// Short printout: cover, summary, notes and checklist only.
+// Short printout (2 pages): the cover, key findings and the topic table. The checklists stay in the full report.
 $("printSummary").addEventListener("click", () => {
   document.body.classList.add("print-summary");
   window.print();
@@ -2184,7 +2198,5 @@ window.addEventListener("load", async () => {
   if (params.has("postcode")) {
     await lookupPostcode(params.get("postcode"));
     if (selected) runChecks({ fromLoad: true });
-  } else {
-    setControlOpen(searchControl, true);   // first visit: show where to type
   }
 });

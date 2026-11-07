@@ -9,14 +9,15 @@
   --sticky-top:64px;    /* height of the sticky section bar */
   --bottom-clear:72px;  /* space kept clear for the "back to top" button */
   --accent-bg:#087f8c;
-  --bg:#f2f5f8;
+  --bg:#f5f5f7;
   --surface:#ffffff;
-  --surface-2:#f1f5f9;
+  --surface-2:#f5f5f7;
   --surface-3:#f3f7fb;
-  --text:#263445;
-  --heading:#10243a;
-  --muted:#5f6f81;
-  --border:#dce3ea;
+  --text:#1d1d1f;
+  --heading:#1d1d1f;
+  --muted:#6e6e73;
+  --border:#e5e5ea;
+  --hairline:#d2d2d7;
   --input-border:#9fb0c2;
   --focus:#f2a900;
   --btn2-bg:#e8eef5;   --btn2-text:#10243a;
@@ -45,6 +46,7 @@
     --heading:#d6e6f7;
     --muted:#a3b2c2;
     --border:#2c3b4b;
+    --hairline:#3a4a5b;
     --input-border:#4a5d72;
     --btn2-bg:#24364a;   --btn2-text:#e2e9f0;
     --notice-bg:#3a2f17;
@@ -63,7 +65,7 @@
 * {box-sizing:border-box}
 html {scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce) {html {scroll-behavior:auto} *{transition:none!important;animation:none!important}}
-body {margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:var(--bg);line-height:1.5}
+body {margin:0;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;color:var(--text);background:var(--bg);line-height:1.5}
 body.no-scroll {overflow:hidden}
 :focus-visible {outline:3px solid var(--focus);outline-offset:2px}
 a {color:var(--link);overflow-wrap:anywhere}
@@ -118,12 +120,28 @@ button:disabled {opacity:.5;cursor:not-allowed}
 .big {background:var(--accent-bg);color:#fff;font-size:18px;padding:15px 26px}
 .small-btn {padding:7px 12px;font-size:14px}
 .help {font-size:13px;color:var(--muted);margin-top:6px}
+.group-intro {color:var(--muted);margin:-4px 0 12px;max-width:70ch}
 .status {padding:11px 13px;border-radius:6px;background:var(--surface-2);margin:12px 0 0;font-size:14px}
 .status.error {background:var(--high-bg);color:var(--high)}
 
 /* ---------- search ---------- */
+/* "What the words mean" page and links */
+.glossary {margin:16px 0 0}
+.glossary dt {font-weight:600;font-size:17px;letter-spacing:-.01em;margin-top:18px;scroll-margin-top:16px}
+.glossary dd {margin:4px 0 0;color:var(--text);max-width:70ch;line-height:1.5}
+.glossary dt:target {color:var(--teal)}
+a.term {color:inherit;text-decoration:underline dotted;text-underline-offset:3px}
+.glossary-link {margin:0 0 12px}
+.guide {list-style:none;margin:0 0 16px;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px;
+  background:var(--surface-2);border-radius:12px;font-size:15px;line-height:1.35}
+.guide li {display:flex;gap:10px;align-items:flex-start}
+.guide-num {flex:none;width:24px;height:24px;border-radius:50%;background:var(--teal);color:var(--surface);font-weight:600;font-size:14px;
+  display:inline-flex;align-items:center;justify-content:center}
 .step-label {font-size:13px;font-weight:bold;color:var(--teal);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .search-box {position:relative}
+#searchPanel > .search-box {margin:4px 0 12px}
+.search-ctl {display:none}               /* the map's search button: full screen only */
+.map-full .search-ctl {display:block}
 .search-box label {font-size:13px}
 .search-row {display:flex;gap:6px}
 .search-row input {flex:1;min-width:0;font-size:16px;padding:10px}
@@ -259,9 +277,8 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 :focus:not(#reportNav, #reportNav *) {scroll-margin-top:var(--sticky-top);scroll-margin-bottom:var(--bottom-clear)}
 .cover h1 {font-size:26px;color:var(--heading);margin:0}
 .cover .meta {font-size:14px;color:var(--muted);margin-top:6px}
-.map-toggle-row {margin:12px 0 0}
 .print-only {display:none}
-body.printing #reportMap {width:404px;height:404px;margin:6mm auto 0}
+body.printing #reportMap {width:520px;height:390px;margin:6mm auto 0}
 /* One line above the report: the place, "Change" (search map) and "Saved (3)". */
 .place-bar {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:12px 0;padding:8px 12px;
   border:1px solid var(--border);border-radius:8px;background:var(--surface);scroll-margin-top:8px}
@@ -269,7 +286,7 @@ body.printing #reportMap {width:404px;height:404px;margin:6mm auto 0}
 .place-btns {display:flex;gap:8px;flex-wrap:wrap}
 .place-btns button {display:inline-flex;align-items:center;gap:6px}
 body.hide-search #searchPanel,body.hide-saved #savedPanel {display:none}
-#reportMap {height:260px;border-radius:8px;border:1px solid var(--border);margin:14px 0;isolation:isolate}
+#reportMap {width:100%;max-width:560px;aspect-ratio:4/3;border-radius:12px;border:1px solid var(--border);margin:16px auto;isolation:isolate}
 .verdict {font-size:18px;margin:10px 0}
 .progress-bar {height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin:8px 0 14px}
 .progress-bar span {display:block;height:100%;background:var(--teal);transition:width .3s}
@@ -304,9 +321,6 @@ details.step-fold > summary .more-text::before {content:"Open"}
 details.step-fold[open] > summary .more-text::before {content:"Hide"}
 details.step-fold[open] > summary .more svg {transform:rotate(180deg)}
 details.step-fold > .step-body {padding:0 14px 12px}
-.priority {list-style:none;padding:0;margin:0}
-.priority li {margin:6px 0;padding:10px 12px;border-radius:8px;border:1px solid var(--border);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
-.priority li a {font-weight:bold}
 .gaps-box {margin:16px 0;padding:12px 14px;border:1px solid var(--border);border-left:4px solid #6b7280;border-radius:8px;background:var(--surface-2)}
 .gaps-box h3 {margin:0 0 4px}
 .gaps-box p {margin:0;font-size:14px}
@@ -348,13 +362,13 @@ details.step-fold > .step-body {padding:0 14px 12px}
 .check.loading .skeleton {height:10px;border-radius:6px;margin-top:8px;width:min(420px,60vw);
   background:linear-gradient(90deg,var(--surface-2) 25%,var(--border) 50%,var(--surface-2) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
 @keyframes shimmer {to {background-position:-200% 0}}
-details.check > summary {cursor:pointer;padding:12px 14px;list-style:none;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+details.check > summary {cursor:pointer;padding:12px 14px;list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}
 /* Long topic names wrap instead of pushing the rating label off narrow screens (WCAG 1.4.10 Reflow). */
 details.check > summary h3 {overflow-wrap:anywhere}
 /* The rating label may wrap too, so its symbol never pushes it off a 320 px screen with large text. */
 details.check > summary .chip {white-space:normal;text-align:center}
 details.check > summary::-webkit-details-marker {display:none}
-details.check > summary .found {grid-column:1;font-size:14px}
+details.check > summary .found {grid-column:1;font-size:14px;overflow-wrap:anywhere}
 details.check > summary:hover {background:var(--hover)}
 /* "Details" with a down arrow when closed, "Hide" with an up arrow when open. */
 details.check > summary .more,.gaps-box > summary .more,.clear-fold > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
@@ -367,8 +381,6 @@ details.check[open] > summary .more svg,.gaps-box[open] > summary .more svg,.cle
 .check-body {padding:0 16px 14px;font-size:14px}
 .check-body p {margin:4px 0 8px}
 .check-body ul {margin:4px 0 8px;padding-left:20px}
-.data-date {font-size:13px;color:var(--muted);margin:10px 0 0}
-.source {font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;margin-top:10px}
 table {width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:13px}
 th,td {text-align:left;padding:7px;border-bottom:1px solid var(--border);vertical-align:top}
 th {background:var(--surface-2);color:var(--heading)}
@@ -432,7 +444,8 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
   .notes-print {display:block;border:1px solid #999;border-radius:6px;padding:8px;min-height:30px}
   .notes-print:empty::before {content:"(No notes)";color:#666}
   .saved-note button,#refreshBtn {display:none!important}
-  body.print-summary .details-start,body.print-summary #sourcesBox,body.print-summary .topic-strip {display:none!important}
+  body.print-summary .details-start,body.print-summary #sourcesBox,body.print-summary .topic-strip,
+  body.print-summary .next-steps,body.print-summary .print-contents,body.print-summary .notes-page {display:none!important}
   .app-bar,.why-box,.backup-note {display:none!important}
   /* "At the viewing" is a sheet to take along: it gets a page of its own. */
   #viewing {break-before:page;break-after:page}
@@ -519,7 +532,7 @@ body.has-sticky footer {padding-bottom:100px}
   a {color:#222;text-decoration:none}
   .details-start {margin-top:10mm}
   /* Long topic cards may continue on the next page (avoiding that left half-empty pages); a heading stays with its text. */
-  .checklist li,.priority li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
+  .checklist li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
   details.check > summary,.check-body h4 {break-after:avoid}
   .info-row {display:none!important}
   .info-btn,[data-retry] {display:none!important}
@@ -530,7 +543,8 @@ body.has-sticky footer {padding-bottom:100px}
   @page {size:A4;margin:14mm 14mm 16mm}
   /* Paper shows what a reader needs: the at-a-glance table instead of the tappable grid, no app instructions. */
   .print-only {display:block!important}
-  .topic-strip,.start-here,.saved-note,#info-read,.rating-legend {display:none!important}
+  .topic-strip,.saved-note,#info-read,.rating-legend {display:none!important}
+  .key-findings a {color:inherit;text-decoration:none}
   .glance-table {width:100%;border-collapse:collapse;font-size:11px}
   .glance-table th,.glance-table td {border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}
   .glance-table th {background:#eee}
@@ -552,8 +566,8 @@ body.has-sticky footer {padding-bottom:100px}
   .cover-details {border-collapse:collapse;margin:3mm 0 0;font-size:11px}
   .cover-details th {text-align:left;color:#555;font-weight:normal;padding:1mm 6mm 1mm 0;white-space:nowrap;vertical-align:top}
   .cover-details td {padding:1mm 0;font-weight:bold}
-  #reportMap,body.printing #reportMap {width:404px;height:404px;margin:6mm auto 0;display:block;border:1px solid #999}
-  .map-caption {max-width:404px;margin:2mm auto 6mm;text-align:center;font-size:9.5px;color:#444;font-style:italic}
+  #reportMap,body.printing #reportMap {width:520px;height:390px;margin:6mm auto 0;display:block;border:1px solid #999}
+  .map-caption {max-width:520px;margin:2mm auto 6mm;text-align:center;font-size:9.5px;color:#444;font-style:italic}
   .group-topics > .slot,.fold-body > .slot {margin:0 0 5mm}
   details.clear-fold {margin:5mm 0}
   .fold-body {padding-top:3mm!important}
@@ -564,7 +578,6 @@ body.has-sticky footer {padding-bottom:100px}
   .glance-key .chip {font-size:9.5px}
   .verdict {font-size:13px}
   .gaps-box {break-inside:avoid}
-  .check-body .info-body::before {content:"What this means";display:block;font-weight:bold;color:var(--navy);margin-bottom:1mm}
   /* Full report: each section starts on a new page. */
   /* The report runs on continuously: extra space before each section, and its heading stays with what follows. */
   .details-start > .group,#nextSteps,#sourcesBox {margin-top:12mm}
@@ -654,11 +667,9 @@ body.has-sticky footer {padding-bottom:100px}
   .check-body {padding:0 5mm 4mm}
   .check-body h4 {font-size:10.5px;font-weight:650;color:#1d1d1f;margin:4mm 0 1.5mm}
   .check-body .info-body {background:#f5f5f7;border:0;border-radius:10px;padding:3mm 4mm;margin:3mm 0 0}
-  .check-body .info-body::before {color:#1d1d1f;font-weight:650}
   .check-body .table-wrap table {border-collapse:collapse;width:100%}
   .check-body .table-wrap th,.check-body .table-wrap td {border:0;border-bottom:.5px solid #e5e5ea;padding:1.5mm 2mm}
   .check-body .table-wrap th {color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.03em}
-  .data-date {color:#86868b}
 
   /* "No issue found" folds: a soft grey panel holding white cards. */
   details.clear-fold {border:0;background:#f5f5f7;border-radius:16px;margin:7mm 0;padding:0 4mm 1mm}
@@ -678,8 +689,8 @@ body.has-sticky footer {padding-bottom:100px}
 @media print {
   /* One text size inside cards and panels, smaller than the card heading. */
   details.check > summary .found,.check-body p,.check-body li,.check-body td,.check-body .info-body,.gaps-box p,.gaps-box li,
-  .step-body p,.step-body li,.priority li,.key-findings li {font-size:10.5px;line-height:1.5}
-  .check-body .info-body p,.check-body .source {font-size:10px}
+  .step-body p,.step-body li,.key-findings li {font-size:10.5px;line-height:1.5}
+  .check-body .info-body p {font-size:10px}
   .cover-details th {background:none}
   /* A section heading and its intro stay with the first card. */
   .group > h2,.group > .info-body {break-after:avoid}
@@ -704,8 +715,6 @@ body.has-sticky footer {padding-bottom:100px}
 
   /* Explanations as plain text with a small label; dates and sources are in the table at the end. */
   .check-body .info-body {background:none;border:0;border-radius:0;padding:0;margin:4mm 0 0}
-  .check-body .info-body::before {font-size:10.5px;margin-bottom:1mm}
-  .check-body .info-body .source,.check-body .data-date {display:none!important}
 
   /* "No issue found" groups: a quiet subheading, then the cards as usual. */
   details.clear-fold {background:none;border:0;border-radius:0;padding:0;margin:9mm 0 0}
@@ -717,4 +726,77 @@ body.has-sticky footer {padding-bottom:100px}
   .gaps-box {border-left:3px solid #8e8e93}
   details.step-fold {border-left:3px solid #1769aa}
   .live-link {font-size:9px;color:#6e6e73;overflow-wrap:anywhere;margin-top:8mm}
+}
+
+/* "What the words mean" page on paper: black text, a word never parted from its meaning. */
+@media print {
+  .glossary dt {color:#1d1d1f !important;font-size:12pt;margin-top:12pt;break-after:avoid}
+  .glossary dd {font-size:10.5pt;color:#1d1d1f;break-inside:avoid}
+}
+
+/* ---------- Calm screen (1.36.0): white cards, hairlines, one thin rating accent. See "Visual style" in CLAUDE.md. ---------- */
+@media screen {
+  h1,h2,h3 {font-weight:600;letter-spacing:-.015em}
+  .panel {border:1px solid var(--border);border-radius:14px;box-shadow:none;padding:24px}
+  .place-bar {border-radius:14px;box-shadow:none}
+  .group {margin-top:36px}
+  .group > h2 {border-bottom:0;padding-bottom:0;font-size:22px;margin-bottom:4px}
+
+  /* Topic cards: white, rounded, a hairline, and a thin accent in the rating's colour. */
+  .check,details.clear-fold,details.step-fold {border:1px solid var(--border);border-left-width:3px;border-radius:12px;margin:12px 0}
+  .check.loading {border-left-color:var(--border)}
+  details.step-fold {border-left-color:var(--border)}
+
+  /* Summary: lighter topic tiles (white, a hairline, the rating shown by its colour, symbol and a thin top line). */
+  .topic-strip {gap:8px}
+  .topic-strip .topic {background:var(--surface);border:1px solid var(--border);border-top:3px solid currentColor;border-radius:12px;padding:9px 4px 8px}
+  .topic.loading {border-top-color:var(--border)}
+  .verdict {font-size:21px;font-weight:600;letter-spacing:-.015em;line-height:1.3;margin:12px 0 2px;color:var(--heading)}
+  .verdict strong {font-weight:700}
+  .verdict-sub {color:var(--muted);margin:0 0 14px}
+  .verdict-sub:empty {display:none}
+  .rating-legend .chip {font-weight:600}
+  .chip {font-weight:600}
+  .key-findings {background:var(--surface-2);border-radius:14px;padding:16px 20px;margin:16px 0}
+  .key-findings h3 {margin:0 0 8px}
+  .key-findings ol {margin:0;padding-left:20px}
+  .key-findings li {margin:8px 0;max-width:70ch}
+  .key-findings li a {color:var(--heading)}
+  .key-findings p {margin:8px 0 0;color:var(--muted)}
+  .info-body {border-radius:12px}
+
+  /* Easier reading: the finding first in bold once a topic is open, then "What to do"; lines of about 70 characters. */
+  details.check[open] > summary .found {font-weight:600;color:var(--heading)}
+  details.check > summary .found,.check-body p,.check-body li,.check-body h4,.group-intro,.verdict,.verdict-sub {max-width:70ch}
+  .check-body .more-body h4:first-child {margin-top:4px}
+
+  /* Start page: the search, map and pin check read as one clean panel. */
+  #map {border-radius:12px}
+  .confirm {border-radius:12px}
+  .guide {background:var(--surface-2)}
+}
+
+/* Printout extras (1.36.0): a one-line contents under the summary, and a lined notes page at the end. */
+@media print {
+  .print-contents {font-size:10.5px;color:#6e6e73;margin:4mm 0 0}
+  .print-contents strong {color:#1d1d1f;font-weight:600}
+  .notes-page {break-before:page}
+  .notes-page h2 {font-size:16px;font-weight:600;margin:0 0 4mm}
+  .note-line {border-bottom:.5px solid #d2d2d7;height:9.5mm}
+}
+/* The short printout fits on 2 pages: a tighter topic table and smaller closing lines. */
+@media print {
+  body.print-summary .glance-table th,body.print-summary .glance-table td {padding:1.5mm 3mm}
+  body.print-summary .glance-table .glance-group th {padding-top:2mm}
+  body.print-summary #report > p.help {font-size:8.5px;margin:2mm 0}
+}
+body.print-summary.printing #reportMap {width:400px;height:300px}
+@media print {
+  span.print-only {display:inline!important}   /* a word shown only on paper stays in its sentence */
+  body.print-summary .map-caption {margin-bottom:3mm}
+}
+@media print {
+  /* The short printout is the cover, key findings and the topic table only: the table already marks every gap. */
+  body.print-summary .gaps-box,body.print-summary #summaryBox > .notice {display:none!important}
+  .glance h3 {break-after:avoid}
 }

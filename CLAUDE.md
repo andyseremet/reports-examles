@@ -30,6 +30,8 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   (`rememberAnswer`/`recentAnswer` in `js/app.js`) and used, dated, only when that service fails. The answer rides on the failure as
   `R[key].backup`; only `checkPlanning`/`checkNature`/`checkFlood` read it (`backupFor`, `planningList`). Any topic whose service
   fails shows the place's last saved answer, dated (`savedInstead` in `js/app.js`).
+- `glossary.html`: "What the words mean", plain HTML with no script. `term()` (`js/core.js`) links a word to it through
+  `GLOSSARY` (word → id); every id needs its `<dt id>` on the page (the daily check compares them).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
   `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
   in `SERVICES` (`tests/live-check.mjs`) also needs its report topics in `SERVICE_TOPICS`.
@@ -54,7 +56,7 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
   origin/<branch>..HEAD` before pushing anything.
 - Accessibility re-check (by hand, after visual changes; not in CI): `npm install --no-save axe-core`, then
   `node tests/a11y-check.mjs` with the local server running (about 10 minutes). It scans WCAG 2.2 AA on the start
-  page, a report and `status.html` at 1280 px, 320 px and phone, light and dark, normal and A+ text, and checks
+  page, a report, `status.html` and `glossary.html` at 1280 px, 320 px and phone, light and dark, normal and A+ text, and checks
   sideways scrolling before and after using each control in its `ACTIONS` list: add each new or changed control
   there. Also Tab through every control and check none is hidden.
 
@@ -75,7 +77,7 @@ home buyers. Static site with no build step. GitHub Pages serves `main` at https
 - **Adding a topic:** a fetch function and its row in `TASKS` (`js/data.js`), the check in its section's
   `js/checks/` file, rows in `CHECKS`, `TOPIC_ICONS` and `COVERAGE` (if it does not cover all of England, Wales and
   Scotland) in `js/checks/index.js`, and `SERVICES` in `tests/live-check.mjs`.
-- **Releases** (run `/release`, see `.claude/skills/release/SKILL.md`): any change to `index.html`, `status.html`, `css/`,
+- **Releases** (run `/release`, see `.claude/skills/release/SKILL.md`): any change to `index.html`, `status.html`, `glossary.html`, `css/`,
   `js/`, `sw.js` or `data/` raises `APP_VERSION` (`js/core.js`) and `CACHE` (`sw.js`, `plc-vN`) together. In the same commit, update `README.md`, and move the shipped items in `ROADMAP.md`
   into Part 1.
 
@@ -124,7 +126,7 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
 ## Tests and CI
 
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
-  that change `index.html`, `status.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
+  that change `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
   Daily and manual runs on `main` then publish `status.json` to the `status` branch for the status page.
   **Pull requests leave out the 41 report data services** (`DATA_SERVICES=0`; the list is `data/data-services.csv`),
   at the owner's request: they run daily, and by hand with the "Check the report data services" box (ticked by default).

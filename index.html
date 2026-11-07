@@ -60,18 +60,23 @@
 
   <!-- ===================== FIND THE PROPERTY ===================== -->
   <section class="panel" id="searchPanel" aria-labelledby="searchTitle">
-    <div class="step-label">Step 1 of 2</div>
+    <!-- First visit only: hidden once the first report is done (updateGuide in js/app.js). -->
+    <ol class="guide hidden" id="guide" aria-label="How it works">
+      <li><span class="guide-num" aria-hidden="true">1</span> <span><strong>Search</strong> for a postcode, address or place</span></li>
+      <li><span class="guide-num" aria-hidden="true">2</span> <span><strong>Check the pin</strong> is on the right home</span></li>
+      <li><span class="guide-num" aria-hidden="true">3</span> <span><strong>Read your report</strong>, free, in about a minute</span></li>
+    </ol>
+    <div class="step-label">Step 1 of 3</div>
     <h2 id="searchTitle">Find the property<button class="info-btn" type="button" aria-expanded="false" aria-controls="qHelp" aria-label="How to find the property">i</button></h2>
     <div class="info-body zoomable" id="qHelp" hidden>
-      <p>Use the search button <span aria-hidden="true">🔍</span> at the top left of the map to find a postcode, address or place,
-         or tap the map to drop a pin.</p>
+      <p>Type a postcode, address or place in the box, or tap the map to drop a pin.</p>
       <p>On a phone, scroll the page with one finger and move the map with two. On a computer, hold Ctrl (⌘ on Mac) while
          scrolling to zoom the map. The <strong>full-screen</strong> button makes the map fill the screen, where one finger moves it.</p>
       <p>The layers button changes the background map and shows road noise and the map key. The location button puts the pin
          where you are.</p>
     </div>
 
-    <!-- Moved into the map's top-left search button when the page loads. -->
+    <!-- Always above the map; moved into the map's search button only while the map is full screen. -->
     <div class="search-box" id="searchBox">
       <label for="q">Postcode, address or place</label>
       <div class="search-row">
@@ -88,12 +93,10 @@
     <div id="map" role="application" aria-label="Map. Tap to choose the property location."></div>
 
     <div id="confirm" class="confirm hidden zoomable" aria-live="polite">
-      <div class="step-label">Step 2 of 2</div>
-      <p><strong>Is the pin on the right property?</strong><button class="info-btn" type="button" aria-expanded="false" aria-controls="info-confirm" aria-label="Why check the pin">i</button><br>
+      <div class="step-label">Step 2 of 3</div>
+      <p><strong>Is the pin on the right property?</strong><br>
          <span id="confirmText"></span></p>
-      <div class="info-body" id="info-confirm" hidden>If not, drag the pin, or tap the exact spot on the map. A postcode covers
-        several homes, and a place name puts the pin in the middle of the area, so always check the pin is on the right building
-        or plot. All results are for the pin location.</div>
+      <p class="help">A postcode covers several homes. If the pin is not on the right building, drag it or tap the exact spot.</p>
       <button class="big" id="runBtn" type="button">Check this property</button>
     </div>
 
@@ -128,12 +131,8 @@
 
   <!-- ===================== SAVED PROPERTIES ===================== -->
   <section class="panel hidden zoomable" id="savedPanel" aria-labelledby="savedTitle">
-    <h2 id="savedTitle" tabindex="-1">Your saved properties<button class="info-btn" type="button" aria-expanded="false" aria-controls="info-saved" aria-label="About saved properties">i</button></h2>
-    <div class="info-body" id="info-saved" hidden>
-      <p>Every report you run is saved automatically, <strong>only on this device</strong> (nothing is sent anywhere).
-         Tap a name to run its checks again with the latest data. Tick two or three properties and press
-         <strong>Compare</strong> to see them side by side.</p>
-    </div>
+    <h2 id="savedTitle" tabindex="-1">Your saved properties</h2>
+    <p class="help">Saved only on this device. Tap a name to check it again, or tick two or three to compare.</p>
     <div class="notice backup-note hidden" id="backupNote">
       <strong>Keep a copy of your saved properties.</strong> They are stored only in this browser, and phones can clear them
       if the site is not used for a while.
@@ -183,7 +182,7 @@
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg><span>Save</span> <span aria-hidden="true">▾</span></summary>
         <div class="save-menu-list">
           <button id="downloadHtml" type="button" disabled>Download report<small>A file to keep, email or open later</small></button>
-          <button id="printSummary" type="button" disabled>Print summary<small>The summary, your notes and the checklists</small></button>
+          <button id="printSummary" type="button" disabled>Print summary<small>2 pages: the cover, key findings and the topic table</small></button>
           <button id="printReport" type="button" disabled>Print full report<small>Every topic in full, or save it as a PDF</small></button>
         </div>
       </details>
@@ -235,6 +234,7 @@
   Contains HM Land Registry data © Crown copyright and database right · Map data © OpenStreetMap contributors, © Esri and © CARTO
   <p><button class="link-btn" type="button" data-info aria-expanded="false" aria-controls="info-credits">Data credits and licences</button>
      · <button class="link-btn" type="button" data-info aria-expanded="false" aria-controls="info-privacy">Privacy: what is sent where</button>
+     · <a href="glossary.html">What the words mean</a>
      · <a href="status.html">Data service status</a>
      · <span id="appVersion"></span></p>
   <div class="info-body" id="info-credits" hidden style="text-align:left;max-width:760px;margin:8px auto">
