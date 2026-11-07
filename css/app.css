@@ -118,6 +118,7 @@ button:disabled {opacity:.5;cursor:not-allowed}
 .big {background:var(--accent-bg);color:#fff;font-size:18px;padding:15px 26px}
 .small-btn {padding:7px 12px;font-size:14px}
 .help {font-size:13px;color:var(--muted);margin-top:6px}
+.group-intro {color:var(--muted);margin:-4px 0 12px;max-width:70ch}
 .status {padding:11px 13px;border-radius:6px;background:var(--surface-2);margin:12px 0 0;font-size:14px}
 .status.error {background:var(--high-bg);color:var(--high)}
 

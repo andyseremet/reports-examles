@@ -94,11 +94,9 @@
 
     <div id="confirm" class="confirm hidden zoomable" aria-live="polite">
       <div class="step-label">Step 2 of 3</div>
-      <p><strong>Is the pin on the right property?</strong><button class="info-btn" type="button" aria-expanded="false" aria-controls="info-confirm" aria-label="Why check the pin">i</button><br>
+      <p><strong>Is the pin on the right property?</strong><br>
          <span id="confirmText"></span></p>
-      <div class="info-body" id="info-confirm" hidden>If not, drag the pin, or tap the exact spot on the map. A postcode covers
-        several homes, and a place name puts the pin in the middle of the area, so always check the pin is on the right building
-        or plot. All results are for the pin location.</div>
+      <p class="help">A postcode covers several homes. If the pin is not on the right building, drag it or tap the exact spot.</p>
       <button class="big" id="runBtn" type="button">Check this property</button>
     </div>
 
@@ -133,12 +131,8 @@
 
   <!-- ===================== SAVED PROPERTIES ===================== -->
   <section class="panel hidden zoomable" id="savedPanel" aria-labelledby="savedTitle">
-    <h2 id="savedTitle" tabindex="-1">Your saved properties<button class="info-btn" type="button" aria-expanded="false" aria-controls="info-saved" aria-label="About saved properties">i</button></h2>
-    <div class="info-body" id="info-saved" hidden>
-      <p>Every report you run is saved automatically, <strong>only on this device</strong> (nothing is sent anywhere).
-         Tap a name to run its checks again with the latest data. Tick two or three properties and press
-         <strong>Compare</strong> to see them side by side.</p>
-    </div>
+    <h2 id="savedTitle" tabindex="-1">Your saved properties</h2>
+    <p class="help">Saved only on this device. Tap a name to check it again, or tick two or three to compare.</p>
     <div class="notice backup-note hidden" id="backupNote">
       <strong>Keep a copy of your saved properties.</strong> They are stored only in this browser, and phones can clear them
       if the site is not used for a while.

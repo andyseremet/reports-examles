@@ -1224,16 +1224,16 @@ function renderSkeleton(loc) {
         </ul>
         <p><strong>Please note:</strong> this is a free first look using public data. It does not replace a building survey or
           the searches your conveyancer orders. “No issue found” means nothing was found in the data we checked, not that there
-          is no risk. Results are for the pin location. Tap a heading to open or close a topic, and the
-          <strong>i</strong> buttons for explanations.</p>`)}
+          is no risk. Results are for the pin location. Tap a heading to open or close a topic. Words with a dotted line link to
+          their meaning.</p>`)}
       <div id="summaryBox" aria-live="polite"></div>
     </div>
 
     <div class="details-start">
       ${GROUPS.map(g => `
         <section class="group" id="group-${g.id}">
-          <h2>${escapeHTML(g.title)}${infoButton("info-group-" + g.id, "About " + g.title)}</h2>
-          ${infoBox("info-group-" + g.id, "<p>" + escapeHTML(g.intro) + "</p>")}
+          <h2>${escapeHTML(g.title)}</h2>
+          <p class="group-intro">${escapeHTML(g.intro)}</p>
           <div class="group-topics">${CHECKS.filter(c => c.group === g.id).map(c => `<div class="slot" id="slot-${c.id}">${loadingCard(c)}</div>`).join("")}</div>
           <details class="clear-fold" hidden><summary><span class="fold-title"></span>${moreToggle()}</summary><div class="fold-body"></div></details>
         </section>`).join("")}
