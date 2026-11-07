@@ -31,10 +31,11 @@ official checkers.
 
 1. Open the live page: https://andyseremet.github.io/reports-examles/
    (or serve a copy with `python3 -m http.server 8080` and open http://localhost:8080/; no installation needed).
-2. Type a postcode, address or place. Pick a suggestion, or press Enter.
+2. Type a postcode, address or place in the box above the map. Pick a suggestion, or press Enter. On a first visit,
+   a short guide shows the three steps.
 3. Check the pin is on the right property (drag it if not), then press
    **Check this property**.
-4. Read the report: a verdict, a "Start here" list of things to look into, and a
+4. Read the report: a one-sentence verdict, a "Key findings" panel of the things to look into, and a
    "Where we could not give an answer" box listing topics with no answer and who to ask instead (it folds away with
    **Details / Hide**, and starts closed when more than 3 topics are listed), then results grouped into
    Flooding, Ground and land, Living environment, and Planning and
@@ -57,11 +58,12 @@ official checkers.
   A section bar stays at the top while scrolling, with one **Open problems / Close all** button that stays in view
   (Open problems opens only the topics rated Look into this or Worth checking); on a phone its edge fades to show that
   it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open). The summary shows the topic grid with one
-  legend line (each rating's symbol, colour and count), then "Start here". Every rating has a symbol as well as a
+  legend line (each rating's symbol, colour and count), then "Key findings". Every rating has a symbol as well as a
   colour (❗ Look into this, ⚠️ Worth checking, ✓ No issue found, ℹ️ For information, ? Check yourself), and topics with
   no issue found fold into one row at the end of their section. Once a report is open, the search map and saved list
   shrink to one line above it ("📍 Barnsley test · Change · Saved (3)"). The map inside the report appears after
-  **Show map**; inside each topic, the explanation and data source fold behind **More**; lists of sites and sales show
+  **Show map**; each topic opens with its finding in bold and "What to do", with "What we found" and "What this means"
+  behind **More**; lists of sites and sales show
   the first 3, then **Show all** (one line per row on a phone). Notes, the viewing checklist and the checklist sit in
   one **Next steps** section, each folded with its count. On a phone, a bar at the bottom of the screen jumps to
   Summary, Problems (it opens the topics to look into), All topics and Next steps. There is also a back-to-top button.
@@ -71,8 +73,10 @@ official checkers.
   with a link to the full section. On phones, tables become easy-to-read cards and
   "Check this property" stays at the bottom of the screen until pressed.
 - **Back button:** returns from a report to the search and map, and closes the full-screen map.
-- **How current the data is:** each topic shows a **Data:** line, for example "Crimes reported in September 2026" or
-  "Noise maps published by Defra in 2022". Saved results older than 3 months are marked, with a suggestion to refresh.
+- **Plain words:** the "What the words mean" page explains 33 words used in the report (flood zone, radon, CON29M,
+  conservation area and more). Explained words link to it, as do the report and the footer; it prints on its own.
+- **How current the data is:** the "Data sources and dates" table at the end gives each topic's source and date, for
+  example "Crimes reported in September 2026" or "Noise maps published by Defra in 2022". Saved results older than 3 months are marked, with a suggestion to refresh.
 - **Accessibility:** checked against WCAG 2.2 AA with the axe-core checker (light and dark mode, phone and desktop,
   normal and larger text, down to 320 px wide), plus keyboard focus, focus never hidden behind sticky bars, and tap
   target sizes (at least 24 × 24 pixels). Last re-checked on 5 November 2026 (version 1.19.0).
@@ -96,10 +100,10 @@ official checkers.
   and suggests **Download a backup** once you have 5 or more saved properties and no backup in the last 30 days.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
   message at the top, and starts by itself when the signal returns.
-- **Save or print:** one menu with Download report, Print summary (the summary, notes, viewing list and checklist) and Print full
+- **Save or print:** one menu with Download report, Print summary (2 pages: the cover, key findings and the topic table) and Print full
   report, each with a one-line description. Printouts open with the property's details, a square map with a caption, a
   "Key findings" box (the most serious results), a table of every topic grouped by section (rating and finding, with a
-  key) and a link and QR code to the live report. Sections are numbered and run on with space between them; the viewing checklist
+  key) and a link and QR code to the live report. The full report adds a one-line contents and a lined notes page at the end. Sections are numbered and run on with space between them; the viewing checklist
   prints as its own page to take along; each rating also has its own border pattern for black-and-white printers; the
   sources form a neat table at the end; app instructions are left out. Every page carries the place, date, a short
   disclaimer and page numbers (Chrome and Edge).
@@ -136,6 +140,7 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `js/checks/index.js` | Shared check helpers and the list of report topics. |
 | `js/app.js` | The map, search, running the checks, the report, saved properties, sharing and start-up. |
 | `status.html`, `js/status.js` | The data service status page: a separate page with its own small script. |
+| `glossary.html` | "What the words mean": a plain page with no script; `GLOSSARY` in `js/core.js` links words to it. |
 | `sw.js` | Offline support: keeps the app files so it opens without a connection. |
 | `data/` | Fixed official data saved with the app (see below). |
 | `tests/` | The automatic live check, the syntax check (`node tests/syntax-check.mjs`), `publish-status.mjs`, which builds the status page's file, `after-merge.sh`, which waits for a merged version to go live and then tests it, and `a11y-check.mjs`, the accessibility scan run by hand after visual changes. |
