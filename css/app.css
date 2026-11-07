@@ -604,3 +604,84 @@ body.has-sticky footer {padding-bottom:100px}
   .status-table td {display:block;border:0;padding:3px 0}
   .status-table td[data-label]:not(:first-child)::before {content:attr(data-label);display:block;font-size:12px;font-weight:bold;color:var(--muted)}
 }
+
+/* ---------- printed report: a calm, Apple-like finish (system font, hairlines, rounded panels, generous space) ---------- */
+@media print {
+  @page {margin:16mm 15mm 18mm}
+  body {font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size:10.5px;line-height:1.5;color:#1d1d1f;-webkit-font-smoothing:antialiased}
+  h1 {font-size:28px;font-weight:700;letter-spacing:-.02em;color:#1d1d1f;margin:0 0 4mm}
+  h2,h3,h4 {letter-spacing:-.01em;color:#1d1d1f}
+  .group > h2,#nextSteps > h2,.summary-title {font-size:19px;font-weight:650;color:#1d1d1f;border:0;border-bottom:.5px solid #d2d2d7;
+    padding:0 0 2.5mm;margin:0 0 5mm}
+  .details-start > .group > h2::before,#nextSteps > h2::before {color:#86868b;font-weight:500;margin-right:1.5mm}
+  .details-start > .group,#nextSteps,#sourcesBox {margin-top:18mm}
+  .group > .info-body {background:none;border:0;padding:0;margin:0 0 5mm;color:#6e6e73;font-size:11px}
+
+  /* Cover: property details and QR code, then the map. */
+  .cover-details {width:100%;border-collapse:collapse}
+  .cover-details th,.cover-details td {border-bottom:.5px solid #e5e5ea;padding:1.6mm 0}
+  .cover-details th {color:#86868b;font-weight:400;padding-right:6mm;width:30mm}
+  .cover-details td {font-weight:600;color:#1d1d1f}
+  .cover-row {gap:8mm}
+  .cover-qr svg {width:28mm;height:28mm}
+  #reportMap,body.printing #reportMap {border:.5px solid #d2d2d7;border-radius:14px;overflow:hidden;margin-top:8mm}
+  .map-caption {color:#86868b;font-style:normal;font-size:9px;margin:2.5mm auto 8mm}
+
+  /* Summary: verdict, key findings and the topic table. */
+  .verdict {font-size:13px;line-height:1.5}
+  .key-findings {border:0;background:#f5f5f7;border-radius:14px;padding:4.5mm 6mm;margin:5mm 0 7mm}
+  .key-findings h3 {font-size:13px;font-weight:650;color:#1d1d1f;margin:0 0 2.5mm}
+  .key-findings li {margin:2mm 0;line-height:1.5}
+  .glance h3 {font-size:13px;font-weight:650;margin:0 0 3mm}
+  .glance-table {border-collapse:separate;border-spacing:0;border:.5px solid #d2d2d7;border-radius:12px;overflow:hidden;font-size:10px}
+  .glance-table th,.glance-table td {border:0;border-bottom:.5px solid #e5e5ea;padding:2mm 3mm}
+  .glance-table thead th {background:#f5f5f7;color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+  .glance-table .glance-group th {background:#fbfbfd;color:#1d1d1f;font-weight:650;font-size:10.5px;border-bottom:.5px solid #d2d2d7;padding-top:3mm}
+  .glance-table tr:nth-child(even) td {background:none}
+  .glance-table tbody tr:last-child td {border-bottom:0}
+  .glance-table td:first-child {font-weight:600;width:27%}
+  .glance-table td:nth-child(2) {width:21%}
+  .glance-key,.glance-note {color:#6e6e73}
+  .chip {border-radius:999px;padding:.6mm 2.4mm;font-size:9px;font-weight:600}
+
+  /* Topic cards: white, rounded, hairline border, room to breathe. */
+  .group-topics > .slot,.fold-body > .slot {margin:0 0 7mm}
+  details.check {border-top:.5px solid #d2d2d7;border-right:.5px solid #d2d2d7;border-bottom:.5px solid #d2d2d7;border-radius:12px;background:#fff}
+  details.check > summary {padding:4mm 5mm 2mm}
+  details.check > summary h3 {font-size:13px;font-weight:650}
+  details.check > summary .found {color:#3a3a3c}
+  .check-body {padding:0 5mm 4mm}
+  .check-body h4 {font-size:10.5px;font-weight:650;color:#1d1d1f;margin:4mm 0 1.5mm}
+  .check-body .info-body {background:#f5f5f7;border:0;border-radius:10px;padding:3mm 4mm;margin:3mm 0 0}
+  .check-body .info-body::before {color:#1d1d1f;font-weight:650}
+  .check-body .table-wrap table {border-collapse:collapse;width:100%}
+  .check-body .table-wrap th,.check-body .table-wrap td {border:0;border-bottom:.5px solid #e5e5ea;padding:1.5mm 2mm}
+  .check-body .table-wrap th {color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.03em}
+  .data-date {color:#86868b}
+
+  /* "No issue found" folds: a soft grey panel holding white cards. */
+  details.clear-fold {border:0;background:#f5f5f7;border-radius:16px;margin:7mm 0;padding:0 4mm 1mm}
+  details.clear-fold > summary {padding:3.5mm 1mm;color:#1d1d1f;font-weight:600}
+  .fold-body {padding-top:1mm!important}
+
+  /* Gaps box, next steps and sources in the same style. */
+  .gaps-box {border:.5px solid #d2d2d7;border-left:4px solid #8e8e93;border-radius:12px;background:#fbfbfd;padding:4mm 5mm;margin:6mm 0}
+  details.step-fold {border:.5px solid #d2d2d7;border-left:4px solid #1769aa;border-radius:12px;margin:6mm 0}
+  details.step-fold > .step-body {padding:0 5mm 4mm}
+  .checklist li {border-bottom:.5px solid #e5e5ea}
+  #sourcesBox table {border-collapse:separate;border-spacing:0;border:.5px solid #d2d2d7;border-radius:12px;overflow:hidden}
+  #sourcesBox th,#sourcesBox td {border:0;border-bottom:.5px solid #e5e5ea}
+  #sourcesBox th {background:#f5f5f7;color:#6e6e73;text-transform:uppercase;font-size:8.5px;letter-spacing:.04em}
+  #sourcesBox tr:last-child td {border-bottom:0}
+}
+@media print {
+  /* One text size inside cards and panels, smaller than the card heading. */
+  details.check > summary .found,.check-body p,.check-body li,.check-body td,.check-body .info-body,.gaps-box p,.gaps-box li,
+  .step-body p,.step-body li,.priority li,.key-findings li {font-size:10.5px;line-height:1.5}
+  .check-body .info-body p,.check-body .source {font-size:10px}
+  .cover-details th {background:none}
+  /* A section heading and its intro stay with the first card. */
+  .group > h2,.group > .info-body {break-after:avoid}
+  .group-topics > .slot:first-child {break-before:avoid}
+}
