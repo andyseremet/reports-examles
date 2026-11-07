@@ -17,7 +17,8 @@ const SIZES = [["1280 px", { viewport: { width: 1280, height: 900 } }], ["320 px
 
 // Controls used one after another on the report; each is followed by a scan and a sideways-scroll check.
 const ACTIONS = [
-  ["Close all, then Open problems", async p => { await p.click("#toggleAll"); await p.click("#toggleAll"); }],
+  // With no problem topics (for example while a data service is down), "Open problems" is greyed out: skip that press.
+  ["Close all, then Open problems", async p => { for (let i = 0; i < 2; i++) if (await p.isEnabled("#toggleAll")) await p.click("#toggleAll"); }],
   ["no-issue fold opened", async p => { const f = p.locator(".clear-fold:not([hidden]) > summary").first(); if (await f.count()) await f.click(); }],
   ["gaps box toggled", async p => { if (await p.locator("#gapsBox > summary").count()) await p.click("#gapsBox > summary"); }],
   ["sources open", p => p.evaluate(() => { const d = document.getElementById("sources"); if (d) d.open = true; })],
