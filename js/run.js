@@ -4,7 +4,8 @@
 
 import { $, escapeHTML, icon, MAP_COLOURS, okValue } from "./core.js";
 import { reportKey, store } from "./store.js";
-import { backupFor, byDataset, CHECKS } from "./checks/index.js";
+import { backupFor, byDataset } from "./topics/helpers.js";
+import { CHECKS } from "./topics/index.js";
 import { shownChecks } from "./coverage.js";
 import { clearForRetry, orderedResults, restartTasks, run, setRun, SLOW_NOTE_MS, startRun, topicResult, waitingFor } from "./runner.js";
 import { addMapPoint, featureLayer, map, mapIsFull, openSearch, selected, setLocation, setMapFull } from "./map.js";

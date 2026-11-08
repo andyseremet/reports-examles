@@ -3,8 +3,8 @@
 
 import { $, escapeHTML, icon, okValue, plural, STATUS_LABEL } from "./core.js";
 import { onStorageProblem, reportKey, store } from "./store.js";
+import { CHECKS } from "./topics/index.js";
 import { TASKS } from "./tasks.js";
-import { CHECKS } from "./checks/index.js";
 import { forgetAnswers, orderedResults, run } from "./runner.js";
 import { reportData, snapKey, updatePlaceButtons } from "./run.js";
 import { chip, isOld, OLD_MONTHS, prepareTables, renderMeta } from "./report.js";

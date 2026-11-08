@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.5.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.6.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.5.0)
+## Part 1: What the app does today (version 2.6.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -189,6 +189,10 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - The runner (2.5.0, step 2): `js/runner.js` runs the checks for one place without touching the page, for chosen
   topics or all of them, and tells the page about each change; `js/store.js` holds browser storage. `js/run.js` only
   draws. A new daily check step runs radon on its own and checks that only its data is asked and nothing is drawn.
+- One file per topic (2.6.0, step 3): `js/topics/<id>.js` holds each topic's own data, rating and wording, icon and
+  viewing tips; data several topics share is in `js/sources.js`; the topic list, data tasks, icons, viewing tips and
+  country coverage are read from the topics (checked identical to 2.5.0). A new daily check step checks that every
+  topic has the same parts.
 - Lean code (1.36.1, quiz of 8 November 2026): `js/app.js` split into 5 files (`search.js`, `saved.js`, `report.js`,
   `print.js`, `app.js`); one print section in `css/app.css` instead of 10, with repeated rules merged (every element's
   computed style compared before and after: the same look); one box function for map queries; all saving through one
@@ -239,8 +243,9 @@ card can be used without the main app, in new smaller apps or inside other websi
 1. **Modules** (2.4.0, done): every `js/` file imports and exports instead of sharing one global scope.
 2. **Runner** (2.5.0, done): `js/runner.js` runs the checks for one place, for chosen topics or all, without
    drawing the page; `js/run.js` draws.
-3. **Topic files:** each topic in one file (`topics/radon.js`: its data, rating, wording, icon and viewing tips),
-   with data several topics share kept once; a test that every topic file has the same parts.
+3. **Topic files** (2.6.0, done): each topic in one file (`js/topics/radon.js`: its data, rating, wording, icon and
+   viewing tips), with data several topics share kept once (`js/sources.js`); a test that every topic file has the
+   same parts.
 4. **Card and tag:** a plain card from a topic's result, and a `<plc-topic topic="radon" postcode="…">` tag that
    other pages load with one line; a demo page with single cards and a flood-only mini app.
 5. **Guide:** `docs/KIT.md`: how to use a card in another app, pick a version and add a topic.

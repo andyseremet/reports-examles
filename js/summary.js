@@ -2,7 +2,7 @@
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
 import { $, escapeHTML, icon, okValue, plural, STATUS_LABEL, STATUS_ORDER } from "./core.js";
-import { CHECKS, GROUPS, TOPIC_ICONS } from "./checks/index.js";
+import { CHECKS, GROUPS, TOPIC_ICONS } from "./topics/index.js";
 import { notCoveredNote, shownChecks } from "./coverage.js";
 import { orderedResults, run } from "./runner.js";
 import { slowNote } from "./run.js";

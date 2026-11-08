@@ -215,6 +215,40 @@ export async function testCountryData(browser) {
       return `asked ${r.tasks.join(" and ")}; radon rated ${r.status}; ${r.updates.length} updates; no cards drawn`;
     });
 
+    await step("Topic files (2.6.0): every topic has the same parts, and every data task belongs to one place", async () => {
+      // Each topic is one file, js/topics/<id>.js, so other small apps can use it on its own (modular plan, step 3).
+      const r = await page.evaluate(async () => {
+        const problems = [], COUNTRIES = ["England", "Wales", "Scotland", "Northern Ireland"];
+        const groups = GROUPS.map(g => g.id), owners = {};
+        for (const [key, row] of Object.entries(SHARED_DATA)) (owners[key] ||= []).push("shared");
+        for (const c of CHECKS) {
+          const name = c.id || "(no id)";
+          if (typeof c.id !== "string" || !c.id) problems.push("a topic has no id");
+          if (!groups.includes(c.group)) problems.push(`${name}: section "${c.group}" is not in GROUPS`);
+          if (typeof c.title !== "string" || !c.title) problems.push(`${name}: no title`);
+          if (!Array.isArray(c.deps) || !c.deps.includes("place")) problems.push(`${name}: deps must list its data, with "place"`);
+          if (typeof c.build !== "function") problems.push(`${name}: no build function`);
+          if (!Array.isArray(c.icon) || !/^</.test(c.icon[0] || "") || typeof c.icon[1] !== "string") problems.push(`${name}: icon must be [drawing, short name]`);
+          if (c.viewing && !(Array.isArray(c.viewing) && c.viewing.every(v => typeof v === "string"))) problems.push(`${name}: viewing must be a list of sentences`);
+          if (c.countries && !(Array.isArray(c.countries) && c.countries.length && c.countries.every(x => COUNTRIES.includes(x)))) problems.push(`${name}: countries must name some of the four countries`);
+          for (const [key, row] of Object.entries(c.data || {})) {
+            (owners[key] ||= []).push(name);
+            if (!Array.isArray(row) || typeof row[0] !== "string" || typeof row[1] !== "function" || typeof row[2] !== "string") problems.push(`${name}: data ${key} must be [name, fetch function, service]`);
+            if (!c.deps.includes(key)) problems.push(`${name}: its own data ${key} is not in its deps`);
+          }
+          const file = await fetch(new URL(`js/topics/${c.id}.js`, location.href)).then(x => x.ok && x.text(), () => false);
+          if (!file || !file.includes(`const ${c.id}Topic = {`)) problems.push(`${name}: no file js/topics/${c.id}.js defining ${c.id}Topic`);
+        }
+        for (const [key, who] of Object.entries(owners)) if (who.length > 1) problems.push(`data ${key} is defined more than once: ${who.join(", ")}`);
+        const taskKeys = TASKS.map(t => t[0]);
+        for (const key of taskKeys) if (!CHECKS.some(c => c.deps.includes(key))) problems.push(`data ${key} is read by no topic`);
+        for (const c of CHECKS) for (const key of c.deps) if (!taskKeys.includes(key)) problems.push(`${c.id}: reads ${key}, which no topic or shared list defines`);
+        return { problems, topics: CHECKS.length, tasks: taskKeys.length, shared: Object.keys(SHARED_DATA).length };
+      });
+      if (r.problems.length) throw new Error(r.problems.join("; "));
+      return `${r.topics} topic files, ${r.tasks} data tasks (${r.shared} shared), all with the same parts`;
+    });
+
     await step("Backups for the place, the address search and recent answers", async () => {
       // postcodes.io not answering: OpenStreetMap gives the country (Leith → Scotland). Nominatim not answering: Photon
       // finds the address. A service that fails reuses its answer from the last 7 days, but never an older one.

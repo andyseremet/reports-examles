@@ -3,7 +3,7 @@
 // connection. Live data (flood, radon, noise, maps) always comes from the
 // network and is never stored here; only fixed data that never changes (Census 2021
 // figures) is kept once it has been used.
-const CACHE = "plc-v58";
+const CACHE = "plc-v59";
 const SHELL = [
   "./",
   "./index.html",
@@ -16,12 +16,27 @@ const SHELL = [
   "./js/data-wales.js",
   "./js/data-scotland.js",
   "./js/data-ni.js",
+  "./js/national.js",
+  "./js/sources.js",
+  "./js/topics/helpers.js",
+  "./js/topics/flood.js",
+  "./js/topics/surfacewater.js",
+  "./js/topics/pastfloods.js",
+  "./js/topics/coal.js",
+  "./js/topics/radon.js",
+  "./js/topics/landuse.js",
+  "./js/topics/landslides.js",
+  "./js/topics/clay.js",
+  "./js/topics/coastal.js",
+  "./js/topics/noise.js",
+  "./js/topics/air.js",
+  "./js/topics/amenities.js",
+  "./js/topics/crime.js",
+  "./js/topics/soldprices.js",
+  "./js/topics/planning.js",
+  "./js/topics/nature.js",
+  "./js/topics/index.js",
   "./js/tasks.js",
-  "./js/checks/flood.js",
-  "./js/checks/ground.js",
-  "./js/checks/living.js",
-  "./js/checks/planning.js",
-  "./js/checks/index.js",
   "./js/coverage.js",
   "./js/runner.js",
   "./js/map.js",

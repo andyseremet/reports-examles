@@ -2,7 +2,7 @@
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
 import { $, APP_VERSION, escapeHTML, formatRadius, icon, link, okValue, plural, STATUS_LABEL, STATUS_SYMBOL, today } from "./core.js";
-import { CHECKS, GROUPS, TOPIC_ICONS } from "./checks/index.js";
+import { CHECKS, GROUPS, TOPIC_ICONS } from "./topics/index.js";
 import { orderedResults, run } from "./runner.js";
 import { BASEMAPS, currentBasemap, makeBasemapLayers } from "./map.js";
 import { savedDate } from "./run.js";

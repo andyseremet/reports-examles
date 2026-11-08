@@ -1,8 +1,8 @@
 // Property Location Check – fetching data for Northern Ireland.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { API, arcgisQuery, arcgisRequest, fetchJSON } from "./api.js";
-import { COAST_NEAR_M, distanceToGeometryKm, inNI, roundNoise } from "./data.js";
+import { API, arcgisQuery, arcgisRequest } from "./api.js";
+import { inNI } from "./data.js";
 import { LISTED_HERE_M, LISTED_NEAR_M, tidy } from "./data-wales.js";
 import { tidyCaps } from "./data-scotland.js";
 
@@ -46,32 +46,4 @@ async function getNISites(loc) {
   };
 }
 
-// DAERA strategic noise maps (Round 4, 2021 traffic): Belfast ("Agglomeration") and major roads and railways
-// elsewhere ("Major"). Layers: 0 Lden, 1 Lnight, 2 LAeq 16h (7am to 11pm). Where both are mapped, the louder counts.
-const NI_NOISE_LAYER = { l16h: 2, lnight: 1, lden: 0 };
-async function getNINoise(loc, source) {   // source: "Roads" or "Railway"
-  const ask = area => fetchJSON(`${API.niNoise}${area}_${source}/MapServer/identify?` + new URLSearchParams({
-    geometry: loc.lon + "," + loc.lat, geometryType: "esriGeometryPoint", sr: "4326", layers: "all:0,1,2", tolerance: "0",
-    mapExtent: [loc.lon - 0.01, loc.lat - 0.01, loc.lon + 0.01, loc.lat + 0.01].join(","), imageDisplay: "200,200,96",
-    returnGeometry: "false", f: "json"
-  })).then(d => {
-    if (d.error) throw new Error(d.error.message || "query failed");
-    return Object.fromEntries((d.results || []).map(r => [r.layerId, Number(r.attributes?.["Classify.Pixel Value"])]));
-  });
-  const [city, major] = await Promise.all([ask("Agglomeration"), ask("Major")]);
-  const pick = id => roundNoise(Math.max(...[city[id], major[id]].filter(Number.isFinite), 0));
-  return { ni: true, ...Object.fromEntries(Object.entries(NI_NOISE_LAYER).map(([key, id]) => [key, pick(id)])) };
-}
-
-// DfI and DAERA coastal erosion study (published 2019): the shoreline rated High, Moderate or Low for its potential to erode.
-async function getNICoast(loc) {
-  const features = await arcgisQuery(API.niCoast, loc, COAST_NEAR_M, { outFields: "risk", returnGeometry: "true", outSR: "4326" });
-  const shore = features
-    .map(f => ({ risk: tidy(f.attributes?.risk), km: f.geometry?.paths ? distanceToGeometryKm({ coordinates: f.geometry.paths }, loc) : null }))
-    .filter(x => x.km != null).sort((a, b) => a.km - b.km);
-  const nearest = risk => shore.find(x => x.risk === risk)?.km ?? null;
-  return { country: "Northern Ireland", nearCoast: shore.length > 0, shoreKm: shore[0]?.km ?? null,
-    highKm: nearest("High"), moderateKm: nearest("Moderate") };
-}
-
-export { getNICoast, getNINoise, getNISites };
+export { getNISites };

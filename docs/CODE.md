@@ -13,11 +13,13 @@ How the app's code is laid out and the rules for changing it. Read this before c
   it). `index.html` loads them in this order (the imports decide the real order; the list says where things live):
   1. `core.js` (links, settings, `APP_VERSION`, helpers such as `term()` and `GLOSSARY`) → `api.js` (`API`,
      `PACED_HOSTS`, `fetchJSON`, `arcgisRequest`) → `store.js` (`store` for browser storage, `reportKey`)
-  2. `data.js` (England and shared fetch helpers) → `backups.js` → `data-wales.js` → `data-scotland.js` →
-     `data-ni.js` → `tasks.js` (`TASKS`, which names every fetch function, so it comes after them)
-  3. `checks/flood.js`, `ground.js`, `living.js`, `planning.js`: one per report section
-  4. `checks/index.js` (shared check helpers, `CHECKS`, `TOPIC_ICONS`) → `coverage.js` (`COVERAGE`, `topicShown`,
-     `shownChecks()`, `notCoveredNote()`) → `runner.js` (the runner, below)
+  2. `data.js` (shared fetch helpers: the place, map queries, planning.data.gov.uk, flood maps for Scotland and Wales)
+     → `backups.js` → `data-wales.js` → `data-scotland.js` → `data-ni.js` (each country's shared helpers and
+     heritage and nature lists) → `national.js` (`NATIONAL`) → `sources.js` (`SHARED_DATA`: data several topics read)
+  3. `topics/helpers.js` (helpers the topics share: `unavailable`, backup notes, country tests, flood zone wording) →
+     one file per topic, `topics/<id>.js` (below) → `topics/index.js` (`CHECKS` in report order, `GROUPS`, and
+     `TOPIC_ICONS`, `VIEWING_LOOK` and `COVERAGE` read from the topics) → `tasks.js` (`TASK_ORDER`, `TASKS`, `TASK_FN`)
+  4. `coverage.js` (`topicShown`, `shownChecks()`, `notCoveredNote()`) → `runner.js` (the runner, below)
   5. `map.js` → `search.js` → `saved.js` (saved properties, compare, guide) → `run.js` (the report on the page:
      starting a check, drawing each topic as it arrives, Try again, saved reports) → `summary.js` (verdict, topic grid, why box) → `report.js` (topic
      cards, layout, sources) → `next-steps.js` → `navigation.js` → `print.js` (share, download, print) → `app.js`
@@ -33,9 +35,10 @@ How the app's code is laid out and the rules for changing it. Read this before c
   default), tries a failed task once more, shows a recent answer after 8 seconds and stops waiting at 45 seconds.
   After each task settles it calls `onUpdate({ key, changed, done })`; `js/run.js` draws what changed. Try again is
   `clearForRetry(id)` then `restartTasks(keys)`. The runner and the files it imports (`core`, `store`, `api`, the
-  data files, `tasks`, `checks/`, `coverage`) must not use `document` or the page's elements.
+  data files, `sources`, `topics/`, `tasks`, `coverage`) must not use `document` or the page's elements.
 - **Modular plan** (owner, 8 November 2026; `ROADMAP.md`, Part 2): step by step, each topic becomes one file that
-  other small apps can use on its own. Step 1 (2.4.0) is the switch to modules, step 2 (2.5.0) the runner.
+  other small apps can use on its own. Step 1 (2.4.0) is the switch to modules, step 2 (2.5.0) the runner, step 3
+  (2.6.0) one file per topic.
 - `glossary.html`: "What the words mean", plain HTML with no script. `term()` links a word to it through `GLOSSARY`
   (word → id); every id needs its `<dt id>` on the page (the daily check compares them).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
@@ -89,10 +92,27 @@ Used only when a service fails, never on a normal day.
 
 ## Adding a topic
 
-A fetch function (in the country's `js/data*.js` file) and its row in `TASKS` (`js/tasks.js`), the check in its
-section's `js/checks/` file, rows in `CHECKS` and `TOPIC_ICONS` (`js/checks/index.js`), `COVERAGE` (`js/coverage.js`)
-if it does not cover all four countries, `SERVICES` and `SERVICE_TOPICS` in `tests/live/services.mjs`, and
-`data/data-services.csv`.
+Each topic is one file, `js/topics/<id>.js` (2.6.0), holding everything about it: the fetch functions only it uses,
+how it is rated and worded (its build function and helpers), and at the end one object, `<id>Topic`:
+
+```js
+const radonTopic = {
+  id: "radon", group: "ground", title: "Radon gas",
+  countries: ["England", "Wales", "Scotland"],      // leave out for all four countries
+  data: { radon: ["Radon gas", getRadon, "British Geological Survey"] },   // its own data tasks
+  deps: ["radon"],                                  // all the data it reads, shared data included ("place" is added)
+  build: checkRadon,
+  icon: ['<path …/>', "Radon"],                     // 24 × 24 line drawing and its short name
+  viewing: ["A radon sump or a small vent pipe outside, …"]   // optional
+};
+```
+
+To add one: write its file; add `<id>Topic` to `CHECKS` in `js/topics/index.js` (report order), its file to
+`index.html` and `SHELL` in `sw.js`, and its data keys to `TASK_ORDER` in `js/tasks.js` (a key not listed starts
+last); then `SERVICES` and `SERVICE_TOPICS` in `tests/live/services.mjs`, and `data/data-services.csv`. Data that
+several topics read goes once in `SHARED_DATA` (`js/sources.js`), with its fetch function in the country's
+`js/data*.js` file. The daily check's "Topic files" step checks that every topic has the same parts and that each data
+task is defined once and read by some topic.
 
 **Countries a topic does not cover** (owner, 8 November 2026): the topic is left out of that country's reports.
 `buildCheck` returns nothing, the card leaves the report, the grid, progress count and compare table count only

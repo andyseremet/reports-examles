@@ -149,9 +149,12 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `js/data.js` | Fetching data for England, and the shared fetch helpers. |
 | `js/backups.js` | Backups used only when planning.data.gov.uk does not answer. |
 | `js/data-wales.js`, `data-scotland.js`, `data-ni.js` | Fetching data for Wales, Scotland and Northern Ireland. |
-| `js/tasks.js` | The list of data tasks: each fetch, its topic and the service it waits for. |
-| `js/checks/flood.js`, `ground.js`, `living.js`, `planning.js` | The topics in each report section: turning data into plain-English results. |
-| `js/checks/index.js` | Shared check helpers and the list of report topics. |
+| `js/national.js` | The national services for Scotland, Wales and Northern Ireland, for topics their data does not cover. |
+| `js/sources.js` | Data several topics share (the place, planning.data.gov.uk lists, Scottish and Welsh flood maps, heritage and nature lists). |
+| `js/topics/<id>.js` | One file per topic (16): its own data, how it is rated and worded, its icon and viewing tips. |
+| `js/topics/helpers.js` | Helpers the topics share: wording for a failed or backed-up source, country tests, flood zone wording. |
+| `js/topics/index.js` | The list of report topics in report order, with the sections. |
+| `js/tasks.js` | The data tasks, built from the topics and the shared data, in the order they start. |
 | `js/coverage.js` | Which countries each topic covers; topics not covered in a country are left out of its reports. |
 | `js/runner.js` | The runner: runs the checks for one place (chosen topics or all), with one retry, recent answers kept 7 days and the 45-second deadline; it never touches the page. |
 | `js/map.js` | The map: background maps, map buttons, full screen, the pin and the search circle. |
@@ -197,7 +200,7 @@ It checks that all 50 outside data services and the 2 data files saved with the 
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the share and print icons, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England, Natural England and Defra landfill backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads (layout steps run on all three devices; steps that do not depend on the screen size run once, on the desktop). The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices, past floods and reservoir flooding, and the rule that missing
-data is never "No issue found" (noise, clay and mining with a failed service), and the runner on its own (a radon-only run that asks only its data and draws nothing) are tested once, on the desktop page (they do not depend on the screen size, and they must
+data is never "No issue found" (noise, clay and mining with a failed service), the runner on its own (a radon-only run that asks only its data and draws nothing), and that every topic file has the same parts are tested once, on the desktop page (they do not depend on the screen size, and they must
 send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files
 are installed only if it does not start without them. Results,
 screenshots and sample reports are kept for 14 days with each run.

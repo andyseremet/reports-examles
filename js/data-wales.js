@@ -1,10 +1,9 @@
 // Property Location Check – fetching data for Wales (DataMapWales).
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { byDistance, distanceKm, geometryCentre } from "./core.js";
+import { distanceKm, geometryCentre } from "./core.js";
 import { API, fetchJSON } from "./api.js";
-import { COAST_NEAR_M, distanceToGeometryKm, geometryHas, inWales, roundNoise, wfsFeatures, withDistance, wmsInfo,
-  wmsValuesAt } from "./data.js";
+import { inWales, wfsFeatures, wmsInfo } from "./data.js";
 
 /* ---------------------------------------------------------------
    Wales: DataMapWales (Welsh Government, Natural Resources Wales and Cadw), for the topics whose
@@ -77,76 +76,4 @@ async function getWalesSites(loc) {
   };
 }
 
-// Welsh Government strategic noise maps (2022, Round 4): road ("RD") or railway ("RL"), at first-floor height.
-// Wales publishes a 16-hour daytime level (7am to 11pm) instead of separate day and evening levels. 0 means not mapped (quiet).
-const NOISE_PERIODS_16H = [
-  { key: "l16h", metric: "L16H", name: "Daytime", when: "7am to 11pm" },
-  { key: "lnight", metric: "LNGT", name: "Night", when: "11pm to 7am" },
-  { key: "lden", metric: "LDEN", name: "24-hour average", when: "with extra weight for evening and night noise" }
-];
-async function getWalesNoise(loc, source) {
-  const values = await wmsValuesAt(API.dataMapWales, NOISE_PERIODS_16H.map(p => `geonode:cog_WG_${source}_${p.metric}_All`), loc);
-  return { wales: true, ...Object.fromEntries(NOISE_PERIODS_16H.map((p, i) => [p.key, roundNoise(values[i])])) };
-}
-
-// Natural Resources Wales coastal erosion map (NCERM), with the shoreline plans in place. Each area is the land
-// expected to be lost by the end of one period: short term (to 2025), medium term (2025 to 2055), long term (2055 to 2105).
-// Returned in the same shape as the England check, so the report reads the same.
-async function getWalesCoast(loc) {
-  const dLat = COAST_NEAR_M / 111320, dLon = COAST_NEAR_M / (111320 * Math.cos(loc.lat * Math.PI / 180));
-  const params = new URLSearchParams({
-    service: "WFS", version: "2.0.0", request: "GetFeature", typeNames: "geonode:nrw_ncerm_all_smp", count: 300,
-    propertyName: "geom,epoch,short_smp,medium_smp,long_smp,smp_name", srsName: "EPSG:4326", outputFormat: "application/json",
-    bbox: [loc.lat - dLat, loc.lon - dLon, loc.lat + dLat, loc.lon + dLon, "urn:ogc:def:crs:EPSG::4326"].join(",")
-  });
-  const zones = (await fetchJSON(API.dataMapWales + "?" + params)).features || [];
-  // "21.7 - 28.3 metres" -> 28.3; "Negligible" -> 0.
-  const upper = text => Math.max(0, ...(String(text || "").match(/[\d.]+/g) || []).map(Number));
-  const period = (f, word) => String(f.properties.epoch || "").startsWith(word);
-  const withKm = list => withDistance(list, loc);
-  const by2105 = withKm(zones.filter(f => period(f, "Long") && upper(f.properties.long_smp) > 0));
-  // Land lost by 2055: the short-term areas (to 2025) and the medium-term ones (2025 to 2055).
-  const lostBy2055 = f => Math.max(upper(f.properties.short_smp), upper(f.properties.medium_smp));
-  const by2055 = withKm(zones.filter(f => (period(f, "Medium") && upper(f.properties.medium_smp) > 0) ||
-    (period(f, "Short") && upper(f.properties.short_smp) > 0)));
-  const nearest = by2105[0] || by2055[0];
-  const inside2055 = !!by2055[0] && by2055[0].km === 0;
-  const inside2105 = inside2055 || (!!by2105[0] && by2105[0].km === 0);
-  const anyZone = zones[0];
-  return {
-    country: "Wales",
-    nearCoast: zones.length > 0,
-    inside2105, inside2055,
-    erosionKm: nearest ? nearest.km : null,
-    metres2105: by2105[0] ? upper(by2105[0].f.properties.long_smp) : null,
-    metres2055: inside2055 ? lostBy2055(by2055[0].f) : null,
-    plan: { now: null, later: null, area: anyZone ? tidy(anyZone.properties.smp_name) : null, defence: null },
-    published: null
-  };
-}
-
-// Welsh Government disused coal tips map (categories set how often a tip is inspected: C and D most often).
-// It is a map image service, so we ask for the tips drawn in a square a little larger than the search
-// distance, then keep those whose edge is within it.
-const COAL_TIP_CATEGORY = {
-  A: "A (low potential to affect public safety)", B: "B (unlikely to affect public safety)",
-  C: "C (inspected once a year)", D: "D (inspected twice a year)", R: "R (often removed, levelled or built over)"
-};
-async function getCoalTips(loc) {
-  if (!(await inWales(loc))) return null;
-  const d = 1.2 * loc.radius / 111320;
-  const features = await wmsInfo(API.dataMapWales, "geonode:disused_coal_tips_in_wales_public", loc, d,
-    { width: 31, height: 31, i: 15, j: 15, buffer: 15, feature_count: 200, bbox: [loc.lat - d, loc.lon - d / Math.cos(loc.lat * Math.PI / 180), loc.lat + d, loc.lon + d / Math.cos(loc.lat * Math.PI / 180)].join(",") });
-  return features
-    .map(f => {
-      const p = f.properties || {}, c = geometryCentre(f.geometry);
-      const km = !f.geometry ? null : geometryHas(f.geometry, loc) ? 0 : distanceToGeometryKm(f.geometry, loc);
-      return { id: tidy(p.uid), category: tidy(p.cat).toUpperCase(), inspected: tidy(p.last_inspected), council: tidy(p.authority_english),
-        lat: c?.lat, lon: c?.lon, distanceKm: km };
-    })
-    .filter(t => t.distanceKm == null || t.distanceKm <= loc.radius / 1000)
-    .sort(byDistance);
-}
-
-export { COAL_TIP_CATEGORY, getCoalTips, getWalesCoast, getWalesNoise, getWalesSites, LISTED_HERE_M, LISTED_NEAR_M,
-  NOISE_PERIODS_16H, tidy };
+export { getWalesSites, LISTED_HERE_M, LISTED_NEAR_M, tidy };

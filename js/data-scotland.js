@@ -1,10 +1,9 @@
 // Property Location Check – fetching data for Scotland.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { byDistance, distanceKm } from "./core.js";
-import { API, arcgisQuery, arcgisRequest, fetchJSON } from "./api.js";
-import { COAST_NEAR_M, inScotland, roundNoise, titleCase, wfsFeatures, withDistance } from "./data.js";
-import { LISTED_HERE_M, LISTED_NEAR_M, NOISE_PERIODS_16H, tidy } from "./data-wales.js";
+import { API, arcgisQuery, arcgisRequest } from "./api.js";
+import { inScotland, titleCase, wfsFeatures } from "./data.js";
+import { LISTED_HERE_M, LISTED_NEAR_M, tidy } from "./data-wales.js";
 
 /* ---------------------------------------------------------------
    Scotland: Historic Environment Scotland, NatureScot, SEPA, the Scottish Government and the Scottish Air
@@ -63,74 +62,4 @@ async function getScotlandSites(loc) {
   };
 }
 
-// Scottish Government strategic noise maps (2021 traffic, published by SEPA): "Road" or "Rail", all sources.
-// Like Wales, Scotland publishes a 16-hour daytime level. Outside the mapped area the value is 0 or "NoData".
-async function getScotlandNoise(loc, source) {
-  const geometry = JSON.stringify({ x: loc.lon, y: loc.lat, spatialReference: { wkid: 4326 } });
-  const values = await Promise.all(NOISE_PERIODS_16H.map(p => fetchJSON(`${API.sepaNoise}Noise_${source}_${p.metric}_ALL/ImageServer/identify?` +
-    new URLSearchParams({ geometry, geometryType: "esriGeometryPoint", returnGeometry: "false", returnCatalogItems: "false", f: "json" }))
-    .then(d => { if (d.error) throw new Error(d.error.message || "query failed"); return Number(d.value); })));
-  return { scotland: true, ...Object.fromEntries(NOISE_PERIODS_16H.map((p, i) => [p.key, roundNoise(values[i])])) };
-}
-
-// Dynamic Coast (NatureScot): land expected to be lost to the sea by 2050 and by 2100, on the high-emissions
-// forecast (the only one published as a map service). It maps Scotland's soft coasts (sand, gravel and soft
-// rock); rocky coasts wear away too slowly to map. Returned in the same shape as the England check.
-async function getScotlandCoast(loc) {
-  const layer = name => wfsFeatures(API.natureScot, "dynamiccoast:" + name, loc, COAST_NEAR_M,
-    { srsName: "EPSG:4326", count: 300, propertyName: "ERODETYPE,geom" });
-  const [by2050, by2100, shore] = await Promise.all([
-    layer("dc2erosion2050high"), layer("dc2erosion2100high"),
-    wfsFeatures(API.natureScot, "dynamiccoast:dc2mhwsmodern", loc, COAST_NEAR_M, { count: 1, propertyName: "CELL" })
-  ]);
-  const lost = list => withDistance(list.filter(f => f.properties?.ERODETYPE === "ErodedArea" && f.geometry), loc);
-  const soon = lost(by2050), later = lost(by2100);
-  const inside2055 = !!soon[0] && soon[0].km === 0;
-  const inside2105 = inside2055 || (!!later[0] && later[0].km === 0);
-  const nearest = [soon[0], later[0]].filter(Boolean).sort((a, b) => a.km - b.km)[0];
-  return {
-    country: "Scotland", years: [2050, 2100],
-    nearCoast: shore.length + by2050.length + by2100.length > 0,
-    inside2105, inside2055,
-    erosionKm: nearest ? nearest.km : null,
-    metres2105: null, metres2055: null,
-    plan: { now: null, later: null, area: null, defence: null },
-    published: null
-  };
-}
-
-// SEPA licensed waste sites (landfill, transfer stations, scrapyards, recycling centres) near the pin.
-// "KE - Transfer Station; TR - Transfer Station" -> ["Transfer Station"].
-const wasteKinds = text => [...new Set(String(text || "").split(";")
-  .map(part => tidy(part.replace(/^\s*[A-Z]{2,3}\s*[-:]\s*/, "").replace(/^Waste\s*-\s*/i, "")))
-  .filter(Boolean))];
-async function getWasteSites(loc) {
-  if (!(await inScotland(loc))) return null;
-  const features = await arcgisQuery(API.sepaWaste, loc, loc.radius, {
-    outFields: "authorisation_activity,authorisation_description,authorisation_holder", returnGeometry: "true", outSR: "4326"
-  });
-  return features
-    .map(f => {
-      const a = f.attributes || {}, g = f.geometry || {};
-      const kinds = wasteKinds(a.authorisation_activity);
-      const where = tidy(String(a.authorisation_description || "").split(" --- ").pop());
-      return { name: tidyCaps(where || a.authorisation_holder).replace(/\.$/, ""), kinds, landfill: kinds.some(k => /landfill/i.test(k)),
-        mobile: /mobile plant/i.test(a.authorisation_description || ""),
-        lat: g.y, lon: g.x, distanceKm: Number.isFinite(g.y) ? distanceKm(loc, { lat: g.y, lon: g.x }) : null };
-    })
-    .filter(s => !s.mobile)     // permits for mobile machines, not places
-    .sort(byDistance);
-}
-
-// Crime in Scotland: the crime part of the Scottish Index of Multiple Deprivation 2020, for the data zone
-// (a small area of about 500 to 1,000 people) at the pin. Police Scotland publishes no street-level data.
-const SIMD_ZONES = 6976;
-async function getSimdCrime(loc) {
-  if (!(await inScotland(loc))) return null;
-  const f = await arcgisQuery(API.simd, loc, 0, { outFields: "datazone,dzname,laname,crimecount,crimerate,crimerank" });
-  const a = f[0] && f[0].attributes;
-  if (!a || !Number.isFinite(a.crimerank)) return null;
-  return { zone: a.datazone, name: tidy(a.dzname), council: tidy(a.laname), count: a.crimecount, rate: a.crimerate, rank: a.crimerank };
-}
-
-export { getScotlandCoast, getScotlandNoise, getScotlandSites, getSimdCrime, getWasteSites, SIMD_ZONES, tidyCaps };
+export { getScotlandSites, tidyCaps };

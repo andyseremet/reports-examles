@@ -3,7 +3,7 @@
 
 import { $, escapeHTML, icon, link, LINKS, okValue, STATUS_LABEL, STATUS_ORDER } from "./core.js";
 import { reportKey, store } from "./store.js";
-import { VIEWING_GENERAL, VIEWING_LOOK } from "./checks/index.js";
+import { VIEWING_GENERAL, VIEWING_LOOK } from "./topics/index.js";
 import { orderedResults, run } from "./runner.js";
 import { renderSaved, reportUrl } from "./saved.js";
 import { moreToggle } from "./report.js";

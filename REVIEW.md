@@ -44,9 +44,10 @@ Report at most five Nits per review.
 - Missing data is rated "Check yourself", never "No issue found" (see `policeDataMissing` and `checkLanduse`).
 - User-facing text is plain English in short sentences, and every technical word goes through `term()`, with its
   `<dt id>` in `glossary.html`.
-- A new topic has all its parts: fetch function and `TASKS` row, check, `CHECKS`, `TOPIC_ICONS`, `COVERAGE` (if not
-  UK-wide; the topic is then left out elsewhere), `SERVICES` and `SERVICE_TOPICS` in `tests/live/services.mjs`, and
-  `data/data-services.csv`. A topic count uses `shownChecks()`, not `CHECKS.length`.
+- A new topic has all its parts: its file `js/topics/<id>.js` with the topic object (data, deps, build, icon,
+  `countries` if not UK-wide, so it is left out elsewhere), its entry in `CHECKS`, `index.html` and `sw.js`, its data
+  keys in `TASK_ORDER`, `SERVICES` and `SERVICE_TOPICS` in `tests/live/services.mjs`, and `data/data-services.csv`.
+  Code only one topic uses lives in that topic's file. A topic count uses `shownChecks()`, not `CHECKS.length`.
 - New behaviour has a step in `tests/live/` (`devices.mjs` or `country.mjs`), and a new or changed control is in `ACTIONS` in
   `tests/a11y-check.mjs`.
 - Test parts that run at the same time (`Promise.all` in `tests/live-check.mjs`) never send Nominatim two requests at

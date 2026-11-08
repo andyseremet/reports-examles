@@ -5,8 +5,8 @@
 
 import { okValue, today } from "./core.js";
 import { reportKey, store } from "./store.js";
-import { TASKS } from "./tasks.js";
-import { CHECKS, TASK_FN } from "./checks/index.js";
+import { CHECKS } from "./topics/index.js";
+import { TASK_FN, TASKS } from "./tasks.js";
 import { topicShown } from "./coverage.js";
 
 /* =========================================================
