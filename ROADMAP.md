@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.36.1** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **1.36.2** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.36.1)
+## Part 1: What the app does today (version 1.36.2)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -122,7 +122,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - **Share** links and the phone's share menu.
 - **Save** menu: download the report, print a summary, or print the full report (or save as PDF).
 - Printout extras (1.36.0): a one-line contents under the summary, a lined notes page at the end, and a 2-page short
-  printout (the cover, key findings and the topic table; the checklists stay in the full report).
+  printout (the cover, key findings and the topic table; the checklists stay in the full report). Since 1.36.2 it
+  keeps room to spare (a smaller map, tighter table rows), after a Lewes report ran onto a third page.
 
 ### Comfort and access
 - Dark mode, larger text (**A+ Text size**), and install as an app on a phone.
