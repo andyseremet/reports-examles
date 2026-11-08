@@ -300,7 +300,7 @@ function checkLandslides(R) {
     meaning: `<p>Rating: a recorded landslide within 500 m is “Worth checking”; further away it is “For information”.</p>
       <p>Clay soil that shrinks and swells in dry and wet weather, the most common cause of subsidence in England, is
       covered by its own topic, “Shrinking and swelling clay”.</p>`,
-    actions: [`For clay soil, sinkholes and other ground hazards, the environmental search or a ${link(LINKS.geosure, "BGS GeoSure")} report can help.`],
+    actions: [`For clay soil, sinkholes and other ground hazards, the environmental search or a ${link(LINKS.geosure, "British Geological Survey GeoSure")} report can help.`],
     seller: ["Has there been any subsidence, cracking or underpinning?"]
   };
 }

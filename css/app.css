@@ -397,7 +397,10 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
   .tab-bar .active {color:var(--link);background:none;box-shadow:none}
   .tab-bar button:disabled {color:var(--muted);opacity:1}
   body.report-open:not(.has-sticky) {--bottom-clear:140px}
-  body.report-open:not(.has-sticky) .to-top {bottom:calc(72px + env(safe-area-inset-bottom))}
+  /* The tab bar's Summary goes back to the top, so the round button would only cover the report (2.3.4). */
+  body.report-open:not(.has-sticky) .to-top {display:none}
+  /* Map coordinates mean little to a buyer on a phone: shown on bigger screens and on paper only (2.3.4). */
+  .coords {display:none}
   body.report-open:not(.has-sticky) footer {padding-bottom:calc(80px + env(safe-area-inset-bottom))}
 }
 /* Footer links are easy to tap: at least 24 px high (WCAG 2.2 target size). */
@@ -741,4 +744,7 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   /* The short printout is the cover, key findings and the topic table only: the table already marks every gap. */
   body.print-summary #summaryBox > .notice {display:none!important}
   .glance h3 {break-after:avoid}
+}
+@media print {
+  .coords {display:inline !important}
 }

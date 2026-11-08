@@ -31,6 +31,11 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
 - Undo, not "Are you sure?": an action that deletes something offers Undo for about 10 seconds.
 - Short messages ("Saved ✓", "Copied", "Removed …") sit in a `role="status"` or `aria-live="polite"` element.
 - A control's spoken name (`aria-label`) starts with its visible words (WCAG 2.5.3, voice control).
+- **On a phone** (wording and phone review, 2.3.4): nothing floats over the report. The tab bar's Summary goes back
+  to the top, so the round Back to top button shows only on bigger screens. Technical details a buyer does not need on
+  a small screen (the pin's map coordinates) show on bigger screens and on paper only.
+- **Abbreviations:** write them out in text people read (the Office for National Statistics, not ONS). A dataset's own
+  name may follow in brackets in a source line, for example "the Department for Transport's list of stops, NaPTAN".
 - **Sticky bars:** focus and in-page jumps land clear of them (`scroll-margin`, `--sticky-top`/`--bottom-clear` in
   `css/app.css`). Never use `html { scroll-padding }`: it stops the section bar's smooth scroll.
 
