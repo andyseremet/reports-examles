@@ -571,7 +571,7 @@ body.has-sticky footer {padding-bottom:100px}
 }
 
 /* The short printout's smaller map (set while printing, like the full report's map size). */
-body.print-summary.printing #reportMap {width:400px;height:300px}
+body.print-summary.printing #reportMap {width:360px;height:270px}
 /* ---------- printed report, the short printout and the glossary on paper: every print rule is here ---------- */
 @media print {
   .notes textarea {display:none}
@@ -736,9 +736,10 @@ body.print-summary.printing #reportMap {width:400px;height:300px}
   .notes-page {break-before:page}
   .notes-page h2 {font-size:16px;font-weight:600;margin:0 0 4mm}
   .note-line {border-bottom:.5px solid #d2d2d7;height:9.5mm}
-  body.print-summary .glance-table th,body.print-summary .glance-table td {padding:1.5mm 3mm}
-  body.print-summary .glance-table .glance-group th {padding-top:2mm}
-  body.print-summary #report > p.help {font-size:8.5px;margin:2mm 0}
+  body.print-summary .glance-table th,body.print-summary .glance-table td {padding:1.1mm 3mm;line-height:1.35}
+  body.print-summary .glance-table .glance-group th {padding-top:1.6mm}
+  body.print-summary #report > p.help {font-size:8px;margin:1.5mm 0;line-height:1.35}
+  body.print-summary .glance-key {margin-top:2mm;line-height:1.45}
   span.print-only {display:inline!important}   /* a word shown only on paper stays in its sentence */
   body.print-summary .map-caption {margin-bottom:3mm}
   /* The short printout is the cover, key findings and the topic table only: the table already marks every gap. */
