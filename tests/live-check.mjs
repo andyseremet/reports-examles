@@ -723,6 +723,8 @@ async function testDevice(device, [postcode, place]) {
       // (reloaded or answered). Either way the topic is read again below and must not have failed.
       const btn = page.locator(`#check-${id} [data-retry="${id}"]`);
       if (!(await btn.count())) { await reportDone(page); continue; }
+      // Topic cards start closed: open the card first, as a person would, to reach its Try again button.
+      if (!(await page.$eval(`#check-${id}`, d => d.open))) await page.click(`#check-${id} > summary`);
       await btn.click();
       await page.waitForTimeout(500);
       await reportDone(page);
