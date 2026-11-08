@@ -142,7 +142,8 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
 
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
   that change `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
-  A failed daily or manual run opens or updates a "Live check failed" issue.
+  A failed daily or manual run opens or updates a "Live check failed" issue; a full run (data services included)
+  that passes closes it.
 - **Daily and manual runs** check everything live. On `main` they then publish to the `status` branch: `status.json`
   (the status page) and `recordings.json` (the report pages' outside answers, `RECORD=1`; merged by
   `tests/merge-recordings.mjs`, each answer kept up to 14 days).

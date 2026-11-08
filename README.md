@@ -80,7 +80,7 @@ official checkers.
   example "Crimes reported in September 2026" or "Noise maps published by Defra in 2022". Saved results older than 3 months are marked, with a suggestion to refresh.
 - **Accessibility:** checked against WCAG 2.2 AA with the axe-core checker (light and dark mode, phone and desktop,
   normal and larger text, down to 320 px wide), plus keyboard focus, focus never hidden behind sticky bars, and tap
-  target sizes (at least 24 × 24 pixels). Last re-checked on 5 November 2026 (version 1.19.0).
+  target sizes (at least 24 × 24 pixels). Last re-checked on 8 November 2026 (version 2.0.2): no problems found.
 - **Send to my conveyancer:** one button opens your email app with the report link, the topics to look into, and the
   searches and questions from the checklist. **Copy** does the same for web email or messaging apps. Nothing
   passes through the app.
@@ -158,7 +158,8 @@ can use what earlier files define.
 A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-check.mjs`:
 
 - **Every day** against the live site. If anything fails (for example a government data service changes its
-  address), it opens or updates a GitHub issue called "Live check failed" with the details.
+  address), it opens or updates a GitHub issue called "Live check failed" with the details. The next full run that
+  passes closes it.
 - **On every pull request** that changes the page, against the proposed version, before it is merged. Its reports are
   answered from the outside services' answers recorded by the daily run (saved on the `status` branch, each kept up
   to 14 days), so an outside outage cannot turn a pull request red; a question never recorded is asked live and named

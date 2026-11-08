@@ -15,6 +15,13 @@
 
 <!-- Start connecting to the map picture server early; it is otherwise only found once the map library has run. -->
 <link rel="preconnect" href="https://server.arcgisonline.com">
+<!-- The postcode search starts at once; the report's main data hosts get their addresses looked up early (kept for minutes). -->
+<link rel="preconnect" href="https://api.postcodes.io" crossorigin>
+<link rel="dns-prefetch" href="https://environment.data.gov.uk">
+<link rel="dns-prefetch" href="https://map.bgs.ac.uk">
+<link rel="dns-prefetch" href="https://www.planning.data.gov.uk">
+<link rel="dns-prefetch" href="https://data.police.uk">
+<link rel="dns-prefetch" href="https://air-quality-api.open-meteo.com">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <link rel="stylesheet" href="css/app.css">
