@@ -22,7 +22,8 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
 - Serve locally: `python3 -m http.server 8080` (the app needs http, not `file://`).
 - Syntax check: `node tests/syntax-check.mjs`. A hook runs it after every edit to `index.html` or a `.js` file; fix
   any error before going on.
-- Full test: install Playwright as in `docs/TESTING.md`, then `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 node tests/live-check.mjs`.
+- Full test: install Playwright as in `docs/TESTING.md`, then `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 REPLAY=daily node tests/live-check.mjs`
+  (under a minute with the daily recording).
   Which test a change needs is in `docs/TESTING.md` ("Which test to run"). Do not edit files while a test runs.
 - After a merge: `bash tests/after-merge.sh`, in the background.
 
