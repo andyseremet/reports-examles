@@ -30,6 +30,8 @@ const API = {
   landfill: "https://environment.data.gov.uk/spatialdata/historic-landfill/ogc/features/v1/collections/Historic_Landfill_Sites/items",
   // Backup only (the Environment Agency map server not answering): Defra's copy of the same register on ArcGIS Online.
   landfillBackup: "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/HistoricLandfill/FeatureServer/0/query",
+  // Past floods, England (2.1.0, owner, 8 November 2026): Defra's copy of the Environment Agency Historic Flood Map.
+  pastFloods: "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/HistoricFloodMap/FeatureServer/0/query",
   coastal: "https://environment.data.gov.uk/spatialdata/ncern-national-2024/ogc/features/v1/collections/",
   airModel: "https://air-quality-api.open-meteo.com/v1/air-quality",
   crime: "https://data.police.uk/api/crimes-street/all-crime",
@@ -112,6 +114,8 @@ const LINKS = {
   magic: "https://magic.defra.gov.uk/",
   sepaMaps: "https://map.sepa.org.uk/floodmaps",
   nrwMaps: "https://flood-risk-maps.naturalresources.wales/",
+  pastFloodsEngland: "https://www.arcgis.com/home/item.html?id=46bfb5e552a14f7c85c4db5c5a86d267",
+  pastFloodsWales: "https://datamap.gov.wales/layers/inspire-nrw:NRW_HISTORIC_FLOODMAP",
   osm: "https://www.openstreetmap.org/copyright",
   onsCrime: "https://www.ons.gov.uk/peoplepopulationandcommunity/crimeandjustice/bulletins/crimeinenglandandwales/yearendingmarch2025",
   onsPopulation: "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/bulletins/populationestimatesforenglandandwales/mid2024",
@@ -173,7 +177,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "2.0.9";
+const APP_VERSION = "2.1.0";
 const APP_UPDATED = "8 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;

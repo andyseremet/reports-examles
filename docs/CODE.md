@@ -67,6 +67,9 @@ Used only when a service fails, never on a normal day.
 A fetch function and its row in `TASKS` (`js/data.js`), the check in its section's `js/checks/` file, rows in
 `CHECKS`, `TOPIC_ICONS` and `COVERAGE` (if it does not cover all of England, Wales and Scotland) in
 `js/checks/index.js`, `SERVICES` and `SERVICE_TOPICS` in `tests/live-check.mjs`, and `data/data-services.csv`.
+A topic with no data at all in some countries can be left out of their reports instead (`ONLY_IN`, `topicShown`,
+`shownChecks()`; owner, 8 November 2026, for past floods): `buildCheck` returns nothing there, the card leaves the
+report, and the grid, progress count and compare table count only the topics shown.
 
 ## Releases
 

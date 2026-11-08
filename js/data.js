@@ -489,6 +489,26 @@ function distanceToGeometryKm(geometry, pt) {
   return best;
 }
 
+// Past floods (2.1.0): areas recorded as flooded, at the pin or within PAST_FLOOD_M of it. England: Defra's copy of the
+// Environment Agency Historic Flood Map (areas only, no dates): one count within 250 m, and one at the pin only when
+// something is near. Wales: Natural Resources Wales' Historic Flood Map on DataMapWales (each flood with its dates,
+// source and cause). Scotland and Northern Ireland publish no such record: the topic is not shown there (ONLY_IN).
+const PAST_FLOOD_M = 250;
+async function getPastFloods(loc) {
+  if (await inScotland(loc) || await inNI(loc)) return null;
+  if (await inWales(loc)) {
+    const fields = ["name", "start_date", "end_date", "flood_source", "flood_cause"];
+    const features = await wfsFeatures(API.dataMapWales, "inspire-nrw:NRW_HISTORIC_FLOODMAP", loc, PAST_FLOOD_M, { count: 100, srsName: "EPSG:4326" });
+    const floods = withDistance(features, loc).filter(x => x.km <= PAST_FLOOD_M / 1000)
+      .map(({ f, km }) => ({ km, ...Object.fromEntries(fields.map(k => [k, (f.properties || {})[k] || null])) }))
+      .sort((a, b) => a.km - b.km || String(b.start_date).localeCompare(String(a.start_date)));
+    return { country: "Wales", inside: floods.some(x => x.km === 0), near: floods.length > 0, floods };
+  }
+  const count = async m => (await arcgisRequest(API.pastFloods, loc, m, { returnCountOnly: "true" })).count || 0;
+  const near = await count(PAST_FLOOD_M) > 0;
+  return { country: "England", near, inside: near && await count(0) > 0, floods: [] };
+}
+
 async function getCoastalErosion(loc) {
   if (await inWales(loc)) return getWalesCoast(loc);
   if (await inScotland(loc)) return getScotlandCoast(loc);
@@ -956,6 +976,7 @@ async function getNICoast(loc) {
 const TASKS = [
   ["place", "Nearest postcode and council", getPlace, "postcodes.io"],
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater, "Environment Agency"],
+  ["pastFloods", "Past floods recorded", getPastFloods, "Environment Agency via Defra (Wales: DataMapWales)"],
   ["landfill", "Old landfill sites", getLandfill, "Environment Agency"],
   ["coastal", "Coastal erosion", getCoastalErosion, "Environment Agency (Wales: DataMapWales; Scotland: NatureScot; NI: DAERA)"],
   ["planningPoint", "Flood zone and planning rules at the property", getPlanningAtPoint, "planning.data.gov.uk"],

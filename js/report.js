@@ -225,9 +225,16 @@ function topicResult(c, fields) {
   return { meaning: "", actions: [], seller: [], conveyancer: [], source: { name: "", url: "" }, ...fields, id: c.id, group: c.group, title: c.title };
 }
 
+// The topics this report shows: all of them, less those published only in other countries (ONLY_IN).
+function shownChecks() {
+  const place = run && okValue(run.R, "place");
+  return CHECKS.filter(c => topicShown(c.id, place && place.country));
+}
+
 function buildCheck(c) {
   const place = okValue(run.R, "place");
   const country = place && place.country;
+  if (!topicShown(c.id, country)) return null;
   if (country && COVERAGE[c.id] && !COVERAGE[c.id].includes(country)) return notCovered(c, country, place);
   let result;
   try { result = topicResult(c, { dataDate: "Checked live on " + today(), ...c.build(run.R) }); }
@@ -253,8 +260,9 @@ const savedDate = iso => new Date(iso).toLocaleDateString("en-GB", { day: "numer
 function onTaskSettled(key) {
   CHECKS.filter(c => c.deps.includes(key) && depsReady(c)).forEach(c => {
     const result = buildCheck(c);
+    // A topic not shown in this country leaves the report.
+    if (!result) { delete run.results[c.id]; const slot = $("slot-" + c.id); if (slot) slot.remove(); return; }
     run.results[c.id] = result;
-    const slot = $("slot-" + c.id);
     showCheck(c, result);
   });
   if (key === "place") renderMeta();
@@ -305,10 +313,12 @@ function showSnapshot(snap, options = {}) {
   lastRunKey = reportKey(loc);
   updateStickyRun();
   renderSkeleton(loc);
+  const visible = shownChecks();
   CHECKS.forEach(c => {
     const slot = $("slot-" + c.id);
     const res = run.results[c.id];
     if (!slot) return;
+    if (!visible.includes(c)) { slot.remove(); delete run.results[c.id]; return; }
     // Topics added to the app after this property was saved.
     const shown = res || topicResult(c, { status: "manual",
       found: "Not included in these saved results. Press “Refresh” to check it with the latest data." });
@@ -714,9 +724,10 @@ function renderSummary() {
 
   let verdict;
   if (!run.done) {
-    verdict = `<p class="verdict">Checking official data… <strong>${ready} of ${CHECKS.length}</strong> topics ready.</p>
-      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${CHECKS.length}" aria-valuenow="${ready}">
-        <span style="width:${Math.round(ready / CHECKS.length * 100)}%"></span></div>${slowNote()}`;
+    const total = shownChecks().length;
+    verdict = `<p class="verdict">Checking official data… <strong>${ready} of ${total}</strong> topics ready.</p>
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${ready}">
+        <span style="width:${Math.round(ready / total * 100)}%"></span></div>${slowNote()}`;
   } else if (n("high") || n("medium")) {
     // One clear sentence, then the rest in smaller words underneath.
     const found = [n("high") && `<strong>${plural(n("high"), "thing")} to look into</strong>`,
@@ -737,7 +748,7 @@ function renderSummary() {
     ${savedNote}
     ${verdict}
     <ul class="topic-strip" aria-label="All topics at a glance">
-      ${CHECKS.map(c => {
+      ${shownChecks().map(c => {
         const res = run.results[c.id];
         const st = res ? res.status : "loading";
         const [paths, short] = TOPIC_ICONS[c.id];

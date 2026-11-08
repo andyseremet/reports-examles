@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.0.9** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.1.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.0.9)
+## Part 1: What the app does today (version 2.1.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -28,10 +28,16 @@ The [README](README.md) describes each feature in full.
 ### Topics checked (official open data)
 | Group | Topics | Main sources |
 |---|---|---|
-| Flooding | Rivers and the sea; heavy rain (surface water) | Environment Agency; SEPA; Natural Resources Wales |
+| Flooding | Rivers and the sea; heavy rain (surface water); past floods recorded here (2.1.0, England and Wales) | Environment Agency (past floods via Defra's copy); SEPA; Natural Resources Wales |
 | Ground and land | Radon; mining, coal and other (tin, copper, lead, iron and so on, from the British Geological Survey, 1.32.0); shrinking and swelling clay (1.32.0); past use of the land (in Wales, disused coal tips; in Scotland, licensed waste sites); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales; SEPA; Dynamic Coast |
 | Living environment | Road and rail noise; air quality; crime; recent sale prices | Defra; Welsh Government; Scottish Government; councils; Copernicus CAMS; data.police.uk; ONS; HM Land Registry |
 | Planning and surroundings | Planning restrictions and heritage; protected nature sites; schools, GPs, pharmacies and transport | planning.data.gov.uk; Natural England; Cadw; Natural Resources Wales; Historic Environment Scotland; NatureScot; Department for Communities (NI); DAERA; DfE; NHS; NaPTAN |
+
+**Past floods recorded here (2.1.0, quiz of 8 November 2026):** inside an area that has flooded before "Look into
+this", one within 250 m "Worth checking", none "No issue found". England uses Defra's copy of the Environment Agency
+Historic Flood Map (areas only, no dates; nothing sent to the Environment Agency map server); Wales uses Natural Resources
+Wales' record on DataMapWales, with each flood's date, source and cause. Scotland and Northern Ireland publish no such
+record, so the topic is left out there (`ONLY_IN`), the first topic shown only in some countries.
 
 **Wales (1.26.0):** land use, coastal erosion, noise, air quality, planning and nature are answered from Welsh data
 (DataMapWales). Old landfill and contaminated land are not published for Wales, so land use says "Check yourself" unless a
@@ -215,7 +221,6 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 |---|---|
 | Reservoir flood risk | After 2.1.0 (owner, 8 November 2026): whether the home is in the area a dam failure would flood. Defra's official reservoir flood extents on ArcGIS Online; nothing sent to the Environment Agency map server. Plan and quiz first. |
 | Flood defences nearby | After reservoir flood risk (owner, 8 November 2026): walls and embankments protecting the area, from Defra's flood defence layer (updated October 2026). Plan and quiz first. |
-| Past floods recorded here | **Planned as 2.1.0** (owner, 8 November 2026): Defra's copy of the Historic Flood Map on ArcGIS Online answers web pages and sends nothing to the busy Environment Agency map server. Plan and quiz first. |
 | Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
 | Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
 
