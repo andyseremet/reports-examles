@@ -60,7 +60,7 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
 - After a merge: `bash tests/after-merge.sh`, in the background. It restarts the branch from `origin/main` and pushes
   it. If the merge changed no app files, it stops there (seconds). Otherwise it waits for Pages to serve the new
   `APP_VERSION`/`CACHE` and runs the live check: every data service live, the report pages from the daily recording
-  without pauses (about 5 minutes), or all live with pauses if there is no recording yet. Edit
+  (about 5 minutes), or all live with pauses if there is no recording yet. Edit
   nothing while it runs. A stop hook "unpushed commit" warning meanwhile is a timing clash: check with `git fetch` +
   `git rev-list --count origin/<branch>..HEAD` before pushing anything.
 - Accessibility re-check (by hand, after visual changes; not in CI): `npm install --no-save axe-core`, then
@@ -151,7 +151,8 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
   they run once, during the first pause, and must send nothing to the Environment Agency map server. Steps that
   check the page stay in `testDevice()`: a step that does not depend on the screen size uses `desktopStep` (runs
   once); a layout step uses `step` (runs on every device). Wait for the page (`until`, `scrolled`), not the clock.
-  With `REPLAY` loaded, the pauses between reports are skipped (nothing reaches the Environment Agency).
+  With `REPLAY` loaded, the pauses between reports are skipped until a question missing from the recording has to
+  ask the Environment Agency live.
 - Never skip, remove or loosen a test step to get a pass. The only allowed non-pass is a `"warn"` for the Environment
   Agency map server refusing GitHub's machines with HTTP 403.
 - Outside services (BGS, Environment Agency, Open-Meteo, data.police.uk) have outages. Before changing code for a
