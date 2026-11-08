@@ -212,8 +212,10 @@ Run it yourself: `npm install playwright@1.49.1 && npx playwright install chromi
 (set `BASE` to test another address, for example a local copy; set `PAUSE_MS=0` to skip the pauses; set
 `REPLAY=daily` to answer the reports from the daily recording). With a recording, the data services (6 at a time), the
 map data checks and the three devices run at the same time: under a minute instead of 4 to 8. `QUICK=1` checks the
-data services and the desktop only (used after a merge). `node tests/digest.mjs` then prints the failures and the
-slowest steps in a few lines.
+data services and the desktop only (used after a merge). To find a fault faster, `ONLY=desktop` (or `services`,
+`country`, `phone`, `tablet`) and `STEP="part of a step name"` run just part of it. `node tests/digest.mjs` then
+prints the failures and the slowest steps in a few lines; every summary starts with an "In short" line that tells an
+outside outage from a fault in the app.
 
 ### Updating the railway station list
 

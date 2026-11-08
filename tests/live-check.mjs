@@ -36,6 +36,17 @@ const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && 
 // QUICK=1 (after-merge.sh): the data services and the desktop only (every desktop step, one full report); the pull
 // request check has already run every step on the same code, and the daily run still does.
 const QUICK = process.env.QUICK === "1";
+// To find a fault faster, run only part of the test (owner, 8 November 2026). Never used by the workflow.
+// ONLY=services,country,desktop,phone,tablet: these parts only (any of them, comma-separated).
+// STEP="name|name": only the steps whose name contains one of these (any case). On a device, the steps that every
+// later step needs (open, search, report) always run; a step that relies on an earlier one (for example a saved
+// property) needs that one named too. A partial run says so in its results and saves no recording.
+const ONLY = (process.env.ONLY || "").toLowerCase().split(",").map(s => s.trim()).filter(Boolean);
+const STEPS = (process.env.STEP || "").toLowerCase().split("|").map(s => s.trim()).filter(Boolean);
+const PARTIAL = ONLY.length > 0 || STEPS.length > 0;
+const runsPart = part => !ONLY.length || ONLY.includes(part);
+const NEEDED_STEPS = ["Page opens with the search ready", "Search finds the postcode", "Report runs with every topic"];
+const stepChosen = name => !STEPS.length || NEEDED_STEPS.includes(name) || STEPS.some(s => name.toLowerCase().includes(s));
 
 // Steady pull request checks (2.0.0, quiz of 7 November 2026). RECORD=1 (daily and manual runs) saves each answer the
 // report pages get from outside data services to recordings.json, which the workflow publishes to the "status" branch.
@@ -115,6 +126,7 @@ const record = (group, name, pass, info = "", ms) => {
 // Runs one test step and records its result and how long it took (tests/digest.mjs lists the slowest).
 // A step returns its details (a string), false for a plain failure, or { warn } for an allowed warning.
 const timedStep = group => async (name, fn) => {
+  if (!stepChosen(name)) return;   // left out by STEP
   const t0 = Date.now(), ms = () => Date.now() - t0;
   try {
     const info = await fn();
@@ -1048,9 +1060,13 @@ async function testDevice(device, [postcode, place]) {
       await r.fulfill({ json: { features: [] } }).catch(() => {});
     });
     try {
+      // Move the page's clock on instead of waiting the 8 seconds (Playwright's clock; time still runs normally
+      // otherwise, so 5 seconds on the page's clock is at least 5 seconds after the check started).
+      await slowPage.clock.install();
       await slowPage.goto(new URL("?lat=52.0&lon=-1.5&name=Slow%20test", BASE).href);
-      await slowPage.waitForTimeout(5000);
+      await slowPage.clock.fastForward(5000);
       if (await slowPage.locator(".slow-note").count()) throw new Error("the note showed before 8 seconds");
+      await slowPage.clock.fastForward(4000);
       await slowPage.waitForSelector(".slow-note", { timeout: 6000 });
       const text = (await slowPage.locator(".slow-note").innerText()).replace(/\s+/g, " ");
       if (errors.length) throw new Error("page errors: " + errors.join("; "));
@@ -1388,7 +1404,7 @@ try {
   const reportServices = SERVICES.filter(isReportDataService).length;
   record("Data services", "data/data-services.csv lists every report data service", listed === reportServices,
     `${listed} rows in the file, ${reportServices} report data services in the test`);
-  const toCheck = CHECK_DATA_SERVICES ? SERVICES : SERVICES.filter(s => !isReportDataService(s));
+  const toCheck = !runsPart("services") ? [] : CHECK_DATA_SERVICES ? SERVICES : SERVICES.filter(s => !isReportDataService(s));
   if (!CHECK_DATA_SERVICES) console.log(`Left out on request (DATA_SERVICES=0): ${reportServices} report data services. Run the check by hand to test them.`);
   await loadReplay();
   // With the recording, the report pages send nothing live to the Environment Agency, so the services, the country
@@ -1402,23 +1418,29 @@ try {
   // On replay, the third report uses the place the daily run picked, so its answers are recorded too.
   const randomPlace = replayData && replayData.randomPlace ? replayData.randomPlace : await randomEnglishPostcode();
   const places = [FIXED[0], FIXED[1], randomPlace];
-  const devicesToTest = QUICK ? DEVICES.slice(0, 1) : DEVICES;
-  const countryData = () => QUICK ? null : testCountryData().catch(e => record("Country data (desktop)", "The country data steps crashed", false, e.message));
+  // Device numbers (in DEVICES) to test: the desktop only with QUICK; ONLY can leave out any of them.
+  const devicesToTest = DEVICES.map((_, i) => i).filter(i => (!QUICK || i === 0) && runsPart(DEVICES[i].name.split(" ")[0].toLowerCase()));
+  const countryData = () => QUICK || !runsPart("country") ? null : testCountryData().catch(e => record("Country data (desktop)", "The country data steps crashed", false, e.message));
   const runDevice = async i => { reports[`${DEVICES[i].name}: ${places[i].join(", ")}`] = await testDevice(DEVICES[i], places[i]); };
-  if (parallel) await Promise.all([services, countryData(), ...devicesToTest.map((_, i) => runDevice(i))]);
-  else for (let i = 0; i < devicesToTest.length; i++) {
-    // The Environment Agency map server allows only about 15 requests a minute from
-    // one address, and one report sends about 7. Pausing before each report keeps
-    // the test within that limit, like a person checking one property at a time.
-    const pause = new Promise(r => setTimeout(r, PAUSE_BEFORE_REPORT_MS));
-    if (i === 0) await countryData();
-    await pause;
-    await runDevice(i);
+  if (parallel) await Promise.all([services, countryData(), ...devicesToTest.map(runDevice)]);
+  else {
+    for (const [n, i] of devicesToTest.entries()) {
+      // The Environment Agency map server allows only about 15 requests a minute from
+      // one address, and one report sends about 7. Pausing before each report keeps
+      // the test within that limit, like a person checking one property at a time.
+      const pause = new Promise(r => setTimeout(r, PAUSE_BEFORE_REPORT_MS));
+      if (n === 0) await countryData();
+      await pause;
+      await runDevice(i);
+    }
+    if (!devicesToTest.length) await countryData();   // ONLY left out every device
   }
   if (replayData) record("Test run", "Report data from the daily recording", true,
     `${replayed} answers from the recording of ${String(replayData.recorded).slice(0, 10)}` +
     (askedLive.size ? `; asked live (not recorded): ${[...askedLive].sort().join(", ")}` : "; nothing asked live"));
-  if (RECORD) writeFileSync(`${OUT}/recordings.json`, JSON.stringify({ recorded: new Date().toISOString(), base: BASE, randomPlace, answers: recorded }));
+  if (PARTIAL) record("Test run", "Partial run, to find a fault (not a full check)", true,
+    [ONLY.length && `ONLY=${ONLY.join(",")}`, STEPS.length && `STEP=${STEPS.join("|")}`].filter(Boolean).join("; "));
+  if (RECORD && !PARTIAL) writeFileSync(`${OUT}/recordings.json`, JSON.stringify({ recorded: new Date().toISOString(), base: BASE, randomPlace, answers: recorded }));
 } catch (e) {
   record("Test run", "The test itself crashed", false, e.message);
 } finally {
@@ -1431,13 +1453,23 @@ const partRank = r => r.group === "Data services" ? 0 : r.group.startsWith("Coun
 results.sort((a, b) => partRank(a) - partRank(b));
 const failed = results.filter(r => !r.pass);
 const warned = results.filter(r => r.warn);
+// One line that tells an outside outage from a fault in the app (the pass rules are the same either way).
+const serviceFails = failed.filter(r => r.group === "Data services"), appFails = failed.filter(r => r.group !== "Data services");
+const servicesDown = serviceFails.length ? `${serviceFails.length} data service(s) did not answer: ${serviceFails.map(r => r.name).join("; ")}` : "";
+const appStepsRan = results.some(r => r.group !== "Data services" && r.group !== "Test run");
+const headline = !failed.length ? "Every check passed."
+  : !appFails.length ? (appStepsRan ? `Every app step passed; ${servicesDown}.` : `${servicesDown[0].toUpperCase()}${servicesDown.slice(1)}.`)
+  : `${appFails.length} app step(s) failed${servicesDown ? `, and ${servicesDown}` : ""}.` +
+    (appFails.some(r => /could not be reached|HTTP 5\d\d|net::ERR_/.test(r.info))
+      ? " Some app steps name a data service that did not answer, so they may be an outage too: see the details." : "");
 const lines = [
   `# Property Location Check – automatic test`,
   ``,
   `Tested: ${BASE}  `,
   `Date: ${new Date().toUTCString()}  `,
   `Result: **${failed.length ? `${failed.length} problem(s) found` : "all checks passed"}** (${results.length - failed.length} of ${results.length} passed` +
-    (warned.length ? `, ${warned.length} with a warning` : "") + `)`,
+    (warned.length ? `, ${warned.length} with a warning` : "") + `)  `,
+  `In short: ${headline}`,
   ``
 ];
 if (failed.length) {
@@ -1450,6 +1482,8 @@ if (warned.length) {
   warned.forEach(r => lines.push(`| ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`));
   lines.push(``);
 }
+// The "Live check failed" issue gets this short form (the workflow adds the run link, with every check).
+const issueText = lines.join("\n");
 lines.push(`## All checks`, ``, `| Result | Area | Check | Details |`, `|---|---|---|---|`);
 results.forEach(r => lines.push(`| ${r.warn ? "⚠️" : r.pass ? "✅" : "❌"} | ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`));
 lines.push(``, `## Report results`, ``);
@@ -1461,6 +1495,7 @@ Object.entries(reports).forEach(([name, topics]) => {
 
 const summary = lines.join("\n");
 writeFileSync(`${OUT}/summary.md`, summary);
+writeFileSync(`${OUT}/issue.md`, issueText);
 writeFileSync(`${OUT}/results.json`, JSON.stringify({ base: BASE, date: new Date().toISOString(), results, reports }, null, 2));
 // For the data service status page: one row per outside service (published by the daily run only).
 writeFileSync(`${OUT}/status.json`, JSON.stringify({
@@ -1472,4 +1507,5 @@ writeFileSync(`${OUT}/status.json`, JSON.stringify({
 }, null, 2));
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 console.log(`\n${results.length - failed.length} of ${results.length} checks passed` + (warned.length ? ` (${warned.length} with a warning).` : "."));
+if (failed.length) console.log(`In short: ${headline}`);
 process.exit(failed.length ? 1 : 0);

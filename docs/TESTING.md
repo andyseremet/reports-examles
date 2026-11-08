@@ -13,7 +13,7 @@ failed check, or changing `tests/` or the workflow.
 
 `REPLAY=daily` uses the daily recording on the `status` branch. With none (before the first daily run, or if it
 cannot be read) everything is asked live, one report at a time with pauses: 4 to 8 minutes, more during outages.
-Measured on 8 November 2026: full test 47 s with a recording (515 s live, during an Environment Agency outage); the
+Measured on 8 November 2026: pull-request-style test 37 s and full test 47 s with a recording (515 s live, during an Environment Agency outage); the
 after-merge check's quick run 51 s; the accessibility check 44 s.
 
 The syntax check runs after every code edit whatever the change. GitHub (on the pull request) and the after-merge
@@ -37,8 +37,12 @@ check still run the whole test, so the owner's merge is always covered.
   prints the failures and the 5 slowest steps of a finished run (each result records its time). On a failed GitHub
   check, read its annotations or `get_job_logs` with a small `tail_lines`, not the whole log. Search files instead of
   reading them whole.
-- **One behaviour:** there is no way to run one test step. Write a short Playwright script outside the repo, and
-  answer `https://environment.data.gov.uk/spatialdata/**` with `{"features":[]}` so the report finishes fast.
+- **Run one part, to find a fault** (owner, 8 November 2026; never used by the workflow): `ONLY=services,country,desktop,phone,tablet`
+  runs only those parts; `STEP="name|name"` runs only the steps whose name contains one of these (any case). On a
+  device, open, search and the report always run, because every later step needs them; a step that relies on an
+  earlier one (a saved property, notes) needs that one named too. A partial run is named in its results ("Partial
+  run") and saves no recording. Example, about 15 s: `BASE=http://localhost:8080/ PAUSE_MS=0 REPLAY=daily ONLY=desktop STEP="Try again" node tests/live-check.mjs`.
+  Run the whole test before a pull request.
 - **Accessibility re-check** (by hand, after visual changes; not in CI): `npm install --no-save axe-core`, then
   `node tests/a11y-check.mjs` with the local server running (under a minute). It scans WCAG 2.2 AA on the start
   page, a report, `status.html` and `glossary.html` in 4 combinations at the same time (`COMBOS`: every width, colour
@@ -64,6 +68,13 @@ before pushing anything.
   services included) that passes closes it.
 - **Stopping runs:** a new push to a pull request stops its older check. Daily and manual runs on `main` are never
   stopped (each publishes the status page): a second one waits for the first.
+- **Before the long check**, the syntax check and `node --check` on every `tests/*.mjs` file run, so a typing
+  mistake fails in a second.
+- **The "In short" line** in every summary (and in the console after a failure) tells an outside outage from an app
+  fault: "Every app step passed; 6 data service(s) did not answer: …", or how many app steps failed, noting when
+  they name a service that did not answer. The pass rules are the same either way.
+- **The "Live check failed" issue** gets the short form (`issue.md`: the "In short" line, problems and warnings) and
+  the run link; the full table stays on the run page and in `summary.md`.
 - **Where the time goes:** each run's summary page lists the 10 slowest test steps under the results table. Each
   step of the `check` job shows its own time; a gap between log time stamps is a pause (60 s before each report on
   daily runs). To see more, download `live-check-results` and run `node tests/digest.mjs results.json 20`, or use
@@ -84,8 +95,8 @@ before pushing anything.
   nothing to the Environment Agency map server.
 - Steps that check the page stay in `testDevice()`: a step that does not depend on the screen size uses `desktopStep`
   (runs once); a layout step uses `step` (runs on every device).
-- Wait for the page (`until`, `scrolled`), not the clock; where the app itself waits (the 8 s retry), move the page's
-  clock on (`page.clock.fastForward`, as in the Try again step). With `REPLAY` loaded the three devices run at the
+- Wait for the page (`until`, `scrolled`), not the clock; where the app itself waits (the 8 s retry, the 8 s slow note), move
+  the page's clock on (`page.clock.fastForward`, as in the Try again and Slow report steps). With `REPLAY` loaded the three devices run at the
   same time, so a step must not depend on another device's steps.
 - Never skip, remove or loosen a test step to get a pass. The only allowed non-pass is a `"warn"` for the Environment
   Agency map server refusing GitHub's machines with HTTP 403.
