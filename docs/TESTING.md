@@ -12,8 +12,9 @@ failed check, or changing `tests/` or the workflow.
 | A data source, a topic, a backup, or anything that sends requests | Full test with `REPLAY=daily` (under a minute; every data service is still asked live, and a question missing from the recording, such as a new topic's, goes live) |
 
 `REPLAY=daily` uses the daily recording on the `status` branch. With none (before the first daily run, or if it
-cannot be read) everything is asked live, one report at a time with pauses: 4 to 8 minutes, more during outages.
-Measured on 8 November 2026: full test 47 s with a recording (515 s live, during an Environment Agency outage); the
+cannot be read) everything is asked live, one report at a time, each a minute after the last request to the
+Environment Agency map server: 4 to 7 minutes, more during outages.
+Measured on 8 November 2026: pull-request-style test 37 s and full test 47 s with a recording (515 s live, during an Environment Agency outage); the
 after-merge check's quick run 51 s; the accessibility check 44 s.
 
 The syntax check runs after every code edit whatever the change. GitHub (on the pull request) and the after-merge
@@ -24,7 +25,7 @@ check still run the whole test, so the owner's merge is always covered.
 - **Syntax check:** `node tests/syntax-check.mjs` (all `js/` files together in load order, then `sw.js`). A project
   hook (`.claude/settings.json`, `.claude/hooks/syntax-check.sh`) runs it after every edit to `index.html` or a `.js`
   file. Fix any error it reports before going on.
-- **Full test:** `npm install --no-save playwright@1.49.1 && npx playwright install chromium` (in a cloud session use
+- **Full test:** `npm install --no-save playwright@1.63.0 && npx playwright install chromium` (in a cloud session use
   the preinstalled browser instead: `npm install --no-save playwright@$(node -p "require('/opt/node-tools/node_modules/playwright/package.json').version")`),
   then `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 REPLAY=daily node tests/live-check.mjs` (local copy) or
   `QUIET=1 REPLAY=daily node tests/live-check.mjs` (live site). Do not edit files while it runs: a mixed run fails at
@@ -37,10 +38,16 @@ check still run the whole test, so the owner's merge is always covered.
   prints the failures and the 5 slowest steps of a finished run (each result records its time). On a failed GitHub
   check, read its annotations or `get_job_logs` with a small `tail_lines`, not the whole log. Search files instead of
   reading them whole.
-- **One behaviour:** there is no way to run one test step. Write a short Playwright script outside the repo, and
-  answer `https://environment.data.gov.uk/spatialdata/**` with `{"features":[]}` so the report finishes fast.
-- **Accessibility re-check** (by hand, after visual changes; not in CI): `npm install --no-save axe-core`, then
-  `node tests/a11y-check.mjs` with the local server running (under a minute). It scans WCAG 2.2 AA on the start
+- **Run one part, to find a fault** (owner, 8 November 2026; never used by the workflow): `ONLY=services,country,desktop,phone,tablet`
+  runs only those parts (a name not in that list stops the test with the list); `STEP="name|name"` runs only the steps whose name contains one of these (any case). On a
+  device, open, search and the report always run, because every later step needs them; a step that relies on an
+  earlier one (a saved property, notes) needs that one named too. A partial run is named in its results ("Partial
+  run") and saves no recording; a `STEP` that matches no step name fails. The tablet's random postcode is only
+  picked when the tablet is tested. Example, about 15 s: `BASE=http://localhost:8080/ PAUSE_MS=0 REPLAY=daily ONLY=desktop STEP="Try again" node tests/live-check.mjs`.
+  Run the whole test before a pull request.
+- **Accessibility re-check** (by hand, after visual changes; GitHub also runs it on every pull request): `npm install --no-save axe-core`, then
+  `REPLAY=daily node tests/a11y-check.mjs` with the local server running (under a minute; without `REPLAY` its report
+  asks every service live). It scans WCAG 2.2 AA on the start
   page, a report, `status.html` and `glossary.html` in 4 combinations at the same time (`COMBOS`: every width, colour
   scheme and text size, including 320 px with A+ text), and checks sideways scrolling before and after using each control in its
   `ACTIONS` list: add each new or changed control there. Also Tab through every control and check none is hidden.
@@ -60,13 +67,31 @@ before pushing anything.
 
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
   that change `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `data/`, `sw.js`, `manifest.webmanifest`,
-  `tests/` or the workflow. A failed daily or manual run opens or updates a "Live check failed" issue; a full run (data
-  services included) that passes closes it.
+  `tests/` or the workflow. The test is `tests/live-check.mjs`, which runs the parts in `tests/live/` (its header
+  lists them; split on 8 November 2026, same steps).
+- **Two issues** (owner, 8 November 2026): a daily or manual run comments on "Live check failed" when an app step
+  fails, and on "Data services down" when an outside service did not answer (each opened if not open yet). Each
+  closes after a run in which its own part passed; "Data services down" only after a run with a result for every
+  data service (not one that stopped early). The two data files saved with the app count as the app, not as an
+  outage. The test writes both texts to `issues.json` (the "In short" line and that part's table); the workflow
+  adds the run link. Pull requests open no issue. The pass rules are unchanged: an outage still fails the run.
+- **Accessibility on pull requests:** a second job (`accessibility`) runs `tests/a11y-check.mjs` on its own machine
+  at the same time as the live check, so the check takes no longer. Its report (S70 2TA, the desktop's place) is
+  answered from the daily recording (`REPLAY`), so an outside outage cannot fail it.
+- **One setup for both jobs:** `.github/actions/setup-test-browser` installs Node.js, Playwright (plus `axe-core` for
+  the accessibility job) and the saved browser. Change the setup there once.
+- **Same versions as locally:** the workflow's `env` sets `PLAYWRIGHT` (1.63.0) and `AXE` (4.14.0). Change them
+  together with the local install line above; the saved browser is downloaded again once.
 - **Stopping runs:** a new push to a pull request stops its older check. Daily and manual runs on `main` are never
   stopped (each publishes the status page): a second one waits for the first.
+- **Before the long check**, the syntax check and `node --check` on every `tests/*.mjs` and `tests/live/*.mjs` file
+  run, so a typing mistake fails in a second.
+- **The "In short" line** in every summary (and in the console after a failure) tells an outside outage from an app
+  fault: "Every app step passed; 6 data service(s) did not answer: …", or how many app steps failed, noting when
+  they name a service that did not answer. The pass rules are the same either way.
 - **Where the time goes:** each run's summary page lists the 10 slowest test steps under the results table. Each
-  step of the `check` job shows its own time; a gap between log time stamps is a pause (60 s before each report on
-  daily runs). To see more, download `live-check-results` and run `node tests/digest.mjs results.json 20`, or use
+  step of the `check` job shows its own time; a gap between log time stamps is a pause (on daily runs, each report
+  waits until a minute after the last request to the Environment Agency map server, and says so unless `QUIET=1`). To see more, download `live-check-results` and run `node tests/digest.mjs results.json 20`, or use
   "Re-run jobs" with "Enable debug logging".
 - **Daily and manual runs** check everything live. On `main` they then publish to the `status` branch: `status.json`
   (the status page) and `recordings.json` (the report pages' outside answers, `RECORD=1`; merged by
@@ -79,16 +104,23 @@ before pushing anything.
 
 ## Writing test steps
 
-- Steps that only test data functions (no screen layout) belong in `testCountryData()` in `tests/live-check.mjs`:
-  they run once (at the same time as the devices when replaying, otherwise during the first pause), and must send
-  nothing to the Environment Agency map server.
-- Steps that check the page stay in `testDevice()`: a step that does not depend on the screen size uses `desktopStep`
+- Steps that only test data functions (no screen layout) belong in `testCountryData()` in `tests/live/country.mjs`:
+  they run once (at the same time as the devices when replaying, otherwise after the data services, during the wait
+  before the first report: Nominatim allows one request a second), and must send nothing to the Environment Agency
+  map server.
+- Steps that check the page stay in `testDevice()` (`tests/live/devices.mjs`): a step that does not depend on the screen size uses `desktopStep`
   (runs once); a layout step uses `step` (runs on every device).
-- Wait for the page (`until`, `scrolled`), not the clock; where the app itself waits (the 8 s retry), move the page's
-  clock on (`page.clock.fastForward`, as in the Try again step). With `REPLAY` loaded the three devices run at the
+- Wait for the page (`until`, `scrolled`), not the clock; where the app itself waits (the 8 s retry, the 8 s slow note), move
+  the page's clock on (`page.clock.fastForward`, as in the Try again and Slow report steps). With `REPLAY` loaded the three devices run at the
   same time, so a step must not depend on another device's steps.
 - Never skip, remove or loosen a test step to get a pass. The only allowed non-pass is a `"warn"` for the Environment
   Agency map server refusing GitHub's machines with HTTP 403.
+- **One Nominatim request at a time** (owner, 8 November 2026): OpenStreetMap's Nominatim allows one request a
+  second. Every live request the test sends it waits its turn in `nominatimTurn()` (`tests/live/recording.mjs`):
+  the pages' requests (`placeFromOsm`, the address search) through the context route, and the "Address search" and
+  "Place backup" service checks in `checkService`. A new way of reaching Nominatim must use it too. On a live run the
+  data services also finish before the country data starts. A clash shows on a daily-style run (`RECORD=1`): a step
+  that passes alone fails with "the data service could not be reached".
 
 ## Outside outages
 

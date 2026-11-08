@@ -1,13 +1,15 @@
 # Automatic test for Property Location Check.
 #
 # - Every day: tests the live site, and opens (or updates) a GitHub issue if
-#   anything fails, for example a government data service changing its address.
+#   anything fails: "Live check failed" for the app, "Data services down" for a
+#   government data service that did not answer (for example after changing its address).
 # - On every pull request that changes the page: tests the proposed version
 #   before it is merged.
 #   Pull requests leave out the 44 outside services that only supply report data
 #   (data/data-services.csv), at the owner's request; the report itself still runs,
 #   answered from the daily run's recording (recordings.json on the "status" branch),
 #   so an outside outage cannot turn a pull request red. Anything not recorded is asked live.
+#   They also run the accessibility scan (tests/a11y-check.mjs) as a second job, at the same time.
 # - Any time: run it by hand from the Actions tab ("Run workflow"), with the
 #   "Check the report data services" box ticked (the default) to test them too.
 
@@ -34,10 +36,17 @@ on:
       - "manifest.webmanifest"
       - "tests/**"
       - ".github/workflows/live-check.yml"
+      - ".github/actions/**"
 
 permissions:
   contents: read
   issues: write
+
+# The same test library versions as the local test (docs/TESTING.md), so a step that passes there passes here.
+# The browser is saved between runs and downloaded again only when PLAYWRIGHT changes.
+env:
+  PLAYWRIGHT: "1.63.0"
+  AXE: "4.14.0"
 
 # A new push to a pull request stops its older check. Daily and manual runs on main are never stopped: each one
 # publishes the status page and the recording, so a second run waits for the first to finish.
@@ -60,37 +69,17 @@ jobs:
       - name: Get the code
         uses: actions/checkout@v6
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-
-      - name: Install the test library
-        run: npm install --no-save --no-audit --no-fund playwright@1.49.1
-
-      # The browser is saved between runs (it only changes with the Playwright version above).
-      - name: Restore the saved test browser
-        id: browser-cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-1.49.1-${{ runner.os }}
-
-      - name: Download the test browser (only when it is not saved yet)
-        if: steps.browser-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium
-
-      # GitHub's machines usually have everything the browser needs. Installing the extra system files
-      # took up to 10 minutes on a slow day, so it only happens if the browser does not start without them.
-      - name: Make sure the test browser starts
+      # A typing mistake in the app or the tests fails here in a second, before the setup and the long check
+      # (with the machine's own Node.js).
+      - name: Check the code for typing mistakes
         run: |
-          if node -e "require('playwright').chromium.launch().then(b => b.close())"; then
-            echo "The browser starts: no extra system files needed."
-          else
-            echo "The browser did not start: installing its system files."
-            npx playwright install-deps chromium
-            node -e "require('playwright').chromium.launch().then(b => b.close())"
-          fi
+          node tests/syntax-check.mjs
+          for f in tests/*.mjs tests/live/*.mjs; do node --check "$f"; done
+
+      - name: Set up the test browser
+        uses: ./.github/actions/setup-test-browser
+        with:
+          playwright: ${{ env.PLAYWRIGHT }}
 
       - name: Serve the proposed version (pull requests only)
         if: github.event_name == 'pull_request'
@@ -124,38 +113,58 @@ jobs:
           path: test-results/
           retention-days: 14
 
-      # A full daily or manual run that passes closes the open "Live check failed" issue (only when the report data
-      # services were checked too, so a run that left them out never closes an outage).
-      - name: Close the "Live check failed" issue after a full run passes
-        if: success() && github.event_name != 'pull_request' && steps.mode.outputs.data_services == '1'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const { data: open } = await github.rest.issues.listForRepo({ ...context.repo, state: "open", per_page: 100 });
-            for (const issue of open.filter(i => i.title === "Live check failed" && !i.pull_request)) {
-              await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: `All checks passed: ${runUrl}` });
-              await github.rest.issues.update({ ...context.repo, issue_number: issue.number, state: "closed", state_reason: "completed" });
-            }
-
-      - name: Report a failed daily check as an issue
-        if: failure() && github.event_name != 'pull_request'
+      # Daily and manual runs keep two issues: "Live check failed" when an app step fails, "Data services down" when an
+      # outside service does not answer. Each gets a comment while its part fails and closes after a run in which its
+      # part passed ("Data services down" only after a run that checked the data services). Pull requests open none.
+      - name: Update the "Live check failed" and "Data services down" issues
+        if: ${{ !cancelled() && github.event_name != 'pull_request' }}
         uses: actions/github-script@v8
         with:
           script: |
             const fs = require("fs");
-            let summary = "The test did not produce a summary.";
-            try { summary = fs.readFileSync("test-results/summary.md", "utf8"); } catch (e) {}
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const title = "Live check failed";
-            const body = `${summary}\n\n---\nFull results, screenshots and sample reports: ${runUrl}`;
+            let issues;
+            try { issues = JSON.parse(fs.readFileSync("test-results/issues.json", "utf8")); }
+            catch (e) { issues = { app: { checked: true, failed: true, body: "The test did not produce a summary (it stopped before the end)." }, services: { checked: false } }; }
             const { data: open } = await github.rest.issues.listForRepo({ ...context.repo, state: "open", per_page: 100 });
-            const existing = open.find(i => i.title === title && !i.pull_request);
-            if (existing) {
-              await github.rest.issues.createComment({ ...context.repo, issue_number: existing.number, body: body.slice(0, 60000) });
-            } else {
-              await github.rest.issues.create({ ...context.repo, title, body: body.slice(0, 60000) });
+            for (const [title, part] of [["Live check failed", issues.app], ["Data services down", issues.services]]) {
+              const existing = open.find(i => i.title === title && !i.pull_request);
+              if (part.failed) {
+                const body = `${part.body}\n\n---\nAll checks, screenshots and sample reports: ${runUrl}`.slice(0, 60000);
+                if (existing) await github.rest.issues.createComment({ ...context.repo, issue_number: existing.number, body });
+                else await github.rest.issues.create({ ...context.repo, title, body });
+              } else if (existing && part.checked) {
+                await github.rest.issues.createComment({ ...context.repo, issue_number: existing.number, body: `Passed in this run: ${runUrl}` });
+                await github.rest.issues.update({ ...context.repo, issue_number: existing.number, state: "closed", state_reason: "completed" });
+              }
             }
+
+  # Pull requests only: the accessibility scan (tests/a11y-check.mjs, WCAG 2.2 AA in 4 sizes and colour schemes), on
+  # its own machine beside the live check, so the check takes no longer.
+  accessibility:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v6
+
+      - name: Set up the test browser
+        uses: ./.github/actions/setup-test-browser
+        with:
+          playwright: ${{ env.PLAYWRIGHT }}
+          extra: axe-core@${{ env.AXE }}
+
+      - name: Serve the proposed version
+        run: |
+          python3 -m http.server 8080 >/dev/null 2>&1 &
+          sleep 2
+
+      # Answered from the daily recording, like the live check, so an outside outage cannot turn a pull request red.
+      - name: Run the accessibility scan
+        env:
+          REPLAY: https://raw.githubusercontent.com/${{ github.repository }}/status/recordings.json
+        run: node tests/a11y-check.mjs
 
   # After a daily (or manual) check of the live site on main, publish the result of each
   # data service for the status page (status.html). It goes to a separate "status" branch,

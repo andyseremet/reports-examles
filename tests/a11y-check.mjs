@@ -1,6 +1,6 @@
-// Accessibility re-check, run by hand after visual changes (not in the daily check).
+// Accessibility re-check: run by hand after visual changes; GitHub also runs it on every pull request (not daily).
 //   npm install --no-save axe-core   (Playwright as for the full test; see CLAUDE.md)
-//   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 1.5 minutes)
+//   python3 -m http.server 8080 &   then   REPLAY=daily node tests/a11y-check.mjs   (under a minute)
 // Scans WCAG 2.2 AA with axe-core on the start page, a full report, status.html and glossary.html, in 4 combinations that
 // cover every width (1280 px, 320 px, phone), both colour schemes and both text sizes, plus the riskiest pairs. In the report it also scans after using controls (Open problems, the no-issue fold, a Key findings link,
 // a tick, Move to another device, Compare three, Remove), and checks for sideways scrolling before and after each.
@@ -8,6 +8,7 @@
 import { chromium, devices } from "playwright";
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
+import { loadReplay, steadyContext, replayed, askedLive } from "./live/recording.mjs";
 
 const BASE = process.env.BASE || "http://localhost:8080/";
 const AXE = readFileSync(createRequire(process.cwd() + "/").resolve("axe-core/axe.min.js"), "utf8");
@@ -65,17 +66,22 @@ async function check(page, where) {
   found.forEach(f => report(where, f));
 }
 
+// REPLAY=daily (pull requests, and the local commands in docs/TESTING.md) answers the report from the daily recording,
+// like the live check, so an outside outage cannot fail the scan. The report is for S70 2TA, the desktop's fixed
+// place, whose answers the daily run records. Without REPLAY everything is asked live.
+await loadReplay();
 const browser = await chromium.launch();
 // The 4 combinations run at the same time, each in its own window (same scans; about half the time).
 await Promise.all(COMBOS.map(async ([size, opts, scheme, big]) => {
   const label = `${size}, ${scheme}${big ? ", A+" : ""}`;
   const context = await browser.newContext({ ...opts, colorScheme: scheme });
+  await steadyContext(context);
   const page = await context.newPage();
   await page.route("https://environment.data.gov.uk/spatialdata/**", r => r.fulfill({ json: { features: [] } }));
   await page.addInitScript(on => { if (on) localStorage.setItem("plc-large-text", "true"); }, big);
   await page.goto(BASE);
   await check(page, `${label} – start page`);
-  await page.goto(BASE + "?postcode=SW1A%201AA");
+  await page.goto(BASE + "?postcode=S70%202TA");
   await page.waitForSelector("#checklistBox input", { state: "attached", timeout: 60000 });   // the checklist is built (it starts folded)
   await check(page, `${label} – report`);
   for (const [name, act] of ACTIONS) { await act(page); await check(page, `${label} – after ${name}`); }
@@ -86,5 +92,6 @@ await Promise.all(COMBOS.map(async ([size, opts, scheme, big]) => {
   await context.close();
 }));
 await browser.close();
+if (process.env.REPLAY) console.log(`Report answers from the recording: ${replayed}` + (askedLive.size ? `; asked live: ${[...askedLive].sort().join(", ")}` : ""));
 console.log(problems ? `\n${problems} problem(s) found.` : "\nNo problems found.");
 process.exit(problems ? 1 : 0);
