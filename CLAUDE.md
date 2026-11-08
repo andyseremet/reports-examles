@@ -50,19 +50,23 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
   Fix any error it reports before going on.
 - Full test: `npm install --no-save playwright@1.49.1 && npx playwright install chromium` (in a cloud session use the
   preinstalled browser instead: `npm install --no-save playwright@$(node -p "require('/opt/node-tools/node_modules/playwright/package.json').version")`), then
-  `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 node tests/live-check.mjs` (local copy, about 8 minutes) or
+  `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 node tests/live-check.mjs` (local copy, about 6 minutes) or
   `QUIET=1 node tests/live-check.mjs` (live site). Do not edit files while it runs: a mixed run fails at random.
-- **Saving tokens:** `QUIET=1` prints only warnings, failures and the total. On a failed GitHub check, read its
+- **Saving tokens:** `QUIET=1` prints only warnings, failures and the total; `node tests/digest.mjs [results.json]`
+  prints the failures and the 5 slowest steps of a finished run (each result records its time). On a failed GitHub check, read its
   annotations or `get_job_logs` with a small `tail_lines`, not the whole log. Search files instead of reading them whole.
 - There is no way to run one test step. To check one behaviour, write a short Playwright script outside the repo,
   and answer `https://environment.data.gov.uk/spatialdata/**` with `{"features":[]}` so the report finishes fast.
-- After a merge: `bash tests/after-merge.sh`, in the background (up to 20 minutes). It restarts the branch from
-  `origin/main` and pushes it, waits for Pages to serve the new `APP_VERSION`/`CACHE`, and runs the live check. Edit
+- After a merge: `bash tests/after-merge.sh`, in the background. It restarts the branch from `origin/main` and pushes
+  it. If the merge changed no app files, it stops there (seconds). Otherwise it waits for Pages to serve the new
+  `APP_VERSION`/`CACHE` and runs the live check: every data service live, the report pages from the daily recording
+  without pauses (about 5 minutes), or all live with pauses if there is no recording yet. Edit
   nothing while it runs. A stop hook "unpushed commit" warning meanwhile is a timing clash: check with `git fetch` +
   `git rev-list --count origin/<branch>..HEAD` before pushing anything.
 - Accessibility re-check (by hand, after visual changes; not in CI): `npm install --no-save axe-core`, then
-  `node tests/a11y-check.mjs` with the local server running (about 10 minutes). It scans WCAG 2.2 AA on the start
-  page, a report, `status.html` and `glossary.html` at 1280 px, 320 px and phone, light and dark, normal and A+ text, and checks
+  `node tests/a11y-check.mjs` with the local server running (about 3 minutes). It scans WCAG 2.2 AA on the start
+  page, a report, `status.html` and `glossary.html` in 4 combinations (`COMBOS`: every width, colour scheme and text
+  size, including 320 px with A+ text), and checks
   sideways scrolling before and after using each control in its `ACTIONS` list: add each new or changed control
   there. Also Tab through every control and check none is hidden.
 
@@ -145,7 +149,9 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
   recording" result. A test step's own stub (`page.route`) always comes first.
 - Steps that only test data functions (no screen layout) belong in `testCountryData()` in `tests/live-check.mjs`:
   they run once, during the first pause, and must send nothing to the Environment Agency map server. Steps that
-  check the page on a phone, tablet or desktop stay in `testDevice()`.
+  check the page stay in `testDevice()`: a step that does not depend on the screen size uses `desktopStep` (runs
+  once); a layout step uses `step` (runs on every device). Wait for the page (`until`, `scrolled`), not the clock.
+  With `REPLAY` loaded, the pauses between reports are skipped (nothing reaches the Environment Agency).
 - Never skip, remove or loosen a test step to get a pass. The only allowed non-pass is a `"warn"` for the Environment
   Agency map server refusing GitHub's machines with HTTP 403.
 - Outside services (BGS, Environment Agency, Open-Meteo, data.police.uk) have outages. Before changing code for a
