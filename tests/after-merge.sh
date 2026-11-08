@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # After the owner merges a pull request: restart the working branch from main. If the merge changed the app,
-# wait until GitHub Pages serves the new version, then run the live check against the live site: every data
-# service live, the report pages from the daily recording (paced only if a question is missing from it), or all
-# live, paced, if there is no recording yet.
+# wait until GitHub Pages serves the new version, then run a quick live check against the live site (QUICK=1, owner,
+# 8 November 2026): every data service, and every desktop step with one full report, from the daily recording (or
+# all live after a pause if there is no recording yet). The pull request check already ran every step on the same
+# code, and the daily run still does.
 # Run: bash tests/after-merge.sh   (needs Playwright, see CLAUDE.md "Full test")
 set -u
 cd "$(dirname "$0")/.."
@@ -48,7 +49,7 @@ done
 [ "$(curl -s -o /dev/null -w '%{http_code}' "$RECORDING")" = 200 ] && export REPLAY=$RECORDING \
   || echo "No daily recording yet: the report pages ask every service live (with pauses)."
 OUT=$(mktemp -d)
-OUT=$OUT QUIET=1 node tests/live-check.mjs > "$OUT/log.txt" 2>&1; code=$?
+OUT=$OUT QUIET=1 QUICK=1 node tests/live-check.mjs > "$OUT/log.txt" 2>&1; code=$?
 node tests/digest.mjs "$OUT/results.json" 2>/dev/null || tail -5 "$OUT/log.txt"
 # Tell an outage from an app fault: ask each failed data service again, once, 30 seconds later (the result above stands).
 FAILED=$(node -e 'console.log(require(process.argv[1]).results.filter(r => r.group === "Data services" && !r.pass).map(r => r.name).join("|"))' "$OUT/results.json" 2>/dev/null)

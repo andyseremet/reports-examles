@@ -8,8 +8,13 @@ failed check, or changing `tests/` or the workflow.
 | Change | Test |
 |---|---|
 | Documents only | None |
-| Wording, styles, layout, moving code | Pull-request-style test: `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 DATA_SERVICES=0 REPLAY=https://raw.githubusercontent.com/andyseremet/reports-examles/status/recordings.json node tests/live-check.mjs` (about 1.5 minutes; until the first daily recording exists, leave out `REPLAY` and it asks live), plus the accessibility re-check for visual changes |
-| A data source, a topic, a backup, or anything that sends requests | Full test (about 4 minutes) |
+| Wording, styles, layout, moving code | Pull-request-style test: `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 DATA_SERVICES=0 REPLAY=daily node tests/live-check.mjs` (under a minute), plus the accessibility re-check for visual changes |
+| A data source, a topic, a backup, or anything that sends requests | Full test with `REPLAY=daily` (under a minute; every data service is still asked live, and a question missing from the recording, such as a new topic's, goes live) |
+
+`REPLAY=daily` uses the daily recording on the `status` branch. With none (before the first daily run, or if it
+cannot be read) everything is asked live, one report at a time with pauses: 4 to 8 minutes, more during outages.
+Measured on 8 November 2026: full test 47 s with a recording (515 s live, during an Environment Agency outage); the
+after-merge check's quick run 51 s; the accessibility check 44 s.
 
 The syntax check runs after every code edit whatever the change. GitHub (on the pull request) and the after-merge
 check still run the whole test, so the owner's merge is always covered.
@@ -21,8 +26,13 @@ check still run the whole test, so the owner's merge is always covered.
   file. Fix any error it reports before going on.
 - **Full test:** `npm install --no-save playwright@1.49.1 && npx playwright install chromium` (in a cloud session use
   the preinstalled browser instead: `npm install --no-save playwright@$(node -p "require('/opt/node-tools/node_modules/playwright/package.json').version")`),
-  then `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 node tests/live-check.mjs` (local copy, about 6 minutes) or
-  `QUIET=1 node tests/live-check.mjs` (live site). Do not edit files while it runs: a mixed run fails at random.
+  then `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 REPLAY=daily node tests/live-check.mjs` (local copy) or
+  `QUIET=1 REPLAY=daily node tests/live-check.mjs` (live site). Do not edit files while it runs: a mixed run fails at
+  random.
+- **How it saves time** (owner, 8 November 2026; no step dropped): the data services are asked 6 at a time (the
+  Environment Agency map server's one at a time), and a service that hangs gives up after 15 s, then has a second
+  try. With a recording, the services, the country data and the three devices run at the same time. The phone and
+  tablet get blank map pictures at once (the desktop loads and checks the real ones). Screenshots are JPEG.
 - **Saving tokens:** `QUIET=1` prints only warnings, failures and the total; `node tests/digest.mjs [results.json]`
   prints the failures and the 5 slowest steps of a finished run (each result records its time). On a failed GitHub
   check, read its annotations or `get_job_logs` with a small `tail_lines`, not the whole log. Search files instead of
@@ -30,17 +40,18 @@ check still run the whole test, so the owner's merge is always covered.
 - **One behaviour:** there is no way to run one test step. Write a short Playwright script outside the repo, and
   answer `https://environment.data.gov.uk/spatialdata/**` with `{"features":[]}` so the report finishes fast.
 - **Accessibility re-check** (by hand, after visual changes; not in CI): `npm install --no-save axe-core`, then
-  `node tests/a11y-check.mjs` with the local server running (about 3 minutes). It scans WCAG 2.2 AA on the start
-  page, a report, `status.html` and `glossary.html` in 4 combinations (`COMBOS`: every width, colour scheme and text
-  size, including 320 px with A+ text), and checks sideways scrolling before and after using each control in its
+  `node tests/a11y-check.mjs` with the local server running (under a minute). It scans WCAG 2.2 AA on the start
+  page, a report, `status.html` and `glossary.html` in 4 combinations at the same time (`COMBOS`: every width, colour
+  scheme and text size, including 320 px with A+ text), and checks sideways scrolling before and after using each control in its
   `ACTIONS` list: add each new or changed control there. Also Tab through every control and check none is hidden.
 
 ## After a merge
 
 `bash tests/after-merge.sh`, in the background. It restarts the branch from `origin/main` and pushes it. If the merge
 changed no app files, it stops there (seconds). Otherwise it waits for Pages to serve the new `APP_VERSION`/`CACHE`
-and runs the live check: every data service live, the report pages from the daily recording (about 5 minutes), or
-all live with pauses if there is no recording yet. It then asks each failed data service again (`ONLY_SERVICES`) and
+and runs a quick live check (`QUICK=1`, owner, 8 November 2026): every data service live, and every desktop step with
+one full report, from the daily recording (about a minute), or live after a pause if there is no recording yet. The
+pull request check already ran every step on the same code, and the daily run still does. It then asks each failed data service again (`ONLY_SERVICES`) and
 prints "answers now" (an outage on their side) or "still down". Edit nothing while it runs. A stop hook "unpushed
 commit" warning meanwhile is a timing clash: check with `git fetch` + `git rev-list --count origin/<branch>..HEAD`
 before pushing anything.
@@ -63,11 +74,13 @@ before pushing anything.
 ## Writing test steps
 
 - Steps that only test data functions (no screen layout) belong in `testCountryData()` in `tests/live-check.mjs`:
-  they run once, during the first pause, and must send nothing to the Environment Agency map server.
+  they run once (at the same time as the devices when replaying, otherwise during the first pause), and must send
+  nothing to the Environment Agency map server.
 - Steps that check the page stay in `testDevice()`: a step that does not depend on the screen size uses `desktopStep`
   (runs once); a layout step uses `step` (runs on every device).
-- Wait for the page (`until`, `scrolled`), not the clock. With `REPLAY` loaded, the pauses between reports are skipped
-  until a question missing from the recording has to ask the Environment Agency live.
+- Wait for the page (`until`, `scrolled`), not the clock; where the app itself waits (the 8 s retry), move the page's
+  clock on (`page.clock.fastForward`, as in the Try again step). With `REPLAY` loaded the three devices run at the
+  same time, so a step must not depend on another device's steps.
 - Never skip, remove or loosen a test step to get a pass. The only allowed non-pass is a `"warn"` for the Environment
   Agency map server refusing GitHub's machines with HTTP 403.
 

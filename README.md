@@ -185,14 +185,14 @@ It checks that all 48 outside data services and the 2 data files saved with the 
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the share and print icons, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England, Natural England and Defra landfill backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads (layout steps run on all three devices; steps that do not depend on the screen size run once, on the desktop). The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices, and the rule that missing
-data is never "No issue found" (noise, clay and mining with a failed service), is tested once, on the desktop page, during the pause before the first report (it does not depend on the screen size, and it must
+data is never "No issue found" (noise, clay and mining with a failed service), is tested once, on the desktop page (it does not depend on the screen size, and it must
 send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files
 are installed only if it does not start without them. Results,
 screenshots and sample reports are kept for 14 days with each run.
 
 The Environment Agency map server (surface water, noise, landfill, coastal erosion) briefly refuses an address that sends more
-than about 15 requests a minute, which happens to GitHub's shared test machines. The test therefore waits a minute
-before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
+than about 15 requests a minute, which happens to GitHub's shared test machines. The test therefore asks that server's
+data services one at a time and, when the reports ask it live (no recording), waits a minute before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
 answer and retries a refusal or a slow answer. DataMapWales, Historic Environment Scotland, NatureScot, SEPA and DAERA
 get the same treatment with up to 4 requests at a time and 30 seconds to answer. A topic that still fails is tried once more by the page after 20
 seconds. If it then shows "Try again", the test opens its card and presses it once, as a person would (a separate step
@@ -209,8 +209,11 @@ branch (`status.json`, with 7 days of history). The [data service status page](h
 reads that file, so a buyer can see when a topic is down for everyone. Pull request runs do not publish.
 
 Run it yourself: `npm install playwright@1.49.1 && npx playwright install chromium && node tests/live-check.mjs`
-(set `BASE` to test another address, for example a local copy; set `PAUSE_MS=0` to skip the pauses).
-`node tests/digest.mjs` then prints the failures and the slowest steps in a few lines.
+(set `BASE` to test another address, for example a local copy; set `PAUSE_MS=0` to skip the pauses; set
+`REPLAY=daily` to answer the reports from the daily recording). With a recording, the data services (6 at a time), the
+map data checks and the three devices run at the same time: under a minute instead of 4 to 8. `QUICK=1` checks the
+data services and the desktop only (used after a merge). `node tests/digest.mjs` then prints the failures and the
+slowest steps in a few lines.
 
 ### Updating the railway station list
 
