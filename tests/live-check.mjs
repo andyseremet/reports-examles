@@ -286,8 +286,8 @@ async function checkService([name, url, expect, options = {}]) {
 /* ---------------------------------------------------------------
    2. The page in a browser
 --------------------------------------------------------------- */
-// A minute between reports keeps the Environment Agency map server under its limit. Not needed when the report
-// pages are answered from the recording (REPLAY): nothing then reaches that server.
+// A minute between reports keeps the Environment Agency map server under its limit. Skipped when the report pages
+// are answered from the recording (REPLAY), until a question missing from it has to ask that server live.
 const PAUSE_BEFORE_REPORT_MS = Number(process.env.PAUSE_MS ?? 60000);
 
 const DEVICES = [
@@ -606,15 +606,17 @@ async function testDevice(device, [postcode, place]) {
   });
   const step = timedStep(group);
   // Steps that do not depend on the screen size run once, on the desktop; layout steps run on every device.
-  const desktopStep = device === DEVICES[0] ? step : async () => {};
-  // Wait until the page is ready, at most a few seconds; the check that follows then says what went wrong.
-  const until = (fn, arg, ms = 5000) => page.waitForFunction(fn, arg, { timeout: ms }).catch(() => {});
-  // Wait until a smooth scroll has finished (the page stays still for 10 frames).
+  const desktopStep = device.name === "Desktop" ? step : async () => {};
+  // Wait until the condition holds, at most a few seconds. Answers whether it did.
+  const until = (fn, arg, ms = 5000) => page.waitForFunction(fn, arg, { timeout: ms }).then(() => true, () => false);
+  // Wait until a smooth scroll has finished: the page stays still for 15 frames (a scroll that starts a little
+  // late is still caught), at most 3 seconds. Never throws, so a page that is navigating cannot stop the run.
   const scrolled = () => page.evaluate(() => new Promise(done => {
     let y = scrollY, still = 0;
-    const frame = () => { still = scrollY === y ? still + 1 : 0; y = scrollY; still >= 10 ? done() : requestAnimationFrame(frame); };
+    const end = Date.now() + 3000;
+    const frame = () => { still = scrollY === y ? still + 1 : 0; y = scrollY; still >= 15 || Date.now() > end ? done() : requestAnimationFrame(frame); };
     requestAnimationFrame(frame);
-  }));
+  })).catch(() => {});
   const file = name => `${OUT}/${device.name.replace(/\W+/g, "-")}-${name}.png`;
 
   let guideAtStart = false;
@@ -669,8 +671,7 @@ async function testDevice(device, [postcode, place]) {
       if (started) throw new Error("a report started with no signal");
       if (!/will start by itself/.test(text)) throw new Error(`unexpected message: ${text}`);
     } finally { await page.context().setOffline(false); }
-    await until(() => document.getElementById("offlineBar").classList.contains("hidden"));
-    const gone = await page.$eval("#offlineBar", x => x.classList.contains("hidden"));
+    const gone = await until(() => document.getElementById("offlineBar").classList.contains("hidden"));
     const started = await page.evaluate(() => !!run);
     if (started) throw new Error("the cancelled check still started");
     return gone ? "message shown, check waited and was cancelled" : false;
@@ -1033,7 +1034,7 @@ async function testDevice(device, [postcode, place]) {
     return `email text ${text.length} characters`;
   });
 
-  await desktopStep("Viewing checklist: short, serious topics first, ticks remembered", async () => {
+  await step("Viewing checklist: short, serious topics first, ticks remembered", async () => {
     await page.click("#viewingBtn");
     await scrolled();
     const r = await page.evaluate(() => {
@@ -1067,8 +1068,7 @@ async function testDevice(device, [postcode, place]) {
 
   await desktopStep("Back returns to the search, Forward reopens the report", async () => {
     await page.goBack();
-    await until(() => location.search === "" && document.getElementById("toolbar").classList.contains("hidden"));
-    const backOk = await page.evaluate(() => location.search === "" && document.getElementById("toolbar").classList.contains("hidden"));
+    const backOk = await until(() => location.search === "" && document.getElementById("toolbar").classList.contains("hidden"));
     await page.goForward();
     await reportDone(page);
     return backOk ? "ok" : false;
@@ -1092,7 +1092,9 @@ async function testDevice(device, [postcode, place]) {
   await step("Print summary and download", async () => {
     await page.emulateMedia({ media: "print" });
     await page.evaluate(() => { document.body.classList.add("print-summary"); dispatchEvent(new Event("beforeprint")); });
-    await until(() => document.getElementById("reportMap").getBoundingClientRect().width === 360);
+    // The printed map changes size and zoom: wait until its new tiles have loaded (the PDF is kept for people to look at).
+    await until(() => { const m = document.getElementById("reportMap"), tiles = [...m.querySelectorAll("img.leaflet-tile")];
+      return m.getBoundingClientRect().width === 360 && tiles.length && tiles.every(t => t.complete && t.classList.contains("leaflet-tile-loaded")); });
     try {   // the page is always put back on screen, even if a check below fails (later steps need it)
     // On paper: page 1 has the at-a-glance table (one row per topic); every page gets the place, date and page number;
     // app instructions, the tappable grid and the "saved results" note are left out.
@@ -1182,7 +1184,7 @@ async function testDevice(device, [postcode, place]) {
     return download.suggestedFilename();
   });
 
-  await desktopStep("Remove a saved property, then Undo puts it back", async () => {
+  await step("Remove a saved property, then Undo puts it back", async () => {
     const before = await page.$$eval("#savedList li", x => x.length);
     const key = await page.$eval("#savedList [data-remove]", b => b.dataset.remove);
     await page.click("#savedList [data-remove]");
@@ -1204,7 +1206,7 @@ async function testDevice(device, [postcode, place]) {
     return "ok";
   });
 
-  await desktopStep("Compare up to three saved properties, and show only differences", async () => {
+  await step("Compare up to three saved properties, and show only differences", async () => {
     // Add two copies of the saved property (one with a different first rating), compare all three, then put the list back.
     const keep = await page.evaluate(() => {
       const list = store.get(SAVED_KEY, []), orig = JSON.stringify(list), s = list[0];
@@ -1251,12 +1253,9 @@ async function testDevice(device, [postcode, place]) {
 /* ---------------------------------------------------------------
    Run everything and write the summary
 --------------------------------------------------------------- */
-// Stop at once if the app itself does not answer (for example a local server that is not running),
-// instead of failing every page step.
-if (!(await fetch(BASE).then(r => r.ok, () => false))) {
-  console.log(`The app does not answer at ${BASE}: start the server (see CLAUDE.md "Serve locally").`);
-  process.exit(1);
-}
+// If the app itself does not answer (for example a local server that is not running), the page steps are left
+// out with one failure instead of a hundred; the data services are still checked and the summary is written.
+const appAnswers = await fetch(BASE, { signal: AbortSignal.timeout(20000) }).then(r => r.ok, () => false);
 let browser;
 const reports = {};
 try {
@@ -1271,6 +1270,7 @@ try {
   const toCheck = CHECK_DATA_SERVICES ? SERVICES : SERVICES.filter(s => !isReportDataService(s));
   for (const service of toCheck) await checkService(service);
   if (!CHECK_DATA_SERVICES) console.log(`Left out on request (DATA_SERVICES=0): ${reportServices} report data services. Run the check by hand to test them.`);
+  if (!appAnswers) throw new Error(`the app does not answer at ${BASE}: start the server (see CLAUDE.md "Serve locally")`);
   browser = await chromium.launch();
   await loadReplay();
   // On replay, the third report uses the place the daily run picked, so its answers are recorded too.
@@ -1280,7 +1280,8 @@ try {
     // The Environment Agency map server allows only about 15 requests a minute from
     // one address, and one report sends about 7. Pausing before each report keeps
     // the test within that limit, like a person checking one property at a time.
-    const pause = new Promise(r => setTimeout(r, replayData ? 0 : PAUSE_BEFORE_REPORT_MS));
+    const paceNeeded = !replayData || askedLive.has("environment.data.gov.uk");   // a question missing from the recording went live
+    const pause = new Promise(r => setTimeout(r, paceNeeded ? PAUSE_BEFORE_REPORT_MS : 0));
     if (i === 0) await testCountryData().catch(e => record("Country data (desktop)", "The country data steps crashed", false, e.message));
     await pause;
     const topics = await testDevice(DEVICES[i], places[i]);

@@ -7,6 +7,7 @@ const { results } = JSON.parse(readFileSync(file, "utf8"));
 const line = r => `[${r.group}] ${r.name}${r.info ? " – " + r.info.slice(0, 160) : ""}`;
 
 results.filter(r => !r.pass || r.warn).forEach(r => console.log(`${r.pass ? "WARN" : "FAIL"}  ${line(r)}`));
+results.filter(r => r.pass && !r.warn && r.group === "Test run").forEach(r => console.log(`INFO  ${line(r)}`));   // for example the recording used
 const timed = results.filter(r => r.ms !== undefined).sort((a, b) => b.ms - a.ms);
 const total = timed.reduce((sum, r) => sum + r.ms, 0);
 console.log(`Slowest steps (of ${timed.length}, ${Math.round(total / 1000)} s in all):`);
