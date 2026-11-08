@@ -188,7 +188,6 @@ const REPORT_DEADLINE_MS = 45000;
 function stopWaiting(r) {
   const late = TASKS.map(([key]) => key).filter(key => !r.R[key]);
   late.forEach(key => { r.R[key] = { ok: false, error: "the data service is slow to answer", slow: true }; });
-  r.stoppedWaiting = late;
   late.forEach(key => { if (r === run) onTaskSettled(key); });
 }
 
@@ -223,7 +222,8 @@ function recentAnswer(loc, task) {
 const forgetAnswers = key => store.remove(recentKey(key));
 
 function startTask(r, key, autoRetry = true) {
-  delete r.R[key];
+  // A saved answer shown while waiting stays until the retry settles (code review, 2.3.3).
+  if (!r.R[key] || !r.R[key].waiting) delete r.R[key];
   TASK_FN[key](r.loc).then(
     value => { r.R[key] = { ok: true, value }; rememberAnswer(r.loc, key, value); },
     async error => {
@@ -382,10 +382,12 @@ function updateStickyRun() {
 $("stickyRunBtn").addEventListener("click", () => runChecks());
 window.addEventListener("resize", updateStickyRun);
 
-// "Try again" on a check that could not load: re-fetch only the data it is missing.
+// "Try again" on a check that could not load: re-fetch only the data it is missing. On a saved report (which keeps
+// only part of its data) it runs a fresh report instead, like Refresh (code review, 2.3.3).
 document.addEventListener("click", e => {
   const btn = e.target.closest("[data-retry]");
   if (!btn || !run) return;
+  if (run.snapshot) { runChecks({ fromHistory: true }); return; }
   const c = CHECKS.find(x => x.id === btn.dataset.retry);
   if (!c) return;
   let keys = c.deps.filter(k => !run.R[k] || !run.R[k].ok);

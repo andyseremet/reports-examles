@@ -12,7 +12,8 @@ function getPlace(loc) {
   if (!placeCache.has(key)) {
     // postcodes.io first; if it does not answer, OpenStreetMap's reverse lookup gives the country and council.
     const promise = fetchJSON(API.postcodes + "?lon=" + loc.lon + "&lat=" + loc.lat + "&radius=2000&limit=1")
-      .then(d => (d.result && d.result[0]) || null, () => placeFromOsm(loc));
+      // No postcode within 2 km (remote places, the sea): OpenStreetMap may still know the country (code review, 2.3.3).
+      .then(d => (d.result && d.result[0]) || placeFromOsm(loc).catch(() => null), () => placeFromOsm(loc));
     promise.catch(() => placeCache.delete(key));   // try again next time if it failed
     placeCache.set(key, promise);
   }
@@ -409,12 +410,17 @@ function geometryHas(geometry, pt) {
   return polys.some(rings => pointInRings(pt, rings));
 }
 
-// Shortest distance from the pin to the edge of an area, in km.
+// Shortest distance from the pin to the edge of an area (or to a point), in km. A shape with no usable coordinates is
+// "Infinity" (never near), so one odd record never fails the whole topic (code review, 2.3.3).
 function distanceToGeometryKm(geometry, pt) {
   const kx = 111.32 * Math.cos(pt.lat * Math.PI / 180), ky = 110.54;
+  const toPoint = c => Math.hypot((c[0] - pt.lon) * kx, (c[1] - pt.lat) * ky);
   let best = Infinity;
   (function walk(c) {
-    if (typeof c[0][0] === "number") {
+    if (!Array.isArray(c) || !c.length) return;
+    if (typeof c[0] === "number") { best = Math.min(best, toPoint(c)); return; }   // a single point
+    if (Array.isArray(c[0]) && typeof c[0][0] === "number") {
+      if (c.length === 1) best = Math.min(best, toPoint(c[0]));
       for (let i = 1; i < c.length; i++) {
         const ax = (c[i - 1][0] - pt.lon) * kx, ay = (c[i - 1][1] - pt.lat) * ky;
         const bx = (c[i][0] - pt.lon) * kx, by = (c[i][1] - pt.lat) * ky;
@@ -423,7 +429,7 @@ function distanceToGeometryKm(geometry, pt) {
         best = Math.min(best, Math.hypot(ax + t * dx, ay + t * dy));
       }
     } else c.forEach(walk);
-  })(geometry.coordinates || []);
+  })(geometry && geometry.coordinates);
   return best;
 }
 
@@ -553,16 +559,17 @@ async function getSoldPrices(loc) {
   return { postcodes: postcodes.length, sales };
 }
 
-// A point well outside Wales answers at once, without waiting for the postcode lookup. If the lookup fails,
-// the England data is used, so a postcodes.io fault never stops the England topics.
+// A point well outside Wales answers at once, without waiting for the postcode lookup. Inside a country's box (which
+// also takes in parts of its neighbours), a place whose country cannot be found fails the topic ("could not be
+// checked"): England data for a Welsh or Scottish pin would give empty answers read as "No issue found" (2.3.3).
 const WALES_BOX = { south: 51.3, north: 53.5, west: -5.4, east: -2.6 };
 const SCOTLAND_BOX = { south: 54.6, north: 61, west: -9, east: -0.7 };
 async function inCountry(loc, country, box) {
   if (loc.lat < box.south || loc.lat > box.north || loc.lon < box.west || loc.lon > box.east) return false;
-  try {
-    const place = await getPlace(loc);
-    return !!place && place.country === country;
-  } catch (e) { return false; }
+  let place;
+  try { place = await getPlace(loc); } catch (e) { place = null; }
+  if (!place || !place.country) throw new Error("the country of this place could not be found right now");
+  return place.country === country;
 }
 const inWales = loc => inCountry(loc, "Wales", WALES_BOX);
 const inScotland = loc => inCountry(loc, "Scotland", SCOTLAND_BOX);

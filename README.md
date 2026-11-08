@@ -101,7 +101,8 @@ official checkers.
 - **Privacy:** no account, cookies or tracking; see "Privacy: what is sent where" at the bottom of the page.
 - **Saved properties:** reopen instantly from saved results (with a refresh button), private notes (marked "Saved on
   this device", with "Saved ✓" after each change), a starred shortlist, **Rename** and **Remove** buttons (Remove offers
-  **Undo** for 10 seconds), and export/import to move the list to another device (in the **Move to another device** panel, closed until needed). Saved properties live only in the browser, so the app asks the
+  **Undo** for 10 seconds), and export/import to move the list to another device (in the **Move to another device** panel, closed until needed;
+  since 2.3.3 an imported file keeps only plain values, and its properties get a fresh report when opened). Saved properties live only in the browser, so the app asks the
   browser to keep them, says plainly if something could not be saved (for example, storage full or a private window),
   and suggests **Download a backup** once you have 5 or more saved properties and no backup in the last 30 days.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a

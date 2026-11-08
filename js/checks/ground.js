@@ -90,6 +90,9 @@ function checkCoal(R) {
   if (other === undefined && status === "low") {     // the other-mining overview did not answer: not "No issue found"
     status = "manual";
     found += " Mining other than coal could not be checked right now.";
+  } else if (other === null && status === "low") {   // no hexagon here (the overview says "NA" where nothing is known): missing data
+    status = "manual";
+    found += " No data on mining other than coal was found for this spot.";
   }
   meaning += " Mining other than coal comes from the British Geological Survey's overview in 1 km hexagons, so it describes the area, not the exact plot.";
   return {

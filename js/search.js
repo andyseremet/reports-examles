@@ -57,6 +57,7 @@ document.addEventListener("click", e => {
   if (!e.target.closest(".search-box")) hideSuggestions();
 });
 
+const UK_COUNTRIES = ["England", "Wales", "Scotland", "Northern Ireland"];
 async function loadSuggestions(q) {
   const requestId = ++suggestRequest;
   let items = [];
@@ -67,7 +68,7 @@ async function loadSuggestions(q) {
     } else {
       const d = await fetchJSON(API.places + "?q=" + encodeURIComponent(q) + "&limit=6");
       items = (d.result || [])
-        .filter(p => !p.country || p.country === "England" || p.country === "Wales")
+        .filter(p => !p.country || UK_COUNTRIES.includes(p.country))   // all four countries the report covers (2.3.3)
         .map(p => ({
           type: "place", label: p.name_1,
           hint: [p.local_type, p.district_borough || p.county_unitary, p.region].filter(Boolean).join(", "),

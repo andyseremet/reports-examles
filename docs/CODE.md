@@ -30,6 +30,10 @@ How the app's code is laid out and the rules for changing it. Read this before c
 
 ## Countries
 
+- **Which country:** fetches ask `inWales`, `inScotland` and `inNI` (`js/data.js`), from postcodes.io, or
+  OpenStreetMap when it has no postcode within 2 km or does not answer. Inside a country's box, a place whose country
+  cannot be found throws ("the country of this place could not be found right now"), so the topic says it could not
+  be checked: never England data for a pin that may be in Wales or Scotland (code review, 2.3.3).
 - **Wales:** land use, coast, noise, air, planning and nature use DataMapWales (`datamap.gov.wales`, paced in
   `PACED_HOSTS`): `getWalesSites`, `getWalesNoise`, `getWalesCoast`, `getCoalTips` in `js/data-wales.js`, and `isWales(R)`
   branches in the checks. England-only fetches return early for Wales instead of asking England's servers.

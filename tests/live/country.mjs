@@ -136,6 +136,54 @@ export async function testCountryData(browser) {
       return `Derby: ${r.derby.dry.length} reservoir(s) on a normal day, ${r.derby.wet.length} when rivers flood; Barnsley none; Wales left out`;
     });
 
+    await step("Code review fixes (2.3.3): unknown country, empty air estimate, verdict, coal, retry keeps the saved answer, odd shapes", async () => {
+      // Stand-in answers only: postcodes.io has no postcode near two Highland pins; OpenStreetMap fails for the first
+      // and says Scotland for the second. Nothing is sent to either service.
+      const stub = r => {
+        const u = r.request().url();
+        if (u.startsWith("https://api.postcodes.io/")) return r.fulfill({ json: { status: 200, result: null } });
+        if (u.includes("lon=-5.81")) return r.fulfill({ status: 500, body: "" });
+        return r.fulfill({ json: { address: { "ISO3166-2-lvl4": "GB-SCT" } } });
+      };
+      const highland = u => /lon=-5\.8[12]/.test(u.href);
+      await page.route(highland, stub);
+      try {
+        const r = await page.evaluate(async () => {
+          const unknown = await inScotland({ lat: 57.4, lon: -5.81, radius: 1000 }).then(v => "answered " + v, e => e.message);
+          const osm = await inScotland({ lat: 57.4, lon: -5.82, radius: 1000 });
+          const england = { ok: true, value: { country: "England" } }, none = { ok: true, value: [] };
+          const air = checkAir({ air: { ok: true, value: { no2: null, pm25: null } }, planningPoint: none, planningNearby: none, place: england, loc: { radius: 1000 } });
+          const airDown = checkAir({ air: { ok: true, value: { no2: null, pm25: null } }, planningPoint: { ok: false, error: "x" }, planningNearby: { ok: false, error: "x" }, place: england, loc: { radius: 1000 } });
+          const counts = c => s => c[s] || 0;
+          const nothing = doneVerdict(counts({ error: 5, manual: 2 })), some = doneVerdict(counts({ low: 6, error: 3 }));
+          const coal = checkCoal({ coal: { ok: true, value: { highAtPoint: false, lowAtPoint: false, highNearby: false } }, otherMining: { ok: true, value: null } });
+          // A retry keeps the saved answer shown while waiting (its task is made to wait forever here).
+          const keep = run, fn = TASK_FN.radon;
+          let waiting;
+          try {
+            TASK_FN.radon = () => new Promise(() => {});
+            run = { loc: { lat: 52, lon: -1, radius: 1000 }, R: { radon: { ok: true, value: {}, cachedAt: "2026-11-08T10:00:00Z", waiting: true } }, results: {} };
+            startTask(run, "radon", false);
+            waiting = !!(run.R.radon && run.R.radon.waiting);
+          } finally { TASK_FN.radon = fn; run = keep; }
+          const pt = { lat: 52, lon: -1 };
+          const shapes = [distanceToGeometryKm(null, pt), distanceToGeometryKm({ type: "Polygon", coordinates: [] }, pt),
+            distanceToGeometryKm({ type: "Point", coordinates: [-1, 52.009] }, pt)];
+          return { unknown, osm, air: [air.status, air.found], airDown: [airDown.status, airDown.found], nothing, some, coal: [coal.status, coal.found], waiting, shapes };
+        });
+        if (!/country of this place could not be found/.test(r.unknown)) throw new Error(`unknown country: ${r.unknown}`);
+        if (r.osm !== true) throw new Error("OpenStreetMap's Scotland was not used when postcodes.io had no postcode nearby");
+        if (r.air[0] !== "info" || !/has no figures/.test(r.air[1]) || /within/.test(r.air[1])) throw new Error(`empty air estimate: ${r.air.join(": ")}`);
+        if (r.airDown[0] !== "manual") throw new Error(`empty estimate, hotspots down: ${r.airDown.join(": ")}`);
+        if (!/Nothing could be checked/.test(r.nothing) || /No issues found/.test(r.nothing)) throw new Error(`verdict with nothing checked: ${r.nothing}`);
+        if (!/3 topics could not be checked/.test(r.some)) throw new Error(`verdict with gaps: ${r.some}`);
+        if (r.coal[0] !== "manual" || !/No data on mining other than coal/.test(r.coal[1])) throw new Error(`coal with no other-mining data: ${r.coal.join(": ")}`);
+        if (!r.waiting) throw new Error("the retry dropped the saved answer shown while waiting");
+        if (r.shapes[0] !== Infinity || r.shapes[1] !== Infinity || !(r.shapes[2] > 0.9 && r.shapes[2] < 1.1)) throw new Error(`odd shapes: ${r.shapes}`);
+        return "unknown country fails the topic; air, verdict and coal never good news from no data; retry keeps the saved answer; odd shapes skipped";
+      } finally { await page.unroute(highland, stub); }
+    });
+
     await step("Backups for the place, the address search and recent answers", async () => {
       // postcodes.io not answering: OpenStreetMap gives the country (Leith → Scotland). Nominatim not answering: Photon
       // finds the address. A service that fails reuses its answer from the last 7 days, but never an older one.
