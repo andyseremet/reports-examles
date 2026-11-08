@@ -30,6 +30,8 @@ const ON_GITHUB = process.env.GITHUB_ACTIONS === "true";
 // pull requests do this, so they test the app itself. The daily run and manual runs (by default) check them all.
 // The postcode lookup and address search (marked alwaysChecked) are always checked: the app needs them to find the place.
 const CHECK_DATA_SERVICES = process.env.DATA_SERVICES !== "0";
+// ONLY_SERVICES="name|name": check just these data services and stop (after-merge.sh asks failed ones again).
+const ONLY_SERVICES = (process.env.ONLY_SERVICES || "").split("|").filter(Boolean);
 const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && !options.sameSite;
 
 // Steady pull request checks (2.0.0, quiz of 7 November 2026). RECORD=1 (daily and manual runs) saves each answer the
@@ -1259,6 +1261,10 @@ const appAnswers = await fetch(BASE, { signal: AbortSignal.timeout(20000) }).the
 let browser;
 const reports = {};
 try {
+  if (ONLY_SERVICES.length) {
+    for (const service of SERVICES.filter(([name]) => ONLY_SERVICES.includes(name))) await checkService(service);
+    process.exit(0);
+  }
   const noTopics = SERVICES.map(([name]) => name).filter(name => !SERVICE_TOPICS[name]);
   record("Data services", "Every service lists the report topics it feeds", !noTopics.length,
     noTopics.length ? "missing in SERVICE_TOPICS: " + noTopics.join("; ") : `${SERVICES.length} services`);

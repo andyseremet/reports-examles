@@ -50,4 +50,12 @@ done
 OUT=$(mktemp -d)
 OUT=$OUT QUIET=1 node tests/live-check.mjs > "$OUT/log.txt" 2>&1; code=$?
 node tests/digest.mjs "$OUT/results.json" 2>/dev/null || tail -5 "$OUT/log.txt"
+# Tell an outage from an app fault: ask each failed data service again, once, 30 seconds later (the result above stands).
+FAILED=$(node -e 'console.log(require(process.argv[1]).results.filter(r => r.group === "Data services" && !r.pass).map(r => r.name).join("|"))' "$OUT/results.json" 2>/dev/null)
+if [ -n "$FAILED" ]; then
+  sleep 30
+  echo "Failed data services, asked again 30 seconds later:"
+  ONLY_SERVICES="$FAILED" OUT="$OUT/again" node tests/live-check.mjs 2>/dev/null \
+    | sed -n 's/^PASS  \[Data services\] \(.*\)  – .*/  answers now: \1/p; s/^FAIL  \[Data services\] \(.*\)  – \(.*\)/  still down: \1 (\2)/p'
+fi
 exit $code
