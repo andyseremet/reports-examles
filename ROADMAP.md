@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.0.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.0.1** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.0.0)
+## Part 1: What the app does today (version 2.0.1)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -87,7 +87,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - **Email** or **Copy** the key points for your conveyancer. Nothing passes through the app.
 
 ### Reliability
-- A failed topic is tried again after 20 seconds, then offers **Try again**.
+- A failed topic is tried again after 8 seconds (20 before 2.0.1), then offers **Try again**.
 - Backups (1.30.1, after planning.data.gov.uk was down for a day): when it does not answer, heritage and nature come
   from Historic England and Natural England, and the topic names what it could not check. A topic whose service does
   not answer shows this place's last saved answer, dated, with **Try again**. Since 1.31.1 the flood zone at the pin
@@ -142,6 +142,10 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   longer read "No issue found" or hide other mining.
 - An automatic check runs every day against the live site, and on every pull request. A failure opens a "Live check
   failed" issue on GitHub.
+- Faster checks (2.0.1, quiz of 8 November 2026): screen-size-independent test steps run once, on the desktop; waits
+  for the page instead of fixed pauses; no pauses when the report pages replay the recording; each step timed, with a
+  short digest (`tests/digest.mjs`); the after-merge check skips document-only merges and replays the report pages;
+  the accessibility check scans 4 combinations instead of 12. A failed topic retries after 8 seconds instead of 20.
 - Steady pull request checks (2.0.0): each daily run records the outside services' answers to the `status` branch
   (each kept up to 14 days); pull requests build their reports from that copy, so an outside outage cannot turn them
   red. A question never recorded (for example a new topic) is asked live and named in the result. The daily check stays

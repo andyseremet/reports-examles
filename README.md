@@ -48,7 +48,7 @@ official checkers.
 - **Map:** on phones, scroll the page with one finger and move the map with two; on computers, use Ctrl (⌘ on Mac)
   + scroll to zoom. Full-screen map button, "my location" button, satellite and street backgrounds.
 - **Report:** results appear topic by topic as the data arrives. A topic whose data fails is tried once more by itself
-  after 20 seconds; if it fails again, it shows a **Try again** button. If this place was checked before, the topic
+  after 8 seconds; if it fails again, it shows a **Try again** button. If this place was checked before, the topic
   shows that saved answer instead, clearly dated, still with **Try again**. When planning.data.gov.uk does not answer
   (England), heritage, conservation areas and nature are asked from Historic England and Natural England instead, and
   the flood zone at the pin from the Environment Agency's own flood map; each topic names anything it could not check

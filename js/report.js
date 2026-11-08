@@ -172,10 +172,10 @@ function slowNote() {
       <a href="status.html">Data service status</a></p></div>`;
 }
 
-// A topic whose data fails is tried once more by itself: after 20 seconds,
+// A topic whose data fails is tried once more by itself: after 8 seconds,
 // or as soon as the signal returns if the device went offline.
 // If it fails again, the topic shows a "Try again" button.
-const AUTO_RETRY_MS = 20000;
+const AUTO_RETRY_MS = 8000;
 const onlineAgain = () => navigator.onLine ? Promise.resolve()
   : new Promise(res => window.addEventListener("online", res, { once: true }));
 
