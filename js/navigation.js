@@ -1,7 +1,7 @@
 // Property Location Check – finding your way in the report: the section bar, Open problems / Close all, the phone tab bar and back to top.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { $ } from "./core.js";
+import { $, on } from "./core.js";
 
 /* ---------- section bar, open/close all, back to top ---------- */
 
@@ -40,7 +40,7 @@ function updateTabBar() {
   $("tabProblemsText").textContent = `Problems (${n})`;
   $("tabProblems").disabled = !n;
 }
-$("tabProblems").addEventListener("click", () => {
+on("tabProblems", "click", () => {
   const list = problemTopics();
   if (!list.length) return;
   list.forEach(d => { d.open = true; });          // each change of "open" refreshes the buttons (toggle listener)
@@ -55,7 +55,7 @@ function updateToggleAll() {
   $("toggleAll").textContent = anyOpen ? "Close all" : "Open problems";
   $("toggleAll").disabled = !anyOpen && !problemTopics().length;
 }
-$("toggleAll").addEventListener("click", () => {
+on("toggleAll", "click", () => {
   if ($("toggleAll").textContent === "Close all") allTopics().forEach(d => { d.open = false; });
   else problemTopics().forEach(d => { d.open = true; });
   updateToggleAll();
@@ -68,7 +68,7 @@ function updateNavFade() {
   el.classList.toggle("more-left", el.scrollLeft > 2);
   el.classList.toggle("more-right", el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
 }
-$("navLinks").addEventListener("scroll", updateNavFade, { passive: true });
+on("navLinks", "scroll", updateNavFade, { passive: true });
 window.addEventListener("resize", updateNavFade);
 
 // Links within the report (section bar, topic icons, "Key findings") scroll to their
@@ -95,6 +95,6 @@ function openTopic(d) {
 window.addEventListener("scroll", () => {
   $("toTop").classList.toggle("hidden", window.scrollY < 700);
 }, { passive: true });
-$("toTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+on("toTop", "click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
 export { problemTopics, updateNavFade, updateToggleAll, watchSections };

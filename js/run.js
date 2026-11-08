@@ -2,7 +2,7 @@
 // drawing each topic as it arrives, Try again, saved reports, the place bar and start-up from an address.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { $, escapeHTML, icon, MAP_COLOURS, okValue } from "./core.js";
+import { $, escapeHTML, icon, MAP_COLOURS, MISSING, okValue, on } from "./core.js";
 import { reportKey, store } from "./store.js";
 import { backupFor, byDataset } from "./topics/helpers.js";
 import { CHECKS } from "./topics/index.js";
@@ -20,7 +20,7 @@ import { buildChecklist, buildViewing, renderNotes, restoreTicks } from "./next-
 
 let reportData = null;          // the report's data, for downloads and saved reports
 
-$("runBtn").addEventListener("click", () => runChecks());
+on("runBtn", "click", () => runChecks());
 
 function runChecks(options = {}) {
   if (!selected) { openSearch(); return; }
@@ -87,7 +87,8 @@ updateOfflineBar();
 
 let lastRunKey = null;
 let shownSearch = location.search;   // the ?lat=… part of the address for what is on screen
-const REPORT_PLACEHOLDER = $("report").innerHTML;
+const REPORT_PLACEHOLDER = $("report") ? $("report").innerHTML : "";
+if (!$("report")) console.error(MISSING + "report (where the report goes)");
 
 // With a report open, the search map and the saved list shrink to one line: "📍 Name · Change · Saved (3)".
 // "Change" and "Saved" open them again above the report; running a new check shrinks them again.
@@ -118,12 +119,12 @@ function updatePlaceButtons() {
   $("showSaved").innerHTML = `${icon("list")}<span>${savedOpen ? "Hide saved" : `Saved (${n})`}</span>`;
   $("showSaved").classList.toggle("hidden", !n);
 }
-$("changePlace").addEventListener("click", () => {
+on("changePlace", "click", () => {
   const open = document.body.classList.contains("hide-search");
   setPanelOpen("search", open);
   if (open) $("searchPanel").scrollIntoView({ behavior: "smooth", block: "start" });
 });
-$("showSaved").addEventListener("click", () => {
+on("showSaved", "click", () => {
   const open = document.body.classList.contains("hide-saved");
   setPanelOpen("saved", open);
   if (open) $("savedPanel").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -253,7 +254,7 @@ function findSnapshot(loc) {
   return store.get(snapKey(reportKey(loc)), null);
 }
 
-$("report").addEventListener("click", e => {
+on("report", "click", e => {
   if (e.target.closest("#refreshBtn") && run) runChecks({ fromHistory: true });
 });
 
@@ -264,7 +265,7 @@ function setExportEnabled(on) {
 // Phones: keep "Check this property" at the bottom of the screen until it is pressed,
 // whenever the page's own button is scrolled out of view.
 let runBtnVisible = true;
-if ("IntersectionObserver" in window) {
+if ("IntersectionObserver" in window && $("runBtn")) {
   new IntersectionObserver(entries => { runBtnVisible = entries[0].isIntersecting; updateStickyRun(); })
     .observe($("runBtn"));
 }
@@ -276,7 +277,7 @@ function updateStickyRun() {
   box.classList.toggle("hidden", !show);
   document.body.classList.toggle("has-sticky", show);
 }
-$("stickyRunBtn").addEventListener("click", () => runChecks());
+on("stickyRunBtn", "click", () => runChecks());
 window.addEventListener("resize", updateStickyRun);
 
 // "Try again" on a check that could not load: re-fetch only the data it is missing. On a saved report (which keeps

@@ -10,7 +10,8 @@ Reserve Important for findings that would mislead a buyer, break the app, leak d
 - **A wrong rating:** missing or failed data rated "No issue found" (`"low"`) instead of "Check yourself"
   (`"manual"`), a rating outside the five labels in `STATUS_LABEL`, or a backup or saved answer shown as current.
 - **A broken report:** a topic that never finishes, a script error, code run at load time that uses something a
-  later file defines (load order in `js/main.js`), a name used but not imported (modules, since 2.4.0), a `let`
+  later file defines (load order in `index.html`), wiring done as a file loads without `on()` (a missing element
+  would stop the file and the files that import it), a name used but not imported (modules, since 2.4.0), a `let`
   variable changed outside the file that declares it, a test reading an app name missing from `js/page-names.js`,
   or a printout that drops the map or the findings.
 - **Data leaving the device:** saved properties, notes or searches sent to any outside service, or the owner's email

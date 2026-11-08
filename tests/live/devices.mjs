@@ -40,6 +40,8 @@ export async function testDevice(browser, device, [postcode, place]) {
   const page = await context.newPage();
   const pageErrors = [];
   page.on("pageerror", e => pageErrors.push(e.message));
+  // An element the app wires up when it loads but cannot find (on() in js/core.js names it instead of stopping).
+  page.on("console", m => { if (m.type() === "error" && m.text().includes("missing on the page")) pageErrors.push(m.text()); });
   // Record data requests that fail, with the reply, to explain any topic that could not load.
   const failedRequests = [];
   const shortUrl = u => { const x = new URL(u); return x.host + x.pathname.replace(/\/(wms|query|items)$/, "/$1"); };

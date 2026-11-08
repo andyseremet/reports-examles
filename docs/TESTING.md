@@ -22,12 +22,13 @@ check still run the whole test, so the owner's merge is always covered.
 
 ## Running the tests
 
-- **Syntax check:** `node tests/syntax-check.mjs` (first, what a topic or file is missing, each with the line to
-  add or remove: a topic file not in `CHECKS` or not named after its id, a file missing from `SHELL`, a topic whose
-  data service is not in `SERVICE_TOPICS`, a name in `js/page-names.js` that no longer exists; then every module
-  the app loads reads correctly and each name it
-  imports is exported by the file it names, for the kit too (`js/kit.js` and each `kit/v<N>/`); then the status
-  page's script and `sw.js`). A project
+- **Syntax check:** `node tests/syntax-check.mjs` (every module the app loads reads correctly and each name it
+  imports is exported by the file it names, for the kit too (`js/kit.js` and each `kit/v<N>/`); then, from what was
+  actually linked, what a topic or file still needs, each with the line to add or remove: a file missing from `SHELL`
+  (or a listed file that no longer exists), a topic file not in `CHECKS` or not named after its id, a topic data key
+  missing from `TASK_ORDER`, a topic whose data service is not in `SERVICE_TOPICS`, `SERVICES` or
+  `data/data-services.csv`, and a name in `js/page-names.js` (including `run`) that its file no longer offers; then
+  the status page's script and `sw.js`). The hook also runs it after edits to `tests/*.mjs` and `data/*.csv`. A project
   hook (`.claude/settings.json`, `.claude/hooks/syntax-check.sh`) runs it after every edit to `index.html` or a `.js`
   file. Fix any error it reports before going on.
 - **Full test:** `npm install --no-save playwright@1.63.0 && npx playwright install chromium` (in a cloud session use

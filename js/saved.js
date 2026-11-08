@@ -1,7 +1,7 @@
 // Property Location Check – storage on this device, saved properties and compare.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { $, escapeHTML, icon, okValue, plural, STATUS_LABEL } from "./core.js";
+import { $, escapeHTML, icon, okValue, on, plural, STATUS_LABEL } from "./core.js";
 import { onStorageProblem, reportKey, store } from "./store.js";
 import { CHECKS } from "./topics/index.js";
 import { TASKS } from "./tasks.js";
@@ -17,7 +17,7 @@ import { downloadFile } from "./print.js";
 // Say plainly when something could not be saved, instead of losing it silently.
 function showStorageProblem() { $("storageBar").classList.remove("hidden"); }
 onStorageProblem(showStorageProblem);
-$("storageBarClose").addEventListener("click", () => $("storageBar").classList.add("hidden"));
+on("storageBarClose", "click", () => $("storageBar").classList.add("hidden"));
 
 // Ask the browser not to clear saved properties when the device is short of space.
 // Most browsers decide by themselves, without asking the user.
@@ -127,8 +127,8 @@ function backupDue(count) {
     .filter(Boolean).map(d => new Date(d).getTime()).filter(t => !isNaN(t));
   return !last.length || Date.now() - Math.max(...last) > BACKUP_DAYS * 86400000;
 }
-$("backupNow").addEventListener("click", () => { $("moveDevice").open = true; $("exportBtn").click(); });
-$("backupLater").addEventListener("click", () => { store.set("plc-backup-later", new Date().toISOString()); renderSaved(); });
+on("backupNow", "click", () => { $("moveDevice").open = true; $("exportBtn").click(); });
+on("backupLater", "click", () => { store.set("plc-backup-later", new Date().toISOString()); renderSaved(); });
 
 function selectedForCompare() {
   return [...document.querySelectorAll("#savedList input[data-compare]:checked")].map(b => b.dataset.compare);
@@ -145,7 +145,7 @@ function updateCompareButton() {
     : `Tick 2 or 3 properties to compare them (${n} chosen).`;
 }
 
-$("savedList").addEventListener("change", updateCompareButton);
+on("savedList", "change", updateCompareButton);
 function renameSaved(key, newName) {
   const name = newName.trim().slice(0, 80);
   if (!name) return;
@@ -164,7 +164,7 @@ function renameSaved(key, newName) {
   }
 }
 
-$("savedList").addEventListener("click", e => {
+on("savedList", "click", e => {
   const ren = e.target.closest("[data-rename]");
   if (ren) {
     const li = ren.closest("li");
@@ -234,7 +234,7 @@ function finishUndo(timedOut) {
   if (timedOut) renderSaved();
   if (hadFocus) ($("savedPanel").classList.contains("hidden") ? $("q") : $("savedTitle")).focus();
 }
-$("undoBtn").addEventListener("click", () => {
+on("undoBtn", "click", () => {
   if (!undoRemove) return;
   const { item, index, snap } = undoRemove;
   const list = store.get(SAVED_KEY, []).filter(s => s.key !== item.key);
@@ -248,7 +248,7 @@ $("undoBtn").addEventListener("click", () => {
 });
 
 /* ---------- move the saved list to another device (a small file; no account) ---------- */
-$("exportBtn").addEventListener("click", () => {
+on("exportBtn", "click", () => {
   const saved = store.get(SAVED_KEY, []);
   const pick = prefix => Object.fromEntries(saved.map(s => [s.key, store.get(prefix + s.key, null)]).filter(([, v]) => v != null && v !== ""));
   const data = {
@@ -282,8 +282,8 @@ function cleanImported(item) {
   };
 }
 
-$("importBtn").addEventListener("click", () => $("importFile").click());
-$("importFile").addEventListener("change", async e => {
+on("importBtn", "click", () => $("importFile").click());
+on("importFile", "change", async e => {
   const file = e.target.files && e.target.files[0];
   e.target.value = "";
   if (!file) return;
@@ -313,7 +313,7 @@ $("importFile").addEventListener("change", async e => {
   }
 });
 
-$("compareBtn").addEventListener("click", () => {
+on("compareBtn", "click", () => {
   const saved = store.get(SAVED_KEY, []);
   const list = selectedForCompare().map(k => saved.find(s => s.key === k)).filter(Boolean);
   if (list.length < 2) return;
@@ -355,6 +355,6 @@ $("compareBtn").addEventListener("click", () => {
   $("comparePanel").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
-$("closeCompare").addEventListener("click", () => $("comparePanel").classList.add("hidden"));
+on("closeCompare", "click", () => $("comparePanel").classList.add("hidden"));
 
 export { buildReportData, GUIDED_KEY, renderSaved, reportUrl, saveCurrentReport, SAVED_KEY, updateGuide };

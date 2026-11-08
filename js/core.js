@@ -119,10 +119,19 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "2.7.2";
+const APP_VERSION = "2.7.3";
 const APP_UPDATED = "8 November 2026";
 
 const $ = id => document.getElementById(id);
+// Wiring done when a file loads: a missing element is named in the console and skipped, so one changed line in
+// index.html cannot stop that file, or the files that import it, from starting (code review, 2.7.3). The daily check
+// fails on these messages ("No page errors").
+const MISSING = "Property Location Check: missing on the page: #";
+function on(id, type, handler, options) {
+  const el = $(id);
+  if (el) el.addEventListener(type, handler, options);
+  else console.error(`${MISSING}${id} (its ${type} action is off)`);
+}
 
 /* =========================================================
    HELPERS
@@ -244,6 +253,6 @@ function pointFrom(loc, wkt) {
 }
 
 export { $, andList, APP_UPDATED, APP_VERSION, boundingBox, byDistance, circleWkt, distanceKm, escapeHTML,
-  formatDistance, formatRadius, geometryCentre, GLOSSARY, icon, ICON_PATHS, link, LINKS, MAP_COLOURS, monthName,
-  okValue, parseWktPoint, PLANNING_AT_POINT, PLANNING_NEARBY, plural, pointFrom, REQUEST_TIMEOUT, savedDate,
-  sentenceStart, STATUS_LABEL, STATUS_ORDER, STATUS_SYMBOL, term, today };
+  formatDistance, formatRadius, geometryCentre, GLOSSARY, icon, ICON_PATHS, link, LINKS, MAP_COLOURS, MISSING,
+  monthName, okValue, on, parseWktPoint, PLANNING_AT_POINT, PLANNING_NEARBY, plural, pointFrom, REQUEST_TIMEOUT,
+  savedDate, sentenceStart, STATUS_LABEL, STATUS_ORDER, STATUS_SYMBOL, term, today };

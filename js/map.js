@@ -1,7 +1,7 @@
 // Property Location Check – the map: background maps, map buttons, full screen, the pin and the search circle.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { $, distanceKm, escapeHTML, MAP_COLOURS } from "./core.js";
+import { $, distanceKm, escapeHTML, MAP_COLOURS, on } from "./core.js";
 import { API, fetchJSON } from "./api.js";
 import { hideSuggestions, showSearchStatus } from "./search.js";
 import { runChecks, updateStickyRun } from "./run.js";
@@ -396,13 +396,13 @@ function addMapPoint(layer, lat, lon, colour, popup) {
     .bindPopup(popup).addTo(layer);
 }
 
-$("radius").addEventListener("change", () => { drawRadius(); updateStickyRun(); });
+on("radius", "change", () => { drawRadius(); updateStickyRun(); });
 
 let namedPlace = null;        // the last place found by search, to keep its name when the pin is nudged
 let siteNameTyped = false;    // true once the user types their own name
-$("siteName").addEventListener("input", () => { siteNameTyped = $("siteName").value.trim() !== ""; });
+on("siteName", "input", () => { siteNameTyped = $("siteName").value.trim() !== ""; });
 
-$("usePinBtn").addEventListener("click", () => {
+on("usePinBtn", "click", () => {
   const lat = Number($("latitude").value), lon = Number($("longitude").value);
   if (!$("latitude").value || !$("longitude").value || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
     alert("Please enter a valid latitude and longitude.");

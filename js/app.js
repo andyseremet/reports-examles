@@ -1,7 +1,7 @@
 // Property Location Check – comfort (larger text, install as an app) and start-up.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { $, APP_UPDATED, APP_VERSION } from "./core.js";
+import { $, APP_UPDATED, APP_VERSION, MISSING, on } from "./core.js";
 import { store } from "./store.js";
 import { initMap, selected } from "./map.js";
 import { lookupPostcode } from "./search.js";
@@ -13,7 +13,8 @@ import { reportMap } from "./report.js";
    COMFORT: larger text, install as an app
 ========================================================= */
 
-$("appVersion").textContent = `Version ${APP_VERSION}, updated ${APP_UPDATED}`;
+if ($("appVersion")) $("appVersion").textContent = `Version ${APP_VERSION}, updated ${APP_UPDATED}`;
+else console.error(MISSING + "appVersion (the version line)");
 
 function setLargeText(on) {
   document.documentElement.classList.toggle("large-text", on);
@@ -22,7 +23,7 @@ function setLargeText(on) {
   store.set("plc-large-text", on);
   if (reportMap) setTimeout(() => reportMap.invalidateSize(), 50);
 }
-$("textSizeBtn").addEventListener("click", () => setLargeText(!document.documentElement.classList.contains("large-text")));
+on("textSizeBtn", "click", () => setLargeText(!document.documentElement.classList.contains("large-text")));
 setLargeText(store.get("plc-large-text", false));
 
 let installPrompt = null;
@@ -31,7 +32,7 @@ window.addEventListener("beforeinstallprompt", e => {
   installPrompt = e;
   $("installBtn").classList.remove("hidden");
 });
-$("installBtn").addEventListener("click", async () => {
+on("installBtn", "click", async () => {
   if (!installPrompt) return;
   installPrompt.prompt();
   await installPrompt.userChoice.catch(() => {});

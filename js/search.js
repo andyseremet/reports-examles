@@ -1,7 +1,7 @@
 // Property Location Check – the search box: suggestions as you type, postcode and address search.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { $, escapeHTML } from "./core.js";
+import { $, escapeHTML, on } from "./core.js";
 import { API, fetchJSON } from "./api.js";
 import { mapIsFull, searchControl, setControlOpen, setLocation } from "./map.js";
 
@@ -32,14 +32,14 @@ let suggestItems = [];
 let activeIndex = -1;
 let suggestRequest = 0;
 
-$("q").addEventListener("input", () => {
+on("q", "input", () => {
   clearTimeout(suggestTimer);
   const q = $("q").value.trim();
   if (q.length < 2) return hideSuggestions();
   suggestTimer = setTimeout(() => loadSuggestions(q), 250);
 });
 
-$("q").addEventListener("keydown", e => {
+on("q", "keydown", e => {
   const open = !$("suggestions").classList.contains("hidden");
   if (e.key === "ArrowDown" && open) { e.preventDefault(); moveActive(1); }
   else if (e.key === "ArrowUp" && open) { e.preventDefault(); moveActive(-1); }
@@ -54,7 +54,7 @@ $("q").addEventListener("keydown", e => {
   }
 });
 
-$("searchBtn").addEventListener("click", runSearch);
+on("searchBtn", "click", runSearch);
 
 document.addEventListener("click", e => {
   if (!e.target.closest(".search-box")) hideSuggestions();
