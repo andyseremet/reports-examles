@@ -561,6 +561,8 @@ body.has-sticky footer {padding-bottom:100px}
 
   /* Start page: the search, map and pin check read as one clean panel. */
   #map {border-radius:12px}
+  /* Map credit links stay underlined, so they stand out from the credit text in both themes (WCAG 1.4.1). */
+  .leaflet-control-attribution a {text-decoration:underline}
   .confirm {border-radius:12px}
   .guide {background:var(--surface-2)}
 }
