@@ -47,9 +47,13 @@ official checkers.
 
 - **Map:** on phones, scroll the page with one finger and move the map with two; on computers, use Ctrl (⌘ on Mac)
   + scroll to zoom. Full-screen map button, "my location" button, satellite and street backgrounds.
-- **Report:** results appear topic by topic as the data arrives. A topic whose data fails is tried once more by itself
-  after 8 seconds (20 if the service refused the request); if it fails again, it shows a **Try again** button, in its card and in the box under the topic grid. If this place was checked before, the topic
-  shows that saved answer instead, clearly dated, still with **Try again**. When planning.data.gov.uk does not answer
+- **Report:** results appear topic by topic as the data arrives. A request that fails is tried again at once (after a
+  short pause); a topic whose request was not tried again is tried once more by itself after 8 seconds (20 if the
+  service refused the request). If it still fails, it shows a **Try again** button, in its card and in the box under
+  the topic grid. If this place was checked before, the topic shows that saved answer instead, clearly dated, still
+  with **Try again**. In an outage (2.3.1): after 8 seconds a topic still waiting shows this place's answer from the
+  last 7 days, if there is one, dated, until the live answer replaces it; after 45 seconds the report finishes, and a
+  topic still waiting says "slow to answer" with **Try again**, and fills in by itself if its answer arrives later. When planning.data.gov.uk does not answer
   (England), heritage, conservation areas and nature are asked from Historic England and Natural England instead, and
   the flood zone at the pin from the Environment Agency's own flood map; each topic names anything it could not check
   (Green Belt, HS2 and nearby flood zones have no second open source). When the Environment Agency's map server does not
@@ -196,7 +200,7 @@ than about 15 requests a minute, which happens to GitHub's shared test machines.
 data services one at a time and, when the reports ask it live (no recording), waits a minute before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
 answer and retries a refusal or a slow answer. DataMapWales, Historic Environment Scotland, NatureScot, SEPA and DAERA
 get the same treatment with up to 4 requests at a time and 30 seconds to answer. A topic that still fails is tried once more by the page after 20
-seconds. If it then shows "Try again", the test opens its card and presses it once, as a person would (a separate step
+seconds, unless its request was already tried again. If it then shows "Try again", the test opens its card and presses it once, as a person would (a separate step
 checks the Try again under the topic grid with a topic made to fail); a topic that still fails after
 that fails the test.
 

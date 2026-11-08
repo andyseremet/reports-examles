@@ -31,7 +31,8 @@ function runChecks(options = {}) {
   // The last saved results for this place: a topic whose service does not answer shows its earlier answer, dated.
   run = { loc, R: { loc }, results: {}, done: false, startedAt: Date.now(), previous: findSnapshot(loc) };
   const thisRun = run;
-  setTimeout(() => { if (run === thisRun && !run.done) renderSummary(); }, SLOW_NOTE_MS);
+  setTimeout(() => { if (run === thisRun && !run.done) { showRecentWhileWaiting(thisRun); renderSummary(); } }, SLOW_NOTE_MS);
+  setTimeout(() => { if (run === thisRun && !run.done) stopWaiting(thisRun); }, REPORT_DEADLINE_MS);
   reportData = null;
   $("runBtn").disabled = true;
   featureLayer.clearLayers();
@@ -166,13 +167,35 @@ function slowNote() {
     `<li><strong>${escapeHTML(service)}</strong>: ${topics.map(escapeHTML).join(", ")}</li>`).join("");
   return items && `<div class="notice slow-note no-print"><p>Still waiting for ${Object.keys(waiting).length > 1 ? "these services" : "this service"}.
       Topics that are ready are shown below.</p><ul>${items}</ul>
-      <p class="help">Slow services usually answer within a minute. If one does not, its topic shows “Try again”.
-      <a href="status.html">Data service status</a></p></div>`;
+      <p class="help">A topic still waiting after 45 seconds shows “Try again”, and fills in by itself if the answer
+      arrives later. <a href="status.html">Data service status</a></p></div>`;
+}
+
+// Faster reports in outages (2.3.1, quiz of 8 November 2026). After 8 seconds, a topic still waiting shows this place's
+// answer from the last 7 days, if there is one, clearly dated ("waiting"), until the live answer replaces it.
+function showRecentWhileWaiting(r) {
+  TASKS.forEach(([key]) => {
+    if (r.R[key]) return;
+    const recent = recentAnswer(r.loc, key);
+    if (!recent) return;
+    r.R[key] = { ok: true, value: recent.value, cachedAt: recent.at, waiting: true };
+    onTaskSettled(key);
+  });
+}
+// After 45 seconds the report finishes: a topic still waiting shows "slow to answer" with Try again. Its request
+// carries on, and an answer that arrives later fills the topic in (startTask).
+const REPORT_DEADLINE_MS = 45000;
+function stopWaiting(r) {
+  const late = TASKS.map(([key]) => key).filter(key => !r.R[key]);
+  late.forEach(key => { r.R[key] = { ok: false, error: "the data service is slow to answer", slow: true }; });
+  r.stoppedWaiting = late;
+  late.forEach(key => { if (r === run) onTaskSettled(key); });
 }
 
 // A topic whose data fails is tried once more by itself: after 8 seconds (20 if the service refused us, which
 // often lasts minutes, so it is not asked again too soon), or as soon as the signal returns if the device went offline.
-// If it fails again, the topic shows a "Try again" button.
+// Not when its request was already tried again (fetchJSON marks the error "retried"; 2.3.1): one layer of retries
+// is enough, and two made a report wait a minute or more in an outage. If it fails again, the topic shows "Try again".
 const AUTO_RETRY_MS = 8000, REFUSED_RETRY_MS = 20000;
 const onlineAgain = () => navigator.onLine ? Promise.resolve()
   : new Promise(res => window.addEventListener("online", res, { once: true }));
@@ -204,7 +227,7 @@ function startTask(r, key, autoRetry = true) {
   TASK_FN[key](r.loc).then(
     value => { r.R[key] = { ok: true, value }; rememberAnswer(r.loc, key, value); },
     async error => {
-      if (autoRetry && r === run) {
+      if (autoRetry && r === run && (!navigator.onLine || !error.retried)) {
         if (navigator.onLine) await new Promise(res => setTimeout(res, error.refused ? REFUSED_RETRY_MS : AUTO_RETRY_MS));
         else await onlineAgain();
         if (r === run) { r.autoRetried = [...(r.autoRetried || []), key]; startTask(r, key, false); }
@@ -237,7 +260,8 @@ function buildCheck(c) {
   if (result.status === "error" || result.failedService) return savedInstead(c, result);
   // Built partly from recent answers (a service did not answer): say so, with the oldest answer's date.
   const cached = c.deps.map(k => run.R[k] && run.R[k].cachedAt).filter(Boolean).sort()[0];
-  return cached ? { ...result, fromSaved: cached } : result;
+  const waiting = c.deps.some(k => run.R[k] && run.R[k].waiting);
+  return cached ? { ...result, fromSaved: cached, ...(waiting && { waiting: true }) } : result;
 }
 
 // A service that does not answer: if this place was checked before, show that earlier answer, clearly dated,

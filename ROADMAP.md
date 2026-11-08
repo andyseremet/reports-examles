@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.3.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.3.1** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.3.0)
+## Part 1: What the app does today (version 2.3.1)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -111,6 +111,11 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Reliability
 - A failed topic is tried again after 8 seconds (20 when the service refused the request), then offers **Try again**.
+  Since 2.3.1 (quiz of 8 November 2026) a topic whose request was already tried again is not tried a second time as a
+  whole: two layers of retries made reports wait 75–140 seconds when Environment Agency services failed on and off.
+- Faster reports in outages (2.3.1): after 8 seconds a topic still waiting shows this place's answer from the last 7
+  days, if there is one, dated, until the live answer replaces it. After 45 seconds the report finishes: a topic still
+  waiting says "slow to answer" with **Try again**, and fills in by itself if its answer arrives later.
   Since 2.0.8 (owner, 8 November 2026) Try again also sits in the box under the topic grid, so it is in sight while
   the topic's card stays closed.
 - Backups (1.30.1, after planning.data.gov.uk was down for a day): when it does not answer, heritage and nature come
@@ -206,9 +211,8 @@ No new topics or features for now: the work goes into improving the existing one
 2.3.0 (flooding if a reservoir failed) was chosen and built before the pause and is kept. Flood defences nearby is on
 hold (Part 3). Chosen first, in the quiz of 8 November 2026:
 
-1. **Faster reports in outages:** when Environment Agency services failed on and off (8 November), a report took
-   75–140 seconds instead of the usual 14–30. Show the rest of the report sooner, with Try again on the topic that is
-   waiting.
+1. **Faster reports in outages:** done in 2.3.1 (one retry layer, a saved answer meanwhile, a 45-second deadline;
+   shorter timeouts were not chosen).
 2. **Third place review:** run the app on about 8 very different places, as on 4 and 7 November (Part 4), and fix
    wrong, odd or unclear results.
 3. **Code review of the app** (`js/`), and fix what is found.

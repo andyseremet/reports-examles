@@ -127,6 +127,8 @@ async function fetchJSON(url, options = {}, attempt = 1) {
       await new Promise(resolve => setTimeout(resolve, retryWaits[attempt - 1]));
       return fetchJSON(url, options, attempt + 1);
     }
+    // Already tried again here: the topic is then not tried a second time as a whole (startTask, 2.3.1).
+    if (attempt > 1) error.retried = true;
     throw error;
   } finally {
     if (release) release();

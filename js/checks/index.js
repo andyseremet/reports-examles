@@ -44,7 +44,9 @@ function unavailable(base, R, key) {
   return {
     ...base, status: "error",
     found: "This check could not be completed right now: " + R[key].error + ".",
-    meaning: "<p>The official data service did not respond. Try again later, or use the official service linked below.</p>"
+    meaning: R[key].slow
+      ? "<p>The official data service is slow to answer. This topic fills in by itself if the answer arrives, or press Try again.</p>"
+      : "<p>The official data service did not respond. Try again later, or use the official service linked below.</p>"
   };
 }
 
