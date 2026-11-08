@@ -51,10 +51,17 @@ function checkCoal(R) {
   const base = {
     source: { name: "Mining Remediation Authority (formerly the Coal Authority); British Geological Survey, mining other than coal (1 km overview)", url: LINKS.coalInfo }
   };
-  if (!R.coal.ok) return unavailable(base, R, "coal");
-  const c = R.coal.value;
+  // The coal service failed: still show what the other-mining overview found (never hide a "Significant"),
+  // and say coal could not be checked. With no other-mining answer either, the topic is not available.
+  const otherOnly = !R.coal.ok && R.otherMining.ok && R.otherMining.value && ["Significant", "Moderate", "Low"].includes(R.otherMining.value.level);
+  if (!R.coal.ok && !otherOnly) return unavailable(base, R, "coal");
+  const c = R.coal.ok ? R.coal.value : {};
   let status, found, meaning;
-  if (c.highAtPoint) {
+  if (!R.coal.ok) {
+    status = "manual";
+    found = "Coal mining could not be checked right now: check it on the Mining Remediation Authority map.";
+    meaning = "The coal mining service did not respond.";
+  } else if (c.highAtPoint) {
     status = "high";
     found = "In a coal mining high-risk area: old mine workings are recorded at or near the surface.";
     meaning = "Features such as old mine shafts or shallow workings are recorded here. They can cause the ground to move or collapse. The official term is a “Development High Risk Area”.";
@@ -77,7 +84,7 @@ function checkCoal(R) {
   };
   const otherSignificant = other && other.level === "Significant";
   if (other && otherNotes[other.level]) found += " " + otherNotes[other.level];
-  if (otherSignificant && status === "low") status = "medium";
+  if (otherSignificant && ["low", "manual"].includes(status)) status = "medium";
   else if (other && other.level === "Moderate" && status === "low") status = "info";
   if (other === undefined && status === "low") {     // the other-mining overview did not answer: not "No issue found"
     status = "manual";
@@ -91,14 +98,14 @@ function checkCoal(R) {
     meaning: `<p>${meaning}</p>`,
     actions: [
       ...(otherSignificant ? [`Ask your conveyancer for a mining search that covers mining other than coal (in Cornwall and West Devon, the Cornwall and West Devon mining search). See the ${link(LINKS.otherMiningInfo, "British Geological Survey's mining hazard data")}.`] : []),
-      ...(!c.highAtPoint && !c.lowAtPoint ? [] : [
+      ...(R.coal.ok && !c.highAtPoint && !c.lowAtPoint ? [] : [
         `See old mine shafts and shallow workings on the ${link(LINKS.coalMap, "Mining Remediation Authority map")}.`,
         "Tell your surveyor, so they can look for signs of ground movement."
       ])
     ],
     seller: status === "low" ? [] : ["Have there been any subsidence or mining damage claims?"],
     conveyancer: [
-      ...(!c.highAtPoint && !c.lowAtPoint ? [] : ["A coal mining report (CON29M). It lists mine shafts, past subsidence claims and future mining plans."]),
+      ...(R.coal.ok && !c.highAtPoint && !c.lowAtPoint ? [] : ["A coal mining report (CON29M). It lists mine shafts, past subsidence claims and future mining plans."]),
       ...(otherSignificant ? ["A mining search covering mining other than coal (in Cornwall and West Devon, the Cornwall and West Devon mining search)."] : [])
     ]
   };
@@ -110,8 +117,9 @@ function checkClay(R) {
   const base = { source: { name: "British Geological Survey, GeoSure shrink-swell (5 km overview)", url: LINKS.geosure } };
   if (!R.shrinkSwell.ok) return unavailable(base, R, "shrinkSwell");
   const v = R.shrinkSwell.value;
-  if (!v) return { ...base, status: "manual", gap: "nodata", found: "No clay data was found for this spot. Ask your surveyor about the soil." };
-  const word = { 1: "low", 2: "moderate", 3: "significant" }[v.level] || "unknown";
+  // No rating (or one outside 1 to 3) is missing data, never "No issue found".
+  if (!v || ![1, 2, 3].includes(v.level)) return { ...base, status: "manual", gap: "nodata", found: "No clay data was found for this spot. Ask your surveyor about the soil." };
+  const word = { 1: "low", 2: "moderate", 3: "significant" }[v.level];
   const status = v.level === 3 ? "medium" : v.level === 2 || v.localised ? "info" : "low";
   const found = `The chance of clay soil shrinking and swelling is ${word} in this area.` +
     (v.localised && v.level < 3 ? " Some spots nearby are rated significant." : "");

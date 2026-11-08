@@ -339,6 +339,24 @@ async function testCountryData() {
       return "Islington clay: Worth checking; Camborne: other mining Worth checking";
     });
 
+    await step("Missing data is never No issue found: noise, clay and mining when a service fails", async () => {
+      // Built from made-up answers (nothing is sent): a failed road noise service, a blank clay rating and a failed
+      // coal service must never read "No issue found", and the coal outage must not hide other mining.
+      const r = await page.evaluate(() => {
+        const loc = { lat: 53.5542, lon: -1.4827, radius: 1000, name: "test" };
+        const place = { ok: true, value: { country: "England", admin_district: "Barnsley" } };
+        const down = { ok: false, error: "HTTP 503" };
+        const noise = checkNoise({ loc, place, noise: down, railNoise: { ok: true, value: {} } });
+        const clay = checkClay({ loc, place, shrinkSwell: { ok: true, value: { level: NaN, localised: false } } });
+        const sig = checkCoal({ loc, place, coal: down, otherMining: { ok: true, value: { level: "Significant" } } });
+        const none = checkCoal({ loc, place, coal: down, otherMining: { ok: true, value: { level: "NA" } } });
+        return { noise: [noise.status, /Road noise could not be checked/.test(noise.found)], clay: clay.status,
+          sig: [sig.status, /Coal mining could not be checked/.test(sig.found) && /known or considered likely/.test(sig.found)], none: none.status };
+      });
+      const ok = r.noise[0] === "manual" && r.noise[1] && r.clay === "manual" && r.sig[0] === "medium" && r.sig[1] && r.none === "error";
+      return ok ? "noise and clay: Check yourself; coal down with significant other mining: Worth checking" : (() => { throw new Error(JSON.stringify(r)); })();
+    });
+
     await step("Wales: coal tips, coast, noise, heritage and nature from Welsh data", async () => {
       // Treorchy (Rhondda): disused coal tips nearby. Borth: an eroding coast. Cardiff centre: a conservation
       // area, road noise and an air pollution hotspot nearby. Each must be answered from Welsh data, not "Check yourself".
