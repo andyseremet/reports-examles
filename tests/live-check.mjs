@@ -1069,8 +1069,11 @@ async function testDevice(device, [postcode, place]) {
         .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
       const firstLook = flagged.map(c => (VIEWING_LOOK[c.id] || [])[0]).find(Boolean);
       const box = document.getElementById("viewing").getBoundingClientRect();
-      return { items, firstLook, onScreen: document.getElementById("viewing").open && box.top < innerHeight && box.bottom > 0 };
+      // Every tip is a plain sentence (2.0.5 had put a topic icon's drawing in place of the radon tip).
+      const badTips = Object.entries(VIEWING_LOOK).filter(([, tips]) => tips.some(t => /</.test(t) || !/[.?]$/.test(t))).map(([id]) => id);
+      return { items, firstLook, badTips, onScreen: document.getElementById("viewing").open && box.top < innerHeight && box.bottom > 0 };
     });
+    if (r.badTips.length) throw new Error(`viewing tips that are not plain sentences: ${r.badTips.join(", ")}`);
     if (!r.onScreen) throw new Error("At the viewing did not open in view");
     if (r.items.length < 5 || r.items.length > 12) throw new Error(`${r.items.length} items (expected 5 to 12)`);
     if (r.firstLook && r.items[0] !== r.firstLook) throw new Error(`first item is "${r.items[0]}", not the most serious topic's`);

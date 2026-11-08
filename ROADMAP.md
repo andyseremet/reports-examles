@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.0.8** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.0.9** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.0.8)
+## Part 1: What the app does today (version 2.0.9)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -83,6 +83,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   and the "Where we could not give an answer" box are gone: each topic still says what it could not check.
 - **Next steps** (1.30.0): notes, the viewing checklist and the checklist, each folded with its count ("0 of 11 done").
 - **At the viewing:** up to 12 things to look for and ask on the day, in Next steps (the **Viewing** button went in 2.0.4).
+  2.0.9 brings back the radon tip, which 2.0.5 had replaced by mistake.
 - A checklist for the seller and conveyancer; ticks are remembered for each property, and each list shows, for
   example, "2 of 7 done" (1.24.0).
 - **Email** or **Copy** the key points for your conveyancer. Nothing passes through the app.

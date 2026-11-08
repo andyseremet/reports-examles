@@ -81,7 +81,7 @@ const VIEWING_LOOK = {
   flood: ["Water marks, staining or new plaster low on the walls, and flood doors, barriers or raised air bricks."],
   surfacewater: ["Where rain would run: slopes towards the house, low doorways, blocked drains or gullies in the street."],
   coal: ["Cracks over doors and windows, sloping floors, or doors that stick (signs of ground movement)."],
-  radon: ['<path d="M3 20h18"/><path d="M8 17c0-2 2-2 2-4s-2-2-2-4M12 17c0-2 2-2 2-4s-2-2-2-4M16 17c0-2 2-2 2-4s-2-2-2-4"/>', "Radon"],   // gas rising from the ground
+  radon: ["A radon sump or a small vent pipe outside, or a radon test result the seller can show you."],
   landuse: ["Signs of past industrial use nearby: bare or patchy ground, vent pipes or fenced-off land."],
   landslides: ["Cracks in walls, paths or garden walls, leaning walls or fences, and wet or slipping slopes."],
   clay: ["Cracks wider than a coin near doors and windows, and big trees close to the house (their roots dry out clay)."],
@@ -112,7 +112,7 @@ const TOPIC_ICONS = {
   flood: [WAVE(9) + WAVE(14) + WAVE(19), "Flood"],
   surfacewater: ['<path d="M7 15a4 4 0 1 1 .6-8 5 5 0 0 1 9.4 1.6A3.5 3.5 0 0 1 17 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>', "Rain flood"],
   coal: ['<path d="M4 20l9-9"/><path d="M11 5c3.5-1.5 7-.5 9 2-3-.8-5.5-.3-7.5 1.5"/><path d="M11 5l-2 2 4 4 2-2"/>', "Mining"],
-  radon: ['<circle cx="12" cy="12" r="1.8"/><path d="M10.5 10.5 7 5.2A8 8 0 0 0 4 12h6M14 12h6a8 8 0 0 0-3-6.8l-3.5 5.3M13 13.6l3 5.3a8 8 0 0 1-8 0l3-5.3"/>', "Radon"],
+  radon: ['<path d="M3 20h18"/><path d="M8 17c0-2 2-2 2-4s-2-2-2-4M12 17c0-2 2-2 2-4s-2-2-2-4M16 17c0-2 2-2 2-4s-2-2-2-4"/>', "Radon"],   // gas rising from the ground
   landuse: [ICON_PATHS.bin, "Land use"],
   landslides: ['<path d="M3 20l6-10 4 6 3-4 5 8z"/>', "Ground"],
   clay: ['<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 12h18M9 5v7M15 12v7"/>', "Clay"],
