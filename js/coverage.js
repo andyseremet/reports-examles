@@ -3,7 +3,7 @@
 
 import { andList, escapeHTML, link, okValue } from "./core.js";
 import { CHECKS, TOPIC_ICONS } from "./checks/index.js";
-import { run } from "./run.js";
+import { run } from "./runner.js";
 
 // Which countries each topic's data covers. Outside them the topic is left out of the report (owner, 8 November
 // 2026), and the country note in the summary names it, with links to the national services (notCoveredNote).

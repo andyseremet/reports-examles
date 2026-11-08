@@ -1,12 +1,14 @@
-// Property Location Check – running the checks: data tasks, Try again, recent answers, saved reports, the place bar and start-up from an address.
+// Property Location Check – the report on the page: starting a check (the runner, js/runner.js, does the running),
+// drawing each topic as it arrives, Try again, saved reports, the place bar and start-up from an address.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
-import { $, escapeHTML, icon, MAP_COLOURS, okValue, today } from "./core.js";
-import { TASKS } from "./tasks.js";
-import { backupFor, byDataset, CHECKS, TASK_FN } from "./checks/index.js";
-import { shownChecks, topicShown } from "./coverage.js";
+import { $, escapeHTML, icon, MAP_COLOURS, okValue } from "./core.js";
+import { reportKey, store } from "./store.js";
+import { backupFor, byDataset, CHECKS } from "./checks/index.js";
+import { shownChecks } from "./coverage.js";
+import { clearForRetry, orderedResults, restartTasks, run, setRun, SLOW_NOTE_MS, startRun, topicResult, waitingFor } from "./runner.js";
 import { addMapPoint, featureLayer, map, mapIsFull, openSearch, selected, setLocation, setMapFull } from "./map.js";
-import { buildReportData, GUIDED_KEY, reportKey, reportUrl, saveCurrentReport, SAVED_KEY, store, updateGuide } from "./saved.js";
+import { buildReportData, GUIDED_KEY, reportUrl, saveCurrentReport, SAVED_KEY, updateGuide } from "./saved.js";
 import { renderSummary } from "./summary.js";
 import { removeReportMap, renderMeta, renderSkeleton, renderSources, reportFeatureLayer, showCheck } from "./report.js";
 import { buildChecklist, buildViewing, renderNotes, restoreTicks } from "./next-steps.js";
@@ -15,9 +17,6 @@ import { buildChecklist, buildViewing, renderNotes, restoreTicks } from "./next-
    RUN THE CHECKS – results appear as soon as their data arrives
 ========================================================= */
 
-let run = null;                 // the report being built
-// Sets the report being built (the daily check sets it from the page, through js/page-names.js).
-function setRun(value) { run = value; }
 let reportData = null;          // the report's data, for downloads and saved reports
 
 $("runBtn").addEventListener("click", () => runChecks());
@@ -40,10 +39,8 @@ function runChecks(options = {}) {
   };
 
   // The last saved results for this place: a topic whose service does not answer shows its earlier answer, dated.
-  run = { loc, R: { loc }, results: {}, done: false, startedAt: Date.now(), previous: findSnapshot(loc) };
-  const thisRun = run;
-  setTimeout(() => { if (run === thisRun && !run.done) { showRecentWhileWaiting(thisRun); renderSummary(); } }, SLOW_NOTE_MS);
-  setTimeout(() => { if (run === thisRun && !run.done) stopWaiting(thisRun); }, REPORT_DEADLINE_MS);
+  // Its answers arrive after this function has drawn the empty report.
+  startRun(loc, { previous: findSnapshot(loc), onUpdate: showUpdate });
   reportData = null;
   $("runBtn").disabled = true;
   featureLayer.clearLayers();
@@ -62,8 +59,6 @@ function runChecks(options = {}) {
   $("comparePanel").classList.add("hidden");
   showPlaceBar(loc);
   $("placeBar").scrollIntoView({ behavior: "smooth", block: "start" });
-
-  TASKS.forEach(([key]) => startTask(run, key));
 }
 
 /* ---------- no signal ---------- */
@@ -135,7 +130,7 @@ $("showSaved").addEventListener("click", () => {
 
 // Back to the search and map, as before the report was run.
 function showSearchView() {
-  run = null;
+  setRun(null);
   reportData = null;
   lastRunKey = null;
   removeReportMap();
@@ -168,12 +163,10 @@ function openReportFromAddress(options) {
   return true;
 }
 
-// After 8 seconds, a report still loading names the services it is waiting for.
-const SLOW_NOTE_MS = 8000;
+// After 8 seconds, a report still loading names the services it is waiting for (the runner's waitingFor()).
 function slowNote() {
   if (run.done || !run.startedAt || Date.now() - run.startedAt < SLOW_NOTE_MS) return "";
-  const waiting = {};
-  TASKS.filter(([key]) => !run.R[key]).forEach(([, topic, , service]) => (waiting[service] ||= []).push(topic));
+  const waiting = waitingFor();
   const items = Object.entries(waiting).map(([service, topics]) =>
     `<li><strong>${escapeHTML(service)}</strong>: ${topics.map(escapeHTML).join(", ")}</li>`).join("");
   return items && `<div class="notice slow-note no-print"><p>Still waiting for ${Object.keys(waiting).length > 1 ? "these services" : "this service"}.
@@ -182,120 +175,18 @@ function slowNote() {
       arrives later. <a href="status.html">Data service status</a></p></div>`;
 }
 
-// Faster reports in outages (2.3.1, quiz of 8 November 2026). After 8 seconds, a topic still waiting shows this place's
-// answer from the last 7 days, if there is one, clearly dated ("waiting"), until the live answer replaces it.
-function showRecentWhileWaiting(r) {
-  TASKS.forEach(([key]) => {
-    if (r.R[key]) return;
-    const recent = recentAnswer(r.loc, key);
-    if (!recent) return;
-    r.R[key] = { ok: true, value: recent.value, cachedAt: recent.at, waiting: true };
-    onTaskSettled(key);
-  });
-}
-// After 45 seconds the report finishes: a topic still waiting shows "slow to answer" with Try again. Its request
-// carries on, and an answer that arrives later fills the topic in (startTask).
-const REPORT_DEADLINE_MS = 45000;
-function stopWaiting(r) {
-  const late = TASKS.map(([key]) => key).filter(key => !r.R[key]);
-  late.forEach(key => { r.R[key] = { ok: false, error: "the data service is slow to answer", slow: true }; });
-  late.forEach(key => { if (r === run) onTaskSettled(key); });
-}
-
-// A topic whose data fails is tried once more by itself: after 8 seconds (20 if the service refused us, which
-// often lasts minutes, so it is not asked again too soon), or as soon as the signal returns if the device went offline.
-// Not when its request was already tried again (fetchJSON marks the error "retried"; 2.3.1): one layer of retries
-// is enough, and two made a report wait a minute or more in an outage. If it fails again, the topic shows "Try again".
-const AUTO_RETRY_MS = 8000, REFUSED_RETRY_MS = 20000;
-const onlineAgain = () => navigator.onLine ? Promise.resolve()
-  : new Promise(res => window.addEventListener("online", res, { once: true }));
-
-/* ---------- recent answers: each service's answer for a place, kept 7 days, used only if that service fails ---------- */
-// Optional: if the device runs out of space, the oldest places are dropped quietly (no "storage full" message).
-const RECENT_DAYS = 7, RECENT_PLACES = 10, RECENT_MAX_CHARS = 200000, RECENT_INDEX = "plc-recent-index";
-const recentKey = key => "plc-recent:" + key;
-function rememberAnswer(loc, task, value) {
-  const k = recentKey(reportKey(loc));
-  try {   // optional: an answer that cannot be saved never stops the topic from showing
-    if (JSON.stringify(value === undefined ? null : value).length > RECENT_MAX_CHARS) return;
-    const all = store.get(k, {});
-    all[task] = { at: new Date().toISOString(), value };
-    const index = [k, ...store.get(RECENT_INDEX, []).filter(x => x !== k)];
-    index.slice(RECENT_PLACES).forEach(x => store.remove(x));
-    store.set(RECENT_INDEX, index.slice(0, RECENT_PLACES), { quiet: true });
-    store.set(k, all, { quiet: true });
-  } catch (e) { /* not saved: the cache is optional */ }
-}
-function recentAnswer(loc, task) {
-  const a = store.get(recentKey(reportKey(loc)), {})[task];
-  return a && Date.now() - new Date(a.at).getTime() < RECENT_DAYS * 864e5 ? a : null;
-}
-const forgetAnswers = key => store.remove(recentKey(key));
-
-function startTask(r, key, autoRetry = true) {
-  // A saved answer shown while waiting stays until the retry settles (code review, 2.3.3).
-  if (!r.R[key] || !r.R[key].waiting) delete r.R[key];
-  TASK_FN[key](r.loc).then(
-    value => { r.R[key] = { ok: true, value }; rememberAnswer(r.loc, key, value); },
-    async error => {
-      if (autoRetry && r === run && (!navigator.onLine || !error.retried)) {
-        if (navigator.onLine) await new Promise(res => setTimeout(res, error.refused ? REFUSED_RETRY_MS : AUTO_RETRY_MS));
-        else await onlineAgain();
-        if (r === run) { r.autoRetried = [...(r.autoRetried || []), key]; startTask(r, key, false); }
-        return "retrying";
-      }
-      // The service did not answer: use its answer from the last 7 days, if there is one (shown dated on the topic).
-      const recent = recentAnswer(r.loc, key);
-      r.R[key] = recent ? { ok: true, value: recent.value, cachedAt: recent.at }
-        : { ok: false, error: error.message || "unknown error", ...(error.backup && { backup: error.backup }) };
-    }
-  ).then(state => { if (state !== "retrying" && r === run) onTaskSettled(key); });
-}
-
-const depsReady = c => c.deps.every(k => run.R[k]);
-
-// A topic result with everything the report needs. Each check gives only what differs from these.
-function topicResult(c, fields) {
-  return { meaning: "", actions: [], seller: [], conveyancer: [], source: { name: "", url: "" }, ...fields, id: c.id, group: c.group, title: c.title };
-}
-
-function buildCheck(c) {
-  const place = okValue(run.R, "place");
-  const country = place && place.country;
-  if (!topicShown(c.id, country)) return null;   // not covered in this country: left out (js/coverage.js)
-  let result;
-  try { result = topicResult(c, { dataDate: "Checked live on " + today(), ...c.build(run.R) }); }
-  catch (e) { result = topicResult(c, { status: "error", found: "This check failed: " + e.message }); }
-  // A service failed: show this place's saved earlier answer, dated, if there is one. A check that still answers
-  // in part (for example other mining when the coal service is down) marks itself with failedService.
-  if (result.status === "error" || result.failedService) return savedInstead(c, result);
-  // Built partly from recent answers (a service did not answer): say so, with the oldest answer's date.
-  const cached = c.deps.map(k => run.R[k] && run.R[k].cachedAt).filter(Boolean).sort()[0];
-  const waiting = c.deps.some(k => run.R[k] && run.R[k].waiting);
-  return cached ? { ...result, fromSaved: cached, ...(waiting && { waiting: true }) } : result;
-}
-
-// A service that does not answer: if this place was checked before, show that earlier answer, clearly dated,
-// with "Try again" (an answer that was itself saved earlier keeps its first date).
-function savedInstead(c, failed) {
-  const prev = run.previous && run.previous.results.find(r => r.id === c.id && r.status !== "error");
-  if (!prev) return failed;
-  const from = prev.fromSaved || run.previous.savedAt;
-  return { ...prev, fromSaved: from };
-}
 const savedDate = iso => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
-function onTaskSettled(key) {
-  CHECKS.filter(c => c.deps.includes(key) && depsReady(c)).forEach(c => {
-    const result = buildCheck(c);
+// The runner settled a data task (key; null after 8 seconds, when recent answers fill in): draw what changed.
+function showUpdate({ key, changed, done }) {
+  changed.forEach(({ check, result }) => {
     // A topic not shown in this country leaves the report.
-    if (!result) { delete run.results[c.id]; const slot = $("slot-" + c.id); if (slot) slot.remove(); return; }
-    run.results[c.id] = result;
-    showCheck(c, result);
+    if (!result) { const slot = $("slot-" + check.id); if (slot) slot.remove(); return; }
+    showCheck(check, result);
   });
   if (key === "place") renderMeta();
   if (["landfill", "landslides", "planningNearby", "coalTips", "wasteSites"].includes(key)) replotFeatures();
-  if (TASKS.every(([k]) => run.R[k])) finishRun();
+  if (done) finishRun();
   else renderSummary();
 }
 
@@ -331,7 +222,7 @@ function saveSnapshot() {
 // Show a saved report straight away, without asking the data services again.
 function showSnapshot(snap, options = {}) {
   const loc = snap.loc;
-  run = { loc, R: { loc, ...snap.R }, results: {}, done: false, snapshot: snap };
+  setRun({ loc, R: { loc, ...snap.R }, results: {}, done: false, snapshot: snap });
   snap.results.forEach(c => { run.results[c.id] = c; });
   reportData = null;
   featureLayer.clearLayers();
@@ -367,10 +258,6 @@ $("report").addEventListener("click", e => {
   if (e.target.closest("#refreshBtn") && run) runChecks({ fromHistory: true });
 });
 
-function orderedResults() {
-  return CHECKS.map(c => run.results[c.id]).filter(Boolean);
-}
-
 function setExportEnabled(on) {
   ["downloadHtml", "printReport", "printSummary"].forEach(id => { $(id).disabled = !on; });
 }
@@ -399,22 +286,12 @@ document.addEventListener("click", e => {
   const btn = e.target.closest("[data-retry]");
   if (!btn || !run) return;
   if (run.snapshot) { runChecks({ fromHistory: true }); return; }
-  const c = CHECKS.find(x => x.id === btn.dataset.retry);
-  if (!c) return;
-  let keys = c.deps.filter(k => !run.R[k] || !run.R[k].ok);
-  if (!keys.length) keys = c.deps.slice();
-  keys.forEach(k => {
-    delete run.R[k];
-    CHECKS.filter(x => x.deps.includes(k)).forEach(x => {
-      delete run.results[x.id];
-      const slot = $("slot-" + x.id);
-      if (slot) showCheck(x, null);
-    });
-  });
-  run.done = false;            // the report is being completed again
+  const retry = clearForRetry(btn.dataset.retry);
+  if (!retry) return;
+  retry.cleared.forEach(x => { if ($("slot-" + x.id)) showCheck(x, null); });
   setExportEnabled(false);
   renderSummary();
-  keys.forEach(k => startTask(run, k, false));
+  restartTasks(retry.keys);
 });
 
 function plotFeatures(layer, R) {
@@ -439,6 +316,5 @@ function replotFeatures() {
   }
 }
 
-export { forgetAnswers, openReportFromAddress, orderedResults, recentAnswer, rememberAnswer, reportData, run,
-  runChecks, savedDate, savedInstead, setRun, slowNote, snapKey, startTask, topicResult, updatePlaceButtons,
+export { openReportFromAddress, reportData, runChecks, savedDate, slowNote, snapKey, updatePlaceButtons,
   updateStickyRun };

@@ -63,7 +63,6 @@ function checkAmenities(R) {
   };
 }
 
-
 function median(values) {
   const v = [...values].sort((a, b) => a - b), mid = v.length >> 1;
   return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;

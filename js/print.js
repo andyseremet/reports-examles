@@ -2,7 +2,8 @@
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
 import { $, escapeHTML, today } from "./core.js";
-import { reportData, run } from "./run.js";
+import { run } from "./runner.js";
+import { reportData } from "./run.js";
 import { fitReportMap, reportMap } from "./report.js";
 
 /* =========================================================

@@ -2,9 +2,11 @@
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
 import { $, escapeHTML, icon, okValue, plural, STATUS_LABEL } from "./core.js";
+import { onStorageProblem, reportKey, store } from "./store.js";
 import { TASKS } from "./tasks.js";
 import { CHECKS } from "./checks/index.js";
-import { forgetAnswers, orderedResults, reportData, run, snapKey, updatePlaceButtons } from "./run.js";
+import { forgetAnswers, orderedResults, run } from "./runner.js";
+import { reportData, snapKey, updatePlaceButtons } from "./run.js";
 import { chip, isOld, OLD_MONTHS, prepareTables, renderMeta } from "./report.js";
 import { downloadFile } from "./print.js";
 
@@ -12,23 +14,9 @@ import { downloadFile } from "./print.js";
    STORAGE – only on this device
 ========================================================= */
 
-const store = {
-  get(key, fallback) {
-    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
-    catch (e) { return fallback; }
-  },
-  // quiet: for optional data (recent answers), a full or blocked storage fails silently instead of showing the bar.
-  set(key, value, { quiet = false } = {}) {
-    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
-    catch (e) { if (!quiet) showStorageProblem(); return false; }   // storage full or blocked
-  },
-  remove(key) {
-    try { localStorage.removeItem(key); } catch (e) { /* storage blocked: nothing to remove */ }
-  }
-};
-
 // Say plainly when something could not be saved, instead of losing it silently.
 function showStorageProblem() { $("storageBar").classList.remove("hidden"); }
+onStorageProblem(showStorageProblem);
 $("storageBarClose").addEventListener("click", () => $("storageBar").classList.add("hidden"));
 
 // Ask the browser not to clear saved properties when the device is short of space.
@@ -44,15 +32,10 @@ function askToKeepData() {
 const SAVED_KEY = "plc-saved-v1";
 const MAX_SAVED = 20;
 
-function reportKey(loc) {
-  return `${Number(loc.lat).toFixed(5)},${Number(loc.lon).toFixed(5)},${loc.radius}`;
-}
-
 function reportUrl(loc) {
   const params = new URLSearchParams({ lat: Number(loc.lat).toFixed(6), lon: Number(loc.lon).toFixed(6), name: loc.name, r: loc.radius });
   return location.pathname + "?" + params;
 }
-
 
 /* =========================================================
    SAVED PROPERTIES AND COMPARE
@@ -374,5 +357,4 @@ $("compareBtn").addEventListener("click", () => {
 
 $("closeCompare").addEventListener("click", () => $("comparePanel").classList.add("hidden"));
 
-export { buildReportData, GUIDED_KEY, renderSaved, reportKey, reportUrl, saveCurrentReport, SAVED_KEY, store,
-  updateGuide };
+export { buildReportData, GUIDED_KEY, renderSaved, reportUrl, saveCurrentReport, SAVED_KEY, updateGuide };

@@ -3,8 +3,9 @@
 
 import { $, APP_VERSION, escapeHTML, formatRadius, icon, link, okValue, plural, STATUS_LABEL, STATUS_SYMBOL, today } from "./core.js";
 import { CHECKS, GROUPS, TOPIC_ICONS } from "./checks/index.js";
+import { orderedResults, run } from "./runner.js";
 import { BASEMAPS, currentBasemap, makeBasemapLayers } from "./map.js";
-import { orderedResults, run, savedDate } from "./run.js";
+import { savedDate } from "./run.js";
 import { renderSummary } from "./summary.js";
 import { stepFold } from "./next-steps.js";
 import { updateNavFade, watchSections } from "./navigation.js";

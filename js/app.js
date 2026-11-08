@@ -2,9 +2,10 @@
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
 import { $, APP_UPDATED, APP_VERSION } from "./core.js";
+import { store } from "./store.js";
 import { initMap, selected } from "./map.js";
 import { lookupPostcode } from "./search.js";
-import { renderSaved, store } from "./saved.js";
+import { renderSaved } from "./saved.js";
 import { openReportFromAddress, runChecks } from "./run.js";
 import { reportMap } from "./report.js";
 

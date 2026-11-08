@@ -4,7 +4,8 @@
 import { $, escapeHTML, icon, okValue, plural, STATUS_LABEL, STATUS_ORDER } from "./core.js";
 import { CHECKS, GROUPS, TOPIC_ICONS } from "./checks/index.js";
 import { notCoveredNote, shownChecks } from "./coverage.js";
-import { orderedResults, run, slowNote } from "./run.js";
+import { orderedResults, run } from "./runner.js";
+import { slowNote } from "./run.js";
 import { canRetry, chip, isOld, OLD_MONTHS, retryButton } from "./report.js";
 import { updateToggleAll } from "./navigation.js";
 

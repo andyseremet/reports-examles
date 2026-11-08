@@ -56,7 +56,6 @@ function unavailable(base, R, key) {
   };
 }
 
-
 const GROUPS = [
   { id: "flood", title: "Flooding", intro: "Flood risk from rivers, the sea and heavy rain." },
   { id: "ground", title: "Ground and land", intro: "What is in or under the ground: mining, radon, landfill, contamination, ground movement and coastal erosion." },

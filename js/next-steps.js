@@ -2,9 +2,10 @@
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
 import { $, escapeHTML, icon, link, LINKS, okValue, STATUS_LABEL, STATUS_ORDER } from "./core.js";
+import { reportKey, store } from "./store.js";
 import { VIEWING_GENERAL, VIEWING_LOOK } from "./checks/index.js";
-import { renderSaved, reportKey, reportUrl, store } from "./saved.js";
-import { orderedResults, run } from "./run.js";
+import { orderedResults, run } from "./runner.js";
+import { renderSaved, reportUrl } from "./saved.js";
 import { moreToggle } from "./report.js";
 
 /* ---------- private notes ---------- */
