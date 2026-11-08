@@ -29,7 +29,7 @@ Report at most five Nits per review.
 ## Do not report
 
 - Anything the project's checks already catch: syntax errors (`tests/syntax-check.mjs`, run after every edit) and
-  page errors (the "No page errors" step in `tests/live-check.mjs`).
+  page errors (the "No page errors" step in `tests/live/devices.mjs`).
 - Fixed data saved with the app: `data/census2021-msoa-residents.json` and `data/rail-stations.json`.
 - Files the daily workflow writes to the `status` branch (`status.json`, `recordings.json`) and test output in
   `test-results/`.
@@ -43,9 +43,9 @@ Report at most five Nits per review.
 - User-facing text is plain English in short sentences, and every technical word goes through `term()`, with its
   `<dt id>` in `glossary.html`.
 - A new topic has all its parts: fetch function and `TASKS` row, check, `CHECKS`, `TOPIC_ICONS`, `COVERAGE` (if not
-  UK-wide; the topic is then left out elsewhere), `SERVICES` and `SERVICE_TOPICS` in `tests/live-check.mjs`, and
+  UK-wide; the topic is then left out elsewhere), `SERVICES` and `SERVICE_TOPICS` in `tests/live/services.mjs`, and
   `data/data-services.csv`. A topic count uses `shownChecks()`, not `CHECKS.length`.
-- New behaviour has a step in `tests/live-check.mjs`, and a new or changed control is in `ACTIONS` in
+- New behaviour has a step in `tests/live/` (`devices.mjs` or `country.mjs`), and a new or changed control is in `ACTIONS` in
   `tests/a11y-check.mjs`.
 - Buttons show an icon and a word, a control's `aria-label` starts with its visible words, and short messages sit in
   a `role="status"` or `aria-live="polite"` element.

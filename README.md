@@ -159,7 +159,7 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `glossary.html` | "What the words mean": a plain page with no script; `GLOSSARY` in `js/core.js` links words to it. |
 | `sw.js` | Offline support: keeps the app files so it opens without a connection. |
 | `data/` | Fixed official data saved with the app (see below). |
-| `tests/` | The automatic live check, the syntax check (`node tests/syntax-check.mjs`), `publish-status.mjs`, which builds the status page's file, `after-merge.sh`, which waits for a merged version to go live and then tests it (skipped when only documents changed), `digest.mjs`, a short summary of a run, and `a11y-check.mjs`, the accessibility scan run by hand after visual changes. |
+| `tests/` | The automatic live check, the syntax check (`node tests/syntax-check.mjs`), `publish-status.mjs`, which builds the status page's file, `after-merge.sh`, which waits for a merged version to go live and then tests it (skipped when only documents changed), `digest.mjs`, a short summary of a run, and `a11y-check.mjs`, the accessibility scan (by hand after visual changes, and on every pull request). The live check's parts are in `tests/live/`: settings, results, recording, the data services, country data, the three devices and the summary. |
 
 The JavaScript files are plain scripts that share one global scope. `index.html` loads them in order, and each file
 can use what earlier files define.
@@ -172,13 +172,14 @@ code reviews.
 
 A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-check.mjs`:
 
-- **Every day** against the live site. If anything fails (for example a government data service changes its
-  address), it opens or updates a GitHub issue called "Live check failed" with the details. The next full run that
-  passes closes it.
+- **Every day** against the live site. If an app step fails, it opens or updates a GitHub issue called "Live check
+  failed"; if a government data service does not answer (for example after changing its address), one called "Data
+  services down". Each closes after the next run in which its own part passes.
 - **On every pull request** that changes the page, against the proposed version, before it is merged. Its reports are
   answered from the outside services' answers recorded by the daily run (saved on the `status` branch, each kept up
   to 14 days), so an outside outage cannot turn a pull request red; a question never recorded is asked live and named
   in the results.
+  Pull requests also run the accessibility scan (`tests/a11y-check.mjs`) at the same time, on a second machine.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
 It checks that all 48 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 44 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
@@ -208,7 +209,7 @@ After each daily (or manual) run on `main`, a separate step publishes each data 
 branch (`status.json`, with 7 days of history). The [data service status page](https://andyseremet.github.io/reports-examles/status.html)
 reads that file, so a buyer can see when a topic is down for everyone. Pull request runs do not publish.
 
-Run it yourself: `npm install playwright@1.49.1 && npx playwright install chromium && node tests/live-check.mjs`
+Run it yourself: `npm install playwright@1.63.0 && npx playwright install chromium && node tests/live-check.mjs`
 (set `BASE` to test another address, for example a local copy; set `PAUSE_MS=0` to skip the pauses; set
 `REPLAY=daily` to answer the reports from the daily recording). With a recording, the data services (6 at a time), the
 map data checks and the three devices run at the same time: under a minute instead of 4 to 8. `QUICK=1` checks the
@@ -237,4 +238,4 @@ When the 2031 Census is published, it would be a new, separate file.
 `data/data-services.csv` is a reference list, not used by the app: the 44 outside services that supply data for the
 report topics (name, and the exact link the daily check calls, for a test location). It leaves out the postcode lookup, the address search and their backups
 (the app needs them to find the place) and the two files above. It was made from `SERVICES` in
-`tests/live-check.mjs` on 7 November 2026; that list is the one to keep current, so remake this file after changing it.
+`tests/live/services.mjs` (then in `tests/live-check.mjs`) on 7 November 2026; that list is the one to keep current, so remake this file after changing it.

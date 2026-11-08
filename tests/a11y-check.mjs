@@ -1,4 +1,4 @@
-// Accessibility re-check, run by hand after visual changes (not in the daily check).
+// Accessibility re-check: run by hand after visual changes; GitHub also runs it on every pull request (not daily).
 //   npm install --no-save axe-core   (Playwright as for the full test; see CLAUDE.md)
 //   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 1.5 minutes)
 // Scans WCAG 2.2 AA with axe-core on the start page, a full report, status.html and glossary.html, in 4 combinations that

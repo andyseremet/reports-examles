@@ -26,7 +26,7 @@ How the app's code is laid out and the rules for changing it. Read this before c
   (word → id); every id needs its `<dt id>` on the page (the daily check compares them).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads
   `status.json` from the `status` branch, which the daily workflow publishes (`tests/publish-status.mjs`). A new row
-  in `SERVICES` (`tests/live-check.mjs`) also needs its report topics in `SERVICE_TOPICS`.
+  in `SERVICES` (`tests/live/services.mjs`) also needs its report topics in `SERVICE_TOPICS`.
 
 ## Countries
 
@@ -71,7 +71,7 @@ Used only when a service fails, never on a normal day.
 
 A fetch function (in the country's `js/data*.js` file) and its row in `TASKS` (`js/tasks.js`), the check in its
 section's `js/checks/` file, rows in `CHECKS` and `TOPIC_ICONS` (`js/checks/index.js`), `COVERAGE` (`js/coverage.js`)
-if it does not cover all four countries, `SERVICES` and `SERVICE_TOPICS` in `tests/live-check.mjs`, and
+if it does not cover all four countries, `SERVICES` and `SERVICE_TOPICS` in `tests/live/services.mjs`, and
 `data/data-services.csv`.
 
 **Countries a topic does not cover** (owner, 8 November 2026): the topic is left out of that country's reports.
