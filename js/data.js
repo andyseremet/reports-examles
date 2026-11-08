@@ -423,8 +423,9 @@ async function getLandfill(loc) {
     return sites((d.features || []).map(f => [f.properties, f.geometry]));
   } catch (error) {
     // The map server is not answering: Defra's copy of the same register. Its answer travels with the failure
-    // (error.backup), so only checkLanduse uses it and says where it came from. Its dates are numbers, not text.
-    const date = v => typeof v === "number" ? new Date(v).toISOString().slice(0, 10) : v;
+    // (error.backup), so only checkLanduse uses it and says where it came from. Its dates come as timestamps
+    // (or numbers): kept as the live service gives them, YYYY-MM-DD.
+    const date = v => v == null ? v : (typeof v === "number" ? new Date(v).toISOString() : String(v)).slice(0, 10);
     const copy = await arcgisQuery(API.landfillBackup, loc, loc.radius, { outFields: "*", returnGeometry: "true", outSR: "4326", resultRecordCount: "100" })
       .catch(() => null);
     if (copy) error.backup = { sites: sites(copy.map(f => [{ ...f.attributes, firstinput: date(f.attributes.firstinput), lastinput: date(f.attributes.lastinput) },
