@@ -1035,7 +1035,7 @@ async function testDevice(device, [postcode, place]) {
 
   await desktopStep("Viewing checklist: short, serious topics first, ticks remembered", async () => {
     await page.click("#viewingBtn");
-    await until(() => document.querySelector("#viewing input[data-tick]"));
+    await scrolled();
     const r = await page.evaluate(() => {
       const items = [...document.querySelectorAll("#viewing input[data-tick]")].map(b => b.dataset.tick);
       const flagged = orderedResults().filter(c => ["high", "medium"].includes(c.status))
