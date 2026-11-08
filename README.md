@@ -158,7 +158,10 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 
 - **Every day** against the live site. If anything fails (for example a government data service changes its
   address), it opens or updates a GitHub issue called "Live check failed" with the details.
-- **On every pull request** that changes the page, against the proposed version, before it is merged.
+- **On every pull request** that changes the page, against the proposed version, before it is merged. Its reports are
+  answered from the outside services' answers recorded by the daily run (saved on the `status` branch, each kept up
+  to 14 days), so an outside outage cannot turn a pull request red; a question never recorded is asked live and named
+  in the results.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
 It checks that all 45 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 41 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a

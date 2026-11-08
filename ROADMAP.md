@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.36.2** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.0.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.36.2)
+## Part 1: What the app does today (version 2.0.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -142,20 +142,23 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   longer read "No issue found" or hide other mining.
 - An automatic check runs every day against the live site, and on every pull request. A failure opens a "Live check
   failed" issue on GitHub.
+- Steady pull request checks (2.0.0): each daily run records the outside services' answers to the `status` branch
+  (each kept up to 14 days); pull requests build their reports from that copy, so an outside outage cannot turn them
+  red. A question never recorded (for example a new topic) is asked live and named in the result. The daily check stays
+  fully live.
+- Final review (2.0.0): one report per country (Barnsley, Cardiff, Edinburgh, Belfast) with every topic answered, and
+  Barnsley again with the radon service switched off, which showed the saved, dated answer.
 
 ---
 
 ## Part 2: Planned next steps
 
-### Priority: the road to version 2.0 (health check and quiz of 7 November 2026)
+### Version 2.0 is complete
 
-Version 2.0 is the planned final version. It comes in four steps (1.34.0 the backups, 1.35.0 the printed report and 1.36.0 ease of use shipped on 7 November 2026; the `js/app.js` split moved into the 1.36.1 clean-up); each is built, tested (full check and accessibility
-check) and merged by the owner before the next one starts. Every item below was chosen in the quiz.
-
-| Step | Priority | What changes | Why |
-|---|---|---|---|
-| **2.0.0 Final** | 4 | **Steady pull request checks**: each daily run records the outside services' answers to the `status` branch (like `status.json`); pull requests build reports from that copy, at most a day old. A question never recorded (for example a new topic) is asked live and named in the result. The daily check stays fully live. | During the 6–7 November outage, every pull request was red for reasons outside the app. |
-| | 4 | **Final review**: one place per country (Barnsley, Cardiff, Edinburgh, Belfast), and one place again with a service switched off to confirm the backups and saved answers; the accessibility check; README and road map brought up to date. | A clean 2.0. |
+Version 2.0, the planned final version, shipped in five steps on 7 and 8 November 2026: 1.34.0 the backups, 1.35.0 the
+printed report, 1.36.0 ease of use, 1.36.1 the clean-up, and 2.0.0 steady pull request checks with the final review.
+Each was chosen in the quiz of 7 November 2026, built, tested and merged by the owner. Later changes come in small
+steps from Part 3.
 
 **No open backup exists** (health check, 7 November 2026), so these topics keep saying clearly what could not be
 checked during an outage: Green Belt, HS2 safeguarding, schools (the national school list is only a download file),

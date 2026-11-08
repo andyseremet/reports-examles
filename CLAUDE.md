@@ -132,12 +132,14 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
   that change `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/` or the workflow.
   A failed daily or manual run opens or updates a "Live check failed" issue.
-- **Daily and manual runs** check everything live. On `main` they then publish `status.json` to the `status` branch
-  for the status page.
+- **Daily and manual runs** check everything live. On `main` they then publish to the `status` branch: `status.json`
+  (the status page) and `recordings.json` (the report pages' outside answers, `RECORD=1`; merged by
+  `tests/merge-recordings.mjs`, each answer kept up to 14 days).
 - **Pull requests** (at the owner's request) leave out the 41 report data services (`DATA_SERVICES=0`; the list is
   `data/data-services.csv`; they run daily, and by hand with the "Check the report data services" box, ticked by
-  default). Their report steps still use the live services, so an outage can still fail a pull request (recorded
-  answers are planned for 2.0.0).
+  default). Their report pages are answered from `recordings.json` (`REPLAY`), so an outside outage cannot turn them
+  red; a question never recorded (for example a new topic) is asked live and named in the "Report data from the daily
+  recording" result. A test step's own stub (`page.route`) always comes first.
 - Steps that only test data functions (no screen layout) belong in `testCountryData()` in `tests/live-check.mjs`:
   they run once, during the first pause, and must send nothing to the Environment Agency map server. Steps that
   check the page on a phone, tablet or desktop stay in `testDevice()`.
