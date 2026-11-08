@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.7.1** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.7.2** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.7.1)
+## Part 1: What the app does today (version 2.7.2)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -201,6 +201,10 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   their sources, styling, versions, good manners and a complete small app (tested from another website), and how to
   add a topic or a new fixed version. The kit now also loads without a browser page (for listing topics); `kit/v1/`
   was remade from 2.7.1 before it was published. The syntax check loads the kit without a browser.
+- Fewer steps per topic (2.7.2, 8 November 2026): `index.html` loads only `js/main.js`, so a new topic needs no line
+  there; the syntax check lists what a topic or file is still missing (topic list, offline list, data service rows,
+  test names), each with the line to add or remove. Adding a topic: its file, one line in the topic list, then what
+  the check lists.
 - Lean code (1.36.1, quiz of 8 November 2026): `js/app.js` split into 5 files (`search.js`, `saved.js`, `report.js`,
   `print.js`, `app.js`); one print section in `css/app.css` instead of 10, with repeated rules merged (every element's
   computed style compared before and after: the same look); one box function for map queries; all saving through one

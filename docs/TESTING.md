@@ -22,7 +22,10 @@ check still run the whole test, so the owner's merge is always covered.
 
 ## Running the tests
 
-- **Syntax check:** `node tests/syntax-check.mjs` (every module on `index.html` reads correctly and each name it
+- **Syntax check:** `node tests/syntax-check.mjs` (first, what a topic or file is missing, each with the line to
+  add or remove: a topic file not in `CHECKS` or not named after its id, a file missing from `SHELL`, a topic whose
+  data service is not in `SERVICE_TOPICS`, a name in `js/page-names.js` that no longer exists; then every module
+  the app loads reads correctly and each name it
   imports is exported by the file it names, for the kit too (`js/kit.js` and each `kit/v<N>/`); then the status
   page's script and `sw.js`). A project
   hook (`.claude/settings.json`, `.claude/hooks/syntax-check.sh`) runs it after every edit to `index.html` or a `.js`

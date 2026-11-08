@@ -10,7 +10,8 @@ How the app's code is laid out and the rules for changing it. Read this before c
 - `js/`: JavaScript modules (since 2.4.0, still no build step). Each file starts with `import { … } from "./file.js"`
   for what it uses from other files and ends with `export { … }` for what other files use; a name only one file uses
   stays private to it. A variable that changes (`let`) lives in the one file that changes it (other files only read
-  it). `index.html` loads them in this order (the imports decide the real order; the list says where things live):
+  it). `index.html` loads only `main.js` (2.7.2), which loads the main app's parts in this order (the topics load
+  through their list, `topics/index.js`):
   1. `core.js` (links, settings, `APP_VERSION`, helpers such as `term()` and `GLOSSARY`) → `api.js` (`API`,
      `PACED_HOSTS`, `fetchJSON`, `arcgisRequest`) → `store.js` (`store` for browser storage, `reportKey`)
   2. `data.js` (shared fetch helpers: the place, map queries, planning.data.gov.uk, flood maps for Scotland and Wales)
@@ -29,7 +30,8 @@ How the app's code is laid out and the rules for changing it. Read this before c
 
   One job per file (owner, 8 November 2026). Code that runs at load time (outside a function) may only use what an
   earlier file defines, as before: two files that import each other are allowed, but only for use inside functions.
-  A new JS file goes in `index.html` (`<script type="module">`) and in `SHELL` in `sw.js`.
+  A new JS file is imported by the file that uses it (a main-app part that only adds listeners goes in `main.js`),
+  and goes in `SHELL` in `sw.js`; the syntax check names any file missing from `SHELL`.
   `js/page-names.js` puts the app names the daily check reads from the page on `window` (modules keep names to
   themselves); a test that reads a new name needs it listed there.
 - **The runner** (`js/runner.js`, 2.5.0): runs the checks for one place and never touches the page.
@@ -116,9 +118,17 @@ const radonTopic = {
 };
 ```
 
-To add one: write its file; add `<id>Topic` to `CHECKS` in `js/topics/index.js` (report order), its file to
-`index.html` and `SHELL` in `sw.js`, and its data keys to `TASK_ORDER` in `js/tasks.js` (a key not listed starts
-last); then `SERVICES` and `SERVICE_TOPICS` in `tests/live/services.mjs`, and `data/data-services.csv`. Data that
+To add one (2.7.2):
+
+1. Write `js/topics/<id>.js`, copying a similar topic (the file name is the topic's id).
+2. In `js/topics/index.js`, import `<id>Topic` and put it in `CHECKS` where it goes in the report.
+3. Run `node tests/syntax-check.mjs` and do what it lists: the file's line in `SHELL` (`sw.js`), and its data service
+   in `SERVICES` and `SERVICE_TOPICS` (`tests/live/services.mjs`) and `data/data-services.csv`. It says "Syntax OK"
+   when nothing is missing. Optionally, add its data keys to `TASK_ORDER` in `js/tasks.js` (a key not listed starts
+   last).
+
+To remove one: delete its file, take it out of `js/topics/index.js`, remove its test steps (`tests/live/`), then run
+the syntax check and do what it lists (its line in `SHELL`, its names in `js/page-names.js`). Data that
 several topics read goes once in `SHARED_DATA` (`js/sources.js`), with its fetch function in the country's
 `js/data*.js` file. The daily check's "Topic files" step checks that every topic has the same parts and that each data
 task is defined once and read by some topic.

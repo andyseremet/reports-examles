@@ -169,6 +169,7 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `js/navigation.js` | The section bar, Open problems / Close all, the phone tab bar and back to top. |
 | `js/print.js` | Share, download and print. |
 | `js/app.js` | Larger text, install as an app, and start-up (shared links). |
+| `js/main.js` | The start file: `index.html` loads only this, and it loads the rest of the main app in order. |
 | `js/page-names.js` | The app names the daily check reads from the page (modules keep names to themselves). |
 | `status.html`, `js/status.js` | The data service status page: a separate page with its own small script. |
 | `glossary.html` | "What the words mean": a plain page with no script; `GLOSSARY` in `js/core.js` links words to it. |
@@ -177,7 +178,8 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `tests/` | The automatic live check, the syntax check (`node tests/syntax-check.mjs`), `publish-status.mjs`, which builds the status page's file, `after-merge.sh`, which waits for a merged version to go live and then tests it (skipped when only documents changed), `digest.mjs`, a short summary of a run, and `a11y-check.mjs`, the accessibility scan (by hand after visual changes, and on every pull request). The live check's parts are in `tests/live/`: settings, results, recording, the data services, country data, the three devices and the summary. |
 
 The JavaScript files are modules (since 2.4.0), with no build step: each file imports what it uses from other files
-and exports what they use. `js/page-names.js` lets the daily check read app names from the page. The plan is to make
+and exports what they use. `index.html` loads only `js/main.js`. Adding a topic takes its file, one line in the topic
+list, and what the syntax check then lists (`docs/CODE.md`, "Adding a topic"). `js/page-names.js` lets the daily check read app names from the page. The plan is to make
 each topic usable on its own in other small apps (see the road map, Part 2).
 
 Guides for working on the app: `docs/CODE.md` (code), `docs/DESIGN.md` (look and wording), `docs/TESTING.md` (tests and
