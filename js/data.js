@@ -447,6 +447,17 @@ async function getPastFloods(loc) {
   return { country: "England", near, inside: near && await count(0) > 0, floods: [] };
 }
 
+// Reservoir flooding (2.3.0): the reservoirs whose flood map covers the pin, if one failed on a normal day ("dry day")
+// and if one failed while rivers were already flooding ("wet day"). England only: Wales, Scotland and Northern Ireland
+// publish no such open map a web page can read, so the line is left out there.
+async function getReservoirFlood(loc) {
+  if (await inScotland(loc) || await inWales(loc) || await inNI(loc)) return null;
+  const names = async base => [...new Set((await arcgisQuery(base, loc, 0, { outFields: "reservoir" }))
+    .map(f => f.attributes && f.attributes.reservoir).filter(Boolean))].sort();
+  const [dry, wet] = await Promise.all([names(API.reservoirDry), names(API.reservoirWet)]);
+  return { dry, wet };
+}
+
 async function getCoastalErosion(loc) {
   if (await inWales(loc)) return getWalesCoast(loc);
   if (await inScotland(loc)) return getScotlandCoast(loc);

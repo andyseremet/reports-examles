@@ -58,7 +58,7 @@ const GROUPS = [
 
 // Each check, the data it needs, and where it appears in the report.
 const CHECKS = [
-  { id: "flood", group: "flood", title: "Flooding from rivers and the sea", deps: ["planningPoint", "planningNearby", "floodNational"], build: checkFlood },
+  { id: "flood", group: "flood", title: "Flooding from rivers and the sea", deps: ["planningPoint", "planningNearby", "floodNational", "reservoirs"], build: checkFlood },
   { id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)", deps: ["surfaceWater", "floodNational"], build: checkSurfaceWater },
   { id: "pastfloods", group: "flood", title: "Past floods recorded here", deps: ["pastFloods"], build: checkPastFloods },
   { id: "coal", group: "ground", title: "Mining (coal and other)", deps: ["coal", "otherMining"], build: checkCoal },

@@ -107,6 +107,27 @@ export async function testCountryData(browser) {
       return `Tewkesbury inside; Builth Wells ${r.builth.n} floods (${r.topic.status}): "${r.topic.found.slice(0, 70)}…"`;
     });
 
+    await step("Reservoir flooding: a line in the flood topic, England only, never good news when the map cannot be read", async () => {
+      // Derby on the River Derwent lies below Ladybower and Ogston reservoirs ("dry day") and more when rivers are
+      // already flooding ("wet day"); Barnsley town centre is in no reservoir flood area; Cardiff (Wales) is not asked.
+      const r = await page.evaluate(async () => {
+        const at = (lat, lon) => getReservoirFlood({ lat, lon, radius: 1000 });
+        const [derby, barnsley, cardiff] = await Promise.all([at(52.9235, -1.4730), at(53.5526, -1.4797), at(51.4816, -3.1791)]);
+        const note = value => reservoirNote({ ok: true, value });
+        return { derby, barnsley, cardiff, inside: note(derby), outside: note(barnsley), wales: note(null),
+          dryOnly: note({ dry: ["A"], wet: [] }), down: reservoirNote({ ok: false, error: "HTTP 503" }) };
+      });
+      if (!r.derby || !r.derby.dry.includes("Ladybower") || r.derby.wet.length < r.derby.dry.length) throw new Error(`Derby: ${JSON.stringify(r.derby)}`);
+      if (!r.barnsley || r.barnsley.dry.length || r.barnsley.wet.length) throw new Error(`Barnsley: ${JSON.stringify(r.barnsley)}`);
+      if (r.cardiff !== null) throw new Error("the fetch answered for Wales");
+      if (!/For information, reservoirs:.*Ladybower.*on a normal day or when rivers are already flooding.*extremely unlikely/s.test(r.inside)) throw new Error(`Derby line: ${r.inside}`);
+      if (!/not in an area that could flood/.test(r.outside)) throw new Error(`Barnsley line: ${r.outside}`);
+      if (r.wales !== "") throw new Error(`a line for Wales: ${r.wales}`);
+      if (!/\(A\), on a normal day\./.test(r.dryOnly)) throw new Error(`dry day only: ${r.dryOnly}`);
+      if (!/could not be checked/.test(r.down) || /not in an area/.test(r.down)) throw new Error(`map not answering: ${r.down}`);
+      return `Derby: ${r.derby.dry.length} reservoir(s) on a normal day, ${r.derby.wet.length} when rivers flood; Barnsley none; Wales left out`;
+    });
+
     await step("Backups for the place, the address search and recent answers", async () => {
       // postcodes.io not answering: OpenStreetMap gives the country (Leith → Scotland). Nominatim not answering: Photon
       // finds the address. A service that fails reuses its answer from the last 7 days, but never an older one.

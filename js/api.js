@@ -32,6 +32,11 @@ const API = {
   landfillBackup: "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/HistoricLandfill/FeatureServer/0/query",
   // Past floods, England (2.1.0, owner, 8 November 2026): Defra's copy of the Environment Agency Historic Flood Map.
   pastFloods: "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/HistoricFloodMap/FeatureServer/0/query",
+  // Reservoir flooding, England (2.3.0, owner, 8 November 2026): Defra's copies of the Environment Agency reservoir
+  // flood maps. "Dry day": a reservoir fails when rivers are at normal levels. "Wet day": it fails while a river is
+  // already in an extreme flood.
+  reservoirDry: "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/ReservoirFloodExtentsDryDay/FeatureServer/0/query",
+  reservoirWet: "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/ReservoirFloodExtentsWetDay/FeatureServer/0/query",
   coastal: "https://environment.data.gov.uk/spatialdata/ncern-national-2024/ogc/features/v1/collections/",
   airModel: "https://air-quality-api.open-meteo.com/v1/air-quality",
   crime: "https://data.police.uk/api/crimes-street/all-crime",
