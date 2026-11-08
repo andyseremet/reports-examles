@@ -7,7 +7,10 @@ How the app's code is laid out and the rules for changing it. Read this before c
 
 - `index.html` (the page), `css/app.css` (all styles), `sw.js` (offline support), `data/` (fixed data saved with the
   app). The README table "How the code is organised" says what each file holds.
-- `js/`: plain scripts sharing one global scope (no modules), loaded by `index.html` in this order:
+- `js/`: JavaScript modules (since 2.4.0, still no build step). Each file starts with `import { … } from "./file.js"`
+  for what it uses from other files and ends with `export { … }` for what other files use; a name only one file uses
+  stays private to it. A variable that changes (`let`) lives in the one file that changes it (other files only read
+  it). `index.html` loads them in this order (the imports decide the real order; the list says where things live):
   1. `core.js` (links, settings, `APP_VERSION`, helpers such as `term()` and `GLOSSARY`) → `api.js` (`API`,
      `PACED_HOSTS`, `fetchJSON`, `arcgisRequest`)
   2. `data.js` (England and shared fetch helpers) → `backups.js` → `data-wales.js` → `data-scotland.js` →
@@ -20,8 +23,13 @@ How the app's code is laid out and the rules for changing it. Read this before c
      cards, layout, sources) → `next-steps.js` → `navigation.js` → `print.js` (share, download, print) → `app.js`
      (larger text, install, start-up)
 
-  One job per file (owner, 8 November 2026). Code that runs at load time may only use what an earlier file defines.
-  A new JS file goes in `index.html` and in `SHELL` in `sw.js`.
+  One job per file (owner, 8 November 2026). Code that runs at load time (outside a function) may only use what an
+  earlier file defines, as before: two files that import each other are allowed, but only for use inside functions.
+  A new JS file goes in `index.html` (`<script type="module">`) and in `SHELL` in `sw.js`.
+  `js/page-names.js` puts the app names the daily check reads from the page on `window` (modules keep names to
+  themselves); a test that reads a new name needs it listed there.
+- **Modular plan** (owner, 8 November 2026; `ROADMAP.md`, Part 2): step by step, each topic becomes one file that
+  other small apps can use on its own. Step 1 (2.4.0) is the switch to modules.
 - `glossary.html`: "What the words mean", plain HTML with no script. `term()` links a word to it through `GLOSSARY`
   (word → id); every id needs its `<dt id>` on the page (the daily check compares them).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads

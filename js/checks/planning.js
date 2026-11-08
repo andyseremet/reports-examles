@@ -1,6 +1,10 @@
-"use strict";
 // Property Location Check – checks in the "Planning and surroundings" section.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { andList, escapeHTML, formatRadius, link, LINKS, PLANNING_AT_POINT, plural } from "../core.js";
+import { LISTED_HERE_M, LISTED_NEAR_M } from "../data-wales.js";
+import { backupFor, backupFrom, backupNote, byDataset, isNI, isScotland, isWales, planningList, sitesKey,
+  unavailable } from "./index.js";
 
 function checkPlanning(R) {
   if (isWales(R) || isScotland(R) || isNI(R)) return checkPlanningDevolved(R);
@@ -164,3 +168,5 @@ function checkNatureDevolved(R) {
       (scot ? "<p>Ancient woodland counts only woods recorded as ancient; the inventory's younger, long-established woods are left out.</p>" : "")
   };
 }
+
+export { checkNature, checkPlanning };

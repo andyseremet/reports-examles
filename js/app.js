@@ -1,6 +1,12 @@
-"use strict";
 // Property Location Check – comfort (larger text, install as an app) and start-up.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $, APP_UPDATED, APP_VERSION } from "./core.js";
+import { initMap, selected } from "./map.js";
+import { lookupPostcode } from "./search.js";
+import { renderSaved, store } from "./saved.js";
+import { openReportFromAddress, runChecks } from "./run.js";
+import { reportMap } from "./report.js";
 
 /* =========================================================
    COMFORT: larger text, install as an app

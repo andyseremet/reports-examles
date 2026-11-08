@@ -1,6 +1,8 @@
-"use strict";
 // Property Location Check – checks in the "Flooding" section.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { escapeHTML, formatDistance, formatRadius, link, LINKS, okValue, STATUS_LABEL, today } from "../core.js";
+import { backupFor, backupNote, byDataset, planningList, unavailable } from "./index.js";
 
 function checkFlood(R) {
   const base = {
@@ -224,3 +226,5 @@ function checkSurfaceWater(R) {
 }
 
 // Everyday places nearby.
+
+export { checkFlood, checkPastFloods, checkSurfaceWater, reservoirNote };

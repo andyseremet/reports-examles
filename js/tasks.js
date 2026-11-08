@@ -1,6 +1,12 @@
-"use strict";
 // Property Location Check – the list of data tasks (TASKS): each fetch, its topic and the service it waits for.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { getAirModel, getAmenities, getCoal, getCoastalErosion, getCrime, getCrimeArea, getFloodNational,
+  getLandfill, getLandslides, getOtherMining, getPastFloods, getPlace, getPlanningAtPoint, getPlanningNearby,
+  getRadon, getRailNoise, getReservoirFlood, getRoadNoise, getShrinkSwell, getSoldPrices, getSurfaceWater } from "./data.js";
+import { getCoalTips, getWalesSites } from "./data-wales.js";
+import { getScotlandSites, getSimdCrime, getWasteSites } from "./data-scotland.js";
+import { getNISites } from "./data-ni.js";
 
 // Each data task: key, topic name, fetch function, and the service it waits for (named in the
 // "Still waiting for" note when a report is slow). Tasks start in this order. The Environment Agency
@@ -35,3 +41,5 @@ const TASKS = [
   ["simdCrime", "Crime rank in Scotland", getSimdCrime, "Scottish Government"],
   ["niSites", "Heritage and nature in Northern Ireland", getNISites, "Department for Communities and DAERA"]
 ];
+
+export { TASKS };

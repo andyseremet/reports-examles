@@ -1,6 +1,10 @@
-"use strict";
 // Property Location Check – fetching data for Wales (DataMapWales).
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { byDistance, distanceKm, geometryCentre } from "./core.js";
+import { API, fetchJSON } from "./api.js";
+import { COAST_NEAR_M, distanceToGeometryKm, geometryHas, inWales, roundNoise, wfsFeatures, withDistance, wmsInfo,
+  wmsValuesAt } from "./data.js";
 
 /* ---------------------------------------------------------------
    Wales: DataMapWales (Welsh Government, Natural Resources Wales and Cadw), for the topics whose
@@ -143,3 +147,6 @@ async function getCoalTips(loc) {
     .filter(t => t.distanceKm == null || t.distanceKm <= loc.radius / 1000)
     .sort(byDistance);
 }
+
+export { COAL_TIP_CATEGORY, getCoalTips, getWalesCoast, getWalesNoise, getWalesSites, LISTED_HERE_M, LISTED_NEAR_M,
+  NOISE_PERIODS_16H, tidy };

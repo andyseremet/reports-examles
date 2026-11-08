@@ -1,6 +1,10 @@
-"use strict";
 // Property Location Check – fetching data for Northern Ireland.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { API, arcgisQuery, arcgisRequest, fetchJSON } from "./api.js";
+import { COAST_NEAR_M, distanceToGeometryKm, inNI, roundNoise } from "./data.js";
+import { LISTED_HERE_M, LISTED_NEAR_M, tidy } from "./data-wales.js";
+import { tidyCaps } from "./data-scotland.js";
 
 /* ---------------------------------------------------------------
    Northern Ireland: the Department for Communities' Historic Environment Division (listed buildings, scheduled
@@ -69,3 +73,5 @@ async function getNICoast(loc) {
   return { country: "Northern Ireland", nearCoast: shore.length > 0, shoreKm: shore[0]?.km ?? null,
     highKm: nearest("High"), moderateKm: nearest("Moderate") };
 }
+
+export { getNICoast, getNINoise, getNISites };

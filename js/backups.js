@@ -1,6 +1,9 @@
-"use strict";
 // Property Location Check – backups used only when planning.data.gov.uk does not answer.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { distanceKm } from "./core.js";
+import { API, arcgisQuery, arcgisRequest } from "./api.js";
+import { inNI, inScotland, inWales } from "./data.js";
 
 // When planning.data.gov.uk does not answer (England only), heritage and nature are asked from the original publishers:
 // Historic England (National Heritage List for England, and its conservation areas map) and Natural England, and flood
@@ -63,3 +66,5 @@ async function withBackup(primary, loc, radiusM, datasets) {
     throw error;
   }
 }
+
+export { withBackup };

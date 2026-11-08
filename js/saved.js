@@ -1,6 +1,12 @@
-"use strict";
 // Property Location Check – storage on this device, saved properties and compare.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $, escapeHTML, icon, okValue, plural, STATUS_LABEL } from "./core.js";
+import { TASKS } from "./tasks.js";
+import { CHECKS } from "./checks/index.js";
+import { forgetAnswers, orderedResults, reportData, run, snapKey, updatePlaceButtons } from "./run.js";
+import { chip, isOld, OLD_MONTHS, prepareTables, renderMeta } from "./report.js";
+import { downloadFile } from "./print.js";
 
 /* =========================================================
    STORAGE – only on this device
@@ -367,3 +373,6 @@ $("compareBtn").addEventListener("click", () => {
 });
 
 $("closeCompare").addEventListener("click", () => $("comparePanel").classList.add("hidden"));
+
+export { buildReportData, GUIDED_KEY, renderSaved, reportKey, reportUrl, saveCurrentReport, SAVED_KEY, store,
+  updateGuide };

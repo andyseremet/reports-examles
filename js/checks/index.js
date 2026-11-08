@@ -1,6 +1,12 @@
-"use strict";
 // Property Location Check – shared check helpers and the list of report topics (CHECKS). Loaded after the section files.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { escapeHTML, ICON_PATHS, okValue } from "../core.js";
+import { TASKS } from "../tasks.js";
+import { checkFlood, checkPastFloods, checkSurfaceWater } from "./flood.js";
+import { checkClay, checkCoal, checkCoastal, checkLandslides, checkLanduse, checkRadon } from "./ground.js";
+import { checkAir, checkAmenities, checkCrime, checkNoise, checkSoldPrices } from "./living.js";
+import { checkNature, checkPlanning } from "./planning.js";
 
 /* =========================================================
    CHECKS – each turns raw data into a plain-English result:
@@ -133,3 +139,6 @@ const TOPIC_ICONS = {
 
 // Every check waits for the nearest-postcode lookup, which tells us the country.
 CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
+
+export { backupFor, backupFrom, backupNote, byDataset, CHECKS, GROUPS, isNI, isScotland, isWales, planningList,
+  sitesKey, TASK_FN, TOPIC_ICONS, unavailable, VIEWING_GENERAL, VIEWING_LOOK };

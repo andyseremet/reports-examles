@@ -1,6 +1,12 @@
-"use strict";
 // Property Location Check – the summary at the top of the report: the verdict, the topic grid, the box under it and key findings.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $, escapeHTML, icon, okValue, plural, STATUS_LABEL, STATUS_ORDER } from "./core.js";
+import { CHECKS, GROUPS, TOPIC_ICONS } from "./checks/index.js";
+import { notCoveredNote, shownChecks } from "./coverage.js";
+import { orderedResults, run, slowNote } from "./run.js";
+import { canRetry, chip, isOld, OLD_MONTHS, retryButton } from "./report.js";
+import { updateToggleAll } from "./navigation.js";
 
 // The verdict of a finished report, from n(rating) = how many topics have that rating. Missing data is never good
 // news: nothing answered is never a bold "No issues found" (code review, 2.3.3).
@@ -114,3 +120,5 @@ document.addEventListener("click", e => {
   const again = document.querySelector(`[data-why="${btn.dataset.why}"]`);
   if (again) again.focus();
 });
+
+export { doneVerdict, renderSummary, whyBox };

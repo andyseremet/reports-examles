@@ -1,6 +1,7 @@
-"use strict";
 // Property Location Check – outside data service addresses (API), request pacing and the fetch helpers.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { REQUEST_TIMEOUT } from "./core.js";
 
 /* =========================================================
    DATA SOURCES
@@ -186,3 +187,5 @@ function arcgisRequest(base, loc, distanceM, extra = {}) {
   });
 }
 const arcgisQuery = (base, loc, distanceM, extra) => arcgisRequest(base, loc, distanceM, extra).then(d => d.features || []);
+
+export { API, arcgisQuery, arcgisRequest, fetchJSON, once };

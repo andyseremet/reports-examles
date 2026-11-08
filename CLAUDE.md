@@ -8,7 +8,7 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
 
 | Before you… | Read |
 |---|---|
-| change code (`js/`, `index.html`, `sw.js`, `data/`) or add a topic | `docs/CODE.md` |
+| change code (`js/` modules, `index.html`, `sw.js`, `data/`) or add a topic | `docs/CODE.md` |
 | change anything the user sees: layout, colours, wording, buttons | `docs/DESIGN.md` |
 | run tests, read a failed check, or change `tests/` or the workflow | `docs/TESTING.md` |
 | plan larger work, open or watch a pull request, or finish a merge | `docs/WORKFLOW.md` |
@@ -45,7 +45,8 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
   `nominatimTurn()`.
 - **Free for everyone:** no paywall, adverts or accounts (`MONETISATION.md`).
 - **New features paused** (owner, 8 November 2026): improve existing topics and features only; add no new topic or
-  feature until the owner says otherwise (`ROADMAP.md`, Part 2).
+  feature until the owner says otherwise (`ROADMAP.md`, Part 2). The modular plan (topics usable on their own, five
+  steps) is agreed as an improvement.
 - **The owner decides:** plan and quiz before larger work; small choices follow the recommendation. Ask before a new
   library, outside service, redesign or build step. Open a pull request only when asked; never merge or approve.
 

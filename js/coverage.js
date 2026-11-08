@@ -1,6 +1,9 @@
-"use strict";
 // Property Location Check – which countries each topic covers, and the topics left out of a report elsewhere.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { andList, escapeHTML, link, okValue } from "./core.js";
+import { CHECKS, TOPIC_ICONS } from "./checks/index.js";
+import { run } from "./run.js";
 
 // Which countries each topic's data covers. Outside them the topic is left out of the report (owner, 8 November
 // 2026), and the country note in the summary names it, with links to the national services (notCoveredNote).
@@ -57,3 +60,5 @@ function notCoveredNote() {
   return ` Not covered here, so left out: ${escapeHTML(names)}.` +
     (services.length ? ` Check them on ${andList(services.map(s => link(s[1], s[0])))}.` : "");
 }
+
+export { COVERAGE, NATIONAL, notCoveredNote, shownChecks, topicShown };

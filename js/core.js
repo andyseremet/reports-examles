@@ -1,6 +1,5 @@
-"use strict";
 // Property Location Check – links, settings, the version number and shared helpers.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
 const LINKS = {
   floodLongTerm: "https://www.gov.uk/check-long-term-flood-risk",
@@ -120,12 +119,8 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "2.3.4";
+const APP_VERSION = "2.4.0";
 const APP_UPDATED = "8 November 2026";
-
-let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
-let selected = null;      // {lat, lon, label}
-let reportData = null;
 
 const $ = id => document.getElementById(id);
 
@@ -244,3 +239,8 @@ function pointFrom(loc, wkt) {
   const p = parseWktPoint(wkt);
   return { distanceKm: p ? distanceKm(loc, p) : null, lat: p?.lat, lon: p?.lon };
 }
+
+export { $, andList, APP_UPDATED, APP_VERSION, boundingBox, byDistance, circleWkt, distanceKm, escapeHTML,
+  formatDistance, formatRadius, geometryCentre, GLOSSARY, icon, ICON_PATHS, link, LINKS, MAP_COLOURS, monthName,
+  okValue, parseWktPoint, PLANNING_AT_POINT, PLANNING_NEARBY, plural, pointFrom, REQUEST_TIMEOUT, sentenceStart,
+  STATUS_LABEL, STATUS_ORDER, STATUS_SYMBOL, term, today };

@@ -1,6 +1,13 @@
-"use strict";
 // Property Location Check – checks in the "Living environment" section.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { andList, escapeHTML, formatDistance, formatRadius, link, LINKS, monthName, okValue, plural, sentenceStart,
+  term, today } from "../core.js";
+import { AMENITY_TYPES, nearestAirports, NOISE_PERIODS, policeDataMissing, SOLD_RADIUS_M, SOLD_TYPES, SOLD_YEARS } from "../data.js";
+import { NOISE_PERIODS_16H } from "../data-wales.js";
+import { SIMD_ZONES } from "../data-scotland.js";
+import { byDataset, isNI, isScotland, isWales, sitesKey, unavailable } from "./index.js";
+import { NATIONAL } from "../coverage.js";
 
 function checkAmenities(R) {
   const base = {
@@ -409,3 +416,5 @@ function checkCrime(R) {
     actions: [`Compare nearby areas, and find the local policing team, on ${link(LINKS.police, "police.uk")}.`]
   };
 }
+
+export { checkAir, checkAmenities, checkCrime, checkNoise, checkSoldPrices };

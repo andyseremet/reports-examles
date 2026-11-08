@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.3.4** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.4.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.3.4)
+## Part 1: What the app does today (version 2.4.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -182,6 +182,10 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Behind the scenes
 - Plain files with no build step: `index.html`, `css/app.css` and `js/`.
+- Modules (2.4.0, step 1 of the modular plan in Part 2): every `js/` file imports what it uses and exports what
+  other files use, instead of sharing one global scope; changing variables moved to the one file that changes them;
+  the syntax check also checks every import; `js/page-names.js` keeps the daily check's page reads working. Nothing
+  the user sees changed (full test and accessibility scan passed).
 - Lean code (1.36.1, quiz of 8 November 2026): `js/app.js` split into 5 files (`search.js`, `saved.js`, `report.js`,
   `print.js`, `app.js`); one print section in `css/app.css` instead of 10, with repeated rules merged (every element's
   computed style compared before and after: the same look); one box function for map queries; all saving through one
@@ -221,6 +225,23 @@ hold (Part 3). Chosen first, in the quiz of 8 November 2026:
 4. **Wording and phone review:** done on 8 November 2026 (Part 4); its fixes shipped in 2.3.4.
 
 All four chosen improvements are done. New features stay paused until the owner says otherwise.
+
+### Modular plan: topics usable on their own (owner, 8 November 2026)
+
+Agreed as an improvement under the pause: it adds no topic and changes nothing users see. The aim is that each topic
+card can be used without the main app, in new smaller apps or inside other websites. Chosen in the quiz of
+8 November 2026: all five steps, one release each; other apps load a fixed version from folders on this site
+(`kit/v1/`, …; no outside service); cards come plain, and the host app styles them (the main app keeps its look).
+
+1. **Modules** (2.4.0, done): every `js/` file imports and exports instead of sharing one global scope.
+2. **Runner:** running the checks for one place, without drawing the page, split out of `js/run.js`.
+3. **Topic files:** each topic in one file (`topics/radon.js`: its data, rating, wording, icon and viewing tips),
+   with data several topics share kept once; a test that every topic file has the same parts.
+4. **Card and tag:** a plain card from a topic's result, and a `<plc-topic topic="radon" postcode="…">` tag that
+   other pages load with one line; a demo page with single cards and a flood-only mini app.
+5. **Guide:** `docs/KIT.md`: how to use a card in another app, pick a version and add a topic.
+
+The rules travel with the kit: Environment Agency and Nominatim pacing, and missing data rated "Check yourself".
 
 ### Version 2.0 is complete
 

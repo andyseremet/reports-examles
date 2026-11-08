@@ -1,6 +1,9 @@
-"use strict";
 // Property Location Check – share, download and print.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $, escapeHTML, today } from "./core.js";
+import { reportData, run } from "./run.js";
+import { fitReportMap, reportMap } from "./report.js";
 
 /* =========================================================
    SHARE, EXPORT AND PRINT
@@ -118,3 +121,5 @@ document.addEventListener("click", e => {
   const b = e.target.closest && e.target.closest("#report button[id]");
   if (b && !b.disabled && REPORT_ACTIONS[b.id]) REPORT_ACTIONS[b.id]();
 });
+
+export { downloadFile };

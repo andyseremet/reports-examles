@@ -1,6 +1,7 @@
-"use strict";
 // Property Location Check – finding your way in the report: the section bar, Open problems / Close all, the phone tab bar and back to top.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $ } from "./core.js";
 
 /* ---------- section bar, open/close all, back to top ---------- */
 
@@ -95,3 +96,5 @@ window.addEventListener("scroll", () => {
   $("toTop").classList.toggle("hidden", window.scrollY < 700);
 }, { passive: true });
 $("toTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+export { problemTopics, updateNavFade, updateToggleAll, watchSections };

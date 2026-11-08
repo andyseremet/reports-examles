@@ -1,6 +1,13 @@
-"use strict";
 // Property Location Check – fetching data for England and the shared fetch helpers.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { boundingBox, byDistance, circleWkt, distanceKm, geometryCentre, parseWktPoint, PLANNING_AT_POINT,
+  PLANNING_NEARBY, pointFrom } from "./core.js";
+import { API, arcgisQuery, arcgisRequest, fetchJSON, once } from "./api.js";
+import { withBackup } from "./backups.js";
+import { getWalesCoast, getWalesNoise } from "./data-wales.js";
+import { getScotlandCoast, getScotlandNoise } from "./data-scotland.js";
+import { getNICoast, getNINoise } from "./data-ni.js";
 
 /* =========================================================
    DATA RETRIEVAL
@@ -590,3 +597,10 @@ async function wfsFeatures(service, layer, loc, metres, extra = {}) {
 const withDistance = (features, loc) => features
   .map(f => ({ f, km: geometryHas(f.geometry, loc) ? 0 : distanceToGeometryKm(f.geometry, loc) }))
   .sort((a, b) => a.km - b.km);
+
+export { AMENITY_TYPES, COAST_NEAR_M, distanceToGeometryKm, geometryHas, getAirModel, getAmenities, getCoal,
+  getCoastalErosion, getCrime, getCrimeArea, getFloodNational, getLandfill, getLandslides, getOtherMining,
+  getPastFloods, getPlace, getPlanningAtPoint, getPlanningNearby, getRadon, getRailNoise, getReservoirFlood,
+  getRoadNoise, getShrinkSwell, getSoldPrices, getSurfaceWater, inNI, inScotland, inWales, nearestAirports,
+  NOISE_PERIODS, placeFromOsm, policeDataMissing, roundNoise, SOLD_RADIUS_M, SOLD_TYPES, SOLD_YEARS, titleCase,
+  wfsFeatures, withDistance, wmsInfo, wmsValuesAt };

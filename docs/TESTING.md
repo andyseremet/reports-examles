@@ -22,7 +22,8 @@ check still run the whole test, so the owner's merge is always covered.
 
 ## Running the tests
 
-- **Syntax check:** `node tests/syntax-check.mjs` (all `js/` files together in load order, then `sw.js`). A project
+- **Syntax check:** `node tests/syntax-check.mjs` (every module on `index.html` reads correctly and each name it
+  imports is exported by the file it names; then the status page's script and `sw.js`). A project
   hook (`.claude/settings.json`, `.claude/hooks/syntax-check.sh`) runs it after every edit to `index.html` or a `.js`
   file. Fix any error it reports before going on.
 - **Full test:** `npm install --no-save playwright@1.63.0 && npx playwright install chromium` (in a cloud session use

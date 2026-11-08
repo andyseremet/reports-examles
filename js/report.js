@@ -1,10 +1,25 @@
-"use strict";
 // Property Location Check – the report page: topic cards, the layout, the cover, data sources and the report map.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $, APP_VERSION, escapeHTML, formatRadius, icon, link, okValue, plural, STATUS_LABEL, STATUS_SYMBOL, today } from "./core.js";
+import { CHECKS, GROUPS, TOPIC_ICONS } from "./checks/index.js";
+import { BASEMAPS, currentBasemap, makeBasemapLayers } from "./map.js";
+import { orderedResults, run, savedDate } from "./run.js";
+import { renderSummary } from "./summary.js";
+import { stepFold } from "./next-steps.js";
+import { updateNavFade, watchSections } from "./navigation.js";
 
 /* =========================================================
    REPORT
 ========================================================= */
+
+let reportMap = null;           // the small map in the report
+let reportFeatureLayer = null;  // dots on the report map
+
+// Remove the report map (back to the search view).
+function removeReportMap() {
+  if (reportMap) { reportMap.remove(); reportMap = null; }
+}
 
 function chip(status, text) {
   const symbol = STATUS_SYMBOL[status] ? `<span class="chip-symbol" aria-hidden="true">${STATUS_SYMBOL[status]}</span>` : "";
@@ -280,3 +295,6 @@ function drawReportMap(loc) {
   L.marker([loc.lat, loc.lon]).addTo(reportMap);
   reportFeatureLayer = L.layerGroup().addTo(reportMap);
 }
+
+export { canRetry, chip, fitReportMap, isOld, moreToggle, OLD_MONTHS, prepareTables, removeReportMap, renderMeta,
+  renderSkeleton, renderSources, reportFeatureLayer, reportMap, retryButton, showCheck };

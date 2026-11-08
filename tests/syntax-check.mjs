@@ -1,26 +1,59 @@
-// Syntax check for the app code: for each page (index.html, status.html), reads its <script src="js/..."> list
-// and checks those files together in that order (they share one global scope, so a name declared twice is
-// caught too), then sw.js.
+// Syntax check for the app code, without running it.
+// - index.html: its modules (<script type="module" src="js/...">). Each must read as a module, and every name it
+//   imports must be exported by the file it names (Node's own module linker, so no extra library).
+// - status.html: its plain scripts, checked together in page order (they share one global scope).
+// - sw.js.
 // Run: node tests/syntax-check.mjs   (exit 1 and the error on failure)
 import fs from "fs";
+import path from "path";
+import vm from "vm";
 import { execFileSync } from "child_process";
+
+// Node's module linker needs a flag: run this file again with it.
+const FLAG = "--experimental-vm-modules";
+if (!process.execArgv.includes(FLAG)) {
+  try {
+    execFileSync(process.execPath, [FLAG, "--no-warnings", ...process.execArgv, process.argv[1]], { stdio: "inherit" });
+  } catch (e) { process.exit(e.status || 1); }
+  process.exit(0);
+}
 
 const root = new URL("..", import.meta.url).pathname;
 const read = f => fs.readFileSync(root + f, "utf8");
-const PAGES = ["index.html", "status.html"];
-let total = 0, current = [];
+const scripts = (page, type) => [...read(page).matchAll(new RegExp(`<script ${type}src="(js/[^"]+)"`, "g"))].map(m => m[1]);
+
+let total = 0;
 try {
-  for (const page of PAGES) {
-    current = [...read(page).matchAll(/<script src="(js\/[^"]+)"/g)].map(m => m[1]);
-    if (!current.length) throw new Error(`No js/ scripts found in ${page}`);
-    new Function(current.map(read).join("\n;\n"));
-    total += current.length;
-  }
+  // Modules: read each file once, then link from every page tag (a missing export fails the link).
+  const modules = new Map();
+  const load = file => {
+    if (!modules.has(file)) {
+      if (!fs.existsSync(root + file)) throw new Error(`${file} is imported but does not exist`);
+      try { modules.set(file, new vm.SourceTextModule(read(file), { identifier: file })); }
+      catch (e) { throw new Error(`in ${file}: ${e.message}`); }
+    }
+    return modules.get(file);
+  };
+  const entries = scripts("index.html", 'type="module" ');
+  if (!entries.length) throw new Error("No js/ modules found in index.html");
+  // One stand-in module for the page imports every tag, so the whole set links once.
+  const page = new vm.SourceTextModule(entries.map(f => `import "./${f}";`).join("\n"), { identifier: "index.html" });
+  await page.link((spec, from) => {
+    if (!spec.startsWith(".")) throw new Error(`${from.identifier} imports "${spec}": app files import only other app files`);
+    return load(path.posix.join(path.posix.dirname(from.identifier), spec));
+  });
+  total += modules.size;
+
+  // Plain scripts (status page).
+  const plain = scripts("status.html", "");
+  if (!plain.length) throw new Error("No js/ scripts found in status.html");
+  try { new Function(plain.map(read).join("\n;\n")); }
+  catch (e) { throw new Error(`status.html scripts (${plain.join(", ")}): ${e.message}`); }
+  total += plain.length;
+
   execFileSync(process.execPath, ["--check", root + "sw.js"], { stdio: "pipe" });
 } catch (e) {
   console.error((e.stderr ? e.stderr.toString() : e.message).trim());
-  // Name the file with the problem: check each one on its own too.
-  for (const f of current) { try { new Function(read(f)); } catch (err) { console.error(`  in ${f}: ${err.message}`); } }
   process.exit(1);
 }
-console.log(`Syntax OK: ${total} script files on ${PAGES.length} pages, and sw.js`);
+console.log(`Syntax OK: ${total} app files (modules on index.html, scripts on status.html), and sw.js`);

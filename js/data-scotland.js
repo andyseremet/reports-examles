@@ -1,6 +1,10 @@
-"use strict";
 // Property Location Check – fetching data for Scotland.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { byDistance, distanceKm } from "./core.js";
+import { API, arcgisQuery, arcgisRequest, fetchJSON } from "./api.js";
+import { COAST_NEAR_M, inScotland, roundNoise, titleCase, wfsFeatures, withDistance } from "./data.js";
+import { LISTED_HERE_M, LISTED_NEAR_M, NOISE_PERIODS_16H, tidy } from "./data-wales.js";
 
 /* ---------------------------------------------------------------
    Scotland: Historic Environment Scotland, NatureScot, SEPA, the Scottish Government and the Scottish Air
@@ -128,3 +132,5 @@ async function getSimdCrime(loc) {
   if (!a || !Number.isFinite(a.crimerank)) return null;
   return { zone: a.datazone, name: tidy(a.dzname), council: tidy(a.laname), count: a.crimecount, rate: a.crimerate, rank: a.crimerank };
 }
+
+export { getScotlandCoast, getScotlandNoise, getScotlandSites, getSimdCrime, getWasteSites, SIMD_ZONES, tidyCaps };

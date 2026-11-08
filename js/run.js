@@ -1,13 +1,24 @@
-"use strict";
 // Property Location Check – running the checks: data tasks, Try again, recent answers, saved reports, the place bar and start-up from an address.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $, escapeHTML, icon, MAP_COLOURS, okValue, today } from "./core.js";
+import { TASKS } from "./tasks.js";
+import { backupFor, byDataset, CHECKS, TASK_FN } from "./checks/index.js";
+import { shownChecks, topicShown } from "./coverage.js";
+import { addMapPoint, featureLayer, map, mapIsFull, openSearch, selected, setLocation, setMapFull } from "./map.js";
+import { buildReportData, GUIDED_KEY, reportKey, reportUrl, saveCurrentReport, SAVED_KEY, store, updateGuide } from "./saved.js";
+import { renderSummary } from "./summary.js";
+import { removeReportMap, renderMeta, renderSkeleton, renderSources, reportFeatureLayer, showCheck } from "./report.js";
+import { buildChecklist, buildViewing, renderNotes, restoreTicks } from "./next-steps.js";
 
 /* =========================================================
    RUN THE CHECKS – results appear as soon as their data arrives
 ========================================================= */
 
 let run = null;                 // the report being built
-let reportFeatureLayer = null;  // dots on the report map
+// Sets the report being built (the daily check sets it from the page, through js/page-names.js).
+function setRun(value) { run = value; }
+let reportData = null;          // the report's data, for downloads and saved reports
 
 $("runBtn").addEventListener("click", () => runChecks());
 
@@ -127,7 +138,7 @@ function showSearchView() {
   run = null;
   reportData = null;
   lastRunKey = null;
-  if (reportMap) { reportMap.remove(); reportMap = null; }
+  removeReportMap();
   featureLayer.clearLayers();
   $("report").innerHTML = REPORT_PLACEHOLDER;
   hidePlaceBar();
@@ -427,3 +438,7 @@ function replotFeatures() {
     plotFeatures(reportFeatureLayer, run.R);
   }
 }
+
+export { forgetAnswers, openReportFromAddress, orderedResults, recentAnswer, rememberAnswer, reportData, run,
+  runChecks, savedDate, savedInstead, setRun, slowNote, snapKey, startTask, topicResult, updatePlaceButtons,
+  updateStickyRun };

@@ -1,6 +1,11 @@
-"use strict";
 // Property Location Check – Next steps: private notes, the viewing checklist, the checklist with ticks, and Send to my conveyancer.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $, escapeHTML, icon, link, LINKS, okValue, STATUS_LABEL, STATUS_ORDER } from "./core.js";
+import { VIEWING_GENERAL, VIEWING_LOOK } from "./checks/index.js";
+import { renderSaved, reportKey, reportUrl, store } from "./saved.js";
+import { orderedResults, run } from "./run.js";
+import { moreToggle } from "./report.js";
 
 /* ---------- private notes ---------- */
 const notesKey = () => "plc-notes:" + reportKey(run.loc);
@@ -191,3 +196,5 @@ document.addEventListener("change", e => {
   document.querySelectorAll("#checklistBox input[data-tick]").forEach(b => { if (b.dataset.tick === box.dataset.tick) b.checked = box.checked; });
   updateTickCounts();
 });
+
+export { buildChecklist, buildViewing, conveyancerText, renderNotes, restoreTicks, stepFold };

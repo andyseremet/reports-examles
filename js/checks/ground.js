@@ -1,6 +1,9 @@
-"use strict";
 // Property Location Check – checks in the "Ground and land" section.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { escapeHTML, formatDistance, formatRadius, link, LINKS, okValue, plural, term, today } from "../core.js";
+import { COAL_TIP_CATEGORY } from "../data-wales.js";
+import { backupFor, byDataset, isNI, isScotland, isWales, unavailable } from "./index.js";
 
 function checkRadon(R) {
   const base = {
@@ -425,3 +428,5 @@ function checkCoastal(R) {
     conveyancer: status === "low" ? [] : ["Does the environmental search cover coastal erosion, and will lenders and insurers accept the property?"]
   };
 }
+
+export { checkClay, checkCoal, checkCoastal, checkLandslides, checkLanduse, checkRadon };

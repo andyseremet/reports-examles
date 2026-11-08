@@ -1,6 +1,9 @@
-"use strict";
 // Property Location Check – the search box: suggestions as you type, postcode and address search.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $, escapeHTML } from "./core.js";
+import { API, fetchJSON } from "./api.js";
+import { mapIsFull, searchControl, setControlOpen, setLocation } from "./map.js";
 
 /* =========================================================
    SEARCH WITH SUGGESTIONS
@@ -186,3 +189,5 @@ async function addressSearch(q) {
     showSearchStatus("Search failed: " + e.message + ". Try again, or click the map.", true);
   }
 }
+
+export { hideSuggestions, lookupPostcode, searchPhoton, showSearchStatus };

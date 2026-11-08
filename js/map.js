@@ -1,6 +1,10 @@
-"use strict";
 // Property Location Check – the map: background maps, map buttons, full screen, the pin and the search circle.
-// Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
+// A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
+
+import { $, distanceKm, escapeHTML, MAP_COLOURS } from "./core.js";
+import { API, fetchJSON } from "./api.js";
+import { hideSuggestions, showSearchStatus } from "./search.js";
+import { runChecks, updateStickyRun } from "./run.js";
 
 /* =========================================================
    MAP
@@ -18,6 +22,8 @@ const ICONS = {
 const COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 let mapIsFull = false;
+let map, marker, radiusCircle, featureLayer, noiseLayer;   // the main map and its layers
+let selected = null;      // {lat, lon, label}
 
 let mapControls = [];
 
@@ -404,3 +410,6 @@ $("usePinBtn").addEventListener("click", () => {
   }
   setLocation(lat, lon, $("siteName").value.trim() || null);
 });
+
+export { addMapPoint, BASEMAPS, currentBasemap, featureLayer, initMap, makeBasemapLayers, map, mapIsFull, openSearch,
+  searchControl, selected, setControlOpen, setLocation, setMapFull };
