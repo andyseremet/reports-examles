@@ -40,7 +40,8 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
 - **Releases:** any change to `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `sw.js` or `data/` raises
   `APP_VERSION` and `CACHE` together, with `README.md` and `ROADMAP.md` in the same commit.
 - **Tests:** never skip, remove or loosen a step to get a pass. The only allowed non-pass is a warn for the
-  Environment Agency map server refusing GitHub with HTTP 403.
+  Environment Agency map server refusing GitHub with HTTP 403. Test parts that run at the same time must never both
+  ask OpenStreetMap's Nominatim (it allows one request a second).
 - **Free for everyone:** no paywall, adverts or accounts (`MONETISATION.md`).
 - **The owner decides:** plan and quiz before larger work; small choices follow the recommendation. Ask before a new
   library, outside service, redesign or build step. Open a pull request only when asked; never merge or approve.

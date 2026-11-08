@@ -109,6 +109,12 @@ before pushing anything.
   same time, so a step must not depend on another device's steps.
 - Never skip, remove or loosen a test step to get a pass. The only allowed non-pass is a `"warn"` for the Environment
   Agency map server refusing GitHub's machines with HTTP 403.
+- **One Nominatim request at a time** (owner, 8 November 2026): OpenStreetMap's Nominatim allows one request a
+  second. A step or part that asks it live (`placeFromOsm`, the address search, the "Address search" and "Place
+  backup" services) must never run at the same time as another one that does. On a live run the data services
+  therefore finish before the country data starts; with `REPLAY` the pages' Nominatim answers come from the
+  recording, so the parts can run together. A daily-style run (`RECORD=1`) shows a clash: a step that passes alone
+  fails with "the data service could not be reached".
 
 ## Outside outages
 

@@ -47,6 +47,8 @@ Report at most five Nits per review.
   `data/data-services.csv`. A topic count uses `shownChecks()`, not `CHECKS.length`.
 - New behaviour has a step in `tests/live/` (`devices.mjs` or `country.mjs`), and a new or changed control is in `ACTIONS` in
   `tests/a11y-check.mjs`.
+- Test parts that run at the same time (`Promise.all` in `tests/live-check.mjs`) never both ask Nominatim live: it
+  allows one request a second (`docs/TESTING.md`, "One Nominatim request at a time").
 - Buttons show an icon and a word, a control's `aria-label` starts with its visible words, and short messages sit in
   a `role="status"` or `aria-live="polite"` element.
 - A release updates `README.md` and moves the shipped items into Part 1 of `ROADMAP.md`.
