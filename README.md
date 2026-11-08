@@ -5,7 +5,7 @@ England, Wales, Scotland and Northern Ireland (some topics cover Great Britain o
 
 | Check | Source |
 |---|---|
-| Flooding from rivers and the sea (Flood Zones 1–3) | Environment Agency, via planning.data.gov.uk; SEPA (Scotland); Natural Resources Wales |
+| Flooding from rivers and the sea (Flood Zones 1–3), with a "For information" line on flooding if a large reservoir failed (England, 2.3.0) | Environment Agency, via planning.data.gov.uk; SEPA (Scotland); Natural Resources Wales; reservoir flood maps: Environment Agency (Defra's copies on ArcGIS Online) |
 | Flooding from heavy rain (surface water) | Environment Agency (2025); SEPA (Scotland); Natural Resources Wales |
 | Past floods recorded at or within 250 m of the pin (England and Wales; not shown elsewhere, where nothing is published) | Environment Agency Historic Flood Map (Defra's copy on ArcGIS Online; areas only, no dates); Natural Resources Wales Historic Flood Map (each flood with its date, source and cause) |
 | Radon gas | BGS / UKHSA Radon Indicative Atlas |
@@ -47,9 +47,13 @@ official checkers.
 
 - **Map:** on phones, scroll the page with one finger and move the map with two; on computers, use Ctrl (⌘ on Mac)
   + scroll to zoom. Full-screen map button, "my location" button, satellite and street backgrounds.
-- **Report:** results appear topic by topic as the data arrives. A topic whose data fails is tried once more by itself
-  after 8 seconds (20 if the service refused the request); if it fails again, it shows a **Try again** button, in its card and in the box under the topic grid. If this place was checked before, the topic
-  shows that saved answer instead, clearly dated, still with **Try again**. When planning.data.gov.uk does not answer
+- **Report:** results appear topic by topic as the data arrives. A request that fails is tried again at once (after a
+  short pause); a topic whose request was not tried again is tried once more by itself after 8 seconds (20 if the
+  service refused the request). If it still fails, it shows a **Try again** button, in its card and in the box under
+  the topic grid. If this place was checked before, the topic shows that saved answer instead, clearly dated, still
+  with **Try again**. In an outage (2.3.1): after 8 seconds a topic still waiting shows this place's answer from the
+  last 7 days, if there is one, dated, until the live answer replaces it; after 45 seconds the report finishes, and a
+  topic still waiting says "slow to answer" with **Try again**, and fills in by itself if its answer arrives later. When planning.data.gov.uk does not answer
   (England), heritage, conservation areas and nature are asked from Historic England and Natural England instead, and
   the flood zone at the pin from the Environment Agency's own flood map; each topic names anything it could not check
   (Green Belt, HS2 and nearby flood zones have no second open source). When the Environment Agency's map server does not
@@ -182,10 +186,10 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
   Pull requests also run the accessibility scan (`tests/a11y-check.mjs`) at the same time, on a second machine.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
-It checks that all 48 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 44 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
+It checks that all 50 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 46 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the share and print icons, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England, Natural England and Defra landfill backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
-printing and downloads (layout steps run on all three devices; steps that do not depend on the screen size run once, on the desktop). The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices, and the rule that missing
+printing and downloads (layout steps run on all three devices; steps that do not depend on the screen size run once, on the desktop). The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices, past floods and reservoir flooding, and the rule that missing
 data is never "No issue found" (noise, clay and mining with a failed service), is tested once, on the desktop page (it does not depend on the screen size, and it must
 send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files
 are installed only if it does not start without them. Results,
@@ -196,7 +200,7 @@ than about 15 requests a minute, which happens to GitHub's shared test machines.
 data services one at a time and, when the reports ask it live (no recording), waits a minute before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
 answer and retries a refusal or a slow answer. DataMapWales, Historic Environment Scotland, NatureScot, SEPA and DAERA
 get the same treatment with up to 4 requests at a time and 30 seconds to answer. A topic that still fails is tried once more by the page after 20
-seconds. If it then shows "Try again", the test opens its card and presses it once, as a person would (a separate step
+seconds, unless its request was already tried again. If it then shows "Try again", the test opens its card and presses it once, as a person would (a separate step
 checks the Try again under the topic grid with a topic made to fail); a topic that still fails after
 that fails the test.
 
@@ -235,7 +239,7 @@ change and do not need refreshing. They were downloaded from
 `https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv?date=latest&geography=TYPE152&c2021_restype_3=0&measures=20100&select=geography_code,obs_value`.
 When the 2031 Census is published, it would be a new, separate file.
 
-`data/data-services.csv` is a reference list, not used by the app: the 44 outside services that supply data for the
+`data/data-services.csv` is a reference list, not used by the app: the 46 outside services that supply data for the
 report topics (name, and the exact link the daily check calls, for a test location). It leaves out the postcode lookup, the address search and their backups
 (the app needs them to find the place) and the two files above. It was made from `SERVICES` in
 `tests/live/services.mjs` (then in `tests/live-check.mjs`) on 7 November 2026; that list is the one to keep current, so remake this file after changing it.

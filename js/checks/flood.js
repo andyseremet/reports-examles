@@ -34,6 +34,7 @@ function checkFlood(R) {
   if (zone < 2 && nearbyZones.length) details += `<p>Land in Flood Zone 2 or 3 lies within ${formatRadius(R.loc.radius)}. Check how close it is on the ${link(LINKS.floodMapPlanning, "official flood map")}, especially for low-lying plots.</p>`;
   if (rivers.length) details += `<p>Main rivers within ${formatRadius(R.loc.radius)}: ${escapeHTML(rivers.join(", "))}.</p>`;
   if (fromBackup) details = backupNote(backup, ["flood-risk-zone"], ["flood zones and main rivers nearby"]) + details;
+  details += reservoirNote(R.reservoirs);
 
   return {
     ...base, status, found, details, meaning: `<p>${meaning}</p>`,
@@ -47,6 +48,24 @@ function checkFlood(R) {
     seller: ["Has the property ever flooded, and has there been any flood insurance claim?"],
     conveyancer: zone >= 2 ? ["A flood risk report (often part of the environmental search)."] : []
   };
+}
+
+// Reservoir flooding (2.3.0, owner, 8 November 2026): one line in this card, "For information", which never changes the
+// card's rating. England only (getReservoirFlood answers null elsewhere, and this card's England part is the only one
+// that shows it). A map that could not be read is said so, never taken as "not in an area".
+function reservoirNote(result) {
+  const label = `<strong>${STATUS_LABEL.info}, reservoirs:</strong>`;
+  if (!result || !result.ok) return `<p>${label} the reservoir flood maps could not be checked just now. See them on ${link(LINKS.floodLongTerm, "GOV.UK long-term flood risk")}.</p>`;
+  const r = result.value;
+  if (!r) return "";
+  const names = [...new Set([...r.dry, ...r.wet])];
+  if (!names.length) return `<p>${label} not in an area that could flood if a large reservoir failed.</p>`;
+  const shown = names.length > 3 ? `${names.slice(0, 3).join(", ")} and ${names.length - 3} more` : names.join(names.length === 2 ? " or " : ", ");
+  const when = r.dry.length && r.wet.length ? "on a normal day or when rivers are already flooding"
+    : r.dry.length ? "on a normal day" : "when rivers are already flooding";
+  return `<p>${label} in an area that could flood if a large reservoir failed (${escapeHTML(shown)}), ${when}.
+    The Environment Agency says reservoir flooding is extremely unlikely: large reservoirs are inspected regularly by
+    qualified engineers, as the law requires.</p>`;
 }
 
 // Flood Zones 1 to 3 (England and Wales): the rating and a one-line finding.

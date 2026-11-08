@@ -444,8 +444,8 @@ export async function testDevice(browser, device, [postcode, place]) {
     await failPage.route(u => !u.href.startsWith(BASE), r => down && r.request().url().includes("risk-of-flooding-from-surface-water")
       ? r.fulfill({ status: 503, body: "" }).catch(() => {}) : r.fulfill({ json: { features: [] } }).catch(() => {}));
     try {
-      // The app waits 8 seconds before trying a failed topic again by itself: move the page's clock on instead of
-      // waiting (Playwright's clock; time still runs normally otherwise).
+      // The request is tried again after 2 and 6 seconds (fetchJSON), and then not again as a whole topic (2.3.1):
+      // move the page's clock on instead of waiting (Playwright's clock; time still runs normally otherwise).
       await failPage.clock.install();
       await failPage.goto(new URL("?lat=52.31&lon=-1.73&name=Try%20again%20test", BASE).href);
       const tile = failPage.locator('.topic-strip [data-why="surfacewater"]');
@@ -455,6 +455,7 @@ export async function testDevice(browser, device, [postcode, place]) {
         await failPage.waitForSelector(failedTile, { timeout: 500 }).catch(() => {});
       }
       await failPage.waitForSelector(failedTile, { timeout: 5000 });
+      if ((await failPage.evaluate(() => run.autoRetried || [])).includes("surfaceWater")) throw new Error("the topic was tried again as a whole after its request had been");
       await tile.click();
       const btn = failPage.locator('#whyBox [data-retry="surfacewater"]');
       if (!(await btn.isVisible())) throw new Error(`no Try again in the box under the grid: "${(await failPage.locator("#whyBox").innerText()).replace(/\s+/g, " ")}"`);
@@ -466,6 +467,54 @@ export async function testDevice(browser, device, [postcode, place]) {
       if (!ok) throw new Error("the topic did not load again after Try again");
       return `shown and pressed; now "${(await failPage.locator("#whyBox strong").innerText())}"`;
     } finally { await failPage.close(); }
+  });
+
+  await desktopStep("Slow services: a saved answer meanwhile, the report finishes at 45 seconds, late answers fill in", async () => {
+    // Faster reports in outages (2.3.1). Every outside service answers at once with no data, except radon (British
+    // Geological Survey) and "flooding from heavy rain" (Environment Agency), held until released. Radon has a saved
+    // answer for this place from earlier today: after 8 seconds it shows, dated, until the live answer replaces it.
+    // Heavy rain has none: after 45 seconds the report finishes and it says "slow to answer", then fills in when its
+    // answer arrives. Nothing is sent to the outside services in this step.
+    const p = await page.context().newPage();
+    const gate = () => { let open; const shut = new Promise(r => { open = r; }); return { shut, open }; };
+    const radonGate = gate(), rainGate = gate();
+    await p.route(u => !u.href.startsWith(BASE), async r => {
+      const url = r.request().url();
+      if (url.startsWith("https://map.bgs.ac.uk/") && url.includes("/radon/")) await radonGate.shut;
+      if (url.includes("risk-of-flooding-from-surface-water")) await rainGate.shut;
+      await r.fulfill({ json: { features: [] } }).catch(() => {});   // a request the page gave up on is gone
+    });
+    // textContent, not innerText: a "No issue found" topic sits in a folded group, where innerText is empty.
+    const card = id => p.evaluate(id => { const d = document.getElementById("check-" + id); return d ? d.textContent.replace(/\s+/g, " ") : ""; }, id);
+    const tile = id => p.evaluate(id => (document.querySelector(`.topic-strip [data-why="${id}"]`) || {}).className || "", id);
+    try {
+      await p.clock.install();
+      await p.goto(BASE);
+      await p.evaluate(() => rememberAnswer({ lat: 52.41, lon: -1.52, radius: Number(document.getElementById("radius").value) },
+        "radon", { CLASS_MAX: 1, Description: "Less than 1%", VERSION: "test" }));
+      await p.goto(new URL("?lat=52.41&lon=-1.52&name=Slow%20services%20test", BASE).href);
+      await p.waitForSelector("#slot-radon", { state: "attached" });
+      await p.clock.fastForward(9000);
+      await p.waitForFunction(() => /Saved result from/.test((document.getElementById("check-radon") || {}).textContent || ""), null, { timeout: 5000 })
+        .catch(() => {});
+      const saved = await card("radon");
+      if (!/Saved result from/.test(saved) || !/slow to answer/.test(saved) || !/changes by itself/.test(saved)) throw new Error(`radon after 8 s: "${saved.slice(0, 160)}"`);
+      radonGate.open();
+      const live = await p.waitForFunction(() => { const d = document.getElementById("check-radon"); return d && !/Saved result from/.test(d.textContent); }, null, { timeout: 10000 })
+        .then(() => true, () => false);
+      if (!live) throw new Error("the live radon answer did not replace the saved one");
+      if (await p.evaluate(() => run.done)) throw new Error("the report finished while heavy rain was still waiting");
+      await p.clock.fastForward(37000);   // 46 seconds after the start
+      const finished = await p.waitForFunction(() => run.done, null, { timeout: 5000 }).then(() => true, () => false);
+      if (!finished) throw new Error("the report did not finish at 45 seconds");
+      const slow = await card("surfacewater");
+      if (!/error/.test(await tile("surfacewater")) || !/slow to answer/.test(slow)) throw new Error(`heavy rain at 45 s: "${slow.slice(0, 160)}"`);
+      rainGate.open();
+      const filled = await p.waitForFunction(() => { const t = document.querySelector('.topic-strip [data-why="surfacewater"]');
+        return t && !/\b(error|loading)\b/.test(t.className); }, null, { timeout: 10000 }).then(() => true, () => false);
+      if (!filled) throw new Error("the late heavy rain answer did not fill in the topic");
+      return `radon: saved answer at 8 s, then live; heavy rain: "slow to answer" at 45 s, then filled in`;
+    } finally { radonGate.open(); rainGate.open(); await p.close(); }
   });
 
   await desktopStep("Topics not covered in a country are left out and named in the country note (Scotland)", async () => {

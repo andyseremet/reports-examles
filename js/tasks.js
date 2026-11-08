@@ -10,6 +10,7 @@ const TASKS = [
   ["place", "Nearest postcode and council", getPlace, "postcodes.io"],
   ["surfaceWater", "Flooding from heavy rain", getSurfaceWater, "Environment Agency"],
   ["pastFloods", "Past floods recorded", getPastFloods, "Environment Agency via Defra (Wales: DataMapWales)"],
+  ["reservoirs", "Flooding if a reservoir failed", getReservoirFlood, "Environment Agency via Defra"],
   ["landfill", "Old landfill sites", getLandfill, "Environment Agency"],
   ["coastal", "Coastal erosion", getCoastalErosion, "Environment Agency (Wales: DataMapWales; Scotland: NatureScot; NI: DAERA)"],
   ["planningPoint", "Flood zone and planning rules at the property", getPlanningAtPoint, "planning.data.gov.uk"],

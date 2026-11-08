@@ -96,7 +96,7 @@ before pushing anything.
 - **Daily and manual runs** check everything live. On `main` they then publish to the `status` branch: `status.json`
   (the status page) and `recordings.json` (the report pages' outside answers, `RECORD=1`; merged by
   `tests/merge-recordings.mjs`, each answer kept up to 14 days).
-- **Pull requests** (at the owner's request) leave out the 44 report data services (`DATA_SERVICES=0`; the list is
+- **Pull requests** (at the owner's request) leave out the 46 report data services (`DATA_SERVICES=0`; the list is
   `data/data-services.csv`; they run daily, and by hand with the "Check the report data services" box, ticked by
   default). Their report pages are answered from `recordings.json` (`REPLAY`), so an outside outage cannot turn them
   red; a question never recorded (for example a new topic) is asked live and named in the "Report data from the daily

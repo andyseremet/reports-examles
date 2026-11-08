@@ -116,8 +116,9 @@ function renderCheck(c) {
         ${moreToggle()}
       </summary>
       <div class="check-body">
-        ${c.fromSaved ? `<p class="notice saved-answer">The data service is not answering right now, so this is <strong>your saved result
-          from ${escapeHTML(savedDate(c.fromSaved))}</strong>. It may be out of date.</p>` : ""}
+        ${c.fromSaved ? `<p class="notice saved-answer">${c.waiting ? "The data service is slow to answer" : "The data service is not answering right now"},
+          so this is <strong>your saved result from ${escapeHTML(savedDate(c.fromSaved))}</strong>. It may be out of date.${c.waiting
+          ? " It changes by itself when the answer arrives." : ""}</p>` : ""}
         ${canRetry(c) ? `<p>${retryButton(c.id)}</p>` : ""}
         <h4>What to do</h4>${actions}
         ${c.details || c.meaning ? `

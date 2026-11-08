@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.2.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.3.1** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.2.0)
+## Part 1: What the app does today (version 2.3.1)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -28,7 +28,7 @@ The [README](README.md) describes each feature in full.
 ### Topics checked (official open data)
 | Group | Topics | Main sources |
 |---|---|---|
-| Flooding | Rivers and the sea; heavy rain (surface water); past floods recorded here (2.1.0, England and Wales) | Environment Agency (past floods via Defra's copy); SEPA; Natural Resources Wales |
+| Flooding | Rivers and the sea, with flooding if a reservoir failed (2.3.0, England); heavy rain (surface water); past floods recorded here (2.1.0, England and Wales) | Environment Agency (past floods and reservoir flood maps via Defra's copies); SEPA; Natural Resources Wales |
 | Ground and land | Radon; mining, coal and other (tin, copper, lead, iron and so on, from the British Geological Survey, 1.32.0); shrinking and swelling clay (1.32.0); past use of the land (in Wales, disused coal tips; in Scotland, licensed waste sites); landslides; coastal erosion | BGS; UKHSA; Mining Remediation Authority; Environment Agency; planning.data.gov.uk; Welsh Government; Natural Resources Wales; SEPA; Dynamic Coast |
 | Living environment | Road and rail noise; air quality; crime; recent sale prices | Defra; Welsh Government; Scottish Government; councils; Copernicus CAMS; data.police.uk; ONS; HM Land Registry |
 | Planning and surroundings | Planning restrictions and heritage; protected nature sites; schools, GPs, pharmacies and transport | planning.data.gov.uk; Natural England; Cadw; Natural Resources Wales; Historic Environment Scotland; NatureScot; Department for Communities (NI); DAERA; DfE; NHS; NaPTAN |
@@ -38,6 +38,14 @@ this", one within 250 m "Worth checking", none "No issue found". England uses De
 Historic Flood Map (areas only, no dates; nothing sent to the Environment Agency map server); Wales uses Natural Resources
 Wales' record on DataMapWales, with each flood's date, source and cause. Scotland and Northern Ireland publish no such
 record, so the topic is left out there.
+
+**Flooding if a reservoir failed (2.3.0, quiz of 8 November 2026):** one line in the rivers and sea flood topic,
+"For information", which never changes that topic's rating. It names the large reservoirs whose flood map covers the
+home, on a normal day ("dry day") and when rivers are already flooding ("wet day"), and says the Environment Agency
+finds reservoir flooding extremely unlikely. From Defra's copies of the Environment Agency reservoir flood maps on
+ArcGIS Online (nothing sent to the Environment Agency map server). England only: Wales, Scotland and Northern Ireland
+publish no such open map, so the line is left out there (their flood map link stays). A map that cannot be read is
+said so, never taken as "not in an area".
 
 **Wales (1.26.0):** land use, coastal erosion, noise, air quality, planning and nature are answered from Welsh data
 (DataMapWales). Old landfill and contaminated land are not published for Wales, so land use says "Check yourself" unless a
@@ -103,6 +111,11 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Reliability
 - A failed topic is tried again after 8 seconds (20 when the service refused the request), then offers **Try again**.
+  Since 2.3.1 (quiz of 8 November 2026) a topic whose request was already tried again is not tried a second time as a
+  whole: two layers of retries made reports wait 75–140 seconds when Environment Agency services failed on and off.
+- Faster reports in outages (2.3.1): after 8 seconds a topic still waiting shows this place's answer from the last 7
+  days, if there is one, dated, until the live answer replaces it. After 45 seconds the report finishes: a topic still
+  waiting says "slow to answer" with **Try again**, and fills in by itself if its answer arrives later.
   Since 2.0.8 (owner, 8 November 2026) Try again also sits in the box under the topic grid, so it is in sight while
   the topic's card stays closed.
 - Backups (1.30.1, after planning.data.gov.uk was down for a day): when it does not answer, heritage and nature come
@@ -192,6 +205,20 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ## Part 2: Planned next steps
 
+### New features paused (owner, 8 November 2026)
+
+No new topics or features for now: the work goes into improving the existing ones, until the owner says otherwise.
+2.3.0 (flooding if a reservoir failed) was chosen and built before the pause and is kept. Flood defences nearby is on
+hold (Part 3). Chosen first, in the quiz of 8 November 2026:
+
+1. **Faster reports in outages:** done in 2.3.1 (one retry layer, a saved answer meanwhile, a 45-second deadline;
+   shorter timeouts were not chosen).
+2. **Third place review:** run the app on about 8 very different places, as on 4 and 7 November (Part 4), and fix
+   wrong, odd or unclear results.
+3. **Code review of the app** (`js/`), and fix what is found.
+4. **Wording and phone review:** plain English and consistency in every topic's text, and each screen checked on a
+   phone with screenshots.
+
 ### Version 2.0 is complete
 
 Version 2.0, the planned final version, shipped in five steps on 7 and 8 November 2026: 1.34.0 the backups, 1.35.0 the
@@ -226,8 +253,7 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 
 | Idea | Notes |
 |---|---|
-| Reservoir flood risk | After 2.1.0 (owner, 8 November 2026): whether the home is in the area a dam failure would flood. Defra's official reservoir flood extents on ArcGIS Online; nothing sent to the Environment Agency map server. Plan and quiz first. |
-| Flood defences nearby | After reservoir flood risk (owner, 8 November 2026): walls and embankments protecting the area, from Defra's flood defence layer (updated October 2026). Plan and quiz first. |
+| Flood defences nearby | On hold while new features are paused (owner, 8 November 2026): walls and embankments protecting the area, from Defra's flood defence layer (updated October 2026). Plan and quiz first. |
 | Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
 | Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
 
