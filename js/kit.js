@@ -97,13 +97,16 @@ function runTags(where, radius, tags) {
     });
   } }).catch(e => known.forEach(tag => { tag.innerHTML = `<p class="plc-error">${escapeHTML(e.message)}</p>`; }));
 }
-class PlcTopic extends HTMLElement {
-  connectedCallback() {
-    if (this.started) return;
-    this.started = true;
-    queueTag(this);
-  }
+// Browsers only: the tag needs custom elements. Without them (for example in Node.js) the rest of the kit still loads,
+// so code can list the topics or run checkPlace where fetch exists.
+if (typeof HTMLElement !== "undefined" && typeof customElements !== "undefined" && !customElements.get("plc-topic")) {
+  customElements.define("plc-topic", class PlcTopic extends HTMLElement {
+    connectedCallback() {
+      if (this.started) return;
+      this.started = true;
+      queueTag(this);
+    }
+  });
 }
-if (typeof customElements !== "undefined" && !customElements.get("plc-topic")) customElements.define("plc-topic", PlcTopic);
 
 export { checkPlace, findPostcode, KIT_VERSION, RADIUS_M, topicById, TOPICS };

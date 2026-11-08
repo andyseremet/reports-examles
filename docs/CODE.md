@@ -43,10 +43,11 @@ How the app's code is laid out and the rules for changing it. Read this before c
   `new URL("../data/…", import.meta.url)`, because inside another app the page's address is that app's.
 - **Fixed kit copies** (`kit/v<N>/`, owner, 8 November 2026): made by `node tests/freeze-kit.mjs v<N>` at a release
   and never changed afterwards, except by hand to follow an outside service that changed its address (noted in
-  `docs/KIT.md`). A change to what the kit offers makes a new version folder. `v1` is the code of 2.7.0.
+  `docs/KIT.md`). A change to what the kit offers makes a new version folder. `v1` is the code of 2.7.1.
 - **Modular plan** (owner, 8 November 2026; `ROADMAP.md`, Part 2): step by step, each topic becomes one file that
   other small apps can use on its own. Step 1 (2.4.0) is the switch to modules, step 2 (2.5.0) the runner, step 3
-  (2.6.0) one file per topic, step 4 (2.7.0) the plain card, the kit and `<plc-topic>`.
+  (2.6.0) one file per topic, step 4 (2.7.0) the plain card, the kit and `<plc-topic>`, step 5 (2.7.1) the guide
+  for other apps, `docs/KIT.md`.
 - `glossary.html`: "What the words mean", plain HTML with no script. `term()` links a word to it through `GLOSSARY`
   (word → id); every id needs its `<dt id>` on the page (the daily check compares them).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads

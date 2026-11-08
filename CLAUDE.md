@@ -12,6 +12,7 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
 | change anything the user sees: layout, colours, wording, buttons | `docs/DESIGN.md` |
 | run tests, read a failed check, or change `tests/` or the workflow | `docs/TESTING.md` |
 | plan larger work, open or watch a pull request, or finish a merge | `docs/WORKFLOW.md` |
+| change the kit for other apps (`js/kit.js`, `js/card.js`, `kit/`) | `docs/KIT.md` (For maintainers) |
 | review code (`/code-review` or a pull request) | `REVIEW.md` |
 | release a new version | `/release` (`.claude/skills/release/SKILL.md`) |
 

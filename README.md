@@ -154,8 +154,8 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `js/topics/<id>.js` | One file per topic (16): its own data, how it is rated and worded, its icon and viewing tips. |
 | `js/topics/helpers.js` | Helpers the topics share: wording for a failed or backed-up source, country tests, flood zone wording. |
 | `js/topics/index.js` | The list of report topics in report order, with the sections. |
-| `js/card.js`, `js/kit.js` | For other apps (not loaded by the main page): a plain topic card, and the kit with `checkPlace` and the `<plc-topic>` tag (`docs/KIT.md`). |
-| `kit/index.html`, `kit/v1/` | The demo page for other apps, and the fixed copy of the kit they load (version 1, the code of 2.7.0). |
+| `js/card.js`, `js/kit.js` | For other apps (not loaded by the main page): a plain topic card, and the kit with `checkPlace` and the `<plc-topic>` tag. The guide for other apps is `docs/KIT.md`. |
+| `kit/index.html`, `kit/v1/` | The demo page for other apps, and the fixed copy of the kit they load (version 1, the code of 2.7.1). |
 | `js/tasks.js` | The data tasks, built from the topics and the shared data, in the order they start. |
 | `js/coverage.js` | Which countries each topic covers; topics not covered in a country are left out of its reports. |
 | `js/runner.js` | The runner: runs the checks for one place (chosen topics or all), with one retry, recent answers kept 7 days and the 45-second deadline; it never touches the page. |

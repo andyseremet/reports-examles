@@ -48,6 +48,13 @@ try {
   });
   total += modules.size;
 
+  // The kit must load without a browser page too (docs/KIT.md: code can list the topics anywhere).
+  for (const kit of entries.filter(f => f.endsWith("js/kit.js"))) {
+    const out = execFileSync(process.execPath, ["--input-type=module", "-e",
+      `const k = await import(${JSON.stringify("file://" + root + kit)}); console.log(k.TOPICS.length);`], { stdio: "pipe" }).toString().trim();
+    if (!(Number(out) > 0)) throw new Error(`${kit} loaded without a browser but listed no topics`);
+  }
+
   // Plain scripts (status page).
   const plain = scripts("status.html", "");
   if (!plain.length) throw new Error("No js/ scripts found in status.html");

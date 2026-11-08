@@ -1,4 +1,5 @@
 // The country data steps: backups, Wales, Scotland, Northern Ireland and the other national data (desktop).
+import { readdirSync } from "node:fs";
 import { BASE } from "./settings.mjs";
 import { results, record, timedStep } from "./results.mjs";
 import { steadyContext } from "./recording.mjs";
@@ -215,10 +216,10 @@ export async function testCountryData(browser) {
       return `asked ${r.tasks.join(" and ")}; radon rated ${r.status}; ${r.updates.length} updates; no cards drawn`;
     });
 
-    await step("Kit (2.7.0): plain topic cards for other apps, the latest kit and the fixed copy v1", async () => {
+    await step("Kit (2.7.0): plain topic cards for other apps, the latest kit and every fixed copy (kit/v<N>/)", async () => {
       // The demo page (kit/index.html) loads the kit as another app would: two <plc-topic> cards at Barnsley, the
-      // flood-only small app at York, a topic Scotland is not covered for, and an unknown topic. Both the latest kit
-      // (js/kit.js) and the fixed copy (kit/v1/) must work. Its own tab, with the Environment Agency map server
+      // flood-only small app at York, a topic Scotland is not covered for, and an unknown topic. The latest kit
+      // (js/kit.js) and each fixed copy (kit/v<N>/) must work. Its own tab, with the Environment Agency map server
       // answered by a stand-in (York is in England, so heavy rain asks it; not counted with the page above).
       const kitPage = await context.newPage();
       const errors = [];
@@ -227,8 +228,10 @@ export async function testCountryData(browser) {
       const RATINGS = ["high", "medium", "low", "info", "manual", "error"];
       const seen = [];
       try {
-        for (const v of ["", "v1"]) {
-          const label = v ? "fixed copy v1" : "latest kit";
+        // The latest kit, then every fixed copy in kit/ (a new version folder is tested without changing this step).
+        const copies = readdirSync(new URL("../../kit/", import.meta.url)).filter(d => /^v\d+$/.test(d)).sort();
+        for (const v of ["", ...copies]) {
+          const label = v ? `fixed copy ${v}` : "latest kit";
           await kitPage.goto(new URL("kit/" + (v ? "?v=" + v : ""), BASE).href, { waitUntil: "load" });
           await kitPage.waitForFunction(() => document.querySelectorAll("#singleCards .plc-card:not([data-status=loading])").length === 2, null, { timeout: 60000 })
             .catch(() => { throw new Error(`${label}: the two cards did not fill in within 60 seconds`); });

@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.7.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.7.1** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.7.0)
+## Part 1: What the app does today (version 2.7.1)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -196,7 +196,11 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - Topic cards for other apps (2.7.0, step 4): `js/kit.js` gives other apps `checkPlace()` and the
   `<plc-topic topic="radon" postcode="S70 2TA">` tag, with plain cards (`js/card.js`) the host styles; runs from other
   apps go beside the main report, and tags for one place share one run. The demo page is `kit/`; the fixed copy
-  `kit/v1/` (the code of 2.7.0) is what other apps load. Tested daily (latest and v1) and in the accessibility scan.
+  `kit/v1/` is what other apps load. Tested daily (latest and every fixed copy) and in the accessibility scan.
+- The guide for other apps (2.7.1, step 5): `docs/KIT.md` explains the tag, `checkPlace`, results, the 16 topics and
+  their sources, styling, versions, good manners and a complete small app (tested from another website), and how to
+  add a topic or a new fixed version. The kit now also loads without a browser page (for listing topics); `kit/v1/`
+  was remade from 2.7.1 before it was published. The syntax check loads the kit without a browser.
 - Lean code (1.36.1, quiz of 8 November 2026): `js/app.js` split into 5 files (`search.js`, `saved.js`, `report.js`,
   `print.js`, `app.js`); one print section in `css/app.css` instead of 10, with repeated rules merged (every element's
   computed style compared before and after: the same look); one box function for map queries; all saving through one
@@ -253,7 +257,9 @@ card can be used without the main app, in new smaller apps or inside other websi
 4. **Card and tag** (2.7.0, done): a plain card from a topic's result (`js/card.js`), the kit (`js/kit.js`) with
    `checkPlace()` and the `<plc-topic topic="radon" postcode="…">` tag, the demo page `kit/` with single cards and a
    flood-only small app, and the fixed copy `kit/v1/`.
-5. **Guide:** `docs/KIT.md`: how to use a card in another app, pick a version and add a topic.
+5. **Guide** (2.7.1, done): `docs/KIT.md`: how to use a card in another app, pick a version and add a topic.
+
+All five steps are done (8 November 2026).
 
 The rules travel with the kit: Environment Agency and Nominatim pacing, and missing data rated "Check yourself".
 
