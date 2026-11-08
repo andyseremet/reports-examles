@@ -33,6 +33,9 @@ const CHECK_DATA_SERVICES = process.env.DATA_SERVICES !== "0";
 // ONLY_SERVICES="name|name": check just these data services and stop (after-merge.sh asks failed ones again).
 const ONLY_SERVICES = (process.env.ONLY_SERVICES || "").split("|").filter(Boolean);
 const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && !options.sameSite;
+// QUICK=1 (after-merge.sh): the data services and the desktop only (every desktop step, one full report); the pull
+// request check has already run every step on the same code, and the daily run still does.
+const QUICK = process.env.QUICK === "1";
 
 // Steady pull request checks (2.0.0, quiz of 7 November 2026). RECORD=1 (daily and manual runs) saves each answer the
 // report pages get from outside data services to recordings.json, which the workflow publishes to the "status" branch.
@@ -42,7 +45,9 @@ const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && 
 // files and the map library (which sw.js downloads for offline use) stay live.
 // A test step's own stub (page.route) always comes first, so stubs are never recorded and still apply on replay.
 const RECORD = process.env.RECORD === "1";
-const REPLAY = process.env.REPLAY || "";
+// REPLAY=daily is short for the daily recording on the status branch (local runs; with none yet, all is asked live).
+const DAILY_RECORDING = "https://raw.githubusercontent.com/andyseremet/reports-examles/status/recordings.json";
+const REPLAY = process.env.REPLAY === "daily" ? DAILY_RECORDING : process.env.REPLAY || "";
 const recorded = {};
 let replayData = null, replayed = 0;
 const askedLive = new Set();
@@ -272,17 +277,17 @@ async function checkService([name, url, expect, options = {}]) {
     try {
       const { sameSite, ...fetchOptions } = options;
       const res = await fetch(url, { ...fetchOptions, headers: { Origin: ORIGIN, "User-Agent": UA, Accept: "application/json", ...(options.headers || {}) },
-        signal: AbortSignal.timeout(30000) });
+        signal: AbortSignal.timeout(15000) });   // a hung service gives up after 15 s, then has a second try
       if (!res.ok) throw new Error("HTTP " + res.status);
       const cors = res.headers.get("access-control-allow-origin");
       if (!options.sameSite && (!cors || (cors !== "*" && cors !== ORIGIN))) throw new Error("web pages are not allowed to read it (no CORS header)");
       const data = await res.json();
       if (!expect(data)) throw new Error("unexpected content");
-      return record("Data services", name, true, `${Date.now() - started} ms`);
+      return [name, true, `${Date.now() - started} ms`];
     } catch (e) {
       if (attempt === 2) {
         const refusedByEA = e.message === "HTTP 403" && url.includes(EA_MAP_SERVER);
-        return record("Data services", name, refusedByEA ? "warn" : false, refusedByEA ? `HTTP 403: ${EA_REFUSAL_NOTE}` : e.message);
+        return [name, refusedByEA ? "warn" : false, refusedByEA ? `HTTP 403: ${EA_REFUSAL_NOTE}` : e.message];
       }
       // A refusal (403) from the Environment Agency map server is its short block on
       // busy addresses (it lasts up to about 40 s), so wait it out before trying again.
@@ -291,11 +296,21 @@ async function checkService([name, url, expect, options = {}]) {
   }
 }
 
+// Ask the services 6 at a time; the Environment Agency map server's one at a time, in their own lane (it refuses
+// addresses that send many requests at once). Results are recorded in SERVICES order, whatever order they finish in.
+async function checkServices(list) {
+  const ea = list.filter(([, url]) => url.includes(EA_MAP_SERVER)), others = list.filter(([, url]) => !url.includes(EA_MAP_SERVER));
+  const answers = new Map();
+  const lane = async queue => { for (let s; (s = queue.shift());) answers.set(s[0], await checkService(s)); };
+  await Promise.all([lane(ea), ...Array.from({ length: 6 }, () => lane(others))]);
+  list.forEach(([name]) => record("Data services", ...answers.get(name)));
+}
+
 /* ---------------------------------------------------------------
    2. The page in a browser
 --------------------------------------------------------------- */
-// A minute between reports keeps the Environment Agency map server under its limit. Skipped when the report pages
-// are answered from the recording (REPLAY), until a question missing from it has to ask that server live.
+// A minute between reports keeps the Environment Agency map server under its limit. Not used when the report pages
+// are answered from the recording (REPLAY): then the devices run at the same time.
 const PAUSE_BEFORE_REPORT_MS = Number(process.env.PAUSE_MS ?? 60000);
 
 const DEVICES = [
@@ -638,10 +653,18 @@ async function testCountryData() {
   }
 }
 
+// Screenshots for people reading a run's results: JPEG at the page's own size (lighter than full-resolution PNG).
+const SHOT = { type: "jpeg", quality: 70, scale: "css" };
+// Map pictures (background tiles): the desktop loads the real ones, and checks them; the phone and tablet get a
+// blank picture at once, so their map steps still see every tile load without waiting for the map providers.
+const TILE = /^https:\/\/([a-z]\.)?(tile\.openstreetmap\.org|basemaps\.cartocdn\.com)\/|^https:\/\/server\.arcgisonline\.com\/.*\/tile\//;
+const BLANK_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=", "base64");
+
 async function testDevice(device, [postcode, place]) {
   const group = `${device.name} – ${postcode}, ${place}`;
   const context = await browser.newContext({ ...device.options, acceptDownloads: true });
   await steadyContext(context);
+  if (device.name !== "Desktop") await context.route(TILE, r => r.fulfill({ contentType: "image/png", body: BLANK_PNG }));
   const page = await context.newPage();
   const pageErrors = [];
   page.on("pageerror", e => pageErrors.push(e.message));
@@ -668,7 +691,7 @@ async function testDevice(device, [postcode, place]) {
     const frame = () => { still = scrollY === y ? still + 1 : 0; y = scrollY; still >= 15 || Date.now() > end ? done() : requestAnimationFrame(frame); };
     requestAnimationFrame(frame);
   })).catch(() => {});
-  const file = name => `${OUT}/${device.name.replace(/\W+/g, "-")}-${name}.png`;
+  const file = name => `${OUT}/${device.name.replace(/\W+/g, "-")}-${name}.jpg`;
 
   let guideAtStart = false;
   await step("Page opens with the search ready", async () => {
@@ -703,7 +726,7 @@ async function testDevice(device, [postcode, place]) {
     const searchInMap = await page.evaluate(() => document.getElementById("map").contains(document.getElementById("searchBox"))
       && getComputedStyle(document.querySelector(".search-ctl")).display !== "none");
     if (!searchInMap) throw new Error("the full-screen map has no search button");
-    await page.screenshot({ path: file("fullscreen") });
+    await page.screenshot({ path: file("fullscreen"), ...SHOT });
     await page.click(".leaflet-top.leaflet-right .map-ctrl:nth-child(2) .map-btn");
     await until(() => !mapIsFull);
     const closed = !(await page.evaluate(() => mapIsFull)) && await page.evaluate(() => !document.getElementById("map").contains(document.getElementById("searchBox")));
@@ -774,7 +797,7 @@ async function testDevice(device, [postcode, place]) {
   await page.$eval("#reportTop", x => x.scrollIntoView()).catch(() => {});
   await scrolled();
   await until(() => document.querySelector("#reportMap .leaflet-tile-loaded"));
-  await page.screenshot({ path: file("report") });
+  await page.screenshot({ path: file("report"), ...SHOT });
 
   await step("Topic icons and section bar", async () => {
     const icons = await page.$$eval(".topic-strip li", l => l.length);
@@ -1045,9 +1068,17 @@ async function testDevice(device, [postcode, place]) {
     await failPage.route(u => !u.href.startsWith(BASE), r => down && r.request().url().includes("risk-of-flooding-from-surface-water")
       ? r.fulfill({ status: 503, body: "" }).catch(() => {}) : r.fulfill({ json: { features: [] } }).catch(() => {}));
     try {
+      // The app waits 8 seconds before trying a failed topic again by itself: move the page's clock on instead of
+      // waiting (Playwright's clock; time still runs normally otherwise).
+      await failPage.clock.install();
       await failPage.goto(new URL("?lat=52.31&lon=-1.73&name=Try%20again%20test", BASE).href);
       const tile = failPage.locator('.topic-strip [data-why="surfacewater"]');
-      await failPage.waitForSelector('.topic-strip [data-why="surfacewater"].error', { timeout: 30000 });
+      const failedTile = '.topic-strip [data-why="surfacewater"].error';
+      for (let i = 0; i < 20 && !(await failPage.$(failedTile)); i++) {
+        await failPage.clock.fastForward(2000);
+        await failPage.waitForSelector(failedTile, { timeout: 500 }).catch(() => {});
+      }
+      await failPage.waitForSelector(failedTile, { timeout: 5000 });
       await tile.click();
       const btn = failPage.locator('#whyBox [data-retry="surfacewater"]');
       if (!(await btn.isVisible())) throw new Error(`no Try again in the box under the grid: "${(await failPage.locator("#whyBox").innerText()).replace(/\s+/g, " ")}"`);
@@ -1346,7 +1377,7 @@ let browser;
 const reports = {};
 try {
   if (ONLY_SERVICES.length) {
-    for (const service of SERVICES.filter(([name]) => ONLY_SERVICES.includes(name))) await checkService(service);
+    await checkServices(SERVICES.filter(([name]) => ONLY_SERVICES.includes(name)));
     process.exit(0);
   }
   const noTopics = SERVICES.map(([name]) => name).filter(name => !SERVICE_TOPICS[name]);
@@ -1358,24 +1389,31 @@ try {
   record("Data services", "data/data-services.csv lists every report data service", listed === reportServices,
     `${listed} rows in the file, ${reportServices} report data services in the test`);
   const toCheck = CHECK_DATA_SERVICES ? SERVICES : SERVICES.filter(s => !isReportDataService(s));
-  for (const service of toCheck) await checkService(service);
   if (!CHECK_DATA_SERVICES) console.log(`Left out on request (DATA_SERVICES=0): ${reportServices} report data services. Run the check by hand to test them.`);
-  if (!appAnswers) throw new Error(`the app does not answer at ${BASE}: start the server (see CLAUDE.md "Serve locally")`);
-  browser = await chromium.launch();
   await loadReplay();
+  // With the recording, the report pages send nothing live to the Environment Agency, so the services, the country
+  // data and the three devices all run at once. Without it, the services come first and the reports one at a time,
+  // each after a pause, to keep within that server's limit.
+  const parallel = !!replayData;
+  const services = checkServices(toCheck);
+  if (!parallel) await services;
+  if (!appAnswers) { await services; throw new Error(`the app does not answer at ${BASE}: start the server (see CLAUDE.md "Serve locally")`); }
+  browser = await chromium.launch();
   // On replay, the third report uses the place the daily run picked, so its answers are recorded too.
   const randomPlace = replayData && replayData.randomPlace ? replayData.randomPlace : await randomEnglishPostcode();
   const places = [FIXED[0], FIXED[1], randomPlace];
-  for (let i = 0; i < DEVICES.length; i++) {
+  const devicesToTest = QUICK ? DEVICES.slice(0, 1) : DEVICES;
+  const countryData = () => QUICK ? null : testCountryData().catch(e => record("Country data (desktop)", "The country data steps crashed", false, e.message));
+  const runDevice = async i => { reports[`${DEVICES[i].name}: ${places[i].join(", ")}`] = await testDevice(DEVICES[i], places[i]); };
+  if (parallel) await Promise.all([services, countryData(), ...devicesToTest.map((_, i) => runDevice(i))]);
+  else for (let i = 0; i < devicesToTest.length; i++) {
     // The Environment Agency map server allows only about 15 requests a minute from
     // one address, and one report sends about 7. Pausing before each report keeps
     // the test within that limit, like a person checking one property at a time.
-    const paceNeeded = !replayData || askedLive.has("environment.data.gov.uk");   // a question missing from the recording went live
-    const pause = new Promise(r => setTimeout(r, paceNeeded ? PAUSE_BEFORE_REPORT_MS : 0));
-    if (i === 0) await testCountryData().catch(e => record("Country data (desktop)", "The country data steps crashed", false, e.message));
+    const pause = new Promise(r => setTimeout(r, PAUSE_BEFORE_REPORT_MS));
+    if (i === 0) await countryData();
     await pause;
-    const topics = await testDevice(DEVICES[i], places[i]);
-    reports[`${DEVICES[i].name}: ${places[i].join(", ")}`] = topics;
+    await runDevice(i);
   }
   if (replayData) record("Test run", "Report data from the daily recording", true,
     `${replayed} answers from the recording of ${String(replayData.recorded).slice(0, 10)}` +
@@ -1387,6 +1425,10 @@ try {
   if (browser) await browser.close();
 }
 
+// Parts that ran at the same time recorded their results mixed: list them in the usual order (stable within a part).
+const partRank = r => r.group === "Data services" ? 0 : r.group.startsWith("Country data") ? 1
+  : (i => i >= 0 ? 2 + i : 8)(DEVICES.findIndex(d => r.group.startsWith(d.name + " – "))) + (r.group === "Test run" ? 1 : 0);
+results.sort((a, b) => partRank(a) - partRank(b));
 const failed = results.filter(r => !r.pass);
 const warned = results.filter(r => r.warn);
 const lines = [

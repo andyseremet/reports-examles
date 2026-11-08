@@ -1,6 +1,6 @@
 // Accessibility re-check, run by hand after visual changes (not in the daily check).
 //   npm install --no-save axe-core   (Playwright as for the full test; see CLAUDE.md)
-//   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 3 minutes)
+//   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 1.5 minutes)
 // Scans WCAG 2.2 AA with axe-core on the start page, a full report, status.html and glossary.html, in 4 combinations that
 // cover every width (1280 px, 320 px, phone), both colour schemes and both text sizes, plus the riskiest pairs. In the report it also scans after using controls (Open problems, the no-issue fold, a Key findings link,
 // a tick, Move to another device, Compare three, Remove), and checks for sideways scrolling before and after each.
@@ -66,7 +66,8 @@ async function check(page, where) {
 }
 
 const browser = await chromium.launch();
-for (const [size, opts, scheme, big] of COMBOS) {
+// The 4 combinations run at the same time, each in its own window (same scans; about half the time).
+await Promise.all(COMBOS.map(async ([size, opts, scheme, big]) => {
   const label = `${size}, ${scheme}${big ? ", A+" : ""}`;
   const context = await browser.newContext({ ...opts, colorScheme: scheme });
   const page = await context.newPage();
@@ -83,7 +84,7 @@ for (const [size, opts, scheme, big] of COMBOS) {
   await page.goto(BASE + "glossary.html");
   await check(page, `${label} – glossary page`);
   await context.close();
-}
+}));
 await browser.close();
 console.log(problems ? `\n${problems} problem(s) found.` : "\nNo problems found.");
 process.exit(problems ? 1 : 0);
