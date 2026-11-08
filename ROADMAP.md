@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.0.6** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.0.7** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.0.6)
+## Part 1: What the app does today (version 2.0.7)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -123,6 +123,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Share, print and export
 - **Share** links and the phone's share menu.
+- Search box (2.0.7): "Postcode, address or place" is the hint inside the box ("Postcode or place" on the narrowest
+  screens); its label stays for screen readers. Phones get their 16 px panel padding back (a desktop rule had
+  overridden it).
 - Calmer look, part 2 (2.0.6): a light header (white, a hairline under it; also on the status and glossary pages,
   with a matching phone browser bar), the first-visit guide as one quiet line, a slightly smaller semibold verdict,
   one credits line on screen (the page footer, shortened; the full licence list is in "Data credits and licences",
