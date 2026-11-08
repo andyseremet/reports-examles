@@ -7,6 +7,7 @@ England, Wales, Scotland and Northern Ireland (some topics cover Great Britain o
 |---|---|
 | Flooding from rivers and the sea (Flood Zones 1–3) | Environment Agency, via planning.data.gov.uk; SEPA (Scotland); Natural Resources Wales |
 | Flooding from heavy rain (surface water) | Environment Agency (2025); SEPA (Scotland); Natural Resources Wales |
+| Past floods recorded at or within 250 m of the pin (England and Wales; not shown elsewhere, where nothing is published) | Environment Agency Historic Flood Map (Defra's copy on ArcGIS Online; areas only, no dates); Natural Resources Wales Historic Flood Map (each flood with its date, source and cause) |
 | Radon gas | BGS / UKHSA Radon Indicative Atlas |
 | Mining: coal, and other underground mining such as tin, copper, lead or iron (where it is known or likely, the topic asks for a mining search) | Mining Remediation Authority (formerly the Coal Authority); British Geological Survey, mining hazard (not including coal), 1 km overview |
 | Shrinking and swelling clay, the most common cause of subsidence (England, Wales and Scotland) | British Geological Survey, GeoSure shrink-swell, 5 km overview |
@@ -135,13 +136,23 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 |---|---|
 | `index.html` | The page itself (search, map, report layout, footer). |
 | `css/app.css` | All the page styles, including dark mode and print. |
-| `js/core.js` | Data source addresses, links, settings, the version number and shared helpers. |
-| `js/data.js` | Fetching data from the outside services, and the list of data tasks. |
+| `js/core.js` | Links, settings, the version number and shared helpers. |
+| `js/api.js` | Outside data service addresses, request pacing and the fetch helpers. |
+| `js/data.js` | Fetching data for England, and the shared fetch helpers. |
+| `js/backups.js` | Backups used only when planning.data.gov.uk does not answer. |
+| `js/data-wales.js`, `data-scotland.js`, `data-ni.js` | Fetching data for Wales, Scotland and Northern Ireland. |
+| `js/tasks.js` | The list of data tasks: each fetch, its topic and the service it waits for. |
 | `js/checks/flood.js`, `ground.js`, `living.js`, `planning.js` | The topics in each report section: turning data into plain-English results. |
 | `js/checks/index.js` | Shared check helpers and the list of report topics. |
-| `js/search.js` | The map and the search box (suggestions, Nominatim and Photon). |
+| `js/coverage.js` | Which countries each topic covers; topics not covered in a country are left out of its reports. |
+| `js/map.js` | The map: background maps, map buttons, full screen, the pin and the search circle. |
+| `js/search.js` | The search box (suggestions, Nominatim and Photon). |
 | `js/saved.js` | Storage on this device, saved properties, compare, and the first-visit guide. |
-| `js/report.js` | Running the checks (with recent answers kept 7 days) and building the report. |
+| `js/run.js` | Running the checks (with recent answers kept 7 days), Try again, and saved reports. |
+| `js/summary.js` | The summary: the verdict, the topic grid, the box under it and key findings. |
+| `js/report.js` | The topic cards, the report layout, the printed cover, data sources and the report map. |
+| `js/next-steps.js` | Next steps: notes, the viewing checklist, the checklist and Send to my conveyancer. |
+| `js/navigation.js` | The section bar, Open problems / Close all, the phone tab bar and back to top. |
 | `js/print.js` | Share, download and print. |
 | `js/app.js` | Larger text, install as an app, and start-up (shared links). |
 | `status.html`, `js/status.js` | The data service status page: a separate page with its own small script. |
@@ -170,7 +181,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
   in the results.
 - **By hand** from the Actions tab (Live check, then Run workflow).
 
-It checks that all 46 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 42 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
+It checks that all 48 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 44 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the share and print icons, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England, Natural England and Defra landfill backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads (layout steps run on all three devices; steps that do not depend on the screen size run once, on the desktop). The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices, and the rule that missing
@@ -218,7 +229,7 @@ change and do not need refreshing. They were downloaded from
 `https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv?date=latest&geography=TYPE152&c2021_restype_3=0&measures=20100&select=geography_code,obs_value`.
 When the 2031 Census is published, it would be a new, separate file.
 
-`data/data-services.csv` is a reference list, not used by the app: the 42 outside services that supply data for the
+`data/data-services.csv` is a reference list, not used by the app: the 44 outside services that supply data for the
 report topics (name, and the exact link the daily check calls, for a test location). It leaves out the postcode lookup, the address search and their backups
 (the app needs them to find the place) and the two files above. It was made from `SERVICES` in
 `tests/live-check.mjs` on 7 November 2026; that list is the one to keep current, so remake this file after changing it.

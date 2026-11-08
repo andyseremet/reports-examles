@@ -60,6 +60,7 @@ const GROUPS = [
 const CHECKS = [
   { id: "flood", group: "flood", title: "Flooding from rivers and the sea", deps: ["planningPoint", "planningNearby", "floodNational"], build: checkFlood },
   { id: "surfacewater", group: "flood", title: "Flooding from heavy rain (surface water)", deps: ["surfaceWater", "floodNational"], build: checkSurfaceWater },
+  { id: "pastfloods", group: "flood", title: "Past floods recorded here", deps: ["pastFloods"], build: checkPastFloods },
   { id: "coal", group: "ground", title: "Mining (coal and other)", deps: ["coal", "otherMining"], build: checkCoal },
   { id: "radon", group: "ground", title: "Radon gas", deps: ["radon"], build: checkRadon },
   { id: "landuse", group: "ground", title: "Past use of the land: landfill and contamination", deps: ["landfill", "planningPoint", "planningNearby", "coalTips", "wasteSites"], build: checkLanduse },
@@ -80,8 +81,9 @@ const CHECKS = [
 const VIEWING_LOOK = {
   flood: ["Water marks, staining or new plaster low on the walls, and flood doors, barriers or raised air bricks."],
   surfacewater: ["Where rain would run: slopes towards the house, low doorways, blocked drains or gullies in the street."],
+  pastfloods: ["Signs of a past flood: a tide line or new plaster low on the walls, new floors or kitchen units downstairs, and flood barriers."],
   coal: ["Cracks over doors and windows, sloping floors, or doors that stick (signs of ground movement)."],
-  radon: ['<path d="M3 20h18"/><path d="M8 17c0-2 2-2 2-4s-2-2-2-4M12 17c0-2 2-2 2-4s-2-2-2-4M16 17c0-2 2-2 2-4s-2-2-2-4"/>', "Radon"],   // gas rising from the ground
+  radon: ["A radon sump or a small vent pipe outside, or a radon test result the seller can show you."],
   landuse: ["Signs of past industrial use nearby: bare or patchy ground, vent pipes or fenced-off land."],
   landslides: ["Cracks in walls, paths or garden walls, leaning walls or fences, and wet or slipping slopes."],
   clay: ["Cracks wider than a coin near doors and windows, and big trees close to the house (their roots dry out clay)."],
@@ -111,8 +113,9 @@ const WAVE = y => `<path d="M2 ${y}c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"
 const TOPIC_ICONS = {
   flood: [WAVE(9) + WAVE(14) + WAVE(19), "Flood"],
   surfacewater: ['<path d="M7 15a4 4 0 1 1 .6-8 5 5 0 0 1 9.4 1.6A3.5 3.5 0 0 1 17 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>', "Rain flood"],
+  pastfloods: ['<path d="M5 12V7l7-4 7 4v5"/><path d="M10 12V9h4v3"/>' + WAVE(15) + WAVE(20), "Past floods"],   // a house above water
   coal: ['<path d="M4 20l9-9"/><path d="M11 5c3.5-1.5 7-.5 9 2-3-.8-5.5-.3-7.5 1.5"/><path d="M11 5l-2 2 4 4 2-2"/>', "Mining"],
-  radon: ['<circle cx="12" cy="12" r="1.8"/><path d="M10.5 10.5 7 5.2A8 8 0 0 0 4 12h6M14 12h6a8 8 0 0 0-3-6.8l-3.5 5.3M13 13.6l3 5.3a8 8 0 0 1-8 0l3-5.3"/>', "Radon"],
+  radon: ['<path d="M3 20h18"/><path d="M8 17c0-2 2-2 2-4s-2-2-2-4M12 17c0-2 2-2 2-4s-2-2-2-4M16 17c0-2 2-2 2-4s-2-2-2-4"/>', "Radon"],   // gas rising from the ground
   landuse: [ICON_PATHS.bin, "Land use"],
   landslides: ['<path d="M3 20l6-10 4 6 3-4 5 8z"/>', "Ground"],
   clay: ['<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 12h18M9 5v7M15 12v7"/>', "Clay"],
@@ -128,51 +131,3 @@ const TOPIC_ICONS = {
 
 // Every check waits for the nearest-postcode lookup, which tells us the country.
 CHECKS.forEach(c => { if (!c.deps.includes("place")) c.deps.push("place"); });
-
-// Which countries each check's data covers. Outside these, the check says
-// "Check yourself" and links to the right national service, instead of a
-// misleading "No issue found".
-const COVERAGE = {
-  flood: ["England", "Scotland", "Wales"], surfacewater: ["England", "Scotland", "Wales"], landuse: ["England", "Scotland", "Wales"],
-  coastal: ["England", "Scotland", "Wales", "Northern Ireland"], soldprices: ["England", "Wales"], noise: ["England", "Scotland", "Wales", "Northern Ireland"],
-  air: ["England", "Scotland", "Wales", "Northern Ireland"], planning: ["England", "Scotland", "Wales", "Northern Ireland"],
-  nature: ["England", "Scotland", "Wales", "Northern Ireland"],
-  crime: ["England", "Scotland", "Wales", "Northern Ireland"],
-  coal: ["England", "Wales", "Scotland"], radon: ["England", "Wales", "Scotland"], landslides: ["England", "Wales", "Scotland"], clay: ["England", "Wales", "Scotland"]
-};
-
-const NATIONAL = {
-  "Scotland": {
-    env: ["SEPA (Scottish Environment Protection Agency)", "https://www.sepa.org.uk/"],
-    flood: ["SEPA flood maps", "https://map.sepa.org.uk/floodmaps"],
-    police: ["Police Scotland", "https://www.scotland.police.uk/"]
-  },
-  "Wales": {
-    env: ["Natural Resources Wales", "https://naturalresources.wales/"],
-    flood: ["Natural Resources Wales flood maps", "https://flood-risk-maps.naturalresources.wales/"]
-  },
-  "Northern Ireland": {
-    env: ["DAERA (Department of Agriculture, Environment and Rural Affairs)", "https://www.daera-ni.gov.uk/"],
-    flood: ["Flood Maps NI (Department for Infrastructure)", "https://www.infrastructure-ni.gov.uk/topics/rivers-and-flooding/flood-maps-ni"],
-    gov: ["nidirect", "https://www.nidirect.gov.uk/"]
-  }
-};
-
-function notCovered(c, country, place) {
-  const n = NATIONAL[country] || {};
-  const council = place && place.admin_district ? place.admin_district + " council" : "the local council";
-  let service = n.env || n.gov;
-  if ((c.id === "flood" || c.id === "surfacewater") && n.flood) service = n.flood;
-  if (c.id === "crime" && n.police) service = n.police;
-  const covered = COVERAGE[c.id].join(", ").replace(/, ([^,]*)$/, " and $1");
-  const actions = (c.id === "planning" || c.id === "nature")
-    ? [`Ask ${escapeHTML(council)}'s planning service about restrictions and protected sites.`]
-    : service ? [`Check this on ${link(service[1], service[0])}.`] : [];
-  return topicResult(c, {
-    status: "manual",
-    found: `Not covered in ${country}: the data we use covers ${covered} only.`,
-    meaning: `<p>This check uses official data that only covers ${covered}, so we cannot give a result for a property in ${escapeHTML(country)}.
-      Use the national service instead.</p>`,
-    actions, ...(service && { source: { name: service[0], url: service[1] } })
-  });
-}

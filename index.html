@@ -237,6 +237,7 @@
           Stops and stations: NaPTAN (Department for Transport).</li>
       <li>Sold prices: contains HM Land Registry data © Crown copyright and database right.</li>
       <li>Flood maps for Scotland and Wales: SEPA and Natural Resources Wales. Census 2021 via Nomis.</li>
+      <li>Past floods: Environment Agency Historic Flood Map (Defra's copy) and Natural Resources Wales Historic Flood Map.</li>
     </ul>
     <p>The report's "Data sources and dates" section lists the source of every topic.</p>
   </div>
@@ -247,7 +248,7 @@
       <li><strong>What you type in the search</strong> goes to OpenStreetMap Nominatim (addresses) and postcodes.io (postcodes and places).</li>
       <li><strong>The pin's location</strong> (latitude and longitude) goes to postcodes.io, planning.data.gov.uk, the Environment Agency,
           the British Geological Survey, the Mining Remediation Authority, Open-Meteo, data.police.uk, the NHS Organisation Data Service,
-          the Office for National Statistics (local area boundaries), and for Scotland and Wales, SEPA and Natural
+          the Office for National Statistics (local area boundaries), Defra (past floods, on Esri's ArcGIS Online), and for Scotland and Wales, SEPA and Natural
           Resources Wales, to get the results. The postcodes within 500 m go to HM Land Registry, for recent sale prices.</li>
       <li><strong>The map pictures</strong> come from Esri, OpenStreetMap or CARTO, which see which area of the map is shown.</li>
       <li><strong>Your device's location</strong> is used only when you press the location button, to place the pin.</li>
@@ -263,15 +264,27 @@
 
 <!-- App code: plain scripts, no build step. Order matters: later files use what earlier ones define. -->
 <script src="js/core.js"></script>
+<script src="js/api.js"></script>
 <script src="js/data.js"></script>
+<script src="js/backups.js"></script>
+<script src="js/data-wales.js"></script>
+<script src="js/data-scotland.js"></script>
+<script src="js/data-ni.js"></script>
+<script src="js/tasks.js"></script>
 <script src="js/checks/flood.js"></script>
 <script src="js/checks/ground.js"></script>
 <script src="js/checks/living.js"></script>
 <script src="js/checks/planning.js"></script>
 <script src="js/checks/index.js"></script>
+<script src="js/coverage.js"></script>
+<script src="js/map.js"></script>
 <script src="js/search.js"></script>
 <script src="js/saved.js"></script>
+<script src="js/run.js"></script>
+<script src="js/summary.js"></script>
 <script src="js/report.js"></script>
+<script src="js/next-steps.js"></script>
+<script src="js/navigation.js"></script>
 <script src="js/print.js"></script>
 <script src="js/app.js"></script>
 

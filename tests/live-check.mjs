@@ -200,6 +200,8 @@ const SERVICES = [
   ["Place backup (OpenStreetMap reverse lookup)", `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&lat=${LAT}&lon=${LON}`, d => d.address && d.address["ISO3166-2-lvl4"] === "GB-ENG", { alwaysChecked: true }],
   ["Address search backup (Photon)", "https://photon.komoot.io/api/?limit=1&q=Barnsley", d => Array.isArray(d.features) && d.features.length > 0, { alwaysChecked: true }],
   ["Landfill backup (Defra copy)", "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/HistoricLandfill/FeatureServer/0/query?geometry=-1.4797,53.5526&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=2000&units=esriSRUnit_Meter&outFields=site_name&returnGeometry=false&f=json", d => d.features && d.features.length > 0],
+  ["Past floods (Defra copy)", "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/HistoricFloodMap/FeatureServer/0/query?geometry=-2.1595,51.9925&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnCountOnly=true&f=json", d => d.count > 0],
+  ["Past floods in Wales (DataMapWales)", "https://datamap.gov.wales/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=inspire-nrw:NRW_HISTORIC_FLOODMAP&count=1&propertyName=name&outputFormat=application/json", d => d.features && d.features.length > 0],
   ["Flood zone backup (Environment Agency)", wms("https://environment.data.gov.uk/spatialdata/flood-map-for-planning-flood-zones/wms", "Flood_Zones_2_3_Rivers_and_Sea"), d => Array.isArray(d.features)],
   ["Nature backup (Natural England)", arcgis("https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/SSSI_England/FeatureServer/0/query", "&distance=5000&units=esriSRUnit_Meter"), d => Array.isArray(d.features)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
@@ -254,6 +256,8 @@ const SERVICE_TOPICS = {
   "Place backup (OpenStreetMap reverse lookup)": ["Every topic (finds the country), when postcodes.io is not answering"],
   "Address search backup (Photon)": ["Finding the property by address, when the main address search is not answering"],
   "Landfill backup (Defra copy)": ["Past use of the land, when the Environment Agency map server is not answering"],
+  "Past floods (Defra copy)": ["Past floods recorded here"],
+  "Past floods in Wales (DataMapWales)": ["Past floods recorded here (Wales)"],
   "Flood zone backup (Environment Agency)": ["Flooding from rivers and the sea, when planning.data.gov.uk is not answering"],
   "Nature backup (Natural England)": ["Planning restrictions and heritage, and Protected nature sites, when planning.data.gov.uk is not answering"],
   "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
@@ -394,6 +398,26 @@ async function testCountryData() {
         if (r.status === "error" || !/Defra's copy/.test(r.source)) throw new Error(`the topic did not use the backup: ${r.status}, "${r.source}"`);
         return `${r.sites} sites within 1 km, nearest ${r.nearest.toFixed(2)} km; ${r.status}`;
       } finally { await page.unroute("https://environment.data.gov.uk/spatialdata/historic-landfill/**", fail); }
+    });
+
+    await step("Past floods: England and Wales records, topic not shown in Scotland and Northern Ireland", async () => {
+      // Tewkesbury (England) lies inside a recorded flood, Barnsley town centre has none within 250 m, Builth Wells (Wales) has
+      // dated floods, and Edinburgh (Scotland) publishes none: the fetch asks nothing there and the topic is left out.
+      const r = await page.evaluate(async () => {
+        const at = (lat, lon) => getPastFloods({ lat, lon, radius: 1000 });
+        const [tewkes, barnsley, builth, edinburgh] = await Promise.all([at(51.9925, -2.1595), at(53.5526, -1.4790), at(52.1500, -3.4020), at(55.9533, -3.1883)]);
+        const topic = checkPastFloods({ pastFloods: { ok: true, value: builth }, place: { ok: true, value: { country: "Wales" } } });
+        return { tewkes, barnsley, builth: { near: builth.near, n: builth.floods.length, date: builth.floods[0] && builth.floods[0].start_date },
+          edinburgh, topic: { status: topic.status, found: topic.found },
+          shown: ["England", "Wales", "Scotland", "Northern Ireland"].map(c => topicShown("pastfloods", c)) };
+      });
+      if (!r.tewkes.inside || r.tewkes.country !== "England") throw new Error(`Tewkesbury: ${JSON.stringify(r.tewkes)}`);
+      if (r.barnsley.near) throw new Error("a recorded flood within 250 m of Barnsley town centre");
+      if (!r.builth.near || !/^\d{4}-\d{2}-\d{2}/.test(r.builth.date || "")) throw new Error(`Builth Wells: ${JSON.stringify(r.builth)}`);
+      if (!["high", "medium"].includes(r.topic.status) || !/\d{4}/.test(r.topic.found)) throw new Error(`Wales topic: ${r.topic.status}, "${r.topic.found}"`);
+      if (r.edinburgh !== null) throw new Error("the fetch answered for Scotland");
+      if (r.shown.join() !== "true,true,false,false") throw new Error(`shown in England, Wales, Scotland, NI: ${r.shown}`);
+      return `Tewkesbury inside; Builth Wells ${r.builth.n} floods (${r.topic.status}): "${r.topic.found.slice(0, 70)}…"`;
     });
 
     await step("Backups for the place, the address search and recent answers", async () => {
@@ -711,7 +735,7 @@ async function testDevice(device, [postcode, place]) {
     await reportDone(page);
     const readTopics = () => page.evaluate(() => orderedResults().map(c => ({ id: c.id, status: c.status, found: c.found })));
     topics = await readTopics();
-    const total = await page.evaluate(() => CHECKS.length);
+    const total = await page.evaluate(() => shownChecks().length);
     let failed = topics.filter(t => t.status === "error");
     // A government service that is slow for a moment shows "Try again" on that topic.
     // Press it once, as a person would (this also tests the button). A topic that
@@ -1037,6 +1061,28 @@ async function testDevice(device, [postcode, place]) {
     } finally { await failPage.close(); }
   });
 
+  await desktopStep("Topics not covered in a country are left out and named in the country note (Scotland)", async () => {
+    // postcodes.io answers "Scotland"; every other outside service answers at once with no data. Past floods and sale
+    // prices cover only England and Wales (COVERAGE), so the finished report has no such topic, tile or card, and the
+    // country note names them with a link to the national service.
+    const scotPage = await page.context().newPage();
+    await scotPage.route(u => !u.href.startsWith(BASE), r => r.request().url().startsWith("https://api.postcodes.io/postcodes?")
+      ? r.fulfill({ json: { status: 200, result: [{ postcode: "EH1 1YZ", country: "Scotland", admin_district: "City of Edinburgh", latitude: 55.9533, longitude: -3.1883 }] } }).catch(() => {})
+      : r.fulfill({ json: { features: [] } }).catch(() => {}));
+    try {
+      await scotPage.goto(new URL("?lat=55.9533&lon=-3.1883&name=Scotland%20test", BASE).href);
+      if (!(await scotPage.waitForFunction(() => typeof run !== "undefined" && run && run.done, null, { timeout: 60000 }).then(() => true, () => false))) throw new Error("the report did not finish");
+      const r = await scotPage.evaluate(() => ({ country: okValue(run.R, "place")?.country, all: CHECKS.length, results: orderedResults().length,
+        tiles: document.querySelectorAll(".topic-strip [data-why]").length,
+        left: ["pastfloods", "soldprices"].filter(id => document.querySelector(`[data-why="${id}"]`) || document.getElementById("slot-" + id) || run.results[id]),
+        note: (document.querySelector("#summaryBox .notice") || {}).textContent || "", links: document.querySelectorAll("#summaryBox .notice a").length }));
+      if (r.country !== "Scotland") throw new Error(`the place is in ${r.country}`);
+      if (r.left.length || r.results !== r.all - 2 || r.tiles !== r.all - 2) throw new Error(`not covered topics still shown: ${JSON.stringify(r)}`);
+      if (!/left out: past floods and prices/.test(r.note) || !r.links) throw new Error(`the country note does not name them: "${r.note.replace(/\s+/g, " ")}"`);
+      return `${r.results} of ${r.all} topics shown; note names past floods and prices`;
+    } finally { await scotPage.close(); }
+  });
+
   await desktopStep("Next steps: notes, viewing and checklist folded, each with a count", async () => {
     const r = await page.evaluate(() => [...document.querySelectorAll("#nextSteps details.step-fold")]
       .map(d => ({ id: d.id, open: d.open, count: d.querySelector(":scope > summary .step-count").textContent })));
@@ -1069,8 +1115,11 @@ async function testDevice(device, [postcode, place]) {
         .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
       const firstLook = flagged.map(c => (VIEWING_LOOK[c.id] || [])[0]).find(Boolean);
       const box = document.getElementById("viewing").getBoundingClientRect();
-      return { items, firstLook, onScreen: document.getElementById("viewing").open && box.top < innerHeight && box.bottom > 0 };
+      // Every tip is a plain sentence (2.0.5 had put a topic icon's drawing in place of the radon tip).
+      const badTips = Object.entries(VIEWING_LOOK).filter(([, tips]) => tips.some(t => /</.test(t) || !/[.?]$/.test(t))).map(([id]) => id);
+      return { items, firstLook, badTips, onScreen: document.getElementById("viewing").open && box.top < innerHeight && box.bottom > 0 };
     });
+    if (r.badTips.length) throw new Error(`viewing tips that are not plain sentences: ${r.badTips.join(", ")}`);
     if (!r.onScreen) throw new Error("At the viewing did not open in view");
     if (r.items.length < 5 || r.items.length > 12) throw new Error(`${r.items.length} items (expected 5 to 12)`);
     if (r.firstLook && r.items[0] !== r.firstLook) throw new Error(`first item is "${r.items[0]}", not the most serious topic's`);

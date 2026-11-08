@@ -3,21 +3,33 @@
 // connection. Live data (flood, radon, noise, maps) always comes from the
 // network and is never stored here; only fixed data that never changes (Census 2021
 // figures) is kept once it has been used.
-const CACHE = "plc-v48";
+const CACHE = "plc-v51";
 const SHELL = [
   "./",
   "./index.html",
   "./css/app.css",
   "./js/core.js",
+  "./js/api.js",
   "./js/data.js",
+  "./js/backups.js",
+  "./js/data-wales.js",
+  "./js/data-scotland.js",
+  "./js/data-ni.js",
+  "./js/tasks.js",
   "./js/checks/flood.js",
   "./js/checks/ground.js",
   "./js/checks/living.js",
   "./js/checks/planning.js",
   "./js/checks/index.js",
+  "./js/coverage.js",
+  "./js/map.js",
   "./js/search.js",
   "./js/saved.js",
+  "./js/run.js",
+  "./js/summary.js",
   "./js/report.js",
+  "./js/next-steps.js",
+  "./js/navigation.js",
   "./js/print.js",
   "./js/app.js",
   "./glossary.html",

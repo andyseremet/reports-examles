@@ -313,7 +313,9 @@ $("compareBtn").addEventListener("click", () => {
   };
   // A topic "differs" when the properties do not all have the same rating.
   const differs = id => new Set(list.map(s => (find(s, id) || {}).status || "none")).size > 1;
-  const diffCount = CHECKS.filter(c => differs(c.id)).length;
+  // Topics that at least one of them has (a topic shown only in some countries may be in none).
+  const topics = CHECKS.filter(c => list.some(s => find(s, c.id)));
+  const diffCount = topics.filter(c => differs(c.id)).length;
   const head = s => `<a href="${escapeHTML(reportUrl(s))}">${escapeHTML(s.name)}</a><br><small>${escapeHTML(s.postcode || "")} · checked ${escapeHTML(new Date(s.savedAt).toLocaleDateString("en-GB"))}</small>`;
   $("compareTitle").textContent = `Comparing ${list.length === 3 ? "three" : "two"} properties`;
   $("compareBody").innerHTML = `
@@ -323,7 +325,7 @@ $("compareBtn").addEventListener("click", () => {
       <thead><tr><th>Topic</th>${list.map(s => `<th>${head(s)}</th>`).join("")}</tr></thead>
       <tbody>
         <tr><td>Overall</td>${list.map(s => `<td>${countChips(s.checks)}</td>`).join("")}</tr>
-        ${CHECKS.map(c => `<tr${differs(c.id) ? "" : ' class="same"'}><td>${escapeHTML(c.title)}</td>${list.map(s => `<td>${cell(s, c.id)}</td>`).join("")}</tr>`).join("")}
+        ${topics.map(c => `<tr${differs(c.id) ? "" : ' class="same"'}><td>${escapeHTML(c.title)}</td>${list.map(s => `<td>${cell(s, c.id)}</td>`).join("")}</tr>`).join("")}
       </tbody>
     </table></div>
     <p class="help">Saved results from the day each property was checked. Open a property to run its checks again with the latest data.</p>`;
@@ -331,8 +333,8 @@ $("compareBtn").addEventListener("click", () => {
     const only = $("diffOnly").checked;
     $("compareTable").classList.toggle("only-diff", only);
     $("diffHelp").textContent = !diffCount ? "Every topic has the same rating for these properties."
-      : only ? `Showing the ${plural(diffCount, "topic", "topics")} with different ratings, of ${CHECKS.length}.`
-      : `${plural(diffCount, "topic has", "topics have")} different ratings, of ${CHECKS.length}.`;
+      : only ? `Showing the ${plural(diffCount, "topic", "topics")} with different ratings, of ${topics.length}.`
+      : `${plural(diffCount, "topic has", "topics have")} different ratings, of ${topics.length}.`;
   };
   $("diffOnly").disabled = !diffCount;
   $("diffOnly").addEventListener("change", showDiff);

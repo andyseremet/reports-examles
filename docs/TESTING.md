@@ -3,6 +3,17 @@
 How to run the tests, what CI does, and how to handle a failed check. Read this before running tests, reading a
 failed check, or changing `tests/` or the workflow.
 
+## Which test to run (owner, 8 November 2026)
+
+| Change | Test |
+|---|---|
+| Documents only | None |
+| Wording, styles, layout, moving code | Pull-request-style test: `BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 DATA_SERVICES=0 REPLAY=https://raw.githubusercontent.com/andyseremet/reports-examles/status/recordings.json node tests/live-check.mjs` (about 1.5 minutes; until the first daily recording exists, leave out `REPLAY` and it asks live), plus the accessibility re-check for visual changes |
+| A data source, a topic, a backup, or anything that sends requests | Full test (about 4 minutes) |
+
+The syntax check runs after every code edit whatever the change. GitHub (on the pull request) and the after-merge
+check still run the whole test, so the owner's merge is always covered.
+
 ## Running the tests
 
 - **Syntax check:** `node tests/syntax-check.mjs` (all `js/` files together in load order, then `sw.js`). A project
@@ -43,7 +54,7 @@ before pushing anything.
 - **Daily and manual runs** check everything live. On `main` they then publish to the `status` branch: `status.json`
   (the status page) and `recordings.json` (the report pages' outside answers, `RECORD=1`; merged by
   `tests/merge-recordings.mjs`, each answer kept up to 14 days).
-- **Pull requests** (at the owner's request) leave out the 42 report data services (`DATA_SERVICES=0`; the list is
+- **Pull requests** (at the owner's request) leave out the 44 report data services (`DATA_SERVICES=0`; the list is
   `data/data-services.csv`; they run daily, and by hand with the "Check the report data services" box, ticked by
   default). Their report pages are answered from `recordings.json` (`REPLAY`), so an outside outage cannot turn them
   red; a question never recorded (for example a new topic) is asked live and named in the "Report data from the daily

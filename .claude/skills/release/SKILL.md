@@ -33,8 +33,10 @@ Follow these steps in order. Stop and tell the owner if any step fails; never sk
 
 1. Syntax check: `node tests/syntax-check.mjs`.
 2. `grep -rn "<old version>\|plc-v<N>" index.html js sw.js README.md ROADMAP.md` should find nothing left over.
-3. Full local test: serve with `python3 -m http.server 8080` in the background, then
-   `BASE=http://localhost:8080/ PAUSE_MS=0 node tests/live-check.mjs`. Report the pass count. An Environment Agency
+3. Test by type of change (owner, 8 November 2026; see "Which test to run" in `docs/TESTING.md`): serve with
+   `python3 -m http.server 8080` in the background, then the full local test
+   (`BASE=http://localhost:8080/ PAUSE_MS=0 QUIET=1 node tests/live-check.mjs`) for a data source, topic or backup,
+   or the pull-request-style test for wording, styles and layout. Report the pass count. An Environment Agency
    HTTP 403 "warn" is the only allowed non-pass; for any other failure, first ask the outside service whether the
    fault is theirs.
 
