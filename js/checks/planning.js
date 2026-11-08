@@ -32,7 +32,8 @@ function checkPlanning(R) {
   return {
     ...base, status: applies.length ? "info" : unchecked.length ? "manual" : "low", ...(!applies.length && unchecked.length && { gap: "down" }),
     found: applies.length
-      ? "Planning restrictions here: " + applies.map(a => a.name).join(", ") + "."
+      ? "Planning restrictions here: " + applies.map(a => a.name).join(", ") + "." +
+        (unchecked.length ? ` ${andList(unchecked.map(n => n.replace(/^HS2 safeguarded area$/, "the HS2 safeguarded area")))} could not be checked right now.` : "")
       : unchecked.length
       ? `No conservation area, listed building, scheduled monument or protected landscape found here, but ${andList(unchecked.map(n => n.replace(/^Conservation area$/, "conservation areas").replace(/^HS2 safeguarded area$/, "the HS2 safeguarded area")))} could not be checked right now.`
       : "No conservation area, listed building, Green Belt or similar restriction found here.",
@@ -69,7 +70,8 @@ function checkNature(R) {
     ...base, status: found.length ? "info" : unchecked.length ? "manual" : "low", ...(!found.length && unchecked.length && { gap: "down" }),
     found: inSssi
       ? "The property is inside a Site of Special Scientific Interest."
-      : found.length ? `${plural(found.length, "protected nature site")} within ${formatRadius(R.loc.radius)}.`
+      : found.length ? `${plural(found.length, "protected nature site")} within ${formatRadius(R.loc.radius)}.` +
+        (unchecked.length ? ` ${andList(unchecked)} could not be checked right now.` : "")
       : unchecked.length ? `No protected nature sites found within ${formatRadius(R.loc.radius)}, but ${andList(unchecked)} could not be checked right now.`
       : `No protected nature sites within ${formatRadius(R.loc.radius)}.`,
     details: (backup ? backupNote(backup, Object.keys(sets), unchecked) : "") + (found.length ? `<ul class="site-list">${found.slice(0, 8).map(e => `<li>${escapeHTML(sets[e.dataset])}: ${escapeHTML(e.name || "unnamed")}</li>`).join("")}</ul>` : ""),

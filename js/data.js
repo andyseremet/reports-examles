@@ -452,8 +452,11 @@ async function getPastFloods(loc) {
 // publish no such open map a web page can read, so the line is left out there.
 async function getReservoirFlood(loc) {
   if (await inScotland(loc) || await inWales(loc) || await inNI(loc)) return null;
-  const names = async base => [...new Set((await arcgisQuery(base, loc, 0, { outFields: "reservoir" }))
-    .map(f => f.attributes && f.attributes.reservoir).filter(Boolean))].sort();
+  // High-risk reservoirs (serious harm if one failed) first, then by name.
+  const names = async base => [...new Map((await arcgisQuery(base, loc, 0, { outFields: "reservoir,risk_designation" }))
+    .map(f => f.attributes || {}).filter(a => a.reservoir)
+    .sort((a, b) => (b.risk_designation === "High-risk") - (a.risk_designation === "High-risk") || a.reservoir.localeCompare(b.reservoir))
+    .map(a => [a.reservoir, a.reservoir])).keys()];
   const [dry, wet] = await Promise.all([names(API.reservoirDry), names(API.reservoirWet)]);
   return { dry, wet };
 }

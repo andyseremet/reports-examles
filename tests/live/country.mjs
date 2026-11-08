@@ -22,11 +22,12 @@ export async function testCountryData(browser) {
     await step("Backups: heritage and nature answer when planning.data.gov.uk does not", async () => {
       // Central Bath, with planning.data.gov.uk pretending to be down: the World Heritage Site, the Roman Baths and
       // listed buildings must come from Historic England, and the topic must name what it could not check.
-      // The flood zone comes from the Environment Agency's Flood Map for Planning: here a stand-in answer (Flood Zone 3),
-      // so this step sends nothing to its map server (the real service is checked in SERVICES).
+      // Flood zones come from Defra's copy of the Environment Agency Flood Map for Planning (2.3.2): here a stand-in
+      // answer (Flood Zone 3 at the pin and nearby; the real service is checked in SERVICES), so nearby flood zones count
+      // as checked and only main rivers are named as not checked.
       // Air quality has no backup and must still say "not answering", never "no issue".
-      const floodMap = "**/flood-map-for-planning-flood-zones/**";
-      await page.route(floodMap, r => r.fulfill({ json: { type: "FeatureCollection", features: [{ properties: { flood_zone: "FZ3", flood_source: "river" } }] } }));
+      const floodMap = "**/Flood_Map_for_Planning/FeatureServer/**";
+      await page.route(floodMap, r => r.fulfill({ json: { count: 1 } }));
       const r = await page.evaluate(async () => {
         const loc = { name: "Bath test", lat: 51.3811, lon: -2.3590, radius: 500 };
         const fail = msg => Promise.reject(new Error(msg));
@@ -42,7 +43,8 @@ export async function testCountryData(browser) {
         run = { previous: { savedAt: "2026-11-03T10:00:00Z", results: [{ id: "flood", status: "medium", found: "Flood zone 2." }] } };
         let saved;
         try { saved = savedInstead({ id: "flood" }, { status: "error" }); } finally { run = keep; }
-        return { saved: [saved.status, saved.fromSaved], floodSource: flood.source.name,
+        return { saved: [saved.status, saved.fromSaved], floodSource: flood.source.name, floodNote: flood.details,
+          near: formatDistance(0.01),
           planning: [planning.status, planning.found, planning.details.includes("Historic England")],
           nature: nature.status, flood: flood.status, air: air.status, airFound: air.found,
           listed: (R.planningNearby.backup?.entities || []).filter(e => e.dataset === "listed-building").length,
@@ -51,13 +53,17 @@ export async function testCountryData(browser) {
       if (r.planning[0] !== "info" || !/World Heritage Site/.test(r.planning[1]) || !/Scheduled monument/.test(r.planning[1]))
         throw new Error(`planning from the backup: ${r.planning[0]}: ${r.planning[1]}`);
       if (!r.planning[2]) throw new Error("the planning topic does not say it came from Historic England");
+      // Something found, something not checked: the one-line finding says both (third place review, 8 November 2026).
+      if (!/Green Belt and the HS2 safeguarded area could not be checked right now\./.test(r.planning[1])) throw new Error(`the finding does not name what was not checked: ${r.planning[1]}`);
       // Conservation areas come from Historic England's map (the City of Bath conservation area); Green Belt has no backup.
       if (!/Conservation area/.test(r.planning[1])) throw new Error(`no conservation area from Historic England in central Bath: ${r.planning[1]}`);
       if (r.missing.includes("conservation-area") || !r.missing.includes("green-belt")) throw new Error(`backup coverage is wrong; not checked: ${r.missing.join(", ")}`);
       if (!r.listed) throw new Error("no listed buildings from Historic England in central Bath");
       if (!["low", "info"].includes(r.nature)) throw new Error(`nature from the backup rated ${r.nature}`);
       await page.unroute(floodMap);
-      if (r.flood !== "high" || !/Environment Agency/.test(r.floodSource)) throw new Error(`flooding from the backup: ${r.flood} (${r.floodSource})`);
+      if (r.flood !== "high" || !/Environment Agency.*Defra/.test(r.floodSource)) throw new Error(`flooding from the backup: ${r.flood} (${r.floodSource})`);
+      if (!/Not checked this time: main rivers nearby\./.test(r.floodNote)) throw new Error(`the flood note: ${r.floodNote.replace(/<[^>]+>/g, "").slice(0, 200)}`);
+      if (r.near !== "under 50 m") throw new Error(`10 m away reads "${r.near}"`);
       // Air quality: the Open-Meteo estimate is the main source; without the council hotspot list it is "For information".
       if (r.air !== "info" || !/hotspots could not be checked/.test(r.airFound)) throw new Error(`with the hotspot list down, air quality is ${r.air}: ${r.airFound}`);
       if (r.saved.join() !== "medium,2026-11-03T10:00:00Z") throw new Error(`the saved answer came back as ${r.saved.join(", ")}`);
@@ -115,7 +121,8 @@ export async function testCountryData(browser) {
         const [derby, barnsley, cardiff] = await Promise.all([at(52.9235, -1.4730), at(53.5526, -1.4797), at(51.4816, -3.1791)]);
         const note = value => reservoirNote({ ok: true, value });
         return { derby, barnsley, cardiff, inside: note(derby), outside: note(barnsley), wales: note(null),
-          dryOnly: note({ dry: ["A"], wet: [] }), down: reservoirNote({ ok: false, error: "HTTP 503" }) };
+          dryOnly: note({ dry: ["A"], wet: [] }), down: reservoirNote({ ok: false, error: "HTTP 503" }),
+          many: note({ dry: ["Pen Pond Lower Lake, Richmond", "B", "C"], wet: [] }) };
       });
       if (!r.derby || !r.derby.dry.includes("Ladybower") || r.derby.wet.length < r.derby.dry.length) throw new Error(`Derby: ${JSON.stringify(r.derby)}`);
       if (!r.barnsley || r.barnsley.dry.length || r.barnsley.wet.length) throw new Error(`Barnsley: ${JSON.stringify(r.barnsley)}`);
@@ -124,6 +131,7 @@ export async function testCountryData(browser) {
       if (!/not in an area that could flood/.test(r.outside)) throw new Error(`Barnsley line: ${r.outside}`);
       if (r.wales !== "") throw new Error(`a line for Wales: ${r.wales}`);
       if (!/\(A\), on a normal day\./.test(r.dryOnly)) throw new Error(`dry day only: ${r.dryOnly}`);
+      if (!/\(Pen Pond Lower Lake, Richmond; B and 1 more\)/.test(r.many)) throw new Error(`a long list: ${r.many}`);
       if (!/could not be checked/.test(r.down) || /not in an area/.test(r.down)) throw new Error(`map not answering: ${r.down}`);
       return `Derby: ${r.derby.dry.length} reservoir(s) on a normal day, ${r.derby.wet.length} when rivers flood; Barnsley none; Wales left out`;
     });
