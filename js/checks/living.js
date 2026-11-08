@@ -323,7 +323,7 @@ function checkCrimeScotland(R) {
     : share <= 0.7 ? "around average for Scotland" : "below average for Scotland";
   return {
     ...base, status: "info",
-    found: `In this small area (${z.name}), the recorded crime rate is ${word}: ranked ${z.rank.toLocaleString("en-GB")} of ${SIMD_ZONES.toLocaleString("en-GB")} areas, where 1 has the most crime.`,
+    found: `In this small area (${z.name}), the recorded crime rate is ${word}: ranked ${z.rank.toLocaleString("en-GB")} of ${SIMD_ZONES.toLocaleString("en-GB")} areas, where number 1 has the most crime.`,
     details: `<div class="table-wrap"><table><tbody>
         <tr><th scope="row">Area</th><td>${escapeHTML(z.name)}, ${escapeHTML(z.council)} (${term("data zone", "A small area used for Scottish statistics, home to about 500 to 1,000 people")} ${escapeHTML(z.zone)})</td></tr>
         <tr><th scope="row">Selected crimes recorded in 2017–18</th><td>${z.count}</td></tr>
@@ -393,7 +393,7 @@ function checkCrime(R) {
     }<tr><td>All other types</td><td>${c.total - keyTotal}</td></tr></tbody></table></div>`,
     meaning: `<p>Town and city centres show higher numbers because of shops, transport hubs and nightlife. The figures are
       most useful when you compare a few streets or areas you are considering.</p>
-      <p>The comparison uses one month of street-level police data for the census neighbourhood (MSOA), its population from
+      <p>The comparison uses one month of street-level police data for the census neighbourhood (about 8,000 residents), its population from
       the ${link(LINKS.nomisCensus, "2021 Census")}, and the national average from ${link(LINKS.onsCrime, "ONS crime figures")}
       (6.6 million crimes, year to March 2025) and ${link(LINKS.onsPopulation, "ONS population estimates")} (61.8 million, mid-2024).
       One month can vary, so treat it as a rough guide.</p>`,

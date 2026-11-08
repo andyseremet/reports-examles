@@ -46,7 +46,8 @@ How the app's code is laid out and the rules for changing it. Read this before c
 Used only when a service fails, never on a normal day.
 
 - planning.data.gov.uk (England): `withBackup`/`planningBackup` (`js/backups.js`) ask Historic England (heritage,
-  conservation areas), Natural England (nature) and the Environment Agency (flood zone at the pin). The answer rides
+  conservation areas), Natural England (nature) and Defra's copy of the Environment Agency Flood Map for Planning (flood
+  zones at the pin and nearby, since 2.3.2). The answer rides
   on the failure as `R[key].backup`; only `checkPlanning`/`checkNature`/`checkFlood` read it (`backupFor`, `planningList`).
 - Environment Agency map server, old landfill (England): `getLandfill` asks Defra's copy of the same register on
   ArcGIS Online (`API.landfillBackup`); the answer rides on the failure as `R.landfill.backup`, read by `checkLanduse`.
@@ -64,8 +65,9 @@ Used only when a service fails, never on a normal day.
 - **Outside data stays live.** Save a copy in `data/` only for a finished official dataset that will never be
   revised (for example Census 2021), and ask the owner first. Say in `README.md` how the file was made.
 - **Environment Agency map server** (`environment.data.gov.uk/spatialdata`): it refuses addresses that send more than
-  about 15 requests a minute. Do not add requests to it, and keep its pacing in `PACED_HOSTS`. The one agreed exception
-  (owner, 7 November 2026): the flood zone backup (`floodZoneBackup`), one request, only when planning.data.gov.uk fails.
+  about 15 requests a minute. Do not add requests to it, and keep its pacing in `PACED_HOSTS`. Backups use Defra's copies
+  on ArcGIS Online instead: since 2.3.2 the flood zone backup (`floodZoneBackup`) too, which was the one exception before
+  (owner, 7 November 2026; moved in the quiz of 8 November 2026).
 
 ## Adding a topic
 

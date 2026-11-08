@@ -35,8 +35,8 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
   `"low"` (No issue found).
 - **Outside data stays live.** A copy in `data/` only for a finished official dataset, and only with the owner's
   agreement.
-- **Environment Agency map server** (`environment.data.gov.uk/spatialdata`): add no requests (the one exception is
-  the flood zone backup) and keep its pacing in `PACED_HOSTS`.
+- **Environment Agency map server** (`environment.data.gov.uk/spatialdata`): add no requests, and keep its pacing in
+  `PACED_HOSTS`. Backups use Defra's copies on ArcGIS Online instead.
 - **Releases:** any change to `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `sw.js` or `data/` raises
   `APP_VERSION` and `CACHE` together, with `README.md` and `ROADMAP.md` in the same commit.
 - **Tests:** never skip, remove or loosen a step to get a pass. The only allowed non-pass is a warn for the

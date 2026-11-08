@@ -145,6 +145,7 @@ async function lookupPostcode(pc) {
     showSearchStatus("");
     setLocation(r.latitude, r.longitude, r.postcode + ", " + r.admin_district);
   } catch (e) {
+    if (!$("q").value.trim()) $("q").value = pc.toUpperCase();   // opened from a link: show the postcode to correct it
     showSearchStatus("We couldn't find that postcode. Check it, or try the full address.", true);
   }
 }

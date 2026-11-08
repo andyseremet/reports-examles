@@ -43,7 +43,9 @@ const API = {
   police: "https://data.police.uk/api/",
   surfaceWater: "https://environment.data.gov.uk/spatialdata/nafra2-risk-of-flooding-from-surface-water/wms",
   // Backup only (planning.data.gov.uk not answering): the Environment Agency's own Flood Map for Planning.
-  floodZones: "https://environment.data.gov.uk/spatialdata/flood-map-for-planning-flood-zones/wms",
+  // Flood zone backup (2.3.2): Defra's copy of the Environment Agency Flood Map for Planning (layer 1 Flood Zone 3,
+  // layer 2 Flood Zone 2), used only when planning.data.gov.uk does not answer.
+  floodZones: "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/Flood_Map_for_Planning/FeatureServer",
   sepaFlood: "https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer",
   nrwFlood: "https://datamap.gov.wales/geoserver/ows",
   dataMapWales: "https://datamap.gov.wales/geoserver/ows",

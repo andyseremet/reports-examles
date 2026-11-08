@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.3.1** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.3.2** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.3.1)
+## Part 1: What the app does today (version 2.3.2)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -121,7 +121,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - Backups (1.30.1, after planning.data.gov.uk was down for a day): when it does not answer, heritage and nature come
   from Historic England and Natural England, and the topic names what it could not check. A topic whose service does
   not answer shows this place's last saved answer, dated, with **Try again**. Since 1.31.1 the flood zone at the pin
-  comes from the Environment Agency's own flood map, and Past use of the land names the sites it could not check.
+  comes from the Environment Agency's flood map (since 2.3.2 from Defra's copy on ArcGIS Online, at the pin and nearby,
+  so nothing is sent to the Environment Agency map server any more), and Past use of the land names the sites it could not check.
   Since 2.0.2, when the Environment Agency's map server does not answer, old landfill sites come from Defra's copy of
   the same register on ArcGIS Online (surface water, coast and noise have no trustworthy copy: checked 8 November 2026).
 - Air quality (1.33.0, owner's request): the Open-Meteo area estimate is the main source and the council hotspot list
@@ -213,8 +214,7 @@ hold (Part 3). Chosen first, in the quiz of 8 November 2026:
 
 1. **Faster reports in outages:** done in 2.3.1 (one retry layer, a saved answer meanwhile, a 45-second deadline;
    shorter timeouts were not chosen).
-2. **Third place review:** run the app on about 8 very different places, as on 4 and 7 November (Part 4), and fix
-   wrong, odd or unclear results.
+2. **Third place review:** done on 8 November 2026 (Part 4); its fixes shipped in 2.3.2.
 3. **Code review of the app** (`js/`), and fix what is found.
 4. **Wording and phone review:** plain English and consistency in every topic's text, and each screen checked on a
    phone with screenshots.
@@ -283,6 +283,15 @@ Camborne (Cornwall), Hull, rural Highlands, Merthyr Tydfil and Happisburgh. Ever
 backups covered heritage, nature and flood zones. Hull centre showed Flood Zone 1: checked with the Environment Agency
 directly, its map has a gap at that spot, with Flood Zone 3 about 100 m away (the topic notes that nearby zones were not
 checked during the outage). Fixed: "1 crimes", the AONB acronym, and the wording of unchecked lists.
+
+**Third review, 8 November 2026** (2.3.1, while planning.data.gov.uk was down): Westminster, York, Derby, Keswick
+(Lake District), Wisbech (Fens), Swansea, Aberdeen and Derry/Londonderry. Every report finished in 4 to 42 seconds with
+no page errors, and no "No issue found" hid something unchecked. Flood zones matched Defra's copy of the Environment
+Agency map at all four places checked. Fixed in 2.3.2: the planning and nature findings now say in one line what could
+not be checked; "pharmacy 0 m" reads "under 50 m"; the code "MSOA" left the crime text; "where number 1 has the most
+crime" (Scotland); a link with an unknown postcode keeps it in the search box; the reservoir line names at most 2
+reservoirs, high-risk ones first (Westminster listed "Pen Pond Lower Lake, Richmond, Pen Pond Upper Lake, Richmond, …");
+and the flood zone backup moved to Defra's copy, which also checks nearby flood zones during an outage.
 
 **Known issues:** none at the moment.
 

@@ -55,8 +55,8 @@ official checkers.
   last 7 days, if there is one, dated, until the live answer replaces it; after 45 seconds the report finishes, and a
   topic still waiting says "slow to answer" with **Try again**, and fills in by itself if its answer arrives later. When planning.data.gov.uk does not answer
   (England), heritage, conservation areas and nature are asked from Historic England and Natural England instead, and
-  the flood zone at the pin from the Environment Agency's own flood map; each topic names anything it could not check
-  (Green Belt, HS2 and nearby flood zones have no second open source). When the Environment Agency's map server does not
+  flood zones, at the pin and nearby, from Defra's copy of the Environment Agency's flood map (2.3.2); each topic names
+  anything it could not check (Green Belt, HS2 and main rivers have no second open source). When the Environment Agency's map server does not
   answer, old landfill sites come from Defra's copy of the same register on ArcGIS Online. If postcodes.io does not answer, OpenStreetMap
   gives the country and place; if the address search does not answer, Photon does. Each service's answer for a place is
   kept on the device for 7 days and used, dated, only if that service fails. If the report is still loading after 8 seconds, the summary names the services it is waiting for, and their topics.

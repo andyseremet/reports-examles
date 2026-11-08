@@ -517,6 +517,19 @@ export async function testDevice(browser, device, [postcode, place]) {
     } finally { radonGate.open(); rainGate.open(); await p.close(); }
   });
 
+  await desktopStep("A link with an unknown postcode keeps it in the search box, with a message", async () => {
+    // postcodes.io answers "not found" (a stand-in; nothing is sent to it). The postcode stays in the box to correct.
+    const p = await page.context().newPage();
+    await p.route("https://api.postcodes.io/**", r => r.fulfill({ status: 404, json: { status: 404, error: "Postcode not found" } }));
+    try {
+      await p.goto(new URL("?postcode=ZZ1%201ZZ", BASE).href);
+      await p.waitForFunction(() => /couldn't find that postcode/.test(document.body.innerText), null, { timeout: 15000 });
+      const q = await p.inputValue("#q");
+      if (q !== "ZZ1 1ZZ") throw new Error(`the search box shows "${q}"`);
+      return "message shown; ZZ1 1ZZ kept in the search box";
+    } finally { await p.close(); }
+  });
+
   await desktopStep("Topics not covered in a country are left out and named in the country note (Scotland)", async () => {
     // postcodes.io answers "Scotland"; every other outside service answers at once with no data. Past floods and sale
     // prices cover only England and Wales (COVERAGE), so the finished report has no such topic, tile or card, and the
