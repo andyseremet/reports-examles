@@ -443,7 +443,7 @@ document.addEventListener("click", e => {
 function plotFeatures(layer, R) {
   const nearby = okValue(R, "planningNearby");
   [
-    [okValue(R, "landfill"), MAP_COLOURS.landfill, "Old landfill site", s => s.site_name || "Unnamed"],
+    [okValue(R, "landfill") || backupFor(R, "landfill")?.sites, MAP_COLOURS.landfill, "Old landfill site", s => s.site_name || "Unnamed"],
     [okValue(R, "landslides"), MAP_COLOURS.landslide, "Recorded landslide", s => s.name],
     [okValue(R, "coalTips"), MAP_COLOURS.coalTip, "Disused coal tip", s => [s.id || "Unnamed tip", s.category && "category " + s.category].filter(Boolean).join(", ")],
     [okValue(R, "wasteSites"), MAP_COLOURS.wasteSite, "Licensed waste site", s => [s.name || "Unnamed site", s.kinds.join(", ")].filter(Boolean).join(": ")],

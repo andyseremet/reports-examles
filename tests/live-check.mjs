@@ -199,6 +199,7 @@ const SERVICES = [
   ["Conservation areas backup (Historic England)", "https://services-eu1.arcgis.com/ZOdPfBS3aqqDYPUQ/arcgis/rest/services/Conservation_Areas/FeatureServer/0/query?geometry=-2.3590,51.3811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=NAME&returnGeometry=false&f=json", d => d.features && d.features.length > 0],
   ["Place backup (OpenStreetMap reverse lookup)", `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&lat=${LAT}&lon=${LON}`, d => d.address && d.address["ISO3166-2-lvl4"] === "GB-ENG", { alwaysChecked: true }],
   ["Address search backup (Photon)", "https://photon.komoot.io/api/?limit=1&q=Barnsley", d => Array.isArray(d.features) && d.features.length > 0, { alwaysChecked: true }],
+  ["Landfill backup (Defra copy)", "https://services-eu1.arcgis.com/KB6uNVj5ZcJr7jUP/arcgis/rest/services/HistoricLandfill/FeatureServer/0/query?geometry=-1.4797,53.5526&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=2000&units=esriSRUnit_Meter&outFields=site_name&returnGeometry=false&f=json", d => d.features && d.features.length > 0],
   ["Flood zone backup (Environment Agency)", wms("https://environment.data.gov.uk/spatialdata/flood-map-for-planning-flood-zones/wms", "Flood_Zones_2_3_Rivers_and_Sea"), d => Array.isArray(d.features)],
   ["Nature backup (Natural England)", arcgis("https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/SSSI_England/FeatureServer/0/query", "&distance=5000&units=esriSRUnit_Meter"), d => Array.isArray(d.features)],
   ["GP surgeries and pharmacies (NHS Organisation Data Service)", "https://directory.spineservices.nhs.uk/ORD/2-0-0/organisations?PrimaryRoleId=RO182&PostCode=S70&Status=Active&Limit=5", d => Array.isArray(d.Organisations) && d.Organisations.length > 0],
@@ -252,6 +253,7 @@ const SERVICE_TOPICS = {
   "Conservation areas backup (Historic England)": ["Planning restrictions and heritage, when planning.data.gov.uk is not answering"],
   "Place backup (OpenStreetMap reverse lookup)": ["Every topic (finds the country), when postcodes.io is not answering"],
   "Address search backup (Photon)": ["Finding the property by address, when the main address search is not answering"],
+  "Landfill backup (Defra copy)": ["Past use of the land, when the Environment Agency map server is not answering"],
   "Flood zone backup (Environment Agency)": ["Flooding from rivers and the sea, when planning.data.gov.uk is not answering"],
   "Nature backup (Natural England)": ["Planning restrictions and heritage, and Protected nature sites, when planning.data.gov.uk is not answering"],
   "GP surgeries and pharmacies (NHS Organisation Data Service)": ["Schools, doctors and transport"],
@@ -369,6 +371,29 @@ async function testCountryData() {
       if (r.air !== "info" || !/hotspots could not be checked/.test(r.airFound)) throw new Error(`with the hotspot list down, air quality is ${r.air}: ${r.airFound}`);
       if (r.saved.join() !== "medium,2026-11-03T10:00:00Z,down") throw new Error(`the saved answer came back as ${r.saved.join(", ")}`);
       return `${r.planning[1]} ${r.listed} listed buildings nearby`;
+    });
+
+    await step("Landfill backup: Defra's copy answers when the Environment Agency map server does not", async () => {
+      // Barnsley has many old landfill sites. The Environment Agency's landfill service is made to fail here (no request
+      // reaches it); the sites must come from Defra's copy on ArcGIS Online, with dates as text, and the topic must say so.
+      const fail = r => r.fulfill({ status: 503, body: "" });
+      await page.route("https://environment.data.gov.uk/spatialdata/historic-landfill/**", fail);
+      try {
+        const r = await page.evaluate(async () => {
+          const loc = { lat: 53.5527, lon: -1.4797, radius: 1000 };
+          const backup = await getLandfill(loc).then(() => null, e => e.backup);
+          if (!backup) return { sites: 0 };
+          const R = { loc, landfill: { ok: false, error: "the data service replied with error 503", backup },
+            place: { ok: true, value: { country: "England", admin_district: "Barnsley" } }, planningNearby: { ok: true, value: [] }, planningPoint: { ok: true, value: [] } };
+          const topic = checkLanduse(R);
+          return { sites: backup.sites.length, years: backup.sites.map(x => x.firstinput).find(Boolean), nearest: backup.sites[0].distanceKm,
+            status: topic.status, source: topic.source.name };
+        });
+        if (!r.sites) throw new Error("no landfill sites from the backup");
+        if (typeof r.years !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(r.years)) throw new Error(`dates from the backup are not text: ${r.years}`);
+        if (r.status === "error" || !/Defra's copy/.test(r.source)) throw new Error(`the topic did not use the backup: ${r.status}, "${r.source}"`);
+        return `${r.sites} sites within 1 km, nearest ${r.nearest.toFixed(2)} km; ${r.status}`;
+      } finally { await page.unroute("https://environment.data.gov.uk/spatialdata/historic-landfill/**", fail); }
     });
 
     await step("Backups for the place, the address search and recent answers", async () => {

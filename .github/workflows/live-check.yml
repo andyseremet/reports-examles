@@ -4,7 +4,7 @@
 #   anything fails, for example a government data service changing its address.
 # - On every pull request that changes the page: tests the proposed version
 #   before it is merged.
-#   Pull requests leave out the 41 outside services that only supply report data
+#   Pull requests leave out the 42 outside services that only supply report data
 #   (data/data-services.csv), at the owner's request; the report itself still runs,
 #   answered from the daily run's recording (recordings.json on the "status" branch),
 #   so an outside outage cannot turn a pull request red. Anything not recorded is asked live.
@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       data_services:
-        description: "Check the report data services (the 41 in data/data-services.csv)"
+        description: "Check the report data services (the 42 in data/data-services.csv)"
         type: boolean
         default: true
   pull_request:
