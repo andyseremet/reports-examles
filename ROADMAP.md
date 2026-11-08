@@ -2,8 +2,8 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **1.36.0** (live at https://andyseremet.github.io/reports-examles/)
-- Last updated: 7 November 2026
+- Current version: **1.36.1** (live at https://andyseremet.github.io/reports-examles/)
+- Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
 - Free for everyone: every feature stays free; support for the app's development is always voluntary (see
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 1.36.0)
+## Part 1: What the app does today (version 1.36.1)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -133,6 +133,12 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Behind the scenes
 - Plain files with no build step: `index.html`, `css/app.css` and `js/`.
+- Lean code (1.36.1, quiz of 8 November 2026): `js/app.js` split into 5 files (`search.js`, `saved.js`, `report.js`,
+  `print.js`, `app.js`); one print section in `css/app.css` instead of 10, with repeated rules merged (every element's
+  computed style compared before and after: the same look); one box function for map queries; all saving through one
+  storage helper; unused code removed.
+- Rating fixes (1.36.1): noise with road or railway noise unchecked, a blank clay rating, and a failed coal service no
+  longer read "No issue found" or hide other mining.
 - An automatic check runs every day against the live site, and on every pull request. A failure opens a "Live check
   failed" issue on GitHub.
 
@@ -142,13 +148,12 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Priority: the road to version 2.0 (health check and quiz of 7 November 2026)
 
-Version 2.0 is the planned final version. It comes in four steps (1.34.0 the backups, 1.35.0 the printed report and 1.36.0 ease of use shipped on 7 November 2026); each is built, tested (full check and accessibility
+Version 2.0 is the planned final version. It comes in four steps (1.34.0 the backups, 1.35.0 the printed report and 1.36.0 ease of use shipped on 7 November 2026; the `js/app.js` split moved into the 1.36.1 clean-up); each is built, tested (full check and accessibility
 check) and merged by the owner before the next one starts. Every item below was chosen in the quiz.
 
 | Step | Priority | What changes | Why |
 |---|---|---|---|
-| **2.0.0 Final** | 4 | **Split `js/app.js`** (about 2,200 lines) into 5 plain files (quiz of 7 November 2026): `search.js` (map and search), `saved.js` (storage, saved properties, compare), `report.js` (running the checks and the report), `print.js` (share, download and print), `app.js` (comfort and start-up). No build step, same behaviour. | Easier and safer to change later. |
-| | 4 | **Steady pull request checks**: each daily run records the outside services' answers to the `status` branch (like `status.json`); pull requests build reports from that copy, at most a day old. A question never recorded (for example a new topic) is asked live and named in the result. The daily check stays fully live. | During the 6–7 November outage, every pull request was red for reasons outside the app. |
+| **2.0.0 Final** | 4 | **Steady pull request checks**: each daily run records the outside services' answers to the `status` branch (like `status.json`); pull requests build reports from that copy, at most a day old. A question never recorded (for example a new topic) is asked live and named in the result. The daily check stays fully live. | During the 6–7 November outage, every pull request was red for reasons outside the app. |
 | | 4 | **Final review**: one place per country (Barnsley, Cardiff, Edinburgh, Belfast), and one place again with a service switched off to confirm the backups and saved answers; the accessibility check; README and road map brought up to date. | A clean 2.0. |
 
 **No open backup exists** (health check, 7 November 2026), so these topics keep saying clearly what could not be

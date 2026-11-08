@@ -164,8 +164,8 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 It checks that all 45 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 41 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the rating legend, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England and Natural England backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
-printing and downloads. The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices is tested
-once, on the desktop page, during the pause before the first report (it does not depend on the screen size, and it must
+printing and downloads. The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices, and the rule that missing
+data is never "No issue found" (noise, clay and mining with a failed service), is tested once, on the desktop page, during the pause before the first report (it does not depend on the screen size, and it must
 send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files
 are installed only if it does not start without them. Results,
 screenshots and sample reports are kept for 14 days with each run.
