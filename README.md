@@ -145,6 +145,7 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `css/app.css` | All the page styles, including dark mode and print. |
 | `js/core.js` | Links, settings, the version number and shared helpers. |
 | `js/api.js` | Outside data service addresses, request pacing and the fetch helpers. |
+| `js/store.js` | Saving in the browser and the key for a place (no page drawing). |
 | `js/data.js` | Fetching data for England, and the shared fetch helpers. |
 | `js/backups.js` | Backups used only when planning.data.gov.uk does not answer. |
 | `js/data-wales.js`, `data-scotland.js`, `data-ni.js` | Fetching data for Wales, Scotland and Northern Ireland. |
@@ -152,10 +153,11 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `js/checks/flood.js`, `ground.js`, `living.js`, `planning.js` | The topics in each report section: turning data into plain-English results. |
 | `js/checks/index.js` | Shared check helpers and the list of report topics. |
 | `js/coverage.js` | Which countries each topic covers; topics not covered in a country are left out of its reports. |
+| `js/runner.js` | The runner: runs the checks for one place (chosen topics or all), with one retry, recent answers kept 7 days and the 45-second deadline; it never touches the page. |
 | `js/map.js` | The map: background maps, map buttons, full screen, the pin and the search circle. |
 | `js/search.js` | The search box (suggestions, Nominatim and Photon). |
-| `js/saved.js` | Storage on this device, saved properties, compare, and the first-visit guide. |
-| `js/run.js` | Running the checks (with recent answers kept 7 days), Try again, and saved reports. |
+| `js/saved.js` | Saved properties on this device, compare, and the first-visit guide. |
+| `js/run.js` | The report on the page: starting a check, drawing each topic as it arrives, Try again, and saved reports. |
 | `js/summary.js` | The summary: the verdict, the topic grid, the box under it and key findings. |
 | `js/report.js` | The topic cards, the report layout, the printed cover, data sources and the report map. |
 | `js/next-steps.js` | Next steps: notes, the viewing checklist, the checklist and Send to my conveyancer. |
@@ -195,7 +197,7 @@ It checks that all 50 outside data services and the 2 data files saved with the 
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the share and print icons, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England, Natural England and Defra landfill backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads (layout steps run on all three devices; steps that do not depend on the screen size run once, on the desktop). The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices, past floods and reservoir flooding, and the rule that missing
-data is never "No issue found" (noise, clay and mining with a failed service), is tested once, on the desktop page (it does not depend on the screen size, and it must
+data is never "No issue found" (noise, clay and mining with a failed service), and the runner on its own (a radon-only run that asks only its data and draws nothing) are tested once, on the desktop page (they do not depend on the screen size, and they must
 send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files
 are installed only if it does not start without them. Results,
 screenshots and sample reports are kept for 14 days with each run.

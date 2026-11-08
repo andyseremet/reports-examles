@@ -184,6 +184,37 @@ export async function testCountryData(browser) {
       } finally { await page.unroute(highland, stub); }
     });
 
+    await step("Runner (2.5.0): a run for chosen topics asks only their data, reports each change and draws nothing", async () => {
+      // The runner (js/runner.js) works without the page, as other small apps will use it: a radon-only run at
+      // Barnsley asks only the postcode lookup and radon, tells its caller about each change, finishes, and adds no
+      // topic card to the page (no report is open on this page).
+      const r = await page.evaluate(() => new Promise((resolve, reject) => {
+        const keep = run, updates = [];
+        const timer = setTimeout(() => { run = keep; reject(new Error("the radon-only run did not finish within 60 seconds")); }, 60000);
+        const started = startRun({ name: "Barnsley", lat: 53.5526, lon: -1.479, radius: 1000 }, {
+          checks: CHECKS.filter(c => c.id === "radon"),
+          onUpdate: u => {
+            updates.push({ key: u.key, changed: u.changed.map(x => x.check.id), done: u.done });
+            if (!u.done) return;
+            clearTimeout(timer);
+            const out = { tasks: started.tasks, asked: Object.keys(started.R).filter(k => k !== "loc"),
+              results: Object.keys(started.results), status: started.results.radon && started.results.radon.status,
+              updates, cards: document.querySelectorAll("details.check").length };
+            run = keep;
+            resolve(out);
+          }
+        });
+      }));
+      if (r.tasks.join() !== "place,radon") throw new Error(`a radon-only run should ask only place and radon, asked: ${r.tasks.join(", ")}`);
+      if (r.asked.sort().join() !== "place,radon") throw new Error(`data held for other tasks: ${r.asked.join(", ")}`);
+      if (r.results.join() !== "radon") throw new Error(`topics built: ${r.results.join(", ") || "none"}`);
+      if (!["high", "medium", "low", "info", "manual", "error"].includes(r.status)) throw new Error(`radon rating: ${r.status}`);
+      if (!r.updates.some(u => u.changed.includes("radon"))) throw new Error(`no update named the radon topic: ${JSON.stringify(r.updates)}`);
+      if (r.updates.filter(u => u.done).length !== 1 || !r.updates.at(-1).done) throw new Error(`the run should end with one done update: ${JSON.stringify(r.updates)}`);
+      if (r.cards) throw new Error(`the runner drew ${r.cards} topic cards on the page`);
+      return `asked ${r.tasks.join(" and ")}; radon rated ${r.status}; ${r.updates.length} updates; no cards drawn`;
+    });
+
     await step("Backups for the place, the address search and recent answers", async () => {
       // postcodes.io not answering: OpenStreetMap gives the country (Leith → Scotland). Nominatim not answering: Photon
       // finds the address. A service that fails reuses its answer from the last 7 days, but never an older one.

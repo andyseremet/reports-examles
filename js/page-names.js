@@ -47,7 +47,7 @@ reach(livingChecks, ["checkAir", "checkAmenities", "checkCrime", "checkNoise", "
 reach(planningChecks, ["checkNature", "checkPlanning"]);
 reach(checkList, ["CHECKS", "TASK_FN", "unavailable", "VIEWING_LOOK"]);
 reach(coverageModule, ["COVERAGE", "shownChecks", "topicShown"]);
-reach(runnerModule, ["forgetAnswers", "orderedResults", "recentAnswer", "rememberAnswer", "savedInstead",
+reach(runnerModule, ["forgetAnswers", "orderedResults", "recentAnswer", "rememberAnswer", "savedInstead", "startRun",
   "startTask", "topicResult"]);
 reach(mapModule, ["map", "mapIsFull"]);
 reach(searchModule, ["searchPhoton"]);

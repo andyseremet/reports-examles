@@ -12,14 +12,14 @@ How the app's code is laid out and the rules for changing it. Read this before c
   stays private to it. A variable that changes (`let`) lives in the one file that changes it (other files only read
   it). `index.html` loads them in this order (the imports decide the real order; the list says where things live):
   1. `core.js` (links, settings, `APP_VERSION`, helpers such as `term()` and `GLOSSARY`) → `api.js` (`API`,
-     `PACED_HOSTS`, `fetchJSON`, `arcgisRequest`)
+     `PACED_HOSTS`, `fetchJSON`, `arcgisRequest`) → `store.js` (`store` for browser storage, `reportKey`)
   2. `data.js` (England and shared fetch helpers) → `backups.js` → `data-wales.js` → `data-scotland.js` →
      `data-ni.js` → `tasks.js` (`TASKS`, which names every fetch function, so it comes after them)
   3. `checks/flood.js`, `ground.js`, `living.js`, `planning.js`: one per report section
   4. `checks/index.js` (shared check helpers, `CHECKS`, `TOPIC_ICONS`) → `coverage.js` (`COVERAGE`, `topicShown`,
-     `shownChecks()`, `notCoveredNote()`)
-  5. `map.js` → `search.js` → `saved.js` (`store`, saved properties, compare, guide) → `run.js` (running the checks,
-     Try again, recent answers, saved reports) → `summary.js` (verdict, topic grid, why box) → `report.js` (topic
+     `shownChecks()`, `notCoveredNote()`) → `runner.js` (the runner, below)
+  5. `map.js` → `search.js` → `saved.js` (saved properties, compare, guide) → `run.js` (the report on the page:
+     starting a check, drawing each topic as it arrives, Try again, saved reports) → `summary.js` (verdict, topic grid, why box) → `report.js` (topic
      cards, layout, sources) → `next-steps.js` → `navigation.js` → `print.js` (share, download, print) → `app.js`
      (larger text, install, start-up)
 
@@ -28,8 +28,14 @@ How the app's code is laid out and the rules for changing it. Read this before c
   A new JS file goes in `index.html` (`<script type="module">`) and in `SHELL` in `sw.js`.
   `js/page-names.js` puts the app names the daily check reads from the page on `window` (modules keep names to
   themselves); a test that reads a new name needs it listed there.
+- **The runner** (`js/runner.js`, 2.5.0): runs the checks for one place and never touches the page.
+  `startRun(loc, { checks, previous, onUpdate })` asks only the data tasks the chosen topics need (all topics by
+  default), tries a failed task once more, shows a recent answer after 8 seconds and stops waiting at 45 seconds.
+  After each task settles it calls `onUpdate({ key, changed, done })`; `js/run.js` draws what changed. Try again is
+  `clearForRetry(id)` then `restartTasks(keys)`. The runner and the files it imports (`core`, `store`, `api`, the
+  data files, `tasks`, `checks/`, `coverage`) must not use `document` or the page's elements.
 - **Modular plan** (owner, 8 November 2026; `ROADMAP.md`, Part 2): step by step, each topic becomes one file that
-  other small apps can use on its own. Step 1 (2.4.0) is the switch to modules.
+  other small apps can use on its own. Step 1 (2.4.0) is the switch to modules, step 2 (2.5.0) the runner.
 - `glossary.html`: "What the words mean", plain HTML with no script. `term()` links a word to it through `GLOSSARY`
   (word → id); every id needs its `<dt id>` on the page (the daily check compares them).
 - `status.html` + `js/status.js`: the data service status page, separate from the app (its own script). It reads

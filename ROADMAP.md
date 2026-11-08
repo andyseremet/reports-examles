@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.4.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.5.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.4.0)
+## Part 1: What the app does today (version 2.5.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -186,6 +186,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   other files use, instead of sharing one global scope; changing variables moved to the one file that changes them;
   the syntax check also checks every import; `js/page-names.js` keeps the daily check's page reads working. Nothing
   the user sees changed (full test and accessibility scan passed).
+- The runner (2.5.0, step 2): `js/runner.js` runs the checks for one place without touching the page, for chosen
+  topics or all of them, and tells the page about each change; `js/store.js` holds browser storage. `js/run.js` only
+  draws. A new daily check step runs radon on its own and checks that only its data is asked and nothing is drawn.
 - Lean code (1.36.1, quiz of 8 November 2026): `js/app.js` split into 5 files (`search.js`, `saved.js`, `report.js`,
   `print.js`, `app.js`); one print section in `css/app.css` instead of 10, with repeated rules merged (every element's
   computed style compared before and after: the same look); one box function for map queries; all saving through one
@@ -234,7 +237,8 @@ card can be used without the main app, in new smaller apps or inside other websi
 (`kit/v1/`, …; no outside service); cards come plain, and the host app styles them (the main app keeps its look).
 
 1. **Modules** (2.4.0, done): every `js/` file imports and exports instead of sharing one global scope.
-2. **Runner:** running the checks for one place, without drawing the page, split out of `js/run.js`.
+2. **Runner** (2.5.0, done): `js/runner.js` runs the checks for one place, for chosen topics or all, without
+   drawing the page; `js/run.js` draws.
 3. **Topic files:** each topic in one file (`topics/radon.js`: its data, rating, wording, icon and viewing tips),
    with data several topics share kept once; a test that every topic file has the same parts.
 4. **Card and tag:** a plain card from a topic's result, and a `<plc-topic topic="radon" postcode="…">` tag that
