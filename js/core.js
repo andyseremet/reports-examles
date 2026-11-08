@@ -168,8 +168,8 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "1.36.0";
-const APP_UPDATED = "7 November 2026";
+const APP_VERSION = "1.36.1";
+const APP_UPDATED = "8 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
 let selected = null;      // {lat, lon, label}
@@ -216,11 +216,6 @@ function today() {
   return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function formatDateTime(value) {
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? String(value || "") : d.toLocaleString("en-GB");
-}
-
 function monthName(yyyyMm) {
   if (!yyyyMm) return "the latest month";
   return new Date(yyyyMm + "-01").toLocaleDateString("en-GB", { month: "long", year: "numeric" });
@@ -261,6 +256,7 @@ function circleWkt(lat, lon, radiusM, steps = 24) {
   return "POLYGON((" + pts.join(",") + "))";
 }
 
+// A square around a point, [west, south, east, north] in degrees: the one box used for every map query.
 function boundingBox(lat, lon, radiusM) {
   const dLat = radiusM / 110540;
   const dLon = radiusM / (111320 * Math.cos(lat * Math.PI / 180));
@@ -416,9 +412,3 @@ function arcgisRequest(base, loc, distanceM, extra = {}) {
   });
 }
 const arcgisQuery = (base, loc, distanceM, extra) => arcgisRequest(base, loc, distanceM, extra).then(d => d.features || []);
-
-function showSearchStatus(message, isError) {
-  const el = $("searchStatus");
-  el.textContent = message || "";
-  el.className = "status" + (isError ? " error" : "") + (message ? "" : " hidden");
-}

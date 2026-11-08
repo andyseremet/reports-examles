@@ -138,7 +138,11 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 | `js/data.js` | Fetching data from the outside services, and the list of data tasks. |
 | `js/checks/flood.js`, `ground.js`, `living.js`, `planning.js` | The topics in each report section: turning data into plain-English results. |
 | `js/checks/index.js` | Shared check helpers and the list of report topics. |
-| `js/app.js` | The map, search, running the checks, the report, saved properties, sharing and start-up. |
+| `js/search.js` | The map and the search box (suggestions, Nominatim and Photon). |
+| `js/saved.js` | Storage on this device, saved properties, compare, and the first-visit guide. |
+| `js/report.js` | Running the checks (with recent answers kept 7 days) and building the report. |
+| `js/print.js` | Share, download and print. |
+| `js/app.js` | Larger text, install as an app, and start-up (shared links). |
 | `status.html`, `js/status.js` | The data service status page: a separate page with its own small script. |
 | `glossary.html` | "What the words mean": a plain page with no script; `GLOSSARY` in `js/core.js` links words to it. |
 | `sw.js` | Offline support: keeps the app files so it opens without a connection. |
@@ -160,8 +164,8 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 It checks that all 45 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 41 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
 full screen, the offline message, the section bar, the topic icons, the rating legend, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England and Natural England backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
-printing and downloads. The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices is tested
-once, on the desktop page, during the pause before the first report (it does not depend on the screen size, and it must
+printing and downloads. The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices, and the rule that missing
+data is never "No issue found" (noise, clay and mining with a failed service), is tested once, on the desktop page, during the pause before the first report (it does not depend on the screen size, and it must
 send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files
 are installed only if it does not start without them. Results,
 screenshots and sample reports are kept for 14 days with each run.
