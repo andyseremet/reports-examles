@@ -641,7 +641,7 @@ function renderSkeleton(loc) {
 
     <p class="help print-only live-link">Live report, with the latest data: ${escapeHTML(location.href)}</p>
     <section class="print-only notes-page" aria-hidden="true"><h2>Notes</h2>${'<div class="note-line"></div>'.repeat(24)}</section>
-    <p class="help">Created with Property Location Check (version ${APP_VERSION}). Contains public sector information licensed under the Open Government
+    <p class="help print-only report-credits">Created with Property Location Check (version ${APP_VERSION}). Contains public sector information licensed under the Open Government
       Licence v3.0; map data © OpenStreetMap contributors, © Esri and © CARTO; Copernicus Atmosphere Monitoring Service.</p>`;
 
   // Drawn straight away (not behind a button), so its map pictures have loaded by the time the report is printed.

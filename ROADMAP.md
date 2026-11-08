@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.0.5** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.0.6** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.0.5)
+## Part 1: What the app does today (version 2.0.6)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -123,6 +123,10 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Share, print and export
 - **Share** links and the phone's share menu.
+- Calmer look, part 2 (2.0.6): a light header (white, a hairline under it; also on the status and glossary pages,
+  with a matching phone browser bar), the first-visit guide as one quiet line, a slightly smaller semibold verdict,
+  one credits line on screen (the page footer, shortened; the full licence list is in "Data credits and licences",
+  and the printed and downloaded report keep their own credits line).
 - Calmer look (2.0.5, quiz of 8 November 2026): one accent blue; thin line icons in the topic grid and the phone tab
   bar; only problem topics coloured in the grid; quiet grey buttons inside the report; thin grey "i" buttons; a
   subtle back-to-top button; a text-style Open problems / Close all; thinner, paler card edges; every topic card

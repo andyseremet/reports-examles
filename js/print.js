@@ -43,6 +43,7 @@ function downloadReport() {
   copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button, #whyBox, .send-box, .icon-btn, .share-note, .keep-row").forEach(b => b.remove());
   copy.querySelectorAll("#notesText").forEach(t => t.remove());
   copy.querySelectorAll(".notes-print").forEach(d => { d.removeAttribute("aria-hidden"); d.classList.add("notes-download"); });
+  copy.querySelectorAll(".report-credits").forEach(p => p.classList.remove("print-only"));   // the download keeps its credits line
   copy.querySelectorAll("input[data-tick]").forEach(b => { if (b.checked) b.setAttribute("checked", ""); });
   const loc = reportData.location;
   const mapBox = copy.querySelector("#reportMap");

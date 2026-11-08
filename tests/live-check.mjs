@@ -1144,7 +1144,11 @@ async function testDevice(device, [postcode, place]) {
     if (off.length) throw new Error(`not usable on the Summary line: ${off.join(", ")}`);
     if (!(await page.isVisible(".keep-row #downloadHtml")) || !(await page.isVisible(".keep-row #printReport"))) throw new Error("Download report and Print full report are not under the summary");
     const [download] = await Promise.all([page.waitForEvent("download"), page.click("#downloadHtml")]);
-    await download.saveAs(`${OUT}/${device.name.replace(/\W+/g, "-")}-report.html`);
+    const saved = `${OUT}/${device.name.replace(/\W+/g, "-")}-report.html`;
+    await download.saveAs(saved);
+    // The download keeps the licence credits (on screen they are in the page footer's "Data credits and licences").
+    if (!/Created with Property Location Check[^<]*Open Government/.test(readFileSync(saved, "utf8").replace(/\s+/g, " ")))
+      throw new Error("the downloaded report has no credits line");
     return download.suggestedFilename();
   });
 
