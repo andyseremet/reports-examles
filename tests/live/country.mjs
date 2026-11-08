@@ -325,10 +325,13 @@ export async function testCountryData(browser) {
       if (!/Site of Special Scientific Interest/.test(r.sssi.found)) throw new Error(`no SSSI at Insh Marshes: ${r.sssi.found}`);
       if (!/Inside an air pollution hotspot/.test(r.air.found)) throw new Error(`Edinburgh centre not in its air pollution hotspot: ${r.air.found}`);
       if (!/Road: (moderate|loud)/.test(r.noise.found)) throw new Error(`no road noise in central Edinburgh: ${r.noise.found}`);
-      if (!/ranked [\d,]+ of 6,976/.test(r.crime.found)) throw new Error(`no crime rank: ${r.crime.found}`);
+      if (!/ranks [\d,]+ of 6,976 areas \(number 1 has the most crime\)/.test(r.crime.found)) throw new Error(`no crime rank: ${r.crime.found}`);
+      // Plain words (2.3.4): the index is written out, never "SIMD" alone.
+      if (!r.crime.actions.some(a => />Scottish Index of Multiple Deprivation</.test(a)) || r.crime.actions.some(a => />SIMD</.test(a)))
+        throw new Error(`the crime link is not written out: ${r.crime.actions.join(" | ").slice(0, 200)}`);
       if (!/licensed/.test(r.waste.found)) throw new Error(`no licensed waste site near central Edinburgh: ${r.waste.found}`);
       if (!/expected to be lost by 2100/.test(r.coast.found)) throw new Error(`Portobello coast: ${r.coast.found}`);
-      return `Edinburgh: ${r.planning.found.slice(0, 60)}…; Portobello ${r.coast.status}; crime ${r.crime.found.match(/ranked [\d,]+/)[0]}`;
+      return `Edinburgh: ${r.planning.found.slice(0, 60)}…; Portobello ${r.coast.status}; crime ${r.crime.found.match(/ranks [\d,]+/)[0]}`;
     });
 
     await step("Northern Ireland: heritage, nature, noise and coast from NI data; Check yourself where nothing is published", async () => {

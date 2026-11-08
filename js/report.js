@@ -207,7 +207,7 @@ function renderMeta() {
   $("reportMeta").innerHTML = `
     <strong>${escapeHTML(loc.name)}</strong><br>
     ${p ? `Nearest postcode ${escapeHTML(p.postcode)} · ${escapeHTML(p.admin_district || "")}${p.admin_ward ? " · " + escapeHTML(p.admin_ward) + " ward" : ""}${p.fromBackup ? " (from OpenStreetMap: postcodes.io was not answering)" : ""}<br>` : ""}
-    Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}`;
+    <span class="coords">Location ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)} · </span>Nearby search: ${formatRadius(loc.radius)} · Created ${escapeHTML(today())}`;
   $("coverDetails").innerHTML = coverDetails(loc, p);
   $("mapCaption").textContent = `Figure 1. The property and the ${formatRadius(loc.radius)} search area.`;
 }

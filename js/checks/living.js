@@ -4,7 +4,7 @@
 
 function checkAmenities(R) {
   const base = {
-    source: { name: "Department for Education and NaPTAN (via planning.data.gov.uk), NHS Organisation Data Service, NaPTAN rail stations", url: LINKS.planningData }
+    source: { name: "Department for Education and the Department for Transport's list of stops, NaPTAN (via planning.data.gov.uk); NHS Organisation Data Service; Department for Transport railway stations (NaPTAN)", url: LINKS.planningData }
   };
   if (!R.amenities.ok) return unavailable(base, R, "amenities");
   const g = R.amenities.value;
@@ -46,9 +46,9 @@ function checkAmenities(R) {
         : `<tr><td>${escapeHTML(x.t.label)}</td><td>${x.near ? escapeHTML(x.near.name || "Unnamed") : "None found nearby"}</td>
         <td>${x.near ? formatDistance(x.near.distanceKm) : "–"}</td><td>${x.count} within ${formatRadius(x.t.within * 1000)}</td></tr>`).join("")
     }</tbody></table></div>`,
-    meaning: `<p>Straight-line distances from the pin, from official registers: schools from the Department for Education
-      (England), GP surgeries and pharmacies from the NHS Organisation Data Service (located by their postcode, so
-      distances are approximate), and bus stops, tram and underground stops and railway stations from NaPTAN, the
+    meaning: `<p>Distances are in a straight line from the pin, from official registers. Schools come from the Department
+      for Education (England only). GP surgeries and pharmacies come from the NHS Organisation Data Service; each is placed
+      by its postcode, so the distance is approximate. Bus, tram and underground stops and railway stations come from the
       Department for Transport's national list of public transport stops.</p>
       <p>Supermarkets and shops are not included because there is no official open list. School catchment areas and
       Ofsted ratings are not shown: check them with the council and on the Ofsted website.</p>`,
@@ -217,9 +217,9 @@ function checkNoise(R) {
       <p>The World Health Organization recommends average levels below: road ${WHO_NOISE.road.lden} dB (night ${WHO_NOISE.road.lnight} dB),
         railway ${WHO_NOISE.rail.lden} dB (night ${WHO_NOISE.rail.lnight} dB), aircraft ${WHO_NOISE.aircraft.lden} dB (night ${WHO_NOISE.aircraft.lnight} dB).
         Every 10 dB sounds roughly twice as loud. “Quiet” means below the lowest level ${mapper} maps.</p>
-      <p>Most streets in towns are above the WHO levels, so we rate road and railway noise “Look into this” only when it is loud:
-        a 24-hour average of 65 dB or more, or 55 dB or more at night. “Moderate” levels between the WHO level and that are
-        shown for information.</p>
+      <p>Most streets in towns are above the WHO levels. So we rate road and railway noise “Look into this” only when it is
+        loud: a 24-hour average of 65 dB or more, or 55 dB or more at night. “Moderate” levels, between the WHO level and
+        that, are shown for information.</p>
       <p>${wales ? "" : "Railway figures are worked out from Defra's published frequency bands using the standard A-weighting. "}Aircraft noise is
         not part of ${mapper}'s maps, so we show the distance to major airports instead. Military airfields are not included.</p>
       ${wales ? "" : "<p>Tip: open the layers button on the map and turn on “Show road noise” to see how road noise changes along the street.</p>"}`,
@@ -332,7 +332,7 @@ function checkCrimeScotland(R) {
     : share <= 0.7 ? "around average for Scotland" : "below average for Scotland";
   return {
     ...base, status: "info",
-    found: `In this small area (${z.name}), the recorded crime rate is ${word}: ranked ${z.rank.toLocaleString("en-GB")} of ${SIMD_ZONES.toLocaleString("en-GB")} areas, where number 1 has the most crime.`,
+    found: `In this small area (${z.name}), the recorded crime rate is ${word}. It ranks ${z.rank.toLocaleString("en-GB")} of ${SIMD_ZONES.toLocaleString("en-GB")} areas (number 1 has the most crime).`,
     details: `<div class="table-wrap"><table><tbody>
         <tr><th scope="row">Area</th><td>${escapeHTML(z.name)}, ${escapeHTML(z.council)} (${term("data zone", "A small area used for Scottish statistics, home to about 500 to 1,000 people")} ${escapeHTML(z.zone)})</td></tr>
         <tr><th scope="row">Selected crimes recorded in 2017–18</th><td>${z.count}</td></tr>
@@ -345,7 +345,7 @@ function checkCrimeScotland(R) {
         and town centres rank high because of shops and nightlife, so treat this as a rough guide.</p>
       <p>Rating: crime is shown for information only.</p>`,
     actions: [
-      `Compare areas on ${link(LINKS.simd, "SIMD")} (choose the crime domain), and see recent figures by council area in the ${link(LINKS.scotCrime, "recorded crime statistics")}.`,
+      `Compare areas on the ${link(LINKS.simd, "Scottish Index of Multiple Deprivation")} (choose the crime part), and see recent figures by council area in the ${link(LINKS.scotCrime, "recorded crime statistics")}.`,
       `Find the local policing team on the ${link(NATIONAL.Scotland.police[1], "Police Scotland website")}.`
     ]
   };
@@ -402,10 +402,10 @@ function checkCrime(R) {
     }<tr><td>All other types</td><td>${c.total - keyTotal}</td></tr></tbody></table></div>`,
     meaning: `<p>Town and city centres show higher numbers because of shops, transport hubs and nightlife. The figures are
       most useful when you compare a few streets or areas you are considering.</p>
-      <p>The comparison uses one month of street-level police data for the census neighbourhood (about 8,000 residents), its population from
-      the ${link(LINKS.nomisCensus, "2021 Census")}, and the national average from ${link(LINKS.onsCrime, "ONS crime figures")}
-      (6.6 million crimes, year to March 2025) and ${link(LINKS.onsPopulation, "ONS population estimates")} (61.8 million, mid-2024).
-      One month can vary, so treat it as a rough guide.</p>`,
+      <p>The comparison uses one month of street-level police data for the census neighbourhood (about 8,000 residents).
+      Its population comes from the ${link(LINKS.nomisCensus, "2021 Census")}. The national average comes from the Office for
+      National Statistics: its ${link(LINKS.onsCrime, "crime figures")} (6.6 million crimes, year to March 2025) and
+      ${link(LINKS.onsPopulation, "population estimates")} (61.8 million, mid-2024). One month can vary, so treat it as a rough guide.</p>`,
     actions: [`Compare nearby areas, and find the local policing team, on ${link(LINKS.police, "police.uk")}.`]
   };
 }

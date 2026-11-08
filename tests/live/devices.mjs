@@ -280,6 +280,30 @@ export async function testDevice(browser, device, [postcode, place]) {
     return `map ok; ${lists.length} list(s), ${lists.filter(l => l.total > 4).length} shortened`;
   });
 
+  await step("Phone: no round Back to top button over the report; map coordinates on bigger screens and on paper", async () => {
+    // Wording and phone review (2.3.4): on a phone the tab bar's Summary goes back to the top, and coordinates mean
+    // little to a buyer; on bigger screens both stay, and the printed report always shows the coordinates.
+    const phone = await page.evaluate(() => innerWidth <= 600);
+    // Jump (the page scrolls smoothly by default), then wait for the scroll handler: the button shows below 700 px.
+    await page.evaluate(() => scrollTo({ top: 2000, behavior: "instant" }));
+    await page.waitForFunction(() => scrollY >= 700, null, { timeout: 3000 }).catch(() => {});
+    await page.waitForTimeout(200);
+    const r = await page.evaluate(() => ({
+      // Its size on screen (offsetParent is always empty for a fixed button like this one).
+      toTop: document.getElementById("toTop").getBoundingClientRect().height > 0,
+      coords: !!document.querySelector("#reportMeta .coords")?.offsetParent,
+      y: Math.round(scrollY), height: document.documentElement.scrollHeight, button: document.getElementById("toTop").className
+    }));
+    await page.emulateMedia({ media: "print" });
+    const printed = await page.evaluate(() => getComputedStyle(document.querySelector("#reportMeta .coords")).display !== "none");
+    await page.emulateMedia({ media: "screen" });
+    await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
+    if (phone && (r.toTop || r.coords)) throw new Error(`on a phone: Back to top shown ${r.toTop}, coordinates shown ${r.coords}`);
+    if (!phone && (!r.toTop || !r.coords)) throw new Error(`on a bigger screen: Back to top shown ${r.toTop}, coordinates shown ${r.coords} (scrolled to ${r.y} of ${r.height} px; button "${r.button}")`);
+    if (!printed) throw new Error("the printed report has no coordinates");
+    return phone ? "phone: neither shown; printed: coordinates" : "both shown; printed: coordinates";
+  });
+
   await step("Phone tab bar: Summary, Problems, All topics, Next steps", async () => {
     const phone = await page.evaluate(() => innerWidth <= 600);
     const shown = await page.$eval("#tabBar", x => getComputedStyle(x).display !== "none");

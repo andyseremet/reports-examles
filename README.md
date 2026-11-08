@@ -72,7 +72,9 @@ official checkers.
   behind **More**; lists of sites and sales show
   the first 3, then **Show all** (one line per row on a phone). Notes, the viewing checklist and the checklist sit in
   one **Next steps** section, each folded with its count. On a phone, a bar at the bottom of the screen jumps to
-  Summary, Problems (it opens the topics to look into), All topics and Next steps. There is also a back-to-top button.
+  Summary, Problems (it opens the topics to look into), All topics and Next steps. On bigger screens there is also a
+  back-to-top button (on a phone, the tab bar's Summary does that). The map coordinates of the pin show on bigger
+  screens and in the printed report.
 - **Save and share:** every report is saved on your device (nothing is sent anywhere). Reopen saved properties,
   **compare two or three side by side** (with a switch to show only the topics that differ), tick off the checklists (remembered per property; each list shows, for example, "2 of 7 done"), and share with the phone's share menu.
 - **Clear at a glance:** a row of topic icons shows every result's colour; tap one to see the reason in one line,
