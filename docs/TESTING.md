@@ -99,8 +99,9 @@ before pushing anything.
 ## Writing test steps
 
 - Steps that only test data functions (no screen layout) belong in `testCountryData()` in `tests/live/country.mjs`:
-  they run once (at the same time as the devices when replaying, otherwise beside the data services), and must send
-  nothing to the Environment Agency map server.
+  they run once (at the same time as the devices when replaying, otherwise after the data services, during the wait
+  before the first report: Nominatim allows one request a second), and must send nothing to the Environment Agency
+  map server.
 - Steps that check the page stay in `testDevice()` (`tests/live/devices.mjs`): a step that does not depend on the screen size uses `desktopStep`
   (runs once); a layout step uses `step` (runs on every device).
 - Wait for the page (`until`, `scrolled`), not the clock; where the app itself waits (the 8 s retry, the 8 s slow note), move

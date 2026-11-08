@@ -55,8 +55,8 @@ try {
   if (!CHECK_DATA_SERVICES) console.log(`Left out on request (DATA_SERVICES=0): ${reportServices} report data services. Run the check by hand to test them.`);
   await loadReplay();
   // With the recording, the report pages send nothing live to the Environment Agency, so the services, the country
-  // data and the three devices all run at once. Without it, the services and the country data run together, then the
-  // reports one at a time, each a minute after the last request to that server, to keep within its limit.
+  // data and the three devices all run at once. Without it, the services come first, then the country data during
+  // the wait, then the reports one at a time, each a minute after the last request to that server (its limit).
   const parallel = !!replayData;
   const services = checkServices(toCheck);
   if (!appAnswers) { await services; throw new Error(`the app does not answer at ${BASE}: start the server (see CLAUDE.md "Serve locally")`); }
@@ -70,8 +70,11 @@ try {
   const runDevice = async i => { reports[`${DEVICES[i].name}: ${places[i].join(", ")}`] = await testDevice(browser, DEVICES[i], places[i]); };
   if (parallel) await Promise.all([services, countryData(), ...devicesToTest.map(runDevice)]);
   else {
-    // The country data steps answer the Environment Agency map server themselves, so they run beside the services.
-    await Promise.all([services, countryData()]);
+    // The services come first: the country data steps also ask OpenStreetMap's Nominatim, which allows one request a
+    // second, so they do not run beside the services. They run during the wait before the first report (they answer
+    // the Environment Agency map server themselves, so they send it nothing).
+    await services;
+    await Promise.all([countryData(), devicesToTest.length ? quietForEA() : null]);
     for (const i of devicesToTest) {
       // The Environment Agency map server allows only about 15 requests a minute from
       // one address, and one report sends about 7. Pausing before each report keeps
