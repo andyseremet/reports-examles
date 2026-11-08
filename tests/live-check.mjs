@@ -36,7 +36,8 @@ const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && 
 // report pages get from outside data services to recordings.json, which the workflow publishes to the "status" branch.
 // REPLAY=<address or file> (pull requests) answers the report pages from that copy, so an outside outage cannot turn a
 // pull request red. A question that was never recorded (for example a new topic) is asked live and named in the result.
-// Only data requests (fetch/XHR) to other sites are recorded or replayed: map pictures and the app's own files stay live.
+// Only data requests (fetch/XHR) from the page to other sites are recorded or replayed: map pictures, the app's own
+// files and the map library (which sw.js downloads for offline use) stay live.
 // A test step's own stub (page.route) always comes first, so stubs are never recorded and still apply on replay.
 const RECORD = process.env.RECORD === "1";
 const REPLAY = process.env.REPLAY || "";
@@ -49,6 +50,7 @@ const recKey = req => {
 };
 const isOutsideData = req => {
   if (!["fetch", "xhr"].includes(req.resourceType())) return false;
+  if (req.serviceWorker()) return false;   // sw.js saving the map library for offline use: app files, not data
   const host = new URL(req.url()).host;
   return host !== new URL(BASE).host && host !== "raw.githubusercontent.com";
 };
