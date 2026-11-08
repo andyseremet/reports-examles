@@ -21,7 +21,8 @@ const NATIONAL = {
   "Scotland": {
     env: ["SEPA (Scottish Environment Protection Agency)", "https://www.sepa.org.uk/"],
     flood: ["SEPA flood maps", "https://map.sepa.org.uk/floodmaps"],
-    prices: ["Registers of Scotland", "https://www.ros.gov.uk/"]
+    prices: ["Registers of Scotland", "https://www.ros.gov.uk/"],
+    police: ["Police Scotland", "https://www.scotland.police.uk/"]   // also used by checkCrime
   },
   "Wales": {
     env: ["Natural Resources Wales", "https://naturalresources.wales/"],
