@@ -130,7 +130,6 @@ button:disabled {opacity:.5;cursor:not-allowed}
 .glossary dd {margin:4px 0 0;color:var(--text);max-width:70ch;line-height:1.5}
 .glossary dt:target {color:var(--teal)}
 a.term {color:inherit;text-decoration:underline dotted;text-underline-offset:3px}
-.glossary-link {margin:0 0 12px}
 
 /* ---------- search: the 3-step guide, step labels and the search box ---------- */
 .guide {list-style:none;margin:0 0 16px;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px;
@@ -238,25 +237,8 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 #diffHelp {margin-top:0}
 
 /* ---------- report ---------- */
-.toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:10px}
-.toolbar button {padding:9px 14px;font-size:14px}
-.toolbar .btn-link,.save-menu > summary {padding:9px 14px;font-size:14px;font-weight:bold;border-radius:6px;text-decoration:none;
-  background:var(--surface-2);color:var(--heading);border:1px solid var(--border);min-height:24px}
 .icon-label {display:inline-flex;align-items:center;gap:6px}
 .icon-label svg {flex:none}
-.toolbar {position:relative;z-index:1200}   /* the open menu sits above the sticky section bar (1100) */
-.save-menu {position:relative}
-.save-menu > summary {list-style:none;cursor:pointer}
-.save-menu > summary::-webkit-details-marker {display:none}
-.save-menu-list {position:absolute;right:0;top:calc(100% + 4px);z-index:1;min-width:270px;display:flex;flex-direction:column;
-  background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px}
-.save-menu-list button {display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:none;border:0;
-  color:var(--heading);font-weight:bold;padding:10px 12px;border-radius:6px;cursor:pointer}
-.save-menu-list button:hover,.save-menu-list button:focus-visible {background:var(--surface-2)}
-.save-menu-list button:disabled {opacity:.5;cursor:default}
-.save-menu-list small {font-weight:normal;color:var(--muted);font-size:13px;margin-top:2px}
-@media (max-width:600px) { .save-menu {position:static} .save-menu-list {left:0;right:0;min-width:0} }
-@media (max-width:600px) { .toolbar {justify-content:flex-start} }
 .report-nav {
   position:sticky;top:0;z-index:1100;display:flex;gap:4px;align-items:center;overflow-x:auto;white-space:nowrap;
   background:var(--surface);border-bottom:1px solid var(--border);margin:0 -22px 10px;padding:8px 22px;scrollbar-width:none;
@@ -292,8 +274,6 @@ body.hide-search #searchPanel,body.hide-saved #savedPanel {display:none}
 .progress-bar {height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin:8px 0 14px}
 .progress-bar span {display:block;height:100%;background:var(--teal);transition:width .3s}
 /* One line under the topic grid: each rating's symbol, colour and count. */
-.rating-legend {list-style:none;padding:0;margin:-6px 0 16px;display:flex;flex-wrap:wrap;gap:6px}
-.rating-legend .chip {font-size:13px;padding:3px 10px}
 .chip-symbol {margin-right:4px}
 .topic {position:relative}
 /* The tile's symbol is drawn by CSS with empty alternative text, so it is not part of the button's spoken name. */
@@ -322,21 +302,6 @@ details.step-fold > summary .more-text::before {content:"Open"}
 details.step-fold[open] > summary .more-text::before {content:"Hide"}
 details.step-fold[open] > summary .more svg {transform:rotate(180deg)}
 details.step-fold > .step-body {padding:0 14px 12px}
-.gaps-box {margin:16px 0;padding:12px 14px;border:1px solid var(--border);border-left:4px solid #6b7280;border-radius:8px;background:var(--surface-2)}
-.gaps-box h3 {margin:0 0 4px}
-.gaps-box p {margin:0;font-size:14px}
-.gaps-box > summary {cursor:pointer;list-style:none;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;
-  margin:-12px -14px;padding:12px 14px;border-radius:8px}
-.gaps-box > summary::-webkit-details-marker {display:none}
-.gaps-box > summary:hover {background:var(--hover)}
-.gaps-box > summary h3,.gaps-box > summary p {grid-column:1}
-.gaps-box > summary .more {grid-column:2;grid-row:1 / span 2}
-.gaps-box[open] > ul {margin-top:20px}
-.gaps-box ul {list-style:none;padding:0;margin:0}
-.gaps-box li {padding:8px 0;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:14px}
-.gaps-box li a {font-weight:bold}
-.gap-reason {font-size:12px;font-weight:bold;padding:2px 8px;border-radius:20px;background:var(--surface);border:1px solid var(--border);white-space:nowrap}
-.gap-ask {flex-basis:100%}
 .chip {display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:bold;white-space:nowrap}
 .chip.high {background:var(--high-bg);color:var(--high)}
 .chip.medium {background:var(--med-bg);color:var(--med)}
@@ -349,9 +314,12 @@ details.step-fold > .step-body {padding:0 14px 12px}
 /* "Data sources and dates": folded on screen, opened for print and downloads. */
 .sources-fold > summary {list-style:none;cursor:pointer}
 .sources-fold > summary::-webkit-details-marker {display:none}
-.sources-fold > summary h2 {display:flex;align-items:baseline;gap:8px;border-bottom:2px solid var(--border);padding-bottom:6px}
-.sources-fold > summary h2::before {content:"▸";font-size:14px;color:var(--muted)}
-.sources-fold[open] > summary h2::before {content:"▾"}
+.sources-fold {margin:28px 0 8px}
+.sources-fold > summary {display:inline-flex;align-items:center;gap:4px;min-height:24px;font-size:13px;color:var(--muted)}
+.sources-fold > summary:hover {color:var(--heading);text-decoration:underline}
+.sources-fold > summary::before {content:"▸";font-size:11px}
+.sources-fold[open] > summary::before {content:"▾"}
+.sources-fold[open] > .table-wrap {margin-top:10px}
 .muted-count {font-size:14px;font-weight:normal;color:var(--muted)}
 .check {border:1px solid var(--border);border-left:6px solid var(--border);border-radius:8px;margin:10px 0;background:var(--surface)}
 .check.high {border-left-color:var(--high)}
@@ -372,13 +340,13 @@ details.check > summary::-webkit-details-marker {display:none}
 details.check > summary .found {grid-column:1;font-size:14px;overflow-wrap:anywhere}
 details.check > summary:hover {background:var(--hover)}
 /* "Details" with a down arrow when closed, "Hide" with an up arrow when open. */
-details.check > summary .more,.gaps-box > summary .more,.clear-fold > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
+details.check > summary .more,.clear-fold > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
   font-size:14px;font-weight:bold;color:var(--link);white-space:nowrap}
-details.check > summary .more-text::before,.gaps-box > summary .more-text::before,.clear-fold > summary .more-text::before {content:"Details"}
-details.check[open] > summary .more-text::before,.gaps-box[open] > summary .more-text::before,.clear-fold[open] > summary .more-text::before {content:"Hide"}
-details.check > summary .more svg,.gaps-box > summary .more svg,.clear-fold > summary .more svg {transition:transform .15s}
-details.check[open] > summary .more svg,.gaps-box[open] > summary .more svg,.clear-fold[open] > summary .more svg {transform:rotate(180deg)}
-@media (prefers-reduced-motion:reduce) {details.check > summary .more svg,.gaps-box > summary .more svg {transition:none}}
+details.check > summary .more-text::before,.clear-fold > summary .more-text::before {content:"Details"}
+details.check[open] > summary .more-text::before,.clear-fold[open] > summary .more-text::before {content:"Hide"}
+details.check > summary .more svg,.clear-fold > summary .more svg {transition:transform .15s}
+details.check[open] > summary .more svg,.clear-fold[open] > summary .more svg {transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce) {details.check > summary .more svg {transition:none}}
 .check-body {padding:0 16px 14px;font-size:14px}
 .check-body p {margin:4px 0 8px}
 .check-body ul {margin:4px 0 8px;padding-left:20px}
@@ -400,7 +368,8 @@ details.move-device .saved-actions {margin-top:8px}
 .send-box p {margin:0}
 .send-box .help:empty {display:none}
 .send-box .help {margin-top:6px}
-.send-box .send-buttons {display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.send-box .send-buttons {display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.send-box .send-buttons strong {margin-right:auto}
 label.tick {display:flex;gap:10px;align-items:flex-start;font-weight:normal;font-size:14px;margin:0;padding:8px 2px;cursor:pointer}
 label.tick input {width:24px;height:24px;margin:0;flex:none}
 label.tick input:checked + span {text-decoration:line-through;color:var(--muted)}
@@ -456,6 +425,18 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
 .topic.manual,.topic.error,.topic.loading {background:var(--manual-bg);color:var(--manual)}
 .topic.loading .topic-icon {opacity:.4}
 .summary-title {font-size:17px;margin:4px 0 0}
+/* Summary heading with the share and print icons on its right (calm: no fill, a soft grey circle on hover). */
+.summary-head {display:flex;align-items:center;gap:4px}
+.summary-head .summary-title {flex:1;min-width:0}
+.icon-btn {display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;
+  background:none;color:var(--muted);cursor:pointer}
+.icon-btn:hover:not(:disabled),.icon-btn:focus-visible {background:var(--surface-2);color:var(--heading)}
+.icon-btn:disabled {opacity:.35;cursor:default}
+.share-note {font-size:13px;color:var(--muted)}
+.share-note:empty {display:none}
+/* Keep this report: two quiet buttons under the key findings. */
+.keep-row {display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.keep-row button {font-size:14px;padding:8px 14px}
 .topic-strip .topic {cursor:pointer;font:inherit;font-size:12px;font-weight:bold}
 .topic[aria-expanded="true"] {outline:3px solid currentColor;outline-offset:1px}
 .why-box {margin:-8px 0 16px;padding:10px 12px;border-radius:8px;border-left:4px solid currentColor;font-size:14px;background:var(--surface-2)}
@@ -549,7 +530,6 @@ body.has-sticky footer {padding-bottom:100px}
   .verdict strong {font-weight:700}
   .verdict-sub {color:var(--muted);margin:0 0 14px}
   .verdict-sub:empty {display:none}
-  .rating-legend .chip {font-weight:600}
   .chip {font-weight:600}
   .key-findings {background:var(--surface-2);border-radius:14px;padding:16px 20px;margin:16px 0}
   .key-findings h3 {margin:0 0 8px}
@@ -590,7 +570,7 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   a {color:#222;text-decoration:none}
   .details-start {margin-top:10mm}
   /* Long topic cards may continue on the next page (avoiding that left half-empty pages); a heading stays with its text. */
-  .checklist li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
+  .checklist li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
   details.check > summary,.check-body h4 {break-after:avoid}
   .info-row {display:none!important}
   .info-btn,[data-retry] {display:none!important}
@@ -601,7 +581,7 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   @page {size:A4}
   /* Paper shows what a reader needs: the at-a-glance table instead of the tappable grid, no app instructions. */
   .print-only {display:block!important}
-  .topic-strip,.saved-note,#info-read,.rating-legend {display:none!important}
+  .topic-strip,.saved-note,#info-read,.sources-fold > summary {display:none!important}
   .key-findings a {color:inherit;text-decoration:none}
   .glance-table {width:100%}
   .glance-table th,.glance-table td {text-align:left;vertical-align:top}
@@ -624,7 +604,6 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   .map-caption {text-align:center}
   .glance-key {color:#333;margin:3mm 0 0}
   .glance-key .chip {font-size:9.5px}
-  .gaps-box {break-inside:avoid}
   .group > h2,#nextSteps > h2,.sources-fold h2 {break-after:avoid}
   /* Key findings: the most serious results, before the table. */
   .key-findings {break-inside:avoid}
@@ -685,7 +664,6 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   .check-body .table-wrap th {color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.03em}
 
   /* Gaps box, next steps and sources in the same style. */
-  .gaps-box {border:.5px solid #d2d2d7;border-radius:12px;background:#fbfbfd;padding:4mm 5mm;margin:6mm 0}
   details.step-fold {border:.5px solid #d2d2d7;border-radius:12px;margin:6mm 0}
   details.step-fold > .step-body {padding:0 5mm 4mm}
   .checklist li {border-bottom:.5px solid #e5e5ea}
@@ -694,7 +672,7 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   #sourcesBox th {background:#f5f5f7;color:#6e6e73;text-transform:uppercase;font-size:8.5px;letter-spacing:.04em}
   #sourcesBox tr:last-child td {border-bottom:0}
   /* One text size inside cards and panels, smaller than the card heading. */
-  details.check > summary .found,.check-body p,.check-body li,.check-body td,.check-body .info-body,.gaps-box p,.gaps-box li,
+  details.check > summary .found,.check-body p,.check-body li,.check-body td,.check-body .info-body,
   .step-body p,.step-body li,.key-findings li {font-size:10.5px;line-height:1.5}
   .check-body .info-body p {font-size:10px}
   /* A section heading and its intro stay with the first card. */
@@ -726,7 +704,6 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   .fold-body {padding:0!important}
 
   .key-findings {padding:5mm 6mm}
-  .gaps-box {border-left:3px solid #8e8e93}
   details.step-fold {border-left:3px solid #1769aa}
   .live-link {font-size:9px;color:#6e6e73;overflow-wrap:anywhere;margin-top:8mm}
   .glossary dt {color:#1d1d1f !important;font-size:12pt;margin-top:12pt;break-after:avoid}
@@ -743,6 +720,6 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   span.print-only {display:inline!important}   /* a word shown only on paper stays in its sentence */
   body.print-summary .map-caption {margin-bottom:3mm}
   /* The short printout is the cover, key findings and the topic table only: the table already marks every gap. */
-  body.print-summary .gaps-box,body.print-summary #summaryBox > .notice {display:none!important}
+  body.print-summary #summaryBox > .notice {display:none!important}
   .glance h3 {break-after:avoid}
 }

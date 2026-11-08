@@ -46,7 +46,6 @@ function runChecks(options = {}) {
 
   renderSkeleton(loc);
   setExportEnabled(false);
-  $("toolbar").classList.remove("hidden");
   $("reportNav").classList.remove("hidden");
   $("comparePanel").classList.add("hidden");
   showPlaceBar(loc);
@@ -131,7 +130,6 @@ function showSearchView() {
   featureLayer.clearLayers();
   $("report").innerHTML = REPORT_PLACEHOLDER;
   hidePlaceBar();
-  $("toolbar").classList.add("hidden");
   $("reportNav").classList.add("hidden");
   $("runBtn").disabled = false;
   shownSearch = location.search;
@@ -312,13 +310,12 @@ function showSnapshot(snap, options = {}) {
     const res = run.results[c.id];
     if (!slot) return;
     // Topics added to the app after this property was saved.
-    const shown = res || topicResult(c, { status: "manual", gap: "saved",
+    const shown = res || topicResult(c, { status: "manual",
       found: "Not included in these saved results. Press “Refresh” to check it with the latest data." });
     if (!res) run.results[c.id] = shown;
     showCheck(c, shown);
   });
   replotFeatures();
-  $("toolbar").classList.remove("hidden");
   $("reportNav").classList.remove("hidden");
   showPlaceBar(loc);
   finishRun();
@@ -383,10 +380,9 @@ function renderSources() {
       <td>${c.source.url ? link(c.source.url, c.source.name) : escapeHTML(c.source.name)}</td>
       <td>${escapeHTML(c.dataDate || "Checked live on " + today())}</td></tr>`).join("");
   $("sourcesBox").innerHTML = `
-    <p class="glossary-link">Not sure what a word means? ${link(GLOSSARY_PAGE, "What the words mean")} explains flood zones,
-      radon, conservation areas and the other words in this report.</p>
-    <details class="group sources-fold" id="sources">
-      <summary><h2>Data sources and dates <span class="muted-count">(${plural(orderedResults().filter(c => c.source && c.source.name).length, "topic")})</span></h2></summary>
+    <details class="sources-fold" id="sources">
+      <summary>Data sources and dates</summary>
+      <h2 class="print-only">Data sources and dates</h2>
       <div class="table-wrap"><table><thead><tr><th>Topic</th><th>Source</th><th>Data date</th></tr></thead><tbody>${rows}</tbody></table></div>
     </details>`;
   prepareTables($("sourcesBox"), "Data sources");
@@ -594,7 +590,12 @@ function renderSkeleton(loc) {
       <div id="coverDetails"></div>
       <div id="reportMap" aria-label="Map of the property and nearby features"></div>
       <p class="map-caption print-only" id="mapCaption"></p>
-      <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
+      <div class="summary-head">
+        <h2 class="summary-title">Summary${infoButton("info-read", "How to read this report")}</h2>
+        <span class="share-note no-print" id="shareNote" role="status"></span>
+        <button class="icon-btn no-print" id="shareBtn" type="button" title="Share" aria-label="Share this report">${icon("share", 20)}</button>
+        <button class="icon-btn no-print" id="printSummary" type="button" title="Print summary" aria-label="Print summary" disabled>${icon("printer", 20)}</button>
+      </div>
       ${infoBox("info-read", `
         <ul class="legend-list">
           <li>${chip("high")} Something that could affect value, insurance, health or safety. Investigate before you commit.</li>
@@ -608,6 +609,10 @@ function renderSkeleton(loc) {
           is no risk. Results are for the pin location. Tap a heading to open or close a topic. Words with a dotted line link to
           their meaning.</p>`)}
       <div id="summaryBox" aria-live="polite"></div>
+      <div class="keep-row no-print">
+        <button class="secondary icon-label" id="downloadHtml" type="button" disabled>${icon("download")}Download report</button>
+        <button class="secondary icon-label" id="printReport" type="button" disabled>${icon("printer")}Print full report</button>
+      </div>
       <p class="print-only print-contents"><strong>Contents:</strong> Summary · ${GROUPS.map(g => escapeHTML(g.title)).join(" · ")}
         · Next steps · Data sources and dates · Notes</p>
     </div>
@@ -693,16 +698,14 @@ function isOld(savedAt) {
 function renderSummary() {
   const results = orderedResults();
   const n = s => results.filter(c => c.status === s).length;
-  // One line under the topic grid: each rating's symbol, colour and count (ratings with no topics are left out).
-  const legend = ["high", "medium", "low", "info", "manual", "error"].filter(s => n(s))
-    .map(s => `<li>${chip(s, `${n(s)} ${STATUS_LABEL[s].toLowerCase()}`)}</li>`).join("");
   const ready = results.length;
   const p = okValue(run.R, "place");
   const outsideEngland = p && p.country && p.country !== "England";
   const priority = results.filter(c => ["high", "medium"].includes(c.status))
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
-  const gaps = n("manual") + n("error");
-  const notCoveredText = gaps ? ` <strong>${plural(gaps, "topic")}</strong> could not be checked here (see “Where we could not give an answer”).` : "";
+  // Missing data is never good news: the second line always says how many topics could not be checked.
+  const unchecked = n("manual") + n("error");
+  const notChecked = unchecked ? `${plural(unchecked, "topic")} could not be checked here.` : "";
 
   let verdict;
   if (!run.done) {
@@ -714,10 +717,10 @@ function renderSummary() {
     const found = [n("high") && `<strong>${plural(n("high"), "thing")} to look into</strong>`,
       n("medium") && `<strong>${n("medium")} worth checking</strong>`].filter(Boolean).join(" and ");
     verdict = `<p class="verdict">We found ${found}.</p>
-      <p class="verdict-sub">${plural(n("low"), "check")} found no issue.${notCoveredText}</p>`;
+      <p class="verdict-sub">${plural(n("low"), "check")} found no issue. ${notChecked}</p>`;
   } else {
     verdict = `<p class="verdict"><strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran.</p>
-      <p class="verdict-sub">${notCoveredText.trim()} Still go through the checklist at the end.</p>`;
+      ${notChecked ? `<p class="verdict-sub">${notChecked}</p>` : ""}`;
   }
 
   const old = run.snapshot && isOld(run.snapshot.savedAt);
@@ -741,13 +744,11 @@ function renderSummary() {
 <span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
       }).join("")}
     </ul>
-    ${legend ? `<ul class="rating-legend" aria-label="Topics by rating">${legend}</ul>` : ""}
     ${run.done && priority.length ? `<div class="key-findings"><h3>Key findings</h3><ol>${priority.slice(0, 3).map(c =>
       `<li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}"><strong>${escapeHTML(c.title)}</strong></a>: ${escapeHTML(c.found)}</li>`).join("")}</ol>${priority.length > 3
       ? `<p>And ${plural(priority.length - 3, "more topic")} to look into or check: see the <span class="print-only">table</span><span class="no-print">sections</span> below.</p>` : ""}</div>` : ""}
     ${glanceTable(results)}
     ${whyBox()}
-    ${dataGapsBox(results)}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
       ${p.country === "Wales"
         ? "Topics use Welsh data where England's stops at the border. Where Wales publishes nothing (for example old landfill sites), the topic says “Check yourself”."
@@ -775,50 +776,6 @@ function glanceTable(results) {
       order a search. ✓ No issue found in the data checked. ℹ️ For information. ? Check yourself: no data here.</p>
     <p class="glance-note">A free first look using public data. It does not replace a building survey or your conveyancer's
       searches. “No issue found” means nothing was found in the data we checked, not that there is no risk.</p></div>`;
-}
-
-// Topics with no real answer: why, and who to ask instead. Hidden when every topic has an answer.
-const GAP_REASON = {
-  coverage: "Not covered here",
-  nodata: "No data found",
-  down: "Service not answering",
-  saved: "Not in saved results"
-};
-
-function gapKind(c) {
-  if (c.status === "error" || c.fromSaved) return "down";
-  return c.status === "manual" ? (c.gap || "nodata") : null;
-}
-
-const GAPS_OPEN_MAX = 3;
-function dataGapsBox(results) {
-  const gaps = results.filter(gapKind);
-  if (!gaps.length) return "";
-  const askInstead = c => {
-    if (gapKind(c) === "down") {
-      // On paper the button is left out, so the sentence must still read well without it.
-      return `<span class="no-print"><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button>${c.source && c.source.url ? ", or " : ". "}</span>` +
-        (c.source && c.source.url ? `use ${link(c.source.url, c.source.name)}. ` : "") +
-        `Is it down for everyone? See ${link(new URL("status.html", location.href).href, "data service status")}.`;
-    }
-    if (gapKind(c) === "saved") return "Press “Refresh” above.";
-    if (c.actions && c.actions.length) return c.actions[0];
-    return c.source && c.source.url ? `See ${link(c.source.url, c.source.name)}.` : "Ask your conveyancer to include this in their searches.";
-  };
-  // Folds away with "Details / Hide" like a topic card. It starts open for up to GAPS_OPEN_MAX topics; after the
-  // person opens or closes it, their choice is kept while the rest of the report loads.
-  const open = run.gapsOpen ?? gaps.length <= GAPS_OPEN_MAX;
-  return `<details class="gaps-box" id="gapsBox"${open ? " open" : ""}>
-    <summary>
-      <h3 id="gapsTitle">Where we could not give an answer</h3>
-      <p>${plural(gaps.length, "topic")} could not be checked here. Missing data does not mean there is no problem, so check ${gaps.length === 1 ? "it" : "them"} another way.</p>
-      ${moreToggle()}
-    </summary>
-    <ul>${gaps.map(c => `<li><span class="gap-reason">${GAP_REASON[gapKind(c)]}</span>
-      <a href="#check-${c.id}" data-open="check-${c.id}">${escapeHTML(c.title)}</a>
-      <span>${escapeHTML(c.found)}</span>
-      <span class="gap-ask"><strong>Instead:</strong> ${askInstead(c)}</span></li>`).join("")}</ul>
-  </details>`;
 }
 
 // The one-line reason for the topic tapped in the strip above.
@@ -893,11 +850,8 @@ function buildChecklist(checks) {
   const list = items => `<ul>${items.map(i =>
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(plainText(i))}"><span>${i}</span></label></li>`).join("")}</ul>`;
   return stepFold("checklist", "Your checklist", "", `
-      <p class="help">Everything to follow up, gathered from the checks above: questions for the seller, searches for your conveyancer
-        and things to check yourself.<span class="no-print"> Tick items as you go: your ticks are remembered on this device for this property.</span></p>
       <div class="send-box no-print">
-        <p><strong>Send to my conveyancer:</strong> an email, or text to copy, with the link to this report, the topics to look into and the questions below.</p>
-        <div class="send-buttons">
+        <div class="send-buttons"><strong>Send to my conveyancer</strong>
           <button class="primary icon-label" id="emailConveyancer" type="button" aria-label="Email to my conveyancer">${icon("mail")}Email</button>
           <button class="secondary icon-label" id="copyConveyancer" type="button" aria-label="Copy as text">${icon("copy")}Copy</button>
         </div>
@@ -920,8 +874,6 @@ function buildViewing(checks) {
     `<li><label class="tick"><input type="checkbox" data-tick="${escapeHTML(i)}"><span>${escapeHTML(i)}</span></label></li>`).join("")}</ul>`;
   return stepFold("viewing", "At the viewing", "", `
       <p class="viewing-sheet print-only"><strong>Take this page to the viewing.</strong> Tick each item as you go.</p>
-      <p class="help">A short list for the day you see the property, built from this report: the topics to look into come first.<span class="no-print">
-        Your ticks are remembered on this device for this property, and saved properties open without a signal.</span></p>
       ${tickHeading("Look for", look.length)}${list(look)}
       ${tickHeading("Ask on the day", ask.length)}${list(ask)}`, "checklist viewing");
 }
@@ -1072,11 +1024,6 @@ $("toggleAll").addEventListener("click", () => {
   else problemTopics().forEach(d => { d.open = true; });
   updateToggleAll();
 });
-// Remember whether the person opened or closed the gaps box, so the next redraw keeps it that way.
-document.addEventListener("click", e => {
-  const sum = e.target.closest && e.target.closest("#gapsBox > summary");
-  if (sum && run) run.gapsOpen = !sum.parentElement.open;
-});
 document.addEventListener("toggle", e => { if (e.target.matches && e.target.matches("#report details.check, #report details.clear-fold")) updateToggleAll(); }, true);
 
 // Fade the edge of the section links where more of them are hidden to the side.
@@ -1092,7 +1039,7 @@ window.addEventListener("resize", updateNavFade);
 // section without adding steps to the browser history, and open the topic they point to.
 document.addEventListener("click", e => {
   const a = e.target.closest('a[href^="#"]');
-  if (!a || !a.closest("#report, #reportNav, #toolbar, #tabBar")) return;
+  if (!a || !a.closest("#report, #reportNav, #tabBar")) return;
   const target = document.getElementById(a.getAttribute("href").slice(1));
   if (!target) return;
   e.preventDefault();

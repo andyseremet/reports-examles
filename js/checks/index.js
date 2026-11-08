@@ -157,7 +157,7 @@ function notCovered(c, country, place) {
     ? [`Ask ${escapeHTML(council)}'s planning service about restrictions and protected sites.`]
     : service ? [`Check this on ${link(service[1], service[0])}.`] : [];
   return topicResult(c, {
-    status: "manual", gap: "coverage",
+    status: "manual",
     found: `Not covered in ${country}: the data we use covers ${covered} only.`,
     meaning: `<p>This check uses official data that only covers ${covered}, so we cannot give a result for a property in ${escapeHTML(country)}.
       Use the national service instead.</p>`,

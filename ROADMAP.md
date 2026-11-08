@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.0.3** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.0.4** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.0.3)
+## Part 1: What the app does today (version 2.0.4)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -78,10 +78,11 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   phone. A phone report with topics closed went from 12 to about 8 screens.
 - **Phone tab bar** (1.31.0): Summary · Problems (N) · All topics · Next steps at the bottom of the screen on phones.
   Problems opens the topics to look into and goes to the first.
-- An overall verdict, the topic grid with one legend line of rating counts (1.29.0, replacing the count boxes), the "Key findings" panel, and a box for every topic with no real answer and who to ask
-  instead, which folds away with **Details / Hide** and starts closed when it lists more than 3 topics (1.25.0).
+- An overall verdict with a short second line (how many checks found no issue and how many topics could not be
+  checked), the topic grid and the "Key findings" panel. Since 2.0.4 (owner, 8 November 2026) the rating count chips
+  and the "Where we could not give an answer" box are gone: each topic still says what it could not check.
 - **Next steps** (1.30.0): notes, the viewing checklist and the checklist, each folded with its count ("0 of 11 done").
-- **At the viewing:** up to 12 things to look for and ask on the day, reached with the **Viewing** button.
+- **At the viewing:** up to 12 things to look for and ask on the day, in Next steps (the **Viewing** button went in 2.0.4).
 - A checklist for the seller and conveyancer; ticks are remembered for each property, and each list shows, for
   example, "2 of 7 done" (1.24.0).
 - **Email** or **Copy** the key points for your conveyancer. Nothing passes through the app.
@@ -122,7 +123,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Share, print and export
 - **Share** links and the phone's share menu.
-- **Save** menu: download the report, print a summary, or print the full report (or save as PDF).
+- Since 2.0.4: share and printer icons on the Summary heading's line (the printer gives the 2-page summary), and
+  **Download report** and **Print full report** under the summary. The top bar and its menu notes are gone; the end
+  of the report is quieter (sources as a small link, short checklist intros, a slim Send to my conveyancer row).
 - Printout extras (1.36.0): a one-line contents under the summary, a lined notes page at the end, and a 2-page short
   printout (the cover, key findings and the topic table; the checklists stay in the full report). Since 1.36.2 it
   keeps room to spare (a smaller map, tighter table rows), after a Lewes report ran onto a third page.

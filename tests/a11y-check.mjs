@@ -2,7 +2,7 @@
 //   npm install --no-save axe-core   (Playwright as for the full test; see CLAUDE.md)
 //   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 3 minutes)
 // Scans WCAG 2.2 AA with axe-core on the start page, a full report, status.html and glossary.html, in 4 combinations that
-// cover every width (1280 px, 320 px, phone), both colour schemes and both text sizes, plus the riskiest pairs. In the report it also scans after using controls (Open problems, the no-issue fold, the gaps box, a Key findings link,
+// cover every width (1280 px, 320 px, phone), both colour schemes and both text sizes, plus the riskiest pairs. In the report it also scans after using controls (Open problems, the no-issue fold, a Key findings link,
 // a tick, Move to another device, Compare three, Remove), and checks for sideways scrolling before and after each.
 // Environment Agency map requests are answered empty so the report finishes fast. Exit code 1 on any problem.
 import { chromium, devices } from "playwright";
@@ -22,7 +22,6 @@ const ACTIONS = [
   // With no problem topics (for example while a data service is down), "Open problems" is greyed out: skip that press.
   ["Close all, then Open problems", async p => { for (let i = 0; i < 2; i++) if (await p.isEnabled("#toggleAll")) await p.click("#toggleAll"); }],
   ["no-issue fold opened", async p => { const f = p.locator(".clear-fold:not([hidden]) > summary").first(); if (await f.count()) await f.click(); }],
-  ["gaps box toggled", async p => { if (await p.locator("#gapsBox > summary").count()) await p.click("#gapsBox > summary"); }],
   ["sources open", p => p.evaluate(() => { const d = document.getElementById("sources"); if (d) d.open = true; })],
   ["Key findings link", async p => { const a = p.locator(".key-findings a[data-open]").first(); if (await a.count()) await a.click(); }],
   ["More in a topic", async p => { const b = p.locator("details.check[open] .more-btn").first(); if (await b.count()) await b.click(); }],

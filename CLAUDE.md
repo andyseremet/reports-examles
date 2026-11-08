@@ -95,7 +95,9 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
 
 ## Interface habits
 
-- Buttons show an icon and a word; never an icon alone (a first-time user may not know the icon).
+- Buttons show an icon and a word; never an icon alone (a first-time user may not know the icon). One exception
+  (owner, 8 November 2026): the share and printer icons beside the Summary heading stand alone, with a tooltip and a
+  spoken name (`aria-label`).
 - Undo, not "Are you sure?": an action that deletes something offers Undo for about 10 seconds.
 - Short messages ("Saved ✓", "Copied", "Removed …") sit in a `role="status"` or `aria-live="polite"` element.
 - A control's spoken name (`aria-label`) starts with its visible words (WCAG 2.5.3, voice control).

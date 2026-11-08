@@ -351,7 +351,7 @@ async function testCountryData() {
         run = { previous: { savedAt: "2026-11-03T10:00:00Z", results: [{ id: "flood", status: "medium", found: "Flood zone 2." }] } };
         let saved;
         try { saved = savedInstead({ id: "flood" }, { status: "error" }); } finally { run = keep; }
-        return { saved: [saved.status, saved.fromSaved, gapKind(saved)], floodSource: flood.source.name,
+        return { saved: [saved.status, saved.fromSaved], floodSource: flood.source.name,
           planning: [planning.status, planning.found, planning.details.includes("Historic England")],
           nature: nature.status, flood: flood.status, air: air.status, airFound: air.found,
           listed: (R.planningNearby.backup?.entities || []).filter(e => e.dataset === "listed-building").length,
@@ -369,7 +369,7 @@ async function testCountryData() {
       if (r.flood !== "high" || !/Environment Agency/.test(r.floodSource)) throw new Error(`flooding from the backup: ${r.flood} (${r.floodSource})`);
       // Air quality: the Open-Meteo estimate is the main source; without the council hotspot list it is "For information".
       if (r.air !== "info" || !/hotspots could not be checked/.test(r.airFound)) throw new Error(`with the hotspot list down, air quality is ${r.air}: ${r.airFound}`);
-      if (r.saved.join() !== "medium,2026-11-03T10:00:00Z,down") throw new Error(`the saved answer came back as ${r.saved.join(", ")}`);
+      if (r.saved.join() !== "medium,2026-11-03T10:00:00Z") throw new Error(`the saved answer came back as ${r.saved.join(", ")}`);
       return `${r.planning[1]} ${r.listed} listed buildings nearby`;
     });
 
@@ -758,17 +758,17 @@ async function testDevice(device, [postcode, place]) {
     return icons >= 13 && active === "Living" ? `${icons} icons, section bar ok` : false;
   });
 
-  await step("Finding your way: legend, folded no-issue topics, Open problems and Details", async () => {
+  await step("Finding your way: topic grid, folded no-issue topics, Open problems and Details", async () => {
     const r0 = await page.evaluate(() => {
       const results = orderedResults();
-      const legend = [...document.querySelectorAll(".rating-legend .chip")].reduce((n, c) => n + parseInt(c.textContent.replace(/\D+/g, " ").trim(), 10), 0);
+      const grid = document.querySelectorAll(".topic-strip [data-why]").length;
       const low = results.filter(c => c.status === "low").map(c => c.id).sort();
       const folded = [...document.querySelectorAll(".clear-fold .fold-body .slot")].map(el => el.id.slice(5)).sort();
       const symbols = [...document.querySelectorAll("#report .chip:is(.high,.medium,.low,.info,.manual,.error)")].filter(c => !c.querySelector(".chip-symbol")).length;
-      return { total: results.length, legend, low, folded, symbols, countBoxes: document.querySelectorAll("a.count").length };
+      return { total: results.length, grid, low, folded, symbols, countBoxes: document.querySelectorAll("a.count").length };
     });
-    // The legend counts every topic once; the count boxes are gone; every chip has its symbol.
-    if (r0.legend !== r0.total) throw new Error(`legend counts ${r0.legend} topics, expected ${r0.total}`);
+    // The topic grid shows every topic once; the count boxes are gone; every chip has its symbol.
+    if (r0.grid !== r0.total) throw new Error(`the topic grid shows ${r0.grid} topics, expected ${r0.total}`);
     if (r0.countBoxes) throw new Error("the old count boxes are still shown");
     if (r0.symbols) throw new Error(`${r0.symbols} rating chip(s) without a symbol`);
     // Every "No issue found" topic, and only those, sits in its section's folded row.
@@ -886,37 +886,6 @@ async function testDevice(device, [postcode, place]) {
     return `${labels.join(" · ")}; Problems went to ${p.id.replace("check-", "")}`;
   });
 
-  await step("Data gaps box lists every topic without an answer", async () => {
-    // Every "Check yourself" or "Not available" topic must appear in the box, with a way to check it
-    // instead, and not in "Key findings"; with no such topics, the box is hidden.
-    const r = await page.evaluate(() => {
-      const want = orderedResults().filter(c => ["manual", "error"].includes(c.status)).map(c => c.id).sort();
-      const rows = [...document.querySelectorAll(".gaps-box li")];
-      const inBox = rows.map(li => li.querySelector("[data-open]").dataset.open.replace("check-", "")).sort();
-      const noWay = rows.filter(li => li.querySelector(".gap-ask").textContent.replace("Instead:", "").trim().length < 10).length;
-      const inStart = document.querySelectorAll(".key-findings li .chip.manual, .key-findings li .chip.error").length;
-      return { want, inBox, noWay, inStart, box: !!document.querySelector(".gaps-box") };
-    });
-    if (r.want.join() !== r.inBox.join()) throw new Error(`box lists [${r.inBox}] but expected [${r.want}]`);
-    if (r.noWay) throw new Error(`${r.noWay} row(s) do not say how to check instead`);
-    if (r.inStart) throw new Error(`${r.inStart} gap topic(s) in "Key findings"`);
-    if (!r.want.length && r.box) throw new Error("box shown with no gaps");
-    if (r.want.length) {
-      // The box folds away with Details / Hide: open for up to 3 topics, closed for more, and the
-      // person's choice stays when the report is drawn again.
-      const fold = async () => page.$eval("#gapsBox", d => ({ open: d.open, word: getComputedStyle(d.querySelector("summary .more-text"), "::before").content }));
-      const first = await fold();
-      if (first.open !== (r.want.length <= 3)) throw new Error(`with ${r.want.length} gap(s) the box should start ${r.want.length <= 3 ? "open" : "closed"}`);
-      if (first.word !== (first.open ? '"Hide"' : '"Details"')) throw new Error(`the box shows ${first.word} when ${first.open ? "open" : "closed"}`);
-      await page.click("#gapsBox > summary");
-      await page.evaluate(() => renderSummary());
-      const after = await fold();
-      if (after.open === first.open) throw new Error("Details / Hide did not change the box, or the choice was lost on redraw");
-      await page.click("#gapsBox > summary");
-    }
-    return r.want.length ? `${r.want.length} gap(s): ${r.want.join(", ")}` : "no gaps, box hidden";
-  });
-
   await desktopStep("Tapping a topic shows why", async () => {
     await page.click('.topic-strip [data-why="radon"]');
     const text = await page.$eval("#whyBox", x => x.hidden ? "" : x.textContent.replace(/\s+/g, " ").trim());
@@ -995,11 +964,11 @@ async function testDevice(device, [postcode, place]) {
     return `${r.rows} services listed; ${r.verdict.trim()}`;
   });
 
-  await desktopStep("What the words mean: every linked word has its meaning, linked from the report and footer", async () => {
+  await desktopStep("What the words mean: every linked word has its meaning, linked from the report's words and the footer", async () => {
     const ids = await page.evaluate(() => [...new Set(Object.values(GLOSSARY))]);
     const links = await page.evaluate(() => ({
       footer: !!document.querySelector('footer a[href="glossary.html"]'),
-      report: !!document.querySelector('#sourcesBox a[href$="glossary.html"]'),
+      report: !!document.querySelector('#report a.term[href*="glossary.html#"]'),
       term: term("radon", "x").includes("glossary.html#radon")
     }));
     const g = await page.context().newPage();
@@ -1062,7 +1031,7 @@ async function testDevice(device, [postcode, place]) {
   });
 
   await step("Viewing checklist: short, serious topics first, ticks remembered", async () => {
-    await page.click("#viewingBtn");
+    await page.click("#viewing > summary");
     await scrolled();
     const r = await page.evaluate(() => {
       const items = [...document.querySelectorAll("#viewing input[data-tick]")].map(b => b.dataset.tick);
@@ -1070,9 +1039,9 @@ async function testDevice(device, [postcode, place]) {
         .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
       const firstLook = flagged.map(c => (VIEWING_LOOK[c.id] || [])[0]).find(Boolean);
       const box = document.getElementById("viewing").getBoundingClientRect();
-      return { items, firstLook, onScreen: box.top < innerHeight && box.bottom > 0 };
+      return { items, firstLook, onScreen: document.getElementById("viewing").open && box.top < innerHeight && box.bottom > 0 };
     });
-    if (!r.onScreen) throw new Error("the Viewing checklist button did not go to the list");
+    if (!r.onScreen) throw new Error("At the viewing did not open in view");
     if (r.items.length < 5 || r.items.length > 12) throw new Error(`${r.items.length} items (expected 5 to 12)`);
     if (r.firstLook && r.items[0] !== r.firstLook) throw new Error(`first item is "${r.items[0]}", not the most serious topic's`);
     const first = page.locator("#viewing input[data-tick]").first();
@@ -1095,7 +1064,7 @@ async function testDevice(device, [postcode, place]) {
 
   await desktopStep("Back returns to the search, Forward reopens the report", async () => {
     await page.goBack();
-    const backOk = await until(() => location.search === "" && document.getElementById("toolbar").classList.contains("hidden"));
+    const backOk = await until(() => location.search === "" && document.getElementById("reportNav").classList.contains("hidden"));
     await page.goForward();
     await reportDone(page);
     return backOk ? "ok" : false;
@@ -1135,7 +1104,7 @@ async function testDevice(device, [postcode, place]) {
         keyShown: shown(".key-findings"), qr: shown(".cover-qr svg"),
         table: shown(".glance-table"), footer: (document.getElementById("printFooter") || {}).textContent || "",
         grid: shown(".topic-strip"), howTo: shown("#info-read"), saved: shown(".saved-note"), more: shown(".info-row"),
-        tryAgain: shown(".gaps-box [data-retry]"), checklists: shown(".next-steps"), notesPage: shown(".notes-page") };
+        icons: shown(".summary-head .icon-btn"), keep: shown(".keep-row"), checklists: shown(".next-steps"), notesPage: shown(".notes-page") };
     });
     if (!paper.table || paper.rows !== paper.topics) throw new Error(`the at-a-glance table shows ${paper.rows} of ${paper.topics} topics (visible: ${paper.table})`);
     if (paper.map[0] < 300 || Math.abs(paper.map[0] / paper.map[1] - 4 / 3) > 0.03 || !paper.caption) throw new Error(`printed map ${paper.map.join("×")} px, caption shown: ${paper.caption} (expected 4:3 with "Figure 1." caption)`);
@@ -1143,7 +1112,7 @@ async function testDevice(device, [postcode, place]) {
     const wantKey = Math.min(3, paper.problems);
     if (paper.keyFindings !== wantKey || (wantKey && !paper.keyShown)) throw new Error(`Key findings lists ${paper.keyFindings}, expected ${wantKey} (shown: ${paper.keyShown})`);
     if (!/counter\(page\)/.test(paper.footer) || !/counter\(pages\)/.test(paper.footer)) throw new Error("no page numbers in the printed footer");
-    const onPaper = Object.entries({ grid: paper.grid, "how to read": paper.howTo, "saved note": paper.saved, "More button": paper.more, "Try again": paper.tryAgain }).filter(([, v]) => v).map(([k]) => k);
+    const onPaper = Object.entries({ grid: paper.grid, "how to read": paper.howTo, "saved note": paper.saved, "More button": paper.more, "share and print icons": paper.icons, "Keep this report buttons": paper.keep }).filter(([, v]) => v).map(([k]) => k);
     if (onPaper.length) throw new Error("printed but should not be: " + onPaper.join(", "));
     // The short printout is 2 pages: the cover, key findings and the topic table; checklists and the notes page are left out.
     if (paper.checklists || paper.notesPage) throw new Error("the short printout includes the checklists or the notes page");
@@ -1161,10 +1130,17 @@ async function testDevice(device, [postcode, place]) {
       await page.emulateMedia({ media: "screen" });
       await page.evaluate(() => { document.body.classList.remove("print-summary"); dispatchEvent(new Event("afterprint")); });
     }
-    // Open the "Save or print" menu, as a person would, then choose Download report.
-    await page.click("#saveMenuBtn");
+    // Share and Print sit on the Summary heading's line as icons with spoken names; Download and Print full report
+    // sit under the summary.
+    const head = await page.evaluate(() => {
+      const h = document.querySelector(".summary-title").getBoundingClientRect(), mid = r => r.top + r.height / 2;
+      return ["shareBtn", "printSummary"].map(id => { const b = document.getElementById(id), r = b.getBoundingClientRect();
+        return { id, label: b.getAttribute("aria-label") || "", inLine: r.width > 0 && Math.abs(mid(r) - mid(h)) < h.height, enabled: !b.disabled }; });
+    });
+    const off = head.filter(b => !b.inLine || !b.label || !b.enabled).map(b => b.id);
+    if (off.length) throw new Error(`not usable on the Summary line: ${off.join(", ")}`);
+    if (!(await page.isVisible(".keep-row #downloadHtml")) || !(await page.isVisible(".keep-row #printReport"))) throw new Error("Download report and Print full report are not under the summary");
     const [download] = await Promise.all([page.waitForEvent("download"), page.click("#downloadHtml")]);
-    if (await page.$eval("#saveMenu", d => d.open)) throw new Error("the Save or print menu stayed open after choosing");
     await download.saveAs(`${OUT}/${device.name.replace(/\W+/g, "-")}-report.html`);
     return download.suggestedFilename();
   });

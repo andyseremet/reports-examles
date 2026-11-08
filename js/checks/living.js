@@ -30,7 +30,7 @@ function checkAmenities(R) {
     ? `<p><strong>Not available right now:</strong> ${escapeHTML(g.missing.join(", "))}. Press “Refresh” later.</p>` : "";
   if (noneCovered) {
     return {
-      ...base, status: "manual", gap: "coverage",
+      ...base, status: "manual",
       found: `Not covered in ${country}: the registers we use for schools, GP surgeries, pharmacies and stations do not include it.`,
       meaning: "<p>Use the national services below to find schools, GP practices and public transport near the property.</p>",
       actions: [...nationalLinks, "Check school admission areas with the education authority before relying on a nearby school."]
@@ -312,7 +312,7 @@ function checkCrimeScotland(R) {
   const z = R.simdCrime.value;
   if (!z) {
     return {
-      ...base, status: "manual", gap: "nodata",
+      ...base, status: "manual",
       found: "No crime figures were found for this spot. Police Scotland does not publish street-level crime data.",
       meaning: "<p>Check recorded crime for the council area instead.</p>",
       actions: [`See recorded crime by council area in the ${link(LINKS.scotCrime, "Scottish Government's recorded crime statistics")}.`]
