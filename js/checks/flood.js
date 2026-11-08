@@ -101,7 +101,7 @@ function floodWales(base, f) {
 
 // Flooding from heavy rain: England (Environment Agency), Scotland (SEPA), Wales (NRW).
 // Past floods (2.1.0, owner, 8 November 2026): inside an area recorded as flooded "Look into this", one within 250 m
-// "Worth checking", none "No issue found". England and Wales only: the topic is hidden elsewhere (ONLY_IN).
+// "Worth checking", none "No issue found". England and Wales only: the topic is left out elsewhere (COVERAGE, js/coverage.js).
 function checkPastFloods(R) {
   const country = okValue(R, "place")?.country || null;
   const wales = country === "Wales";

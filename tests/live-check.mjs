@@ -1061,9 +1061,10 @@ async function testDevice(device, [postcode, place]) {
     } finally { await failPage.close(); }
   });
 
-  await desktopStep("A topic published only in some countries is left out elsewhere (past floods in Scotland)", async () => {
-    // postcodes.io answers "Scotland"; every other outside service answers at once with no data. Past floods are
-    // published only for England and Wales, so the finished report has no such topic, tile or card.
+  await desktopStep("Topics not covered in a country are left out and named in the country note (Scotland)", async () => {
+    // postcodes.io answers "Scotland"; every other outside service answers at once with no data. Past floods and sale
+    // prices cover only England and Wales (COVERAGE), so the finished report has no such topic, tile or card, and the
+    // country note names them with a link to the national service.
     const scotPage = await page.context().newPage();
     await scotPage.route(u => !u.href.startsWith(BASE), r => r.request().url().startsWith("https://api.postcodes.io/postcodes?")
       ? r.fulfill({ json: { status: 200, result: [{ postcode: "EH1 1YZ", country: "Scotland", admin_district: "City of Edinburgh", latitude: 55.9533, longitude: -3.1883 }] } }).catch(() => {})
@@ -1072,11 +1073,13 @@ async function testDevice(device, [postcode, place]) {
       await scotPage.goto(new URL("?lat=55.9533&lon=-3.1883&name=Scotland%20test", BASE).href);
       if (!(await scotPage.waitForFunction(() => typeof run !== "undefined" && run && run.done, null, { timeout: 60000 }).then(() => true, () => false))) throw new Error("the report did not finish");
       const r = await scotPage.evaluate(() => ({ country: okValue(run.R, "place")?.country, all: CHECKS.length, results: orderedResults().length,
-        tiles: document.querySelectorAll(".topic-strip [data-why]").length, tile: !!document.querySelector('[data-why="pastfloods"]'),
-        card: !!document.getElementById("slot-pastfloods") }));
+        tiles: document.querySelectorAll(".topic-strip [data-why]").length,
+        left: ["pastfloods", "soldprices"].filter(id => document.querySelector(`[data-why="${id}"]`) || document.getElementById("slot-" + id) || run.results[id]),
+        note: (document.querySelector("#summaryBox .notice") || {}).textContent || "", links: document.querySelectorAll("#summaryBox .notice a").length }));
       if (r.country !== "Scotland") throw new Error(`the place is in ${r.country}`);
-      if (r.tile || r.card || r.results !== r.all - 1 || r.tiles !== r.all - 1) throw new Error(`past floods still shown: ${JSON.stringify(r)}`);
-      return `${r.results} of ${r.all} topics shown, no past floods`;
+      if (r.left.length || r.results !== r.all - 2 || r.tiles !== r.all - 2) throw new Error(`not covered topics still shown: ${JSON.stringify(r)}`);
+      if (!/left out: past floods and prices/.test(r.note) || !r.links) throw new Error(`the country note does not name them: "${r.note.replace(/\s+/g, " ")}"`);
+      return `${r.results} of ${r.all} topics shown; note names past floods and prices`;
     } finally { await scotPage.close(); }
   });
 

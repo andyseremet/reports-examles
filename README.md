@@ -136,13 +136,23 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 |---|---|
 | `index.html` | The page itself (search, map, report layout, footer). |
 | `css/app.css` | All the page styles, including dark mode and print. |
-| `js/core.js` | Data source addresses, links, settings, the version number and shared helpers. |
-| `js/data.js` | Fetching data from the outside services, and the list of data tasks. |
+| `js/core.js` | Links, settings, the version number and shared helpers. |
+| `js/api.js` | Outside data service addresses, request pacing and the fetch helpers. |
+| `js/data.js` | Fetching data for England, and the shared fetch helpers. |
+| `js/backups.js` | Backups used only when planning.data.gov.uk does not answer. |
+| `js/data-wales.js`, `data-scotland.js`, `data-ni.js` | Fetching data for Wales, Scotland and Northern Ireland. |
+| `js/tasks.js` | The list of data tasks: each fetch, its topic and the service it waits for. |
 | `js/checks/flood.js`, `ground.js`, `living.js`, `planning.js` | The topics in each report section: turning data into plain-English results. |
 | `js/checks/index.js` | Shared check helpers and the list of report topics. |
-| `js/search.js` | The map and the search box (suggestions, Nominatim and Photon). |
+| `js/coverage.js` | Which countries each topic covers; topics not covered in a country are left out of its reports. |
+| `js/map.js` | The map: background maps, map buttons, full screen, the pin and the search circle. |
+| `js/search.js` | The search box (suggestions, Nominatim and Photon). |
 | `js/saved.js` | Storage on this device, saved properties, compare, and the first-visit guide. |
-| `js/report.js` | Running the checks (with recent answers kept 7 days) and building the report. |
+| `js/run.js` | Running the checks (with recent answers kept 7 days), Try again, and saved reports. |
+| `js/summary.js` | The summary: the verdict, the topic grid, the box under it and key findings. |
+| `js/report.js` | The topic cards, the report layout, the printed cover, data sources and the report map. |
+| `js/next-steps.js` | Next steps: notes, the viewing checklist, the checklist and Send to my conveyancer. |
+| `js/navigation.js` | The section bar, Open problems / Close all, the phone tab bar and back to top. |
 | `js/print.js` | Share, download and print. |
 | `js/app.js` | Larger text, install as an app, and start-up (shared links). |
 | `status.html`, `js/status.js` | The data service status page: a separate page with its own small script. |

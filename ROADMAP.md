@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.1.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.2.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.1.0)
+## Part 1: What the app does today (version 2.2.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -37,7 +37,7 @@ The [README](README.md) describes each feature in full.
 this", one within 250 m "Worth checking", none "No issue found". England uses Defra's copy of the Environment Agency
 Historic Flood Map (areas only, no dates; nothing sent to the Environment Agency map server); Wales uses Natural Resources
 Wales' record on DataMapWales, with each flood's date, source and cause. Scotland and Northern Ireland publish no such
-record, so the topic is left out there (`ONLY_IN`), the first topic shown only in some countries.
+record, so the topic is left out there.
 
 **Wales (1.26.0):** land use, coastal erosion, noise, air quality, planning and nature are answered from Welsh data
 (DataMapWales). Old landfill and contaminated land are not published for Wales, so land use says "Check yourself" unless a
@@ -54,10 +54,17 @@ publish them free. Scottish and Welsh reports no longer ask the busy Environment
 and coastal erosion risk (DAERA and DfI) are answered from Northern Ireland data. Conservation areas are not published
 nationally, so planning with nothing found says "Check yourself"; air quality shows the area estimate and, because council hotspots are not mapped,
 says "For information" (since 1.33.0; before, "Check yourself"). Flood maps (DfI Rivers does not release them openly), radon,
-landslides, coal and old mines, land use and sale prices stay "Check yourself", with links to the right service.
+landslides, coal and old mines, land use and sale prices are not covered there: since 2.2.0 they are left out of the
+report, and the country note names them with links to the right services.
 Schools, doctors and transport now shows each register only where it reaches (it used to say "None found nearby" for GPs in
 Scotland and for everything in Northern Ireland); in Northern Ireland it says "Check yourself" with links to nidirect,
 Schools Plus and Translink.
+
+**Topics not covered in a country (2.2.0, owner, 8 November 2026)** are left out of its reports (`js/coverage.js`),
+and the country note in the summary names them with links to the national services: past floods and sale prices in
+Scotland; flooding, radon, mining, land use, landslides, clay, past floods and sale prices in Northern Ireland.
+England and Wales reports show every topic. The code was split into one file per job at the same time (no change in
+behaviour).
 
 Where a source has published nothing, the topic says "Check yourself", never "No issue found". Topics with no free
 live data (for example rail and aircraft noise, Japanese knotweed) link to the official checkers.

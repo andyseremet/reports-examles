@@ -43,8 +43,8 @@ Report at most five Nits per review.
 - User-facing text is plain English in short sentences, and every technical word goes through `term()`, with its
   `<dt id>` in `glossary.html`.
 - A new topic has all its parts: fetch function and `TASKS` row, check, `CHECKS`, `TOPIC_ICONS`, `COVERAGE` (if not
-  UK-wide) or `ONLY_IN` (if left out where nothing is published), `SERVICES` and `SERVICE_TOPICS` in
-  `tests/live-check.mjs`, and `data/data-services.csv`. A topic count uses `shownChecks()`, not `CHECKS.length`.
+  UK-wide; the topic is then left out elsewhere), `SERVICES` and `SERVICE_TOPICS` in `tests/live-check.mjs`, and
+  `data/data-services.csv`. A topic count uses `shownChecks()`, not `CHECKS.length`.
 - New behaviour has a step in `tests/live-check.mjs`, and a new or changed control is in `ACTIONS` in
   `tests/a11y-check.mjs`.
 - Buttons show an icon and a word, a control's `aria-label` starts with its visible words, and short messages sit in
