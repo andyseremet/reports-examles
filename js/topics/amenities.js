@@ -24,7 +24,7 @@ const AMENITY_TYPES = [
   { key: "bus_stop", many: "bus stops", label: "Bus stop", short: "bus stop", within: 0.5, covers: ["England"] }
 ];
 
-const getStationList = once(() => fetchJSON("data/rail-stations.json"));
+const getStationList = once(() => fetchJSON(new URL("../../data/rail-stations.json", import.meta.url).href));
 
 async function getPlanningPlaces(loc) {
   if (await inWales(loc) || await inScotland(loc) || await inNI(loc)) return { school: [], bus_stop: [], tram: [] };   // England only

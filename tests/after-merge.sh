@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 URL=https://andyseremet.github.io/reports-examles
 RECORDING=https://raw.githubusercontent.com/andyseremet/reports-examles/status/recordings.json
 # The files whose change raises APP_VERSION and CACHE (CLAUDE.md "Releases"): only then is there a new version to test.
-APP_FILES='^(index\.html|status\.html|glossary\.html|sw\.js|css/|js/|data/)'
+APP_FILES='^(index\.html|status\.html|glossary\.html|sw\.js|css/|js/|data/|kit/)'
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 [ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "Uncommitted changes on $BRANCH: commit or remove them first."; exit 1; }

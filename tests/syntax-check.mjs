@@ -1,6 +1,7 @@
 // Syntax check for the app code, without running it.
-// - index.html: its modules (<script type="module" src="js/...">). Each must read as a module, and every name it
-//   imports must be exported by the file it names (Node's own module linker, so no extra library).
+// - index.html: its modules (<script type="module" src="js/...">), and the kit (js/kit.js, kit/v<N>/js/kit.js).
+//   Each must read as a module, and every name it imports must be exported by the file it names (Node's own module
+//   linker, so no extra library).
 // - status.html: its plain scripts, checked together in page order (they share one global scope).
 // - sw.js.
 // Run: node tests/syntax-check.mjs   (exit 1 and the error on failure)
@@ -36,6 +37,9 @@ try {
   };
   const entries = scripts("index.html", 'type="module" ');
   if (!entries.length) throw new Error("No js/ modules found in index.html");
+  // The kit other apps load (docs/KIT.md): the latest one, and each fixed copy in kit/v<N>/.
+  entries.push("js/kit.js", ...(fs.existsSync(root + "kit") ? fs.readdirSync(root + "kit") : [])
+    .filter(d => /^v\d+$/.test(d)).map(d => `kit/${d}/js/kit.js`));
   // One stand-in module for the page imports every tag, so the whole set links once.
   const page = new vm.SourceTextModule(entries.map(f => `import "./${f}";`).join("\n"), { identifier: "index.html" });
   await page.link((spec, from) => {

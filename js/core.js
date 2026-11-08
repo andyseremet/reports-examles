@@ -119,7 +119,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "2.6.0";
+const APP_VERSION = "2.7.0";
 const APP_UPDATED = "8 November 2026";
 
 const $ = id => document.getElementById(id);
@@ -150,7 +150,7 @@ const GLOSSARY = {
   "shrink-swell": "shrink-swell", "special area of conservation": "special-area", "sssi": "sssi", "surface water": "surface-water"
 };
 // A full address, so the links still work in a downloaded report.
-const GLOSSARY_PAGE = new URL("glossary.html", location.href).href;
+const GLOSSARY_PAGE = new URL("../glossary.html", import.meta.url).href;   // from this file, so it works inside other apps too
 
 // A plain word with the technical meaning shown on hover. A word on the glossary page links to it.
 function term(text, explanation) {
@@ -162,6 +162,9 @@ function term(text, explanation) {
 function today() {
   return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
+
+// A date as "8 Nov 2026" (saved and earlier answers).
+const savedDate = iso => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 function monthName(yyyyMm) {
   if (!yyyyMm) return "the latest month";
@@ -242,5 +245,5 @@ function pointFrom(loc, wkt) {
 
 export { $, andList, APP_UPDATED, APP_VERSION, boundingBox, byDistance, circleWkt, distanceKm, escapeHTML,
   formatDistance, formatRadius, geometryCentre, GLOSSARY, icon, ICON_PATHS, link, LINKS, MAP_COLOURS, monthName,
-  okValue, parseWktPoint, PLANNING_AT_POINT, PLANNING_NEARBY, plural, pointFrom, REQUEST_TIMEOUT, sentenceStart,
-  STATUS_LABEL, STATUS_ORDER, STATUS_SYMBOL, term, today };
+  okValue, parseWktPoint, PLANNING_AT_POINT, PLANNING_NEARBY, plural, pointFrom, REQUEST_TIMEOUT, savedDate,
+  sentenceStart, STATUS_LABEL, STATUS_ORDER, STATUS_SYMBOL, term, today };

@@ -1,7 +1,8 @@
 // Accessibility re-check: run by hand after visual changes; GitHub also runs it on every pull request (not daily).
 //   npm install --no-save axe-core   (Playwright as for the full test; see CLAUDE.md)
 //   python3 -m http.server 8080 &   then   REPLAY=daily node tests/a11y-check.mjs   (under a minute)
-// Scans WCAG 2.2 AA with axe-core on the start page, a full report, status.html and glossary.html, in 4 combinations that
+// Scans WCAG 2.2 AA with axe-core on the start page, a full report, status.html, glossary.html and the kit demo page
+// (kit/), in 4 combinations that
 // cover every width (1280 px, 320 px, phone), both colour schemes and both text sizes, plus the riskiest pairs. In the report it also scans after using controls (Open problems, the no-issue fold, a Key findings link,
 // a tick, Move to another device, Compare three, Remove), and checks for sideways scrolling before and after each.
 // Environment Agency map requests are answered empty so the report finishes fast. Exit code 1 on any problem.
@@ -89,6 +90,9 @@ await Promise.all(COMBOS.map(async ([size, opts, scheme, big]) => {
   await check(page, `${label} – status page`);
   await page.goto(BASE + "glossary.html");
   await check(page, `${label} – glossary page`);
+  await page.goto(BASE + "kit/");   // the topic cards demo for other apps (2.7.0), once its two cards have filled in
+  await page.waitForFunction(() => document.querySelectorAll("#singleCards .plc-card:not([data-status=loading])").length === 2, null, { timeout: 60000 });
+  await check(page, `${label} – kit demo page`);
   await context.close();
 }));
 await browser.close();

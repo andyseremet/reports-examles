@@ -32,6 +32,7 @@ on:
       - "css/**"
       - "js/**"
       - "data/**"
+      - "kit/**"
       - "sw.js"
       - "manifest.webmanifest"
       - "tests/**"

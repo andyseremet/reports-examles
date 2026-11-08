@@ -215,6 +215,53 @@ export async function testCountryData(browser) {
       return `asked ${r.tasks.join(" and ")}; radon rated ${r.status}; ${r.updates.length} updates; no cards drawn`;
     });
 
+    await step("Kit (2.7.0): plain topic cards for other apps, the latest kit and the fixed copy v1", async () => {
+      // The demo page (kit/index.html) loads the kit as another app would: two <plc-topic> cards at Barnsley, the
+      // flood-only small app at York, a topic Scotland is not covered for, and an unknown topic. Both the latest kit
+      // (js/kit.js) and the fixed copy (kit/v1/) must work. Its own tab, with the Environment Agency map server
+      // answered by a stand-in (York is in England, so heavy rain asks it; not counted with the page above).
+      const kitPage = await context.newPage();
+      const errors = [];
+      kitPage.on("pageerror", e => errors.push(e.message));
+      await kitPage.route("https://environment.data.gov.uk/spatialdata/**", r => r.fulfill({ json: { features: [] } }));
+      const RATINGS = ["high", "medium", "low", "info", "manual", "error"];
+      const seen = [];
+      try {
+        for (const v of ["", "v1"]) {
+          const label = v ? "fixed copy v1" : "latest kit";
+          await kitPage.goto(new URL("kit/" + (v ? "?v=" + v : ""), BASE).href, { waitUntil: "load" });
+          await kitPage.waitForFunction(() => document.querySelectorAll("#singleCards .plc-card:not([data-status=loading])").length === 2, null, { timeout: 60000 })
+            .catch(() => { throw new Error(`${label}: the two cards did not fill in within 60 seconds`); });
+          const single = await kitPage.$$eval("#singleCards .plc-card", els => els.map(e => ({ topic: e.dataset.topic, status: e.dataset.status, found: (e.querySelector(".plc-found") || {}).textContent || "" })));
+          for (const c of single) if (!RATINGS.includes(c.status) || !c.found.trim()) throw new Error(`${label}: ${c.topic} card has no rating or finding: ${JSON.stringify(c)}`);
+          await kitPage.click("#floodForm button[type=submit]");
+          await kitPage.waitForFunction(() => /^Checked /.test(document.getElementById("floodStatus").textContent), null, { timeout: 60000 })
+            .catch(async () => { throw new Error(`${label}: the flood check did not finish: "${await kitPage.textContent("#floodStatus")}"`); });
+          const flood = await kitPage.$$eval("#floodCards .plc-card", els => els.map(e => [e.dataset.topic, e.dataset.status]));
+          if (flood.map(f => f[0]).join() !== "flood,surfacewater,pastfloods" || !flood.every(f => RATINGS.includes(f[1]))) throw new Error(`${label}: flood app cards: ${JSON.stringify(flood)}`);
+          // A topic not covered in Scotland says so and names where to check; an unknown topic says it plainly.
+          const extra = await kitPage.evaluate(() => new Promise((resolve, reject) => {
+            const box = document.createElement("div");
+            box.innerHTML = '<plc-topic topic="pastfloods" lat="55.9533" lon="-3.1883" name="Edinburgh"></plc-topic><plc-topic topic="nosuchtopic" postcode="S70 2TA"></plc-topic>';
+            document.querySelector("main").append(box);
+            const [scot, bad] = box.children;
+            const started = Date.now();
+            (function wait() {
+              const card = scot.querySelector(".plc-card");
+              if (card && card.dataset.status !== "loading") return resolve({ status: card.dataset.status, text: card.textContent.replace(/\s+/g, " ").trim(), bad: bad.textContent.trim() });
+              if (Date.now() - started > 60000) return reject(new Error("the Edinburgh card did not fill in within 60 seconds"));
+              setTimeout(wait, 200);
+            })();
+          }));
+          if (extra.status !== "not-covered" || !/does not cover Scotland/.test(extra.text) || !/SEPA/.test(extra.text)) throw new Error(`${label}: past floods in Scotland: ${JSON.stringify(extra)}`);
+          if (!/no topic called "nosuchtopic"/.test(extra.bad)) throw new Error(`${label}: unknown topic: "${extra.bad}"`);
+          seen.push(`${label}: ${single.map(c => `${c.topic} ${c.status}`).join(", ")}; flood app ${flood.map(f => f[1]).join("/")}`);
+        }
+      } finally { await kitPage.close(); }
+      if (errors.length) throw new Error("page errors: " + errors.join(" | "));
+      return seen.join("; ") + "; Scotland left out with SEPA named; unknown topic named";
+    });
+
     await step("Topic files (2.6.0): every topic has the same parts, and every data task belongs to one place", async () => {
       // Each topic is one file, js/topics/<id>.js, so other small apps can use it on its own (modular plan, step 3).
       const r = await page.evaluate(async () => {

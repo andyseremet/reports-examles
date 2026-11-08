@@ -31,4 +31,4 @@ function notCoveredNote() {
     (services.length ? ` Check them on ${andList(services.map(s => link(s[1], s[0])))}.` : "");
 }
 
-export { notCoveredNote, shownChecks, topicShown };
+export { nationalService, notCoveredNote, shownChecks, topicShown };

@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.6.0** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.7.0** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.6.0)
+## Part 1: What the app does today (version 2.7.0)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -193,6 +193,10 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   viewing tips; data several topics share is in `js/sources.js`; the topic list, data tasks, icons, viewing tips and
   country coverage are read from the topics (checked identical to 2.5.0). A new daily check step checks that every
   topic has the same parts.
+- Topic cards for other apps (2.7.0, step 4): `js/kit.js` gives other apps `checkPlace()` and the
+  `<plc-topic topic="radon" postcode="S70 2TA">` tag, with plain cards (`js/card.js`) the host styles; runs from other
+  apps go beside the main report, and tags for one place share one run. The demo page is `kit/`; the fixed copy
+  `kit/v1/` (the code of 2.7.0) is what other apps load. Tested daily (latest and v1) and in the accessibility scan.
 - Lean code (1.36.1, quiz of 8 November 2026): `js/app.js` split into 5 files (`search.js`, `saved.js`, `report.js`,
   `print.js`, `app.js`); one print section in `css/app.css` instead of 10, with repeated rules merged (every element's
   computed style compared before and after: the same look); one box function for map queries; all saving through one
@@ -246,8 +250,9 @@ card can be used without the main app, in new smaller apps or inside other websi
 3. **Topic files** (2.6.0, done): each topic in one file (`js/topics/radon.js`: its data, rating, wording, icon and
    viewing tips), with data several topics share kept once (`js/sources.js`); a test that every topic file has the
    same parts.
-4. **Card and tag:** a plain card from a topic's result, and a `<plc-topic topic="radon" postcode="…">` tag that
-   other pages load with one line; a demo page with single cards and a flood-only mini app.
+4. **Card and tag** (2.7.0, done): a plain card from a topic's result (`js/card.js`), the kit (`js/kit.js`) with
+   `checkPlace()` and the `<plc-topic topic="radon" postcode="…">` tag, the demo page `kit/` with single cards and a
+   flood-only small app, and the fixed copy `kit/v1/`.
 5. **Guide:** `docs/KIT.md`: how to use a card in another app, pick a version and add a topic.
 
 The rules travel with the kit: Environment Agency and Nominatim pacing, and missing data rated "Check yourself".

@@ -23,7 +23,8 @@ check still run the whole test, so the owner's merge is always covered.
 ## Running the tests
 
 - **Syntax check:** `node tests/syntax-check.mjs` (every module on `index.html` reads correctly and each name it
-  imports is exported by the file it names; then the status page's script and `sw.js`). A project
+  imports is exported by the file it names, for the kit too (`js/kit.js` and each `kit/v<N>/`); then the status
+  page's script and `sw.js`). A project
   hook (`.claude/settings.json`, `.claude/hooks/syntax-check.sh`) runs it after every edit to `index.html` or a `.js`
   file. Fix any error it reports before going on.
 - **Full test:** `npm install --no-save playwright@1.63.0 && npx playwright install chromium` (in a cloud session use
@@ -49,7 +50,7 @@ check still run the whole test, so the owner's merge is always covered.
 - **Accessibility re-check** (by hand, after visual changes; GitHub also runs it on every pull request): `npm install --no-save axe-core`, then
   `REPLAY=daily node tests/a11y-check.mjs` with the local server running (under a minute; without `REPLAY` its report
   asks every service live). It scans WCAG 2.2 AA on the start
-  page, a report, `status.html` and `glossary.html` in 4 combinations at the same time (`COMBOS`: every width, colour
+  page, a report, `status.html`, `glossary.html` and the kit demo page (`kit/`) in 4 combinations at the same time (`COMBOS`: every width, colour
   scheme and text size, including 320 px with A+ text), and checks sideways scrolling before and after using each control in its
   `ACTIONS` list: add each new or changed control there. Also Tab through every control and check none is hidden.
 
@@ -67,7 +68,7 @@ before pushing anything.
 ## CI
 
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
-  that change `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `data/`, `sw.js`, `manifest.webmanifest`,
+  that change `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `data/`, `kit/`, `sw.js`, `manifest.webmanifest`,
   `tests/` or the workflow. The test is `tests/live-check.mjs`, which runs the parts in `tests/live/` (its header
   lists them; split on 8 November 2026, same steps).
 - **Two issues** (owner, 8 November 2026): a daily or manual run comments on "Live check failed" when an app step

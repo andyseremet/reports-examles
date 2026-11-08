@@ -47,7 +47,10 @@ Report at most five Nits per review.
 - A new topic has all its parts: its file `js/topics/<id>.js` with the topic object (data, deps, build, icon,
   `countries` if not UK-wide, so it is left out elsewhere), its entry in `CHECKS`, `index.html` and `sw.js`, its data
   keys in `TASK_ORDER`, `SERVICES` and `SERVICE_TOPICS` in `tests/live/services.mjs`, and `data/data-services.csv`.
-  Code only one topic uses lives in that topic's file. A topic count uses `shownChecks()`, not `CHECKS.length`.
+  Code only one topic uses lives in that topic's file.
+- The kit (`js/kit.js` and what it imports) never imports a main-app page file (`map.js`, `run.js`, `saved.js`,
+  `report.js` and the rest) or reads the page's address for its own files (`import.meta.url` instead). A fixed copy
+  in `kit/v<N>/` is not edited, except to follow a moved outside service. A topic count uses `shownChecks()`, not `CHECKS.length`.
 - New behaviour has a step in `tests/live/` (`devices.mjs` or `country.mjs`), and a new or changed control is in `ACTIONS` in
   `tests/a11y-check.mjs`.
 - Test parts that run at the same time (`Promise.all` in `tests/live-check.mjs`) never send Nominatim two requests at

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topic cards for other apps – Property Location Check</title>
+<meta name="description" content="Use Property Location Check's topics on their own: one card with one line of HTML, or a small app of your own.">
+<link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
+<style>
+  /* How a host app might style the plain cards (js/card.js gives them no styles of their own). */
+  :root { --text: #1d1d1f; --muted: #6e6e73; --line: #d2d2d7; --panel: #f5f5f7; --card: #fff; --page: #fff; --link: #0066cc;
+    --high: #c9252c; --medium: #b25000; --low: #1d7a3a; --info: #0066cc; --manual: #6e6e73; --button: #0066cc; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) {
+    :root { --text: #f5f5f7; --muted: #a1a1a6; --line: #424245; --panel: #1c1c1e; --card: #1c1c1e; --page: #000; --link: #4da3ff;
+      --high: #ff6961; --medium: #ffb340; --low: #4cd964; --info: #4da3ff; --manual: #a1a1a6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1, h2 { letter-spacing: -0.01em; line-height: 1.2; }
+  h1 { font-size: 1.9rem; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 40px 0 8px; }
+  a { color: var(--link); }
+  p.lead, .help { color: var(--muted); }
+  pre { background: var(--panel); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-size: 0.85rem; white-space: pre-wrap; word-break: break-word; }
+  .cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+  plc-topic { display: block; min-width: 0; }
+  .plc-card { overflow-wrap: break-word; }
+  .plc-card { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--manual); border-radius: 12px; padding: 14px 16px; }
+  .plc-card h3 { margin: 0 0 4px; font-size: 1.1rem; }
+  .plc-card h4 { margin: 14px 0 4px; font-size: 0.95rem; }
+  .plc-status { display: inline-block; margin: 0 0 6px; font-weight: 600; font-size: 0.9rem; }
+  .plc-found { margin: 0; }
+  .plc-source, .plc-saved { color: var(--muted); font-size: 0.85rem; }
+  .plc-card table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+  .plc-card th, .plc-card td { border-top: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
+  .plc-card .table-wrap { overflow-x: auto; }
+  .plc-card[data-status="high"] { border-left-color: var(--high); } .plc-card[data-status="high"] .plc-status { color: var(--high); }
+  .plc-card[data-status="medium"] { border-left-color: var(--medium); } .plc-card[data-status="medium"] .plc-status { color: var(--medium); }
+  .plc-card[data-status="low"] { border-left-color: var(--low); } .plc-card[data-status="low"] .plc-status { color: var(--low); }
+  .plc-card[data-status="info"] { border-left-color: var(--info); }
+  .plc-error { color: var(--high); }
+  form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+  label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+  input { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); min-width: 0; width: 12em; }
+  button { font: inherit; padding: 9px 16px; border-radius: 10px; border: 0; background: var(--button); color: #fff; cursor: pointer; min-height: 44px; }
+  .plc-retry { background: var(--panel); color: var(--text); border: 1px solid var(--line); min-height: 36px; }
+</style>
+</head>
+<body>
+<main>
+  <p><a href="../">← Back to the property check</a></p>
+  <h1>Topic cards for other apps</h1>
+  <p class="lead">Each topic in the property check can be used on its own: one card with one line of HTML, or a small app
+    of your own. The cards come plain, so your app styles them; this page shows one way. The same rules apply as in the
+    app: data that could not be checked is never shown as good news.</p>
+  <p class="help" id="kitVersion" role="status">Loading…</p>
+
+  <h2>One card, one line</h2>
+  <p>Load the kit once, then add a tag for each topic. Tags for the same place share their data.</p>
+  <pre><code>&lt;script type="module" src="https://andyseremet.github.io/reports-examles/kit/v1/js/kit.js"&gt;&lt;/script&gt;
+&lt;plc-topic topic="radon" postcode="S70 2TA"&gt;&lt;/plc-topic&gt;</code></pre>
+  <div class="cards" id="singleCards">
+    <plc-topic topic="radon" postcode="S70 2TA"></plc-topic>
+    <plc-topic topic="clay" postcode="S70 2TA"></plc-topic>
+  </div>
+
+  <h2>A small app: flood check</h2>
+  <p>The same topics in code: a flood-only check for any postcode, with three of the app's topics.</p>
+  <pre><code>import { checkPlace } from "https://andyseremet.github.io/reports-examles/kit/v1/js/kit.js";
+checkPlace({ postcode }, { topics: ["flood", "surfacewater", "pastfloods"],
+  onCard: (topic, result, html) =&gt; { /* show html */ } });</code></pre>
+  <form id="floodForm">
+    <div><label for="floodPostcode">Postcode</label><input id="floodPostcode" name="postcode" value="YO1 9QL" autocomplete="postal-code" required></div>
+    <button type="submit">Check flooding</button>
+  </form>
+  <p class="help" id="floodStatus" role="status" aria-live="polite"></p>
+  <div class="cards" id="floodCards"></div>
+
+  <h2>Topics you can use</h2>
+  <p class="help">Use the name at the start of each line as <code>topic</code>. See the guide (docs/KIT.md in the code) for the
+    details and how to pick a version.</p>
+  <ul id="topicList"></ul>
+</main>
+<script type="module">
+  // ?v=v1 shows a fixed copy (kit/v1/); without it, the latest kit (js/kit.js).
+  const v = new URLSearchParams(location.search).get("v");
+  const kit = await import(/^v\d+$/.test(v || "") ? `./${v}/js/kit.js` : "../js/kit.js");
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  $("kitVersion").textContent = /^v\d+$/.test(v || "") ? `Showing the fixed copy ${v}.` : `Showing the latest kit (version ${kit.KIT_VERSION}).`;
+  $("topicList").innerHTML = kit.TOPICS.map(t => `<li><code>${esc(t.id)}</code>: ${esc(t.title)}${t.countries ? ` (${esc(t.countries.join(", "))})` : ""}</li>`).join("");
+  $("floodForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const cards = $("floodCards"), status = $("floodStatus");
+    const topics = ["flood", "surfacewater", "pastfloods"];
+    cards.innerHTML = topics.map(id => `<div data-slot="${id}"></div>`).join("");
+    status.textContent = "Checking…";
+    try {
+      const done = await kit.checkPlace({ postcode: $("floodPostcode").value }, { topics, onCard: (topic, result, html) => {
+        cards.querySelector(`[data-slot="${topic.id}"]`).innerHTML = html;
+      } });
+      status.textContent = `Checked ${done.place.name}${done.country ? `, ${done.country}` : ""}.`;
+    } catch (err) {
+      cards.innerHTML = "";
+      status.textContent = err.message;
+    }
+  });
+</script>
+</body>
+</html>

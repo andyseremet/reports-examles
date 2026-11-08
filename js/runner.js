@@ -1,6 +1,7 @@
 // Property Location Check – the runner: runs the checks for one place, with no page drawing. It starts the data tasks,
 // tries a failed one once more, shows a recent answer while waiting, stops waiting at 45 seconds, and turns the data
-// into topic results. Whoever started the run (the main app: js/run.js) hears about each change through onUpdate.
+// into topic results. Whoever started the run (the main app: js/run.js, or other apps through js/kit.js) hears about
+// each change through onUpdate.
 // A module (no build step): it imports what it uses from other files and exports what they use (docs/CODE.md).
 
 import { okValue, today } from "./core.js";
@@ -10,42 +11,49 @@ import { TASK_FN, TASKS } from "./tasks.js";
 import { topicShown } from "./coverage.js";
 
 /* =========================================================
-   THE RUN – one place at a time
-   run = { loc, R (data by task key), results (by topic id), checks, tasks, done, startedAt, previous, onUpdate }
+   THE RUN – the main app's report, and runs from other apps (js/kit.js) beside it
+   a run = { loc, R (data by task key), results (by topic id), checks, tasks, done, startedAt, previous, onUpdate,
+   stopped (true once replaced: its late answers are ignored) }
 ========================================================= */
 
-let run = null;                 // the report being built
-// Sets the report being built (a saved report, or the daily check through js/page-names.js).
-function setRun(value) { run = value; }
+let run = null;                 // the main app's report being built
+// Sets the report being built (a saved report, or the daily check through js/page-names.js). The run it replaces stops.
+function setRun(value) {
+  if (run && run !== value) run.stopped = true;
+  if (value) value.stopped = false;
+  run = value;
+}
+const isLive = r => !r.stopped;
 
 // Start a run for a place. Options:
 // - checks: the topics to run (all by default); only the data tasks they need are asked.
 // - previous: this place's last saved results (a topic whose service does not answer shows its earlier answer, dated).
 // - onUpdate({ key, changed, done }): after each data task settles. changed lists { check, result } for the topics
 //   rebuilt (result null: the topic is not shown in this country); done: every task has settled.
-function startRun(loc, { checks = CHECKS, previous = null, onUpdate = null } = {}) {
+// - main: true (the default) makes it the main app's report, replacing the one before; false runs it beside it.
+function startRun(loc, { checks = CHECKS, previous = null, onUpdate = null, main = true } = {}) {
   const needed = new Set(checks.flatMap(c => c.deps));
   const tasks = TASKS.map(([key]) => key).filter(key => needed.has(key));
-  run = { loc, R: { loc }, results: {}, checks, tasks, done: false, startedAt: Date.now(), previous, onUpdate };
-  const thisRun = run;
+  const r = { loc, R: { loc }, results: {}, checks, tasks, done: false, startedAt: Date.now(), previous, onUpdate };
+  if (main) setRun(r);
   // After 8 seconds: recent answers fill in, then an update with no task (unless they finished the report).
-  setTimeout(() => { if (run === thisRun && !run.done) { showRecentWhileWaiting(thisRun); if (!run.done) notify(null, []); } }, SLOW_NOTE_MS);
-  setTimeout(() => { if (run === thisRun && !run.done) stopWaiting(thisRun); }, REPORT_DEADLINE_MS);
-  tasks.forEach(key => startTask(run, key));
-  return run;
+  setTimeout(() => { if (isLive(r) && !r.done) { showRecentWhileWaiting(r); if (!r.done) notify(r, null, []); } }, SLOW_NOTE_MS);
+  setTimeout(() => { if (isLive(r) && !r.done) stopWaiting(r); }, REPORT_DEADLINE_MS);
+  tasks.forEach(key => startTask(r, key));
+  return r;
 }
 
 // The tasks and topics of a run (a run made elsewhere, such as a saved report or a test, may not list them).
 const tasksOf = r => r.tasks || TASKS.map(([key]) => key);
 const checksOf = r => r.checks || CHECKS;
 
-const notify = (key, changed) => { if (run.onUpdate) run.onUpdate({ key, changed, done: run.done }); };
+const notify = (r, key, changed) => { if (r.onUpdate) r.onUpdate({ key, changed, done: r.done }); };
 
 // After 8 seconds, a report still loading names the services it is waiting for: { service: [topic names] }.
 const SLOW_NOTE_MS = 8000;
-function waitingFor() {
+function waitingFor(r = run) {
   const waiting = {};
-  TASKS.filter(([key]) => tasksOf(run).includes(key) && !run.R[key])
+  TASKS.filter(([key]) => tasksOf(r).includes(key) && !r.R[key])
     .forEach(([, topic, , service]) => (waiting[service] ||= []).push(topic));
   return waiting;
 }
@@ -58,7 +66,7 @@ function showRecentWhileWaiting(r) {
     const recent = recentAnswer(r.loc, key);
     if (!recent) return;
     r.R[key] = { ok: true, value: recent.value, cachedAt: recent.at, waiting: true };
-    settleTask(key);
+    settleTask(r, key);
   });
 }
 // After 45 seconds the report finishes: a topic still waiting shows "slow to answer" with Try again. Its request
@@ -67,7 +75,7 @@ const REPORT_DEADLINE_MS = 45000;
 function stopWaiting(r) {
   const late = tasksOf(r).filter(key => !r.R[key]);
   late.forEach(key => { r.R[key] = { ok: false, error: "the data service is slow to answer", slow: true }; });
-  late.forEach(key => { if (r === run) settleTask(key); });
+  late.forEach(key => { if (isLive(r)) settleTask(r, key); });
 }
 
 // A topic whose data fails is tried once more by itself: after 8 seconds (20 if the service refused us, which
@@ -106,10 +114,10 @@ function startTask(r, key, autoRetry = true) {
   TASK_FN[key](r.loc).then(
     value => { r.R[key] = { ok: true, value }; rememberAnswer(r.loc, key, value); },
     async error => {
-      if (autoRetry && r === run && (!navigator.onLine || !error.retried)) {
+      if (autoRetry && isLive(r) && (!navigator.onLine || !error.retried)) {
         if (navigator.onLine) await new Promise(res => setTimeout(res, error.refused ? REFUSED_RETRY_MS : AUTO_RETRY_MS));
         else await onlineAgain();
-        if (r === run) { r.autoRetried = [...(r.autoRetried || []), key]; startTask(r, key, false); }
+        if (isLive(r)) { r.autoRetried = [...(r.autoRetried || []), key]; startTask(r, key, false); }
         return "retrying";
       }
       // The service did not answer: use its answer from the last 7 days, if there is one (shown dated on the topic).
@@ -117,73 +125,73 @@ function startTask(r, key, autoRetry = true) {
       r.R[key] = recent ? { ok: true, value: recent.value, cachedAt: recent.at }
         : { ok: false, error: error.message || "unknown error", ...(error.backup && { backup: error.backup }) };
     }
-  ).then(state => { if (state !== "retrying" && r === run) settleTask(key); });
+  ).then(state => { if (state !== "retrying" && isLive(r)) settleTask(r, key); });
 }
 
-const depsReady = c => c.deps.every(k => run.R[k]);
+const depsReady = (r, c) => c.deps.every(k => r.R[k]);
 
 // A topic result with everything the report needs. Each check gives only what differs from these.
 function topicResult(c, fields) {
   return { meaning: "", actions: [], seller: [], conveyancer: [], source: { name: "", url: "" }, ...fields, id: c.id, group: c.group, title: c.title };
 }
 
-function buildCheck(c) {
-  const place = okValue(run.R, "place");
+function buildCheck(r, c) {
+  const place = okValue(r.R, "place");
   const country = place && place.country;
   if (!topicShown(c.id, country)) return null;   // not covered in this country: left out (js/coverage.js)
   let result;
-  try { result = topicResult(c, { dataDate: "Checked live on " + today(), ...c.build(run.R) }); }
+  try { result = topicResult(c, { dataDate: "Checked live on " + today(), ...c.build(r.R) }); }
   catch (e) { result = topicResult(c, { status: "error", found: "This check failed: " + e.message }); }
   // A service failed: show this place's saved earlier answer, dated, if there is one. A check that still answers
   // in part (for example other mining when the coal service is down) marks itself with failedService.
-  if (result.status === "error" || result.failedService) return savedInstead(c, result);
+  if (result.status === "error" || result.failedService) return savedInstead(c, result, r);
   // Built partly from recent answers (a service did not answer): say so, with the oldest answer's date.
-  const cached = c.deps.map(k => run.R[k] && run.R[k].cachedAt).filter(Boolean).sort()[0];
-  const waiting = c.deps.some(k => run.R[k] && run.R[k].waiting);
+  const cached = c.deps.map(k => r.R[k] && r.R[k].cachedAt).filter(Boolean).sort()[0];
+  const waiting = c.deps.some(k => r.R[k] && r.R[k].waiting);
   return cached ? { ...result, fromSaved: cached, ...(waiting && { waiting: true }) } : result;
 }
 
 // A service that does not answer: if this place was checked before, show that earlier answer, clearly dated,
 // with "Try again" (an answer that was itself saved earlier keeps its first date).
-function savedInstead(c, failed) {
-  const prev = run.previous && run.previous.results.find(r => r.id === c.id && r.status !== "error");
+function savedInstead(c, failed, r = run) {
+  const prev = r.previous && r.previous.results.find(x => x.id === c.id && x.status !== "error");
   if (!prev) return failed;
-  const from = prev.fromSaved || run.previous.savedAt;
+  const from = prev.fromSaved || r.previous.savedAt;
   return { ...prev, fromSaved: from };
 }
 
 // A data task settled: rebuild the topics that now have all their data, then tell whoever started the run.
-function settleTask(key) {
+function settleTask(r, key) {
   const changed = [];
-  checksOf(run).filter(c => c.deps.includes(key) && depsReady(c)).forEach(c => {
-    const result = buildCheck(c);
-    if (result) run.results[c.id] = result; else delete run.results[c.id];   // not shown in this country
+  checksOf(r).filter(c => c.deps.includes(key) && depsReady(r, c)).forEach(c => {
+    const result = buildCheck(r, c);
+    if (result) r.results[c.id] = result; else delete r.results[c.id];   // not shown in this country
     changed.push({ check: c, result });
   });
-  if (tasksOf(run).every(k => run.R[k])) run.done = true;
-  notify(key, changed);
+  if (tasksOf(r).every(k => r.R[k])) r.done = true;
+  notify(r, key, changed);
 }
 
 // "Try again" on a topic that could not load: forget only the data it is missing (all its data if none is missing).
 // Returns the topics cleared, to show as loading; then restartTasks(keys) asks again. Null for an unknown topic.
-function clearForRetry(id) {
-  const c = checksOf(run).find(x => x.id === id);
+function clearForRetry(id, r = run) {
+  const c = checksOf(r).find(x => x.id === id);
   if (!c) return null;
-  let keys = c.deps.filter(k => !run.R[k] || !run.R[k].ok);
+  let keys = c.deps.filter(k => !r.R[k] || !r.R[k].ok);
   if (!keys.length) keys = c.deps.slice();
   const cleared = [];
   keys.forEach(k => {
-    delete run.R[k];
-    checksOf(run).filter(x => x.deps.includes(k)).forEach(x => { delete run.results[x.id]; cleared.push(x); });
+    delete r.R[k];
+    checksOf(r).filter(x => x.deps.includes(k)).forEach(x => { delete r.results[x.id]; cleared.push(x); });
   });
-  run.done = false;            // the report is being completed again
+  r.done = false;            // the report is being completed again
   return { keys, cleared };
 }
-const restartTasks = keys => keys.forEach(k => startTask(run, k, false));
+const restartTasks = (keys, r = run) => keys.forEach(k => startTask(r, k, false));
 
-// The run's results in report order.
-function orderedResults() {
-  return CHECKS.map(c => run.results[c.id]).filter(Boolean);
+// A run's results in report order (the main report's by default).
+function orderedResults(r = run) {
+  return CHECKS.map(c => r.results[c.id]).filter(Boolean);
 }
 
 export { clearForRetry, forgetAnswers, orderedResults, recentAnswer, rememberAnswer, restartTasks, run, savedInstead,

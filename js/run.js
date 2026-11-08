@@ -176,8 +176,6 @@ function slowNote() {
       arrives later. <a href="status.html">Data service status</a></p></div>`;
 }
 
-const savedDate = iso => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-
 // The runner settled a data task (key; null after 8 seconds, when recent answers fill in): draw what changed.
 function showUpdate({ key, changed, done }) {
   changed.forEach(({ check, result }) => {
@@ -317,5 +315,4 @@ function replotFeatures() {
   }
 }
 
-export { openReportFromAddress, reportData, runChecks, savedDate, slowNote, snapKey, updatePlaceButtons,
-  updateStickyRun };
+export { openReportFromAddress, reportData, runChecks, slowNote, snapKey, updatePlaceButtons, updateStickyRun };

@@ -12,7 +12,7 @@ import { isScotland, unavailable } from "./helpers.js";
 // Census 2021 residents per local area (MSOA). A census is never re-counted, so these
 // fixed figures are saved with the app (data/census2021-msoa-residents.json) instead of
 // being asked for each time.
-const getCensusResidents = once(() => fetchJSON("data/census2021-msoa-residents.json").then(d => d.residents));
+const getCensusResidents = once(() => fetchJSON(new URL("../../data/census2021-msoa-residents.json", import.meta.url).href).then(d => d.residents));
 
 // Crime in the local neighbourhood (census "MSOA", about 8,000 residents) per 1,000 residents.
 async function getCrimeArea(loc) {
