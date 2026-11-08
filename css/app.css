@@ -449,7 +449,7 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
 .why-box.high {color:var(--high)} .why-box.medium {color:var(--med)} .why-box.low {color:var(--low)} .why-box.info {color:var(--info)}
 .why-box.manual,.why-box.error,.why-box.loading {color:var(--manual)}
 .why-box p {margin:0;color:var(--text)}
-.why-box a {display:inline-block;margin-top:4px}
+.why-box .why-actions {display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-top:6px}
 
 /* ---------- offline and storage messages ---------- */
 .app-bar {position:sticky;top:0;z-index:1500;display:flex;gap:10px;align-items:center;justify-content:space-between;

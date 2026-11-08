@@ -554,6 +554,10 @@ function moreToggle() {
   return `<span class="more no-print" aria-hidden="true"><span class="more-text"></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
 }
 
+// A topic that could not load, or shows a saved answer, offers "Try again": in its card and in the box under the grid.
+const canRetry = r => r.status === "error" || !!r.fromSaved || r.gap === "down";
+const retryButton = id => `<button class="primary small-btn" type="button" data-retry="${id}">Try again</button>`;
+
 // Every topic card starts closed, problems too (owner, 8 November 2026): "Open problems", the Key findings links
 // and the Problems tab open them.
 function renderCheck(c) {
@@ -570,7 +574,7 @@ function renderCheck(c) {
       <div class="check-body">
         ${c.fromSaved ? `<p class="notice saved-answer">The data service is not answering right now, so this is <strong>your saved result
           from ${escapeHTML(savedDate(c.fromSaved))}</strong>. It may be out of date.</p>` : ""}
-        ${c.status === "error" || c.fromSaved || c.gap === "down" ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
+        ${canRetry(c) ? `<p>${retryButton(c.id)}</p>` : ""}
         <h4>What to do</h4>${actions}
         ${c.details || c.meaning ? `
         <p class="info-row"><button class="link-btn more-btn" type="button" data-info aria-expanded="false" aria-controls="about-${c.id}">More: what we found and what it means</button></p>
@@ -779,7 +783,7 @@ function glanceTable(results) {
       searches. “No issue found” means nothing was found in the data we checked, not that there is no risk.</p></div>`;
 }
 
-// The one-line reason for the topic tapped in the strip above.
+// The one-line reason for the topic tapped in the strip above, with Try again when it could not load.
 function whyBox() {
   const c = run.whyId && CHECKS.find(x => x.id === run.whyId);
   if (!c) return `<div id="whyBox" hidden></div>`;
@@ -789,7 +793,7 @@ function whyBox() {
   return `<div id="whyBox" class="why-box ${st}" aria-live="polite">
     <strong>${escapeHTML(c.title)}: ${res ? STATUS_LABEL[st] : "Checking"}</strong>
     <p>${escapeHTML(text || "")}</p>
-    ${res ? `<a href="#check-${c.id}" data-open="check-${c.id}">Read the full section</a>` : ""}</div>`;
+    ${res ? `<p class="why-actions">${canRetry(res) ? retryButton(c.id) : ""}<a href="#check-${c.id}" data-open="check-${c.id}">Read the full section</a></p>` : ""}</div>`;
 }
 
 document.addEventListener("click", e => {

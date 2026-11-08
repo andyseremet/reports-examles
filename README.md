@@ -47,7 +47,7 @@ official checkers.
 - **Map:** on phones, scroll the page with one finger and move the map with two; on computers, use Ctrl (⌘ on Mac)
   + scroll to zoom. Full-screen map button, "my location" button, satellite and street backgrounds.
 - **Report:** results appear topic by topic as the data arrives. A topic whose data fails is tried once more by itself
-  after 8 seconds (20 if the service refused the request); if it fails again, it shows a **Try again** button. If this place was checked before, the topic
+  after 8 seconds (20 if the service refused the request); if it fails again, it shows a **Try again** button, in its card and in the box under the topic grid. If this place was checked before, the topic
   shows that saved answer instead, clearly dated, still with **Try again**. When planning.data.gov.uk does not answer
   (England), heritage, conservation areas and nature are asked from Historic England and Natural England instead, and
   the flood zone at the pin from the Environment Agency's own flood map; each topic names anything it could not check
@@ -153,6 +153,10 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 The JavaScript files are plain scripts that share one global scope. `index.html` loads them in order, and each file
 can use what earlier files define.
 
+Guides for working on the app: `docs/CODE.md` (code), `docs/DESIGN.md` (look and wording), `docs/TESTING.md` (tests and
+checks) and `docs/WORKFLOW.md` (plans, pull requests, merges), with `CLAUDE.md` as the short summary and `REVIEW.md` for
+code reviews.
+
 ## Automatic testing
 
 A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-check.mjs`:
@@ -180,7 +184,8 @@ than about 15 requests a minute, which happens to GitHub's shared test machines.
 before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
 answer and retries a refusal or a slow answer. DataMapWales, Historic Environment Scotland, NatureScot, SEPA and DAERA
 get the same treatment with up to 4 requests at a time and 30 seconds to answer. A topic that still fails is tried once more by the page after 20
-seconds. If it then shows "Try again", the test presses it once, as a person would; a topic that still fails after
+seconds. If it then shows "Try again", the test opens its card and presses it once, as a person would (a separate step
+checks the Try again under the topic grid with a topic made to fail); a topic that still fails after
 that fails the test.
 
 That server sometimes refuses GitHub's shared test machines outright ("403 Forbidden") for many minutes while

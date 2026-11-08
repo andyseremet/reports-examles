@@ -1012,6 +1012,31 @@ async function testDevice(device, [postcode, place]) {
     } finally { await slowPage.close(); }
   });
 
+  await desktopStep("A topic that could not load: Try again in the box under the grid", async () => {
+    // Every outside service answers at once with no data, except "flooding from heavy rain", which fails until
+    // Try again is pressed. Its card stays closed, so the box under the grid must offer Try again. Nothing is
+    // sent to the outside services in this step.
+    const failPage = await page.context().newPage();
+    let down = true;
+    await failPage.route(u => !u.href.startsWith(BASE), r => down && r.request().url().includes("risk-of-flooding-from-surface-water")
+      ? r.fulfill({ status: 503, body: "" }).catch(() => {}) : r.fulfill({ json: { features: [] } }).catch(() => {}));
+    try {
+      await failPage.goto(new URL("?lat=52.31&lon=-1.73&name=Try%20again%20test", BASE).href);
+      const tile = failPage.locator('.topic-strip [data-why="surfacewater"]');
+      await failPage.waitForSelector('.topic-strip [data-why="surfacewater"].error', { timeout: 30000 });
+      await tile.click();
+      const btn = failPage.locator('#whyBox [data-retry="surfacewater"]');
+      if (!(await btn.isVisible())) throw new Error(`no Try again in the box under the grid: "${(await failPage.locator("#whyBox").innerText()).replace(/\s+/g, " ")}"`);
+      if (await failPage.$eval("#check-surfacewater", d => d.open)) throw new Error("the topic card opened by itself");
+      down = false;
+      await btn.click();
+      const ok = await failPage.waitForFunction(() => { const t = document.querySelector('.topic-strip [data-why="surfacewater"]');
+        return t && !/\b(error|loading)\b/.test(t.className); }, null, { timeout: 20000 }).then(() => true, () => false);
+      if (!ok) throw new Error("the topic did not load again after Try again");
+      return `shown and pressed; now "${(await failPage.locator("#whyBox strong").innerText())}"`;
+    } finally { await failPage.close(); }
+  });
+
   await desktopStep("Next steps: notes, viewing and checklist folded, each with a count", async () => {
     const r = await page.evaluate(() => [...document.querySelectorAll("#nextSteps details.step-fold")]
       .map(d => ({ id: d.id, open: d.open, count: d.querySelector(":scope > summary .step-count").textContent })));

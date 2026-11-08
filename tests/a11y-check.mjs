@@ -23,6 +23,8 @@ const ACTIONS = [
   ["Close all, then Open problems", async p => { for (let i = 0; i < 2; i++) if (await p.isEnabled("#toggleAll")) await p.click("#toggleAll"); }],
   ["no-issue fold opened", async p => { const f = p.locator(".clear-fold:not([hidden]) > summary").first(); if (await f.count()) await f.click(); }],
   ["sources open", p => p.evaluate(() => { const d = document.getElementById("sources"); if (d) d.open = true; })],
+  // A tapped topic tile shows its reason under the grid (with Try again when that topic could not load).
+  ["topic tile tapped", async p => { const t = p.locator(".topic-strip .topic.error, .topic-strip .topic").first(); if (await t.count()) await t.click(); }],
   ["Key findings link", async p => { const a = p.locator(".key-findings a[data-open]").first(); if (await a.count()) await a.click(); }],
   ["More in a topic", async p => { const b = p.locator("details.check[open] .more-btn").first(); if (await b.count()) await b.click(); }],
   ["Next steps opened", async p => { for (const s of await p.locator(".step-fold > summary").all()) await s.click(); }],
