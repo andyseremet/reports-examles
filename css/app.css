@@ -124,14 +124,15 @@ button:disabled {opacity:.5;cursor:not-allowed}
 .status {padding:11px 13px;border-radius:6px;background:var(--surface-2);margin:12px 0 0;font-size:14px}
 .status.error {background:var(--high-bg);color:var(--high)}
 
-/* ---------- search ---------- */
-/* "What the words mean" page and links */
+/* ---------- "What the words mean" page and the dotted links to it ---------- */
 .glossary {margin:16px 0 0}
 .glossary dt {font-weight:600;font-size:17px;letter-spacing:-.01em;margin-top:18px;scroll-margin-top:16px}
 .glossary dd {margin:4px 0 0;color:var(--text);max-width:70ch;line-height:1.5}
 .glossary dt:target {color:var(--teal)}
 a.term {color:inherit;text-decoration:underline dotted;text-underline-offset:3px}
 .glossary-link {margin:0 0 12px}
+
+/* ---------- search: the 3-step guide, step labels and the search box ---------- */
 .guide {list-style:none;margin:0 0 16px;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px;
   background:var(--surface-2);border-radius:12px;font-size:15px;line-height:1.35}
 .guide li {display:flex;gap:10px;align-items:flex-start}
@@ -308,7 +309,7 @@ details.clear-fold > summary:hover {background:var(--hover)}
 .fold-names {font-weight:normal;color:var(--text)}
 details.clear-fold > .fold-body {padding:0 8px 8px}
 /* "Next steps": notes, viewing checklist and checklist, each folded with its count. */
-details.step-fold {border:1px solid var(--border);border-left:5px solid var(--link);border-radius:8px;margin:10px 0;background:var(--surface)}
+details.step-fold {border:1px solid var(--border);border-left:5px solid var(--link);border-radius:8px;margin:10px 0;background:var(--surface);border-left-color:var(--border)}
 details.step-fold > summary {cursor:pointer;list-style:none;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;padding:10px 14px}
 details.step-fold > summary::-webkit-details-marker {display:none}
 details.step-fold > summary:hover {background:var(--hover)}
@@ -358,7 +359,7 @@ details.step-fold > .step-body {padding:0 14px 12px}
 .check.low {border-left-color:var(--low)}
 .check.info {border-left-color:var(--info)}
 .check.manual,.check.error {border-left-color:#9a9aae}
-.check.loading {padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.check.loading {padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-left-color:var(--border)}
 .check.loading .skeleton {height:10px;border-radius:6px;margin-top:8px;width:min(420px,60vw);
   background:linear-gradient(90deg,var(--surface-2) 25%,var(--border) 50%,var(--surface-2) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
 @keyframes shimmer {to {background-position:-200% 0}}
@@ -426,7 +427,7 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 }
 /* Footer links are easy to tap: at least 24 px high (WCAG 2.2 target size). */
 footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
-/* ---------- batch 2 ---------- */
+/* ---------- shortlist stars, notes and small report notes ---------- */
 .star-btn {background:none;padding:4px 6px;font-size:22px;line-height:1;color:#c58a00}
 .star-btn[aria-pressed="false"] {color:var(--muted)}
 .note-mark {font-size:13px}
@@ -439,17 +440,6 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
 .slow-note p {margin:0}
 .slow-note ul {margin:6px 0;padding-left:20px}
 .old-mark {color:var(--high);font-weight:bold}
-@media print {
-  .notes textarea {display:none}
-  .notes-print {display:block;border:1px solid #999;border-radius:6px;padding:8px;min-height:30px}
-  .notes-print:empty::before {content:"(No notes)";color:#666}
-  .saved-note button,#refreshBtn {display:none!important}
-  body.print-summary .details-start,body.print-summary #sourcesBox,body.print-summary .topic-strip,
-  body.print-summary .next-steps,body.print-summary .print-contents,body.print-summary .notes-page {display:none!important}
-  .app-bar,.why-box,.backup-note {display:none!important}
-  /* "At the viewing" is a sheet to take along: it gets a page of its own. */
-  #viewing {break-before:page;break-after:page}
-}
 
 
 /* ---------- topic strip ---------- */
@@ -524,85 +514,6 @@ body.has-sticky footer {padding-bottom:100px}
   .big {width:100%}
   header h1 {font-size:21px}
 }
-@media print {
-  body {background:#fff;font-size:12px}
-  header,footer,.no-print,#searchPanel,#savedPanel,#comparePanel {display:none!important}
-  .container {padding:0;max-width:none}
-  .panel {border:0;box-shadow:none;padding:0;margin:0}
-  a {color:#222;text-decoration:none}
-  .details-start {margin-top:10mm}
-  /* Long topic cards may continue on the next page (avoiding that left half-empty pages); a heading stays with its text. */
-  .checklist li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
-  details.check > summary,.check-body h4 {break-after:avoid}
-  .info-row {display:none!important}
-  .info-btn,[data-retry] {display:none!important}
-  .info-body[hidden] {display:block!important}
-  tr.list-extra[hidden] {display:table-row!important}
-  li.list-extra[hidden] {display:list-item!important}
-  .leaflet-control-zoom {display:none}
-  @page {size:A4;margin:14mm 14mm 16mm}
-  /* Paper shows what a reader needs: the at-a-glance table instead of the tappable grid, no app instructions. */
-  .print-only {display:block!important}
-  .topic-strip,.saved-note,#info-read,.rating-legend {display:none!important}
-  .key-findings a {color:inherit;text-decoration:none}
-  .glance-table {width:100%;border-collapse:collapse;font-size:11px}
-  .glance-table th,.glance-table td {border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}
-  .glance-table th {background:#eee}
-  .glance-table tr {break-inside:avoid}
-  .glance-table .chip {white-space:nowrap}
-  .glance-note {font-size:10px;color:#444;margin:6px 0 0}
-  /* A professional printout: calm type, colours that print, room between cards, numbered sections. */
-  * {-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  body {font-size:11px;line-height:1.45;color:#1a1a1a}
-  h1 {font-size:24px;margin:0 0 2mm;color:var(--navy)}
-  .group > h2,#nextSteps > h2,.summary-title {font-size:17px;color:var(--navy);border-bottom:2px solid var(--navy);padding-bottom:1.5mm}
-  #report {counter-reset:section}
-  .details-start > .group > h2::before,#nextSteps > h2::before {counter-increment:section;content:counter(section) ". "}
-  .meta {display:none}
-  .cover-row {display:flex!important;gap:6mm;align-items:flex-start;justify-content:space-between}
-  .cover-qr {margin:3mm 0 0;text-align:center;flex:none}
-  .cover-qr svg {width:30mm;height:30mm;display:block}
-  .cover-qr figcaption {font-size:8.5px;color:#444;margin-top:1mm}
-  .cover-details {border-collapse:collapse;margin:3mm 0 0;font-size:11px}
-  .cover-details th {text-align:left;color:#555;font-weight:normal;padding:1mm 6mm 1mm 0;white-space:nowrap;vertical-align:top}
-  .cover-details td {padding:1mm 0;font-weight:bold}
-  #reportMap,body.printing #reportMap {width:520px;height:390px;margin:6mm auto 0;display:block;border:1px solid #999}
-  .map-caption {max-width:520px;margin:2mm auto 6mm;text-align:center;font-size:9.5px;color:#444;font-style:italic}
-  .group-topics > .slot,.fold-body > .slot {margin:0 0 5mm}
-  details.clear-fold {margin:5mm 0}
-  .fold-body {padding-top:3mm!important}
-  details.check {border-width:1px 1px 1px 5px}
-  .glance-table tr:nth-child(even) td {background:#f6f7f9}
-  .glance-table .glance-group th {background:var(--navy);color:#fff;font-size:11px}
-  .glance-key {font-size:9.5px;color:#333;margin:3mm 0 0;line-height:2}
-  .glance-key .chip {font-size:9.5px}
-  .verdict {font-size:13px}
-  .gaps-box {break-inside:avoid}
-  /* Full report: each section starts on a new page. */
-  /* The report runs on continuously: extra space before each section, and its heading stays with what follows. */
-  .details-start > .group,#nextSteps,#sourcesBox {margin-top:12mm}
-  .group > h2,#nextSteps > h2,.sources-fold h2 {break-after:avoid}
-  /* Key findings: the most serious results, before the table. */
-  .key-findings {border:2px solid var(--navy);border-radius:6px;padding:3mm 4mm;margin:4mm 0;break-inside:avoid}
-  .key-findings h3 {margin:0 0 2mm;color:var(--navy)}
-  .key-findings ol {margin:0;padding-left:5mm}
-  .key-findings li {margin:1.5mm 0}
-  .key-findings p {margin:2mm 0 0;font-size:10px;color:#444}
-  .cover-details td {overflow-wrap:anywhere}
-  .viewing-sheet {font-size:13px;margin:0 0 3mm}
-  /* Sources appendix: a neat, compact table. */
-  #sourcesBox table {width:100%;border-collapse:collapse;font-size:9.5px}
-  #sourcesBox th,#sourcesBox td {border:1px solid #ccc;padding:1.5mm 2mm;text-align:left;vertical-align:top}
-  #sourcesBox th {background:#eee}
-  #sourcesBox td:first-child {width:24%;font-weight:bold}
-  #sourcesBox td:last-child {width:26%}
-  /* Black-and-white friendly: each rating also has its own border pattern (with its symbol on the label). */
-  details.check.high {border-left:7px solid var(--high)}
-  details.check.medium {border-left:6px dashed var(--med)}
-  details.check.info {border-left:6px double var(--info, #1769aa)}
-  details.check.manual {border-left:5px dotted #555}
-  details.check.low {border-left:3px solid var(--low)}
-}
 
 /* ---------- data service status page (status.html) ---------- */
 .status-table td {vertical-align:top}
@@ -618,123 +529,8 @@ body.has-sticky footer {padding-bottom:100px}
   .status-table td[data-label]:not(:first-child)::before {content:attr(data-label);display:block;font-size:12px;font-weight:bold;color:var(--muted)}
 }
 
-/* ---------- printed report: a calm, Apple-like finish (system font, hairlines, rounded panels, generous space) ---------- */
-@media print {
-  @page {margin:16mm 15mm 18mm}
-  body {font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
-    font-size:10.5px;line-height:1.5;color:#1d1d1f;-webkit-font-smoothing:antialiased}
-  h1 {font-size:28px;font-weight:700;letter-spacing:-.02em;color:#1d1d1f;margin:0 0 4mm}
-  h2,h3,h4 {letter-spacing:-.01em;color:#1d1d1f}
-  .group > h2,#nextSteps > h2,.summary-title {font-size:19px;font-weight:650;color:#1d1d1f;border:0;border-bottom:.5px solid #d2d2d7;
-    padding:0 0 2.5mm;margin:0 0 5mm}
-  .details-start > .group > h2::before,#nextSteps > h2::before {color:#86868b;font-weight:500;margin-right:1.5mm}
-  .details-start > .group,#nextSteps,#sourcesBox {margin-top:18mm}
-  .group > .info-body {background:none;border:0;padding:0;margin:0 0 5mm;color:#6e6e73;font-size:11px}
-
-  /* Cover: property details and QR code, then the map. */
-  .cover-details {width:100%;border-collapse:collapse}
-  .cover-details th,.cover-details td {border-bottom:.5px solid #e5e5ea;padding:1.6mm 0}
-  .cover-details th {color:#86868b;font-weight:400;padding-right:6mm;width:30mm}
-  .cover-details td {font-weight:600;color:#1d1d1f}
-  .cover-row {gap:8mm}
-  .cover-qr svg {width:28mm;height:28mm}
-  #reportMap,body.printing #reportMap {border:.5px solid #d2d2d7;border-radius:14px;overflow:hidden;margin-top:8mm}
-  .map-caption {color:#86868b;font-style:normal;font-size:9px;margin:2.5mm auto 8mm}
-
-  /* Summary: verdict, key findings and the topic table. */
-  .verdict {font-size:13px;line-height:1.5}
-  .key-findings {border:0;background:#f5f5f7;border-radius:14px;padding:4.5mm 6mm;margin:5mm 0 7mm}
-  .key-findings h3 {font-size:13px;font-weight:650;color:#1d1d1f;margin:0 0 2.5mm}
-  .key-findings li {margin:2mm 0;line-height:1.5}
-  .glance h3 {font-size:13px;font-weight:650;margin:0 0 3mm}
-  .glance-table {border-collapse:separate;border-spacing:0;border:.5px solid #d2d2d7;border-radius:12px;overflow:hidden;font-size:10px}
-  .glance-table th,.glance-table td {border:0;border-bottom:.5px solid #e5e5ea;padding:2mm 3mm}
-  .glance-table thead th {background:#f5f5f7;color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
-  .glance-table .glance-group th {background:#fbfbfd;color:#1d1d1f;font-weight:650;font-size:10.5px;border-bottom:.5px solid #d2d2d7;padding-top:3mm}
-  .glance-table tr:nth-child(even) td {background:none}
-  .glance-table tbody tr:last-child td {border-bottom:0}
-  .glance-table td:first-child {font-weight:600;width:27%}
-  .glance-table td:nth-child(2) {width:21%}
-  .glance-key,.glance-note {color:#6e6e73}
-  .chip {border-radius:999px;padding:.6mm 2.4mm;font-size:9px;font-weight:600}
-
-  /* Topic cards: white, rounded, hairline border, room to breathe. */
-  .group-topics > .slot,.fold-body > .slot {margin:0 0 7mm}
-  details.check {border-top:.5px solid #d2d2d7;border-right:.5px solid #d2d2d7;border-bottom:.5px solid #d2d2d7;border-radius:12px;background:#fff}
-  details.check > summary {padding:4mm 5mm 2mm}
-  details.check > summary h3 {font-size:13px;font-weight:650}
-  details.check > summary .found {color:#3a3a3c}
-  .check-body {padding:0 5mm 4mm}
-  .check-body h4 {font-size:10.5px;font-weight:650;color:#1d1d1f;margin:4mm 0 1.5mm}
-  .check-body .info-body {background:#f5f5f7;border:0;border-radius:10px;padding:3mm 4mm;margin:3mm 0 0}
-  .check-body .table-wrap table {border-collapse:collapse;width:100%}
-  .check-body .table-wrap th,.check-body .table-wrap td {border:0;border-bottom:.5px solid #e5e5ea;padding:1.5mm 2mm}
-  .check-body .table-wrap th {color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.03em}
-
-  /* "No issue found" folds: a soft grey panel holding white cards. */
-  details.clear-fold {border:0;background:#f5f5f7;border-radius:16px;margin:7mm 0;padding:0 4mm 1mm}
-  details.clear-fold > summary {padding:3.5mm 1mm;color:#1d1d1f;font-weight:600}
-  .fold-body {padding-top:1mm!important}
-
-  /* Gaps box, next steps and sources in the same style. */
-  .gaps-box {border:.5px solid #d2d2d7;border-left:4px solid #8e8e93;border-radius:12px;background:#fbfbfd;padding:4mm 5mm;margin:6mm 0}
-  details.step-fold {border:.5px solid #d2d2d7;border-left:4px solid #1769aa;border-radius:12px;margin:6mm 0}
-  details.step-fold > .step-body {padding:0 5mm 4mm}
-  .checklist li {border-bottom:.5px solid #e5e5ea}
-  #sourcesBox table {border-collapse:separate;border-spacing:0;border:.5px solid #d2d2d7;border-radius:12px;overflow:hidden}
-  #sourcesBox th,#sourcesBox td {border:0;border-bottom:.5px solid #e5e5ea}
-  #sourcesBox th {background:#f5f5f7;color:#6e6e73;text-transform:uppercase;font-size:8.5px;letter-spacing:.04em}
-  #sourcesBox tr:last-child td {border-bottom:0}
-}
-@media print {
-  /* One text size inside cards and panels, smaller than the card heading. */
-  details.check > summary .found,.check-body p,.check-body li,.check-body td,.check-body .info-body,.gaps-box p,.gaps-box li,
-  .step-body p,.step-body li,.key-findings li {font-size:10.5px;line-height:1.5}
-  .check-body .info-body p {font-size:10px}
-  .cover-details th {background:none}
-  /* A section heading and its intro stay with the first card. */
-  .group > h2,.group > .info-body {break-after:avoid}
-  .group-topics > .slot:first-child {break-before:avoid}
-}
-@media print {
-  /* Simplicity: fewer boxes and lines, plain explanations, one quiet accent per card. */
-  .cover-details {width:auto;min-width:95mm}
-  .cover-details th {width:32mm}
-  .map-caption {margin:2.5mm auto 9mm}
-  .glance-key {font-size:9px;line-height:1.6;margin-top:3mm}
-  .glance-table th,.glance-table td {padding:2.4mm 3mm}
-
-  details.check {border:.5px solid #e0e0e5;border-radius:10px}
-  details.check.high {border-left:3px solid var(--high)}
-  details.check.medium {border-left:3px dashed var(--med)}
-  details.check.info {border-left:3px double var(--info)}
-  details.check.manual {border-left:3px dotted #6e6e73}
-  details.check.low {border-left:3px solid var(--low)}
-  details.check > summary {padding:4.5mm 6mm 2mm}
-  .check-body {padding:0 6mm 5mm}
-
-  /* Explanations as plain text with a small label; dates and sources are in the table at the end. */
-  .check-body .info-body {background:none;border:0;border-radius:0;padding:0;margin:4mm 0 0}
-
-  /* "No issue found" groups: a quiet subheading, then the cards as usual. */
-  details.clear-fold {background:none;border:0;border-radius:0;padding:0;margin:9mm 0 0}
-  details.clear-fold > summary {padding:0 0 3mm;color:#6e6e73;font-size:10.5px;font-weight:600}
-  .fold-names {color:#6e6e73}
-  .fold-body {padding:0!important}
-
-  .key-findings {padding:5mm 6mm}
-  .gaps-box {border-left:3px solid #8e8e93}
-  details.step-fold {border-left:3px solid #1769aa}
-  .live-link {font-size:9px;color:#6e6e73;overflow-wrap:anywhere;margin-top:8mm}
-}
-
-/* "What the words mean" page on paper: black text, a word never parted from its meaning. */
-@media print {
-  .glossary dt {color:#1d1d1f !important;font-size:12pt;margin-top:12pt;break-after:avoid}
-  .glossary dd {font-size:10.5pt;color:#1d1d1f;break-inside:avoid}
-}
-
-/* ---------- Calm screen (1.36.0): white cards, hairlines, one thin rating accent. See "Visual style" in CLAUDE.md. ---------- */
+/* ---------- screen only: the calm look (white cards, hairlines, one thin rating accent; "Visual style" in CLAUDE.md).
+   Kept out of print, which has its own rules in the print section at the end. ---------- */
 @media screen {
   h1,h2,h3 {font-weight:600;letter-spacing:-.015em}
   .panel {border:1px solid var(--border);border-radius:14px;box-shadow:none;padding:24px}
@@ -744,8 +540,6 @@ body.has-sticky footer {padding-bottom:100px}
 
   /* Topic cards: white, rounded, a hairline, and a thin accent in the rating's colour. */
   .check,details.clear-fold,details.step-fold {border:1px solid var(--border);border-left-width:3px;border-radius:12px;margin:12px 0}
-  .check.loading {border-left-color:var(--border)}
-  details.step-fold {border-left-color:var(--border)}
 
   /* Summary: lighter topic tiles (white, a hairline, the rating shown by its colour, symbol and a thin top line). */
   .topic-strip {gap:8px}
@@ -776,26 +570,177 @@ body.has-sticky footer {padding-bottom:100px}
   .guide {background:var(--surface-2)}
 }
 
-/* Printout extras (1.36.0): a one-line contents under the summary, and a lined notes page at the end. */
+/* The short printout's smaller map (set while printing, like the full report's map size). */
+body.print-summary.printing #reportMap {width:400px;height:300px}
+/* ---------- printed report, the short printout and the glossary on paper: every print rule is here ---------- */
 @media print {
+  .notes textarea {display:none}
+  .notes-print {display:block;border:1px solid #999;border-radius:6px;padding:8px;min-height:30px}
+  .notes-print:empty::before {content:"(No notes)";color:#666}
+  .saved-note button,#refreshBtn {display:none!important}
+  body.print-summary .details-start,body.print-summary #sourcesBox,body.print-summary .topic-strip,
+  body.print-summary .next-steps,body.print-summary .print-contents,body.print-summary .notes-page {display:none!important}
+  .app-bar,.why-box,.backup-note {display:none!important}
+  /* "At the viewing" is a sheet to take along: it gets a page of its own. */
+  #viewing {break-before:page;break-after:page}
+  body {background:#fff}
+  header,footer,.no-print,#searchPanel,#savedPanel,#comparePanel {display:none!important}
+  .container {padding:0;max-width:none}
+  .panel {border:0;box-shadow:none;padding:0;margin:0}
+  a {color:#222;text-decoration:none}
+  .details-start {margin-top:10mm}
+  /* Long topic cards may continue on the next page (avoiding that left half-empty pages); a heading stays with its text. */
+  .checklist li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
+  details.check > summary,.check-body h4 {break-after:avoid}
+  .info-row {display:none!important}
+  .info-btn,[data-retry] {display:none!important}
+  .info-body[hidden] {display:block!important}
+  tr.list-extra[hidden] {display:table-row!important}
+  li.list-extra[hidden] {display:list-item!important}
+  .leaflet-control-zoom {display:none}
+  @page {size:A4;margin:14mm 14mm 16mm}
+  /* Paper shows what a reader needs: the at-a-glance table instead of the tappable grid, no app instructions. */
+  .print-only {display:block!important}
+  .topic-strip,.saved-note,#info-read,.rating-legend {display:none!important}
+  .key-findings a {color:inherit;text-decoration:none}
+  .glance-table {width:100%}
+  .glance-table th,.glance-table td {border:1px solid #bbb;text-align:left;vertical-align:top}
+  .glance-table th {background:#eee}
+  .glance-table tr {break-inside:avoid}
+  .glance-table .chip {white-space:nowrap}
+  .glance-note {font-size:10px;color:#444;margin:6px 0 0}
+  /* A professional printout: calm type, colours that print, room between cards, numbered sections. */
+  * {-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #report {counter-reset:section}
+  .meta {display:none}
+  .cover-row {display:flex!important}
+  .cover-qr {margin:3mm 0 0;text-align:center;flex:none}
+  .cover-qr svg {display:block}
+  .cover-qr figcaption {font-size:8.5px;color:#444;margin-top:1mm}
+  .cover-details {border-collapse:collapse;margin:3mm 0 0;font-size:11px}
+  .cover-details th {text-align:left;color:#555;font-weight:normal;padding:1mm 6mm 1mm 0;vertical-align:top}
+  .cover-details td {padding:1mm 0}
+  #reportMap,body.printing #reportMap {width:520px;height:390px;margin:6mm auto 0}
+  .map-caption {text-align:center;font-size:9.5px;color:#444;font-style:italic}
+  .glance-key {color:#333;margin:3mm 0 0}
+  .glance-key .chip {font-size:9.5px}
+  .gaps-box {break-inside:avoid}
+  .group > h2,#nextSteps > h2,.sources-fold h2 {break-after:avoid}
+  /* Key findings: the most serious results, before the table. */
+  .key-findings {border:2px solid var(--navy);border-radius:6px;margin:4mm 0;break-inside:avoid}
+  .key-findings ol {margin:0;padding-left:5mm}
+  .key-findings p {margin:2mm 0 0;font-size:10px;color:#444}
+  .viewing-sheet {font-size:13px;margin:0 0 3mm}
+  /* Sources appendix: a neat, compact table. */
+  #sourcesBox table {width:100%;font-size:9.5px}
+  #sourcesBox th,#sourcesBox td {padding:1.5mm 2mm;text-align:left}
+  #sourcesBox td:first-child {width:24%;font-weight:bold}
+  #sourcesBox td:last-child {width:26%}
+  @page {margin:16mm 15mm 18mm}
+  body {font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size:10.5px;line-height:1.5;color:#1d1d1f;-webkit-font-smoothing:antialiased}
+  h1 {font-size:28px;font-weight:700;letter-spacing:-.02em;color:#1d1d1f;margin:0 0 4mm}
+  h2,h3,h4 {letter-spacing:-.01em;color:#1d1d1f}
+  .group > h2,#nextSteps > h2,.summary-title {font-size:19px;font-weight:650;color:#1d1d1f;border:0;border-bottom:.5px solid #d2d2d7;
+    padding:0 0 2.5mm;margin:0 0 5mm}
+  .details-start > .group > h2::before,#nextSteps > h2::before {color:#86868b;font-weight:500;margin-right:1.5mm;counter-increment:section;content:counter(section) ". "}
+  .details-start > .group,#nextSteps,#sourcesBox {margin-top:18mm}
+  .group > .info-body {background:none;border:0;padding:0;margin:0 0 5mm;color:#6e6e73;font-size:11px}
+
+  /* Cover: property details and QR code, then the map. */
+  .cover-details {border-collapse:collapse}
+  .cover-details th,.cover-details td {border-bottom:.5px solid #e5e5ea;padding:1.6mm 0}
+  .cover-details th {color:#86868b;font-weight:400;padding-right:6mm}
+  .cover-details td {font-weight:600;color:#1d1d1f;overflow-wrap:anywhere}
+  .cover-row {gap:8mm;align-items:flex-start;justify-content:space-between}
+  .cover-qr svg {width:28mm;height:28mm}
+  #reportMap,body.printing #reportMap {border:.5px solid #d2d2d7;border-radius:14px;overflow:hidden;margin-top:8mm;display:block}
+  .map-caption {color:#86868b;font-style:normal;font-size:9px}
+
+  /* Summary: verdict, key findings and the topic table. */
+  .verdict {font-size:13px;line-height:1.5}
+  .key-findings {border:0;background:#f5f5f7;border-radius:14px;margin:5mm 0 7mm}
+  .key-findings h3 {font-size:13px;font-weight:650;color:#1d1d1f;margin:0 0 2.5mm}
+  .key-findings li {margin:2mm 0;line-height:1.5}
+  .glance h3 {font-size:13px;font-weight:650;margin:0 0 3mm}
+  .glance-table {border-collapse:separate;border-spacing:0;border:.5px solid #d2d2d7;border-radius:12px;overflow:hidden;font-size:10px}
+  .glance-table th,.glance-table td {border:0;border-bottom:.5px solid #e5e5ea}
+  .glance-table thead th {background:#f5f5f7;color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+  .glance-table .glance-group th {background:#fbfbfd;color:#1d1d1f;font-weight:650;font-size:10.5px;border-bottom:.5px solid #d2d2d7;padding-top:3mm}
+  .glance-table tr:nth-child(even) td {background:none}
+  .glance-table tbody tr:last-child td {border-bottom:0}
+  .glance-table td:first-child {font-weight:600;width:27%}
+  .glance-table td:nth-child(2) {width:21%}
+  .glance-key,.glance-note {color:#6e6e73}
+  .chip {border-radius:999px;padding:.6mm 2.4mm;font-size:9px;font-weight:600}
+
+  /* Topic cards: white, rounded, hairline border, room to breathe. */
+  .group-topics > .slot,.fold-body > .slot {margin:0 0 7mm}
+  details.check {background:#fff}
+  details.check > summary h3 {font-size:13px;font-weight:650}
+  details.check > summary .found {color:#3a3a3c}
+  .check-body h4 {font-size:10.5px;font-weight:650;color:#1d1d1f;margin:4mm 0 1.5mm}
+  .check-body .table-wrap table {border-collapse:collapse;width:100%}
+  .check-body .table-wrap th,.check-body .table-wrap td {border:0;border-bottom:.5px solid #e5e5ea;padding:1.5mm 2mm}
+  .check-body .table-wrap th {color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.03em}
+
+  /* Gaps box, next steps and sources in the same style. */
+  .gaps-box {border:.5px solid #d2d2d7;border-radius:12px;background:#fbfbfd;padding:4mm 5mm;margin:6mm 0}
+  details.step-fold {border:.5px solid #d2d2d7;border-radius:12px;margin:6mm 0}
+  details.step-fold > .step-body {padding:0 5mm 4mm}
+  .checklist li {border-bottom:.5px solid #e5e5ea}
+  #sourcesBox table {border-collapse:separate;border-spacing:0;border:.5px solid #d2d2d7;border-radius:12px;overflow:hidden}
+  #sourcesBox th,#sourcesBox td {border:0;border-bottom:.5px solid #e5e5ea;vertical-align:top}
+  #sourcesBox th {background:#f5f5f7;color:#6e6e73;text-transform:uppercase;font-size:8.5px;letter-spacing:.04em}
+  #sourcesBox tr:last-child td {border-bottom:0}
+  /* One text size inside cards and panels, smaller than the card heading. */
+  details.check > summary .found,.check-body p,.check-body li,.check-body td,.check-body .info-body,.gaps-box p,.gaps-box li,
+  .step-body p,.step-body li,.key-findings li {font-size:10.5px;line-height:1.5}
+  .check-body .info-body p {font-size:10px}
+  /* A section heading and its intro stay with the first card. */
+  .group > h2,.group > .info-body {break-after:avoid}
+  .group-topics > .slot:first-child {break-before:avoid}
+  /* Simplicity: fewer boxes and lines, plain explanations, one quiet accent per card. */
+  .cover-details {width:auto;min-width:95mm}
+  .cover-details th {width:32mm;white-space:nowrap;background:none}
+  .map-caption {margin:2.5mm auto 9mm;max-width:520px}
+  .glance-key {font-size:9px;line-height:1.6;margin-top:3mm}
+  .glance-table th,.glance-table td {padding:2.4mm 3mm}
+
+  details.check {border:.5px solid #e0e0e5;border-radius:10px}
+  details.check.high {border-left:3px solid var(--high)}
+  details.check.medium {border-left:3px dashed var(--med)}
+  details.check.info {border-left:3px double var(--info)}
+  details.check.manual {border-left:3px dotted #6e6e73}
+  details.check.low {border-left:3px solid var(--low)}
+  details.check > summary {padding:4.5mm 6mm 2mm}
+  .check-body {padding:0 6mm 5mm}
+
+  /* Explanations as plain text with a small label; dates and sources are in the table at the end. */
+  .check-body .info-body {background:none;border:0;border-radius:0;padding:0;margin:4mm 0 0}
+
+  /* "No issue found" groups: a quiet subheading, then the cards as usual. */
+  details.clear-fold {background:none;border:0;border-radius:0;padding:0;margin:9mm 0 0}
+  details.clear-fold > summary {padding:0 0 3mm;color:#6e6e73;font-size:10.5px;font-weight:600}
+  .fold-names {color:#6e6e73}
+  .fold-body {padding:0!important}
+
+  .key-findings {padding:5mm 6mm}
+  .gaps-box {border-left:3px solid #8e8e93}
+  details.step-fold {border-left:3px solid #1769aa}
+  .live-link {font-size:9px;color:#6e6e73;overflow-wrap:anywhere;margin-top:8mm}
+  .glossary dt {color:#1d1d1f !important;font-size:12pt;margin-top:12pt;break-after:avoid}
+  .glossary dd {font-size:10.5pt;color:#1d1d1f;break-inside:avoid}
   .print-contents {font-size:10.5px;color:#6e6e73;margin:4mm 0 0}
   .print-contents strong {color:#1d1d1f;font-weight:600}
   .notes-page {break-before:page}
   .notes-page h2 {font-size:16px;font-weight:600;margin:0 0 4mm}
   .note-line {border-bottom:.5px solid #d2d2d7;height:9.5mm}
-}
-/* The short printout fits on 2 pages: a tighter topic table and smaller closing lines. */
-@media print {
   body.print-summary .glance-table th,body.print-summary .glance-table td {padding:1.5mm 3mm}
   body.print-summary .glance-table .glance-group th {padding-top:2mm}
   body.print-summary #report > p.help {font-size:8.5px;margin:2mm 0}
-}
-body.print-summary.printing #reportMap {width:400px;height:300px}
-@media print {
   span.print-only {display:inline!important}   /* a word shown only on paper stays in its sentence */
   body.print-summary .map-caption {margin-bottom:3mm}
-}
-@media print {
   /* The short printout is the cover, key findings and the topic table only: the table already marks every gap. */
   body.print-summary .gaps-box,body.print-summary #summaryBox > .notice {display:none!important}
   .glance h3 {break-after:avoid}
