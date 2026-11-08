@@ -44,6 +44,8 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
   ask OpenStreetMap's Nominatim at once (it allows one request a second): every live request to it waits its turn in
   `nominatimTurn()`.
 - **Free for everyone:** no paywall, adverts or accounts (`MONETISATION.md`).
+- **New features paused** (owner, 8 November 2026): improve existing topics and features only; add no new topic or
+  feature until the owner says otherwise (`ROADMAP.md`, Part 2).
 - **The owner decides:** plan and quiz before larger work; small choices follow the recommendation. Ask before a new
   library, outside service, redesign or build step. Open a pull request only when asked; never merge or approve.
 

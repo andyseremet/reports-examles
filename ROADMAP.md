@@ -200,6 +200,21 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ## Part 2: Planned next steps
 
+### New features paused (owner, 8 November 2026)
+
+No new topics or features for now: the work goes into improving the existing ones, until the owner says otherwise.
+2.3.0 (flooding if a reservoir failed) was chosen and built before the pause and is kept. Flood defences nearby is on
+hold (Part 3). Chosen first, in the quiz of 8 November 2026:
+
+1. **Faster reports in outages:** when Environment Agency services failed on and off (8 November), a report took
+   75–140 seconds instead of the usual 14–30. Show the rest of the report sooner, with Try again on the topic that is
+   waiting.
+2. **Third place review:** run the app on about 8 very different places, as on 4 and 7 November (Part 4), and fix
+   wrong, odd or unclear results.
+3. **Code review of the app** (`js/`), and fix what is found.
+4. **Wording and phone review:** plain English and consistency in every topic's text, and each screen checked on a
+   phone with screenshots.
+
 ### Version 2.0 is complete
 
 Version 2.0, the planned final version, shipped in five steps on 7 and 8 November 2026: 1.34.0 the backups, 1.35.0 the
@@ -234,7 +249,7 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 
 | Idea | Notes |
 |---|---|
-| Flood defences nearby | Next, after reservoir flooding (2.3.0) (owner, 8 November 2026): walls and embankments protecting the area, from Defra's flood defence layer (updated October 2026). Plan and quiz first. |
+| Flood defences nearby | On hold while new features are paused (owner, 8 November 2026): walls and embankments protecting the area, from Defra's flood defence layer (updated October 2026). Plan and quiz first. |
 | Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
 | Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
 
