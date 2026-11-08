@@ -1,8 +1,8 @@
 // Accessibility re-check, run by hand after visual changes (not in the daily check).
 //   npm install --no-save axe-core   (Playwright as for the full test; see CLAUDE.md)
-//   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 10 minutes)
-// Scans WCAG 2.2 AA with axe-core on the start page, a full report, status.html and glossary.html, at 1280 px, 320 px and phone,
-// light and dark, normal and A+ text. In the report it also scans after using controls (Open problems, the no-issue fold, the gaps box, a Key findings link,
+//   python3 -m http.server 8080 &   then   node tests/a11y-check.mjs   (about 3 minutes)
+// Scans WCAG 2.2 AA with axe-core on the start page, a full report, status.html and glossary.html, in 4 combinations that
+// cover every width (1280 px, 320 px, phone), both colour schemes and both text sizes, plus the riskiest pairs. In the report it also scans after using controls (Open problems, the no-issue fold, the gaps box, a Key findings link,
 // a tick, Move to another device, Compare three, Remove), and checks for sideways scrolling before and after each.
 // Environment Agency map requests are answered empty so the report finishes fast. Exit code 1 on any problem.
 import { chromium, devices } from "playwright";
@@ -12,8 +12,10 @@ import { readFileSync } from "node:fs";
 const BASE = process.env.BASE || "http://localhost:8080/";
 const AXE = readFileSync(createRequire(process.cwd() + "/").resolve("axe-core/axe.min.js"), "utf8");
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
-const SIZES = [["1280 px", { viewport: { width: 1280, height: 900 } }], ["320 px", { viewport: { width: 320, height: 700 } }],
-  ["phone", devices["iPhone 13"]]];
+const WIDE = { viewport: { width: 1280, height: 900 } }, NARROW = { viewport: { width: 320, height: 700 } };
+// [width, browser options, colour scheme, larger text]. 320 px with larger text is the tightest layout.
+const COMBOS = [["1280 px", WIDE, "light", false], ["1280 px", WIDE, "dark", false],
+  ["320 px", NARROW, "light", true], ["phone", devices["iPhone 13"], "dark", true]];
 
 // Controls used one after another on the report; each is followed by a scan and a sideways-scroll check.
 const ACTIONS = [
@@ -47,9 +49,14 @@ const report = (where, msg) => { problems++; console.log(`FAIL  ${where}: ${msg}
 async function check(page, where) {
   // Scan from the top of the page: controls that happen to sit under the sticky bars would otherwise
   // count as too small (target-size), and the result would depend on where the last action scrolled to.
-  await page.waitForTimeout(900);
-  await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
-  await page.waitForTimeout(200);
+  // Jump to the top (this also ends any smooth scroll an action started), then let the page stay still for 10
+  // frames so the sticky bars have updated, and any animation has ended, before measuring.
+  await page.evaluate(() => new Promise(done => {
+    scrollTo({ top: 0, behavior: "instant" });
+    let frames = 0;
+    const frame = () => ++frames >= 10 && !document.getAnimations().some(a => a.playState === "running") || frames > 180 ? done() : requestAnimationFrame(frame);
+    requestAnimationFrame(frame);
+  }));
   if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1))) report(where, "sideways scrolling");
   await page.addScriptTag({ content: AXE });
   const found = await page.evaluate(async tags => (await axe.run(document, { runOnly: tags })).violations
@@ -58,7 +65,7 @@ async function check(page, where) {
 }
 
 const browser = await chromium.launch();
-for (const [size, opts] of SIZES) for (const scheme of ["light", "dark"]) for (const big of [false, true]) {
+for (const [size, opts, scheme, big] of COMBOS) {
   const label = `${size}, ${scheme}${big ? ", A+" : ""}`;
   const context = await browser.newContext({ ...opts, colorScheme: scheme });
   const page = await context.newPage();

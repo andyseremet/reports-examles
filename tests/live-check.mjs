@@ -30,6 +30,8 @@ const ON_GITHUB = process.env.GITHUB_ACTIONS === "true";
 // pull requests do this, so they test the app itself. The daily run and manual runs (by default) check them all.
 // The postcode lookup and address search (marked alwaysChecked) are always checked: the app needs them to find the place.
 const CHECK_DATA_SERVICES = process.env.DATA_SERVICES !== "0";
+// ONLY_SERVICES="name|name": check just these data services and stop (after-merge.sh asks failed ones again).
+const ONLY_SERVICES = (process.env.ONLY_SERVICES || "").split("|").filter(Boolean);
 const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && !options.sameSite;
 
 // Steady pull request checks (2.0.0, quiz of 7 November 2026). RECORD=1 (daily and manual runs) saves each answer the
@@ -98,12 +100,22 @@ async function steadyContext(context) {
   });
 }
 const annotation = text => String(text).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
-const record = (group, name, pass, info = "") => {
-  results.push({ group, name, pass: pass === "warn" ? true : pass, warn: pass === "warn", info: String(info).slice(0, 900) });
+const record = (group, name, pass, info = "", ms) => {
+  results.push({ group, name, pass: pass === "warn" ? true : pass, warn: pass === "warn", info: String(info).slice(0, 900), ...(ms !== undefined && { ms }) });
   const label = pass === "warn" ? "WARN" : pass ? "PASS" : "FAIL";
   if (!QUIET || label !== "PASS") console.log(`${label}  [${group}] ${name}${info ? "  – " + String(info).slice(0, 160) : ""}`);
   if (ON_GITHUB && label !== "PASS")
     console.log(`::${label === "FAIL" ? "error" : "warning"} title=${annotation(`[${group}] ${name}`).replace(/[,:]/g, " ")}::${annotation(String(info).slice(0, 300))}`);
+};
+// Runs one test step and records its result and how long it took (tests/digest.mjs lists the slowest).
+// A step returns its details (a string), false for a plain failure, or { warn } for an allowed warning.
+const timedStep = group => async (name, fn) => {
+  const t0 = Date.now(), ms = () => Date.now() - t0;
+  try {
+    const info = await fn();
+    if (info && info.warn) record(group, name, "warn", info.warn, ms());
+    else record(group, name, info !== false, info === false ? "" : info || "", ms());
+  } catch (e) { record(group, name, false, e.message.split("\n")[0], ms()); }
 };
 
 // The Environment Agency map server sometimes refuses GitHub's shared test machines
@@ -276,6 +288,8 @@ async function checkService([name, url, expect, options = {}]) {
 /* ---------------------------------------------------------------
    2. The page in a browser
 --------------------------------------------------------------- */
+// A minute between reports keeps the Environment Agency map server under its limit. Skipped when the report pages
+// are answered from the recording (REPLAY), until a question missing from it has to ask that server live.
 const PAUSE_BEFORE_REPORT_MS = Number(process.env.PAUSE_MS ?? 60000);
 
 const DEVICES = [
@@ -308,10 +322,7 @@ async function testCountryData() {
   const page = await context.newPage();
   let eaRequests = 0;
   await page.route("https://environment.data.gov.uk/spatialdata/**", r => { eaRequests++; return r.fulfill({ json: { features: [] } }); });
-  const step = async (name, fn) => {
-    try { const info = await fn(); record(group, name, info !== false, info === false ? "" : info || ""); }
-    catch (e) { record(group, name, false, e.message.split("\n")[0]); }
-  };
+  const step = timedStep(group);
   try {
     await page.goto(BASE, { waitUntil: "load" });
     await page.waitForFunction(() => typeof getScotlandSites === "function", null, { timeout: 30000 });
@@ -595,20 +606,25 @@ async function testDevice(device, [postcode, place]) {
   page.on("requestfailed", req => {
     if (!/tile|png|jpg/.test(req.url())) failedRequests.push(`${shortUrl(req.url())} → ${req.failure() ? req.failure().errorText : "failed"}`);
   });
-  const step = async (name, fn) => {
-    try {
-      const info = await fn();
-      if (info && info.warn) record(group, name, "warn", info.warn);
-      else record(group, name, info !== false, info === false ? "" : info || "");
-    }
-    catch (e) { record(group, name, false, e.message.split("\n")[0]); }
-  };
+  const step = timedStep(group);
+  // Steps that do not depend on the screen size run once, on the desktop; layout steps run on every device.
+  const desktopStep = device.name === "Desktop" ? step : async () => {};
+  // Wait until the condition holds, at most a few seconds. Answers whether it did.
+  const until = (fn, arg, ms = 5000) => page.waitForFunction(fn, arg, { timeout: ms }).then(() => true, () => false);
+  // Wait until a smooth scroll has finished: the page stays still for 15 frames (a scroll that starts a little
+  // late is still caught), at most 3 seconds. Never throws, so a page that is navigating cannot stop the run.
+  const scrolled = () => page.evaluate(() => new Promise(done => {
+    let y = scrollY, still = 0;
+    const end = Date.now() + 3000;
+    const frame = () => { still = scrollY === y ? still + 1 : 0; y = scrollY; still >= 15 || Date.now() > end ? done() : requestAnimationFrame(frame); };
+    requestAnimationFrame(frame);
+  })).catch(() => {});
   const file = name => `${OUT}/${device.name.replace(/\W+/g, "-")}-${name}.png`;
 
   let guideAtStart = false;
   await step("Page opens with the search ready", async () => {
     await page.goto(BASE, { waitUntil: "load" });
-    await page.waitForTimeout(1500);
+    await page.waitForSelector("#map.leaflet-container");
     guideAtStart = await page.$eval("#guide", g => !g.classList.contains("hidden") && g.querySelectorAll("li").length === 3);
     // The search box shows above the map, outside it (1.36.0), and the map's own search button stays hidden.
     const r = await page.evaluate(() => {
@@ -632,7 +648,7 @@ async function testDevice(device, [postcode, place]) {
   await step("Full-screen map covers the screen and closes", async () => {
     await page.$eval("#map", x => x.scrollIntoView({ block: "center" }));
     await page.click(".leaflet-top.leaflet-right .map-ctrl:nth-child(2) .map-btn");
-    await page.waitForTimeout(600);
+    await until(() => mapIsFull);
     const r = await page.evaluate(() => { const b = document.getElementById("map").getBoundingClientRect(); return [b.left, b.top, b.width, b.height, innerWidth, innerHeight].map(Math.round); });
     if (!(await page.$eval("#confirmText", x => x.textContent)).includes(postcode)) throw new Error("pressing the full-screen button moved the pin");
     const searchInMap = await page.evaluate(() => document.getElementById("map").contains(document.getElementById("searchBox"))
@@ -640,13 +656,13 @@ async function testDevice(device, [postcode, place]) {
     if (!searchInMap) throw new Error("the full-screen map has no search button");
     await page.screenshot({ path: file("fullscreen") });
     await page.click(".leaflet-top.leaflet-right .map-ctrl:nth-child(2) .map-btn");
-    await page.waitForTimeout(600);
+    await until(() => !mapIsFull);
     const closed = !(await page.evaluate(() => mapIsFull)) && await page.evaluate(() => !document.getElementById("map").contains(document.getElementById("searchBox")));
     if (!(await page.$eval("#confirmText", x => x.textContent)).includes(postcode)) throw new Error("closing full screen moved the pin");
     return r[0] === 0 && r[1] === 0 && Math.abs(r[2] - r[4]) <= 1 && Math.abs(r[3] - r[5]) <= 1 && closed ? `map ${r[2]}×${r[3]}` : false;
   });
 
-  await step("Offline: says so and waits to run the check", async () => {
+  await desktopStep("Offline: says so and waits to run the check", async () => {
     await page.context().setOffline(true);
     try {
       await page.click("#runBtn");
@@ -657,8 +673,7 @@ async function testDevice(device, [postcode, place]) {
       if (started) throw new Error("a report started with no signal");
       if (!/will start by itself/.test(text)) throw new Error(`unexpected message: ${text}`);
     } finally { await page.context().setOffline(false); }
-    await page.waitForTimeout(500);
-    const gone = await page.$eval("#offlineBar", x => x.classList.contains("hidden"));
+    const gone = await until(() => document.getElementById("offlineBar").classList.contains("hidden"));
     const started = await page.evaluate(() => !!run);
     if (started) throw new Error("the cancelled check still started");
     return gone ? "message shown, check waited and was cancelled" : false;
@@ -701,18 +716,19 @@ async function testDevice(device, [postcode, place]) {
     return `${total} topics in ${secs} s` + (auto.length ? ` (retried by itself: ${auto.join(", ")})` : "")
       + (retried.length ? ` (needed Try again: ${retried.join(", ")})` : "");
   });
-  await step("3-step guide on the first visit, hidden after the first report", async () => {
+  await desktopStep("3-step guide on the first visit, hidden after the first report", async () => {
     const hiddenNow = await page.$eval("#guide", g => g.classList.contains("hidden"));
     return guideAtStart && hiddenNow ? "shown, then hidden" : false;
   });
   await page.$eval("#reportTop", x => x.scrollIntoView()).catch(() => {});
-  await page.waitForTimeout(1500);
+  await scrolled();
+  await until(() => document.querySelector("#reportMap .leaflet-tile-loaded"));
   await page.screenshot({ path: file("report") });
 
   await step("Topic icons and section bar", async () => {
     const icons = await page.$$eval(".topic-strip li", l => l.length);
     await page.click('#reportNav a[data-nav="group-living"]');
-    await page.waitForTimeout(1500);
+    await scrolled();
     const active = await page.$eval("#reportNav a.active", x => x.textContent).catch(() => null);
     return icons >= 13 && active === "Living" ? `${icons} icons, section bar ok` : false;
   });
@@ -740,7 +756,7 @@ async function testDevice(device, [postcode, place]) {
     const id = await link.getAttribute("data-open");
     await page.evaluate(i => { const d = document.getElementById(i); d.open = false; const f = d.closest(".clear-fold"); if (f) f.open = false; }, id);
     await link.click();
-    await page.waitForTimeout(1200);
+    await scrolled();
     const r = await page.evaluate(i => {
       const d = document.getElementById(i), bar = document.getElementById("reportNav").getBoundingClientRect().bottom;
       const f = d.closest(".clear-fold");
@@ -829,7 +845,7 @@ async function testDevice(device, [postcode, place]) {
       return { below: t.top >= top - 1, above: t.top < bar, toTop: up.height === 0 || up.bottom <= bar + 1 };
     });
     await page.click('#tabBar a[data-tab="nextSteps"]');
-    await page.waitForTimeout(1200);
+    await scrolled();
     const r = await landed();
     if (!r.below || !r.above) throw new Error("Next steps did not land between the top bars and the tab bar");
     if (!r.toTop) throw new Error("the Back to top button covers the tab bar");
@@ -837,7 +853,7 @@ async function testDevice(device, [postcode, place]) {
     const n = await page.evaluate(() => problemTopics().length);
     if (!n) { if (!(await page.isDisabled("#tabProblems"))) throw new Error("Problems is not greyed out with no problems"); return "no problems here"; }
     await page.click("#tabProblems");
-    await page.waitForTimeout(1200);
+    await scrolled();
     const p = await page.evaluate(() => { const d = document.activeElement.closest("details.check");
       return { id: d && d.id, open: d && d.open, problem: d && (d.classList.contains("high") || d.classList.contains("medium")),
         visible: d && d.getBoundingClientRect().top >= document.getElementById("reportNav").getBoundingClientRect().bottom - 1 }; });
@@ -876,13 +892,11 @@ async function testDevice(device, [postcode, place]) {
     return r.want.length ? `${r.want.length} gap(s): ${r.want.join(", ")}` : "no gaps, box hidden";
   });
 
-  await step("Tapping a topic shows why", async () => {
+  await desktopStep("Tapping a topic shows why", async () => {
     await page.click('.topic-strip [data-why="radon"]');
-    await page.waitForTimeout(300);
     const text = await page.$eval("#whyBox", x => x.hidden ? "" : x.textContent.replace(/\s+/g, " ").trim());
     const expanded = await page.$eval('.topic-strip [data-why="radon"]', x => x.getAttribute("aria-expanded"));
     await page.click('.topic-strip [data-why="radon"]');   // tap again to close
-    await page.waitForTimeout(300);
     const closed = await page.$eval("#whyBox", x => x.hidden);
     return text.startsWith("Radon") && text.length > 25 && expanded === "true" && closed ? text.slice(0, 70) + "…" : false;
   });
@@ -900,7 +914,7 @@ async function testDevice(device, [postcode, place]) {
     return r.crime || "ok";
   });
 
-  await step("Crime where the police publish no data", async () => {
+  await desktopStep("Crime where the police publish no data", async () => {
     // Central Manchester: Greater Manchester Police has published no data since March 2025. Whatever the
     // police data says on the day, the report must not show a near-empty count as a real, low crime level.
     const r = await page.evaluate(async () => {
@@ -913,7 +927,7 @@ async function testDevice(device, [postcode, place]) {
     return `${r.total} crimes within a mile → ${r.status === "manual" ? "Check yourself" : "shown"}: ${r.found.slice(0, 70)}…`;
   });
 
-  await step("Coastal erosion on an eroding coast", async () => {
+  await desktopStep("Coastal erosion on an eroding coast", async () => {
     // Happisburgh, Norfolk: the village edge is inside the area the coast is expected to reach by 2105.
     const r = await page.evaluate(async () => {
       const loc = { name: "Happisburgh test", lat: 52.8245, lon: 1.5325, radius: 1000 };
@@ -928,7 +942,7 @@ async function testDevice(device, [postcode, place]) {
     return r.found.slice(0, 90) + "…";
   });
 
-  await step("Data service status page", async () => {
+  await desktopStep("Data service status page", async () => {
     // Open status.html with a sample of today's results (the published file may not exist yet on a pull
     // request), and check it lists every service with a status, its topics and the 7-day dots.
     const sample = {
@@ -956,7 +970,7 @@ async function testDevice(device, [postcode, place]) {
     return `${r.rows} services listed; ${r.verdict.trim()}`;
   });
 
-  await step("What the words mean: every linked word has its meaning, linked from the report and footer", async () => {
+  await desktopStep("What the words mean: every linked word has its meaning, linked from the report and footer", async () => {
     const ids = await page.evaluate(() => [...new Set(Object.values(GLOSSARY))]);
     const links = await page.evaluate(() => ({
       footer: !!document.querySelector('footer a[href="glossary.html"]'),
@@ -976,7 +990,7 @@ async function testDevice(device, [postcode, place]) {
     return `${r.entries} words explained`;
   });
 
-  await step("Slow report names the service it is waiting for", async () => {
+  await desktopStep("Slow report names the service it is waiting for", async () => {
     // Every outside service answers at once with no data, except "flooding from heavy rain", which is held
     // back. After 8 seconds the summary must name the Environment Agency and that topic. Nothing is sent
     // to the outside services in this step.
@@ -999,7 +1013,7 @@ async function testDevice(device, [postcode, place]) {
     } finally { await slowPage.close(); }
   });
 
-  await step("Next steps: notes, viewing and checklist folded, each with a count", async () => {
+  await desktopStep("Next steps: notes, viewing and checklist folded, each with a count", async () => {
     const r = await page.evaluate(() => [...document.querySelectorAll("#nextSteps details.step-fold")]
       .map(d => ({ id: d.id, open: d.open, count: d.querySelector(":scope > summary .step-count").textContent })));
     const ids = r.map(x => x.id).join(",");
@@ -1011,12 +1025,12 @@ async function testDevice(device, [postcode, place]) {
     return r.map(x => `${x.id}: ${x.count}`).join(" · ");
   });
 
-  await step("Send to my conveyancer", async () => {
+  await desktopStep("Send to my conveyancer", async () => {
     await page.click("#checklist > summary");
     const text = await page.evaluate(() => conveyancerText());
     if (!text.includes("?lat=") || !text.includes("Please could you include these searches")) throw new Error("the email text is incomplete");
     await page.click("#emailConveyancer");
-    await page.waitForTimeout(300);
+    await until(() => document.getElementById("sendNote").textContent);
     const note = await page.$eval("#sendNote", x => x.textContent);
     if (!note.startsWith("Opening your email app")) throw new Error("the email button did not respond");
     return `email text ${text.length} characters`;
@@ -1024,7 +1038,7 @@ async function testDevice(device, [postcode, place]) {
 
   await step("Viewing checklist: short, serious topics first, ticks remembered", async () => {
     await page.click("#viewingBtn");
-    await page.waitForTimeout(800);
+    await scrolled();
     const r = await page.evaluate(() => {
       const items = [...document.querySelectorAll("#viewing input[data-tick]")].map(b => b.dataset.tick);
       const flagged = orderedResults().filter(c => ["high", "medium"].includes(c.status))
@@ -1054,19 +1068,18 @@ async function testDevice(device, [postcode, place]) {
     return `${r.items.length} items; first: ${r.items[0].slice(0, 60)}…`;
   });
 
-  await step("Back returns to the search, Forward reopens the report", async () => {
+  await desktopStep("Back returns to the search, Forward reopens the report", async () => {
     await page.goBack();
-    await page.waitForTimeout(1000);
-    const backOk = await page.evaluate(() => location.search === "" && document.getElementById("toolbar").classList.contains("hidden"));
+    const backOk = await until(() => location.search === "" && document.getElementById("toolbar").classList.contains("hidden"));
     await page.goForward();
     await reportDone(page);
     return backOk ? "ok" : false;
   });
 
-  await step("Saved property reopens instantly with notes", async () => {
+  await desktopStep("Saved property reopens instantly with notes", async () => {
     await page.click("#notes > summary");
     await page.fill("#notesText", "Automatic test note");
-    await page.waitForTimeout(800);
+    await until(() => document.getElementById("notesFlash").textContent.includes("Saved"));
     const flash = await page.$eval("#notesFlash", x => x.textContent);
     if (!flash.includes("Saved")) throw new Error(`no "Saved" message after typing a note (got "${flash}")`);
     const written = await page.$eval("#notes .step-count", x => x.textContent);
@@ -1081,7 +1094,9 @@ async function testDevice(device, [postcode, place]) {
   await step("Print summary and download", async () => {
     await page.emulateMedia({ media: "print" });
     await page.evaluate(() => { document.body.classList.add("print-summary"); dispatchEvent(new Event("beforeprint")); });
-    await page.waitForTimeout(800);
+    // The printed map changes size and zoom: wait until its new tiles have loaded (the PDF is kept for people to look at).
+    await until(() => { const m = document.getElementById("reportMap"), tiles = [...m.querySelectorAll("img.leaflet-tile")];
+      return m.getBoundingClientRect().width === 360 && tiles.length && tiles.every(t => t.complete && t.classList.contains("leaflet-tile-loaded")); });
     try {   // the page is always put back on screen, even if a check below fails (later steps need it)
     // On paper: page 1 has the at-a-glance table (one row per topic); every page gets the place, date and page number;
     // app instructions, the tappable grid and the "saved results" note are left out.
@@ -1156,7 +1171,7 @@ async function testDevice(device, [postcode, place]) {
     return `text uses ${Math.round(share * 100)}% of the row`;
   });
 
-  await step("Export and Import fold into Move to another device", async () => {
+  await desktopStep("Export and Import fold into Move to another device", async () => {
     const r = await page.evaluate(() => {
       const d = document.getElementById("moveDevice");
       return { closed: d && !d.open, inside: d && d.contains(document.getElementById("exportBtn")) && d.contains(document.getElementById("importBtn")) };
@@ -1240,9 +1255,16 @@ async function testDevice(device, [postcode, place]) {
 /* ---------------------------------------------------------------
    Run everything and write the summary
 --------------------------------------------------------------- */
+// If the app itself does not answer (for example a local server that is not running), the page steps are left
+// out with one failure instead of a hundred; the data services are still checked and the summary is written.
+const appAnswers = await fetch(BASE, { signal: AbortSignal.timeout(20000) }).then(r => r.ok, () => false);
 let browser;
 const reports = {};
 try {
+  if (ONLY_SERVICES.length) {
+    for (const service of SERVICES.filter(([name]) => ONLY_SERVICES.includes(name))) await checkService(service);
+    process.exit(0);
+  }
   const noTopics = SERVICES.map(([name]) => name).filter(name => !SERVICE_TOPICS[name]);
   record("Data services", "Every service lists the report topics it feeds", !noTopics.length,
     noTopics.length ? "missing in SERVICE_TOPICS: " + noTopics.join("; ") : `${SERVICES.length} services`);
@@ -1254,6 +1276,7 @@ try {
   const toCheck = CHECK_DATA_SERVICES ? SERVICES : SERVICES.filter(s => !isReportDataService(s));
   for (const service of toCheck) await checkService(service);
   if (!CHECK_DATA_SERVICES) console.log(`Left out on request (DATA_SERVICES=0): ${reportServices} report data services. Run the check by hand to test them.`);
+  if (!appAnswers) throw new Error(`the app does not answer at ${BASE}: start the server (see CLAUDE.md "Serve locally")`);
   browser = await chromium.launch();
   await loadReplay();
   // On replay, the third report uses the place the daily run picked, so its answers are recorded too.
@@ -1263,7 +1286,8 @@ try {
     // The Environment Agency map server allows only about 15 requests a minute from
     // one address, and one report sends about 7. Pausing before each report keeps
     // the test within that limit, like a person checking one property at a time.
-    const pause = new Promise(r => setTimeout(r, PAUSE_BEFORE_REPORT_MS));
+    const paceNeeded = !replayData || askedLive.has("environment.data.gov.uk");   // a question missing from the recording went live
+    const pause = new Promise(r => setTimeout(r, paceNeeded ? PAUSE_BEFORE_REPORT_MS : 0));
     if (i === 0) await testCountryData().catch(e => record("Country data (desktop)", "The country data steps crashed", false, e.message));
     await pause;
     const topics = await testDevice(DEVICES[i], places[i]);

@@ -172,10 +172,10 @@ function slowNote() {
       <a href="status.html">Data service status</a></p></div>`;
 }
 
-// A topic whose data fails is tried once more by itself: after 20 seconds,
-// or as soon as the signal returns if the device went offline.
+// A topic whose data fails is tried once more by itself: after 8 seconds (20 if the service refused us, which
+// often lasts minutes, so it is not asked again too soon), or as soon as the signal returns if the device went offline.
 // If it fails again, the topic shows a "Try again" button.
-const AUTO_RETRY_MS = 20000;
+const AUTO_RETRY_MS = 8000, REFUSED_RETRY_MS = 20000;
 const onlineAgain = () => navigator.onLine ? Promise.resolve()
   : new Promise(res => window.addEventListener("online", res, { once: true }));
 
@@ -207,7 +207,7 @@ function startTask(r, key, autoRetry = true) {
     value => { r.R[key] = { ok: true, value }; rememberAnswer(r.loc, key, value); },
     async error => {
       if (autoRetry && r === run) {
-        if (navigator.onLine) await new Promise(res => setTimeout(res, AUTO_RETRY_MS));
+        if (navigator.onLine) await new Promise(res => setTimeout(res, error.refused ? REFUSED_RETRY_MS : AUTO_RETRY_MS));
         else await onlineAgain();
         if (r === run) { r.autoRetried = [...(r.autoRetried || []), key]; startTask(r, key, false); }
         return "retrying";
