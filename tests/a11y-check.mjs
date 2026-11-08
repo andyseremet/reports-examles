@@ -49,8 +49,14 @@ const report = (where, msg) => { problems++; console.log(`FAIL  ${where}: ${msg}
 async function check(page, where) {
   // Scan from the top of the page: controls that happen to sit under the sticky bars would otherwise
   // count as too small (target-size), and the result would depend on where the last action scrolled to.
-  await page.waitForFunction(() => !document.getAnimations().some(a => a.playState === "running"), null, { timeout: 3000 }).catch(() => {});
-  await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
+  // Jump to the top (this also ends any smooth scroll an action started), then let the page stay still for 10
+  // frames so the sticky bars have updated, and any animation has ended, before measuring.
+  await page.evaluate(() => new Promise(done => {
+    scrollTo({ top: 0, behavior: "instant" });
+    let frames = 0;
+    const frame = () => ++frames >= 10 && !document.getAnimations().some(a => a.playState === "running") || frames > 180 ? done() : requestAnimationFrame(frame);
+    requestAnimationFrame(frame);
+  }));
   if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1))) report(where, "sideways scrolling");
   await page.addScriptTag({ content: AXE });
   const found = await page.evaluate(async tags => (await axe.run(document, { runOnly: tags })).violations
