@@ -63,7 +63,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   finding in bold, then "What to do", with "What we found" and "What this means" behind **More**; data dates and
   sources only in the table at the end; lines of about 70 characters on wide screens.
 - **Calm screen** (1.36.0): the system font, white cards with a hairline and one thin rating accent, lighter topic
-  tiles, and the verdict as one clear sentence, following the visual style in CLAUDE.md.
+  tiles, and the verdict as one clear sentence, following the visual style in docs/DESIGN.md.
 - **Fewer "i" buttons** (1.36.0): short explanations (checking the pin, saved properties, section intros) are one
   visible sentence; "i" stays only for long help.
 - **What the words mean** (1.36.0): a printable glossary page of 33 words (flood zone, radon, CON29M, conservation
