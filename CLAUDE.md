@@ -32,6 +32,9 @@ serves `main` at https://andyseremet.github.io/reports-examles/.
   - planning.data.gov.uk (England): `withBackup`/`planningBackup` (`js/data.js`) ask Historic England (heritage,
     conservation areas), Natural England (nature) and the Environment Agency (flood zone at the pin). The answer rides
     on the failure as `R[key].backup`; only `checkPlanning`/`checkNature`/`checkFlood` read it (`backupFor`, `planningList`).
+  - Environment Agency map server, old landfill (England): `getLandfill` asks Defra's copy of the same register on
+    ArcGIS Online (`API.landfillBackup`); the answer rides on the failure as `R.landfill.backup`, read by `checkLanduse`.
+    Surface water, coast and noise have no trustworthy copy (checked 8 November 2026: only older or unofficial ones).
   - postcodes.io: `placeFromOsm` gives the country and place from OpenStreetMap. Nominatim address search: Photon
     (`searchPhoton`, `js/search.js`).
   - Any service: each task's answer is kept 7 days per place (`rememberAnswer`/`recentAnswer`, `js/report.js`), and the
@@ -143,7 +146,7 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
 - **Daily and manual runs** check everything live. On `main` they then publish to the `status` branch: `status.json`
   (the status page) and `recordings.json` (the report pages' outside answers, `RECORD=1`; merged by
   `tests/merge-recordings.mjs`, each answer kept up to 14 days).
-- **Pull requests** (at the owner's request) leave out the 41 report data services (`DATA_SERVICES=0`; the list is
+- **Pull requests** (at the owner's request) leave out the 42 report data services (`DATA_SERVICES=0`; the list is
   `data/data-services.csv`; they run daily, and by hand with the "Check the report data services" box, ticked by
   default). Their report pages are answered from `recordings.json` (`REPLAY`), so an outside outage cannot turn them
   red; a question never recorded (for example a new topic) is asked live and named in the "Report data from the daily

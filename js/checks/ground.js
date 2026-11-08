@@ -148,8 +148,10 @@ function checkLanduse(R) {
   const base = {
     source: { name: "Environment Agency Historic Landfill Sites; council brownfield registers on planning.data.gov.uk", url: LINKS.landfill }
   };
-  if (!R.landfill.ok) return unavailable(base, R, "landfill");
-  const sites = R.landfill.value;
+  const backup = backupFor(R, "landfill");
+  if (!R.landfill.ok && !backup) return unavailable(base, R, "landfill");
+  const sites = R.landfill.ok ? R.landfill.value : backup.sites;
+  if (backup) base.source = { name: "Environment Agency Historic Landfill Sites, from Defra's copy (the Environment Agency map server was not answering); council brownfield registers on planning.data.gov.uk", url: LINKS.landfill };
   const nearest = sites[0];
   const nearby = okValue(R, "planningNearby") || [];
   const here = byDataset(okValue(R, "planningPoint"), "contaminated-land");

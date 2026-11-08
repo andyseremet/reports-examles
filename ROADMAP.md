@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.0.1** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.0.2** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.0.1)
+## Part 1: What the app does today (version 2.0.2)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -92,6 +92,8 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   from Historic England and Natural England, and the topic names what it could not check. A topic whose service does
   not answer shows this place's last saved answer, dated, with **Try again**. Since 1.31.1 the flood zone at the pin
   comes from the Environment Agency's own flood map, and Past use of the land names the sites it could not check.
+  Since 2.0.2, when the Environment Agency's map server does not answer, old landfill sites come from Defra's copy of
+  the same register on ArcGIS Online (surface water, coast and noise have no trustworthy copy: checked 8 November 2026).
 - Air quality (1.33.0, owner's request): the Open-Meteo area estimate is the main source and the council hotspot list
   (planning.data.gov.uk in England) adds to it, so the topic still answers when either is down. Only with both answering
   can it say "No issue found".
@@ -191,7 +193,7 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 
 | Idea | Notes |
 |---|---|
-| Past floods recorded here | Environment Agency Recorded Flood Outlines. Live, but adds 1 request to the busy Environment Agency map server. |
+| Past floods recorded here | **Planned as 2.1.0** (owner, 8 November 2026): Defra's copy of the Historic Flood Map on ArcGIS Online answers web pages and sends nothing to the busy Environment Agency map server. Plan and quiz first. |
 | Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
 | Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
 

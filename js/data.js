@@ -414,14 +414,24 @@ async function getAirModel(loc) {
 async function getLandfill(loc) {
   // The Environment Agency's landfill map covers England only (Wales: getCoalTips; Scotland: getWasteSites).
   if (await inWales(loc) || await inScotland(loc) || await inNI(loc)) return [];
-  const d = await fetchJSON(API.landfill + "?f=json&limit=100&bbox=" + boundingBox(loc.lat, loc.lon, loc.radius).join(","));
-  return (d.features || [])
-    .map(f => {
-      const c = geometryCentre(f.geometry);
-      return { ...f.properties, lat: c?.lat, lon: c?.lon, distanceKm: c ? distanceKm(loc, c) : null };
-    })
-    .filter(s => s.distanceKm == null || s.distanceKm <= loc.radius / 1000)
-    .sort(byDistance);
+  const sites = list => list.map(([props, geometry]) => {
+    const c = geometryCentre(geometry);
+    return { ...props, lat: c?.lat, lon: c?.lon, distanceKm: c ? distanceKm(loc, c) : null };
+  }).filter(s => s.distanceKm == null || s.distanceKm <= loc.radius / 1000).sort(byDistance);
+  try {
+    const d = await fetchJSON(API.landfill + "?f=json&limit=100&bbox=" + boundingBox(loc.lat, loc.lon, loc.radius).join(","));
+    return sites((d.features || []).map(f => [f.properties, f.geometry]));
+  } catch (error) {
+    // The map server is not answering: Defra's copy of the same register. Its answer travels with the failure
+    // (error.backup), so only checkLanduse uses it and says where it came from. Its dates come as timestamps
+    // (or numbers): kept as the live service gives them, YYYY-MM-DD.
+    const date = v => v == null ? v : (typeof v === "number" ? new Date(v).toISOString() : String(v)).slice(0, 10);
+    const copy = await arcgisQuery(API.landfillBackup, loc, loc.radius, { outFields: "*", returnGeometry: "true", outSR: "4326", resultRecordCount: "100" })
+      .catch(() => null);
+    if (copy) error.backup = { sites: sites(copy.map(f => [{ ...f.attributes, firstinput: date(f.attributes.firstinput), lastinput: date(f.attributes.lastinput) },
+      { coordinates: f.geometry?.rings }])) };
+    throw error;
+  }
 }
 
 async function getLandslides(loc) {
