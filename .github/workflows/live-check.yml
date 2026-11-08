@@ -68,7 +68,7 @@ jobs:
       # The browser is saved between runs (it only changes with the Playwright version above).
       - name: Restore the saved test browser
         id: browser-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-1.49.1-${{ runner.os }}
@@ -111,6 +111,20 @@ jobs:
           name: live-check-results
           path: test-results/
           retention-days: 14
+
+      # A full daily or manual run that passes closes the open "Live check failed" issue (only when the report data
+      # services were checked too, so a run that left them out never closes an outage).
+      - name: Close the "Live check failed" issue after a full run passes
+        if: success() && github.event_name != 'pull_request' && steps.mode.outputs.data_services == '1'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: open } = await github.rest.issues.listForRepo({ ...context.repo, state: "open", per_page: 100 });
+            for (const issue of open.filter(i => i.title === "Live check failed" && !i.pull_request)) {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: `All checks passed: ${runUrl}` });
+              await github.rest.issues.update({ ...context.repo, issue_number: issue.number, state: "closed", state_reason: "completed" });
+            }
 
       - name: Report a failed daily check as an issue
         if: failure() && github.event_name != 'pull_request'

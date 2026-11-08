@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.0.2** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.0.3** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.0.2)
+## Part 1: What the app does today (version 2.0.3)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -148,6 +148,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   for the page instead of fixed pauses; no pauses when the report pages replay the recording; each step timed, with a
   short digest (`tests/digest.mjs`); the after-merge check skips document-only merges and replays the report pages;
   the accessibility check scans 4 combinations instead of 12. A failed topic retries after 8 seconds instead of 20 (still 20 when a service refuses the request).
+- Quick wins (2.0.3, 8 November 2026): accessibility re-checked (no problems); a full daily run that passes closes the
+  "Live check failed" issue; the workflow's cache step moved off the retired Node.js 20; early connection to the
+  postcode search and early address lookups for the main data hosts.
 - Steady pull request checks (2.0.0): each daily run records the outside services' answers to the `status` branch
   (each kept up to 14 days); pull requests build their reports from that copy, so an outside outage cannot turn them
   red. A question never recorded (for example a new topic) is asked live and named in the result. The daily check stays
@@ -173,7 +176,7 @@ bus and tram stops (the NaPTAN service does not let web pages read it), council 
 noise, radon, coal, police data and sale prices.
 
 **Health check notes:** all 65 help links open (police.uk, Ofcom, NHS inform and Historic England refuse automated
-checks but open for people); issue #46 "Live check failed" is the planning.data.gov.uk outage and closes when it recovers.
+checks but open for people); issue #46 "Live check failed" is the planning.data.gov.uk outage; since 2.0.3 it closes by itself after the first full run that passes.
 
 Each step keeps the same habits: plan first, bump the version number and the offline cache name together, update the
 README, add new behaviour to the daily check, and never weaken a test to get a pass. Other ideas are listed in Part 3.
@@ -193,6 +196,8 @@ Suggested in a quiz but not chosen. They can be picked up in a future round.
 
 | Idea | Notes |
 |---|---|
+| Reservoir flood risk | After 2.1.0 (owner, 8 November 2026): whether the home is in the area a dam failure would flood. Defra's official reservoir flood extents on ArcGIS Online; nothing sent to the Environment Agency map server. Plan and quiz first. |
+| Flood defences nearby | After reservoir flood risk (owner, 8 November 2026): walls and embankments protecting the area, from Defra's flood defence layer (updated October 2026). Plan and quiz first. |
 | Past floods recorded here | **Planned as 2.1.0** (owner, 8 November 2026): Defra's copy of the Historic Flood Map on ArcGIS Online answers web pages and sends nothing to the busy Environment Agency map server. Plan and quiz first. |
 | Broadband and mobile coverage | Ofcom's data needs an account key, so only a "Check yourself" topic with links is possible. |
 | Planning applications nearby | Not possible yet: planning.data.gov.uk has no planning application records (checked 5 November 2026). |
