@@ -59,9 +59,15 @@ before pushing anything.
 ## CI
 
 - `.github/workflows/live-check.yml` runs `tests/live-check.mjs` daily at 05:17 UTC, by hand, and on pull requests
-  that change `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `sw.js`, `manifest.webmanifest`, `tests/`
-  or the workflow. A failed daily or manual run opens or updates a "Live check failed" issue; a full run (data
+  that change `index.html`, `status.html`, `glossary.html`, `css/`, `js/`, `data/`, `sw.js`, `manifest.webmanifest`,
+  `tests/` or the workflow. A failed daily or manual run opens or updates a "Live check failed" issue; a full run (data
   services included) that passes closes it.
+- **Stopping runs:** a new push to a pull request stops its older check. Daily and manual runs on `main` are never
+  stopped (each publishes the status page): a second one waits for the first.
+- **Where the time goes:** each run's summary page lists the 10 slowest test steps under the results table. Each
+  step of the `check` job shows its own time; a gap between log time stamps is a pause (60 s before each report on
+  daily runs). To see more, download `live-check-results` and run `node tests/digest.mjs results.json 20`, or use
+  "Re-run jobs" with "Enable debug logging".
 - **Daily and manual runs** check everything live. On `main` they then publish to the `status` branch: `status.json`
   (the status page) and `recordings.json` (the report pages' outside answers, `RECORD=1`; merged by
   `tests/merge-recordings.mjs`, each answer kept up to 14 days).

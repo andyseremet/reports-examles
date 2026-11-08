@@ -29,6 +29,7 @@ on:
       - "glossary.html"
       - "css/**"
       - "js/**"
+      - "data/**"
       - "sw.js"
       - "manifest.webmanifest"
       - "tests/**"
@@ -38,9 +39,11 @@ permissions:
   contents: read
   issues: write
 
+# A new push to a pull request stops its older check. Daily and manual runs on main are never stopped: each one
+# publishes the status page and the recording, so a second run waits for the first to finish.
 concurrency:
   group: live-check-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -103,6 +106,15 @@ jobs:
           RECORD: ${{ github.event_name != 'pull_request' && '1' || '0' }}
           REPLAY: ${{ github.event_name == 'pull_request' && format('https://raw.githubusercontent.com/{0}/status/recordings.json', github.repository) || '' }}
         run: node tests/live-check.mjs
+
+      # The 10 slowest test steps, on the run's summary page, to see where the time goes without downloading anything.
+      - name: List the slowest test steps
+        if: always()
+        run: |
+          [ -f test-results/results.json ] || exit 0
+          { echo; echo "## Slowest test steps"; echo; echo '```'
+            node tests/digest.mjs test-results/results.json 10 | sed -n '/^Slowest steps/,$p'
+            echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Keep the results, screenshots and sample reports
         if: always()
