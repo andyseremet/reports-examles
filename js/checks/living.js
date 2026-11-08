@@ -165,11 +165,13 @@ function checkNoise(R) {
   const airStatus = nearAirports.length ? "medium" : "low";
   let status = ["high", "medium", "info", "low"].find(s => [roadStatus, railStatus, airStatus].includes(s)) || "error";
   // Missing data is never good news: road or railway noise that could not be checked is not "No issue found".
-  const unchecked = [!road && "road", !rail && "railway"].filter(Boolean);
+  // A service that answered only in part (no 24-hour or night figure) counts as not checked too.
+  const partly = v => (v.unavailable || []).some(k => k === "lden" || k === "lnight");
+  const unchecked = [(!road || partly(road)) && "road", (!rail || partly(rail)) && "railway"].filter(Boolean);
   if (status === "low" && unchecked.length) status = "manual";
 
   const describe = (label, v, st) => {
-    if (!v) return `${label}: not available`;
+    if (!v || partly(v)) return `${label}: not available`;
     if (v.lden == null && v.lnight == null) return `${label}: quiet`;
     const word = { high: "loud", info: "moderate", low: "low" }[st];
     return `${label}: ${word}`;
@@ -178,7 +180,7 @@ function checkNoise(R) {
     describe("Road", road, roadStatus),
     describe("Railway", rail, railStatus),
     nearAirports.length ? `Aircraft: ${nearAirports[0].name} Airport is ${formatDistance(nearAirports[0].distanceKm)} away` : "Aircraft: no major airport nearby"
-  ].join(" · ") + "." + (status === "manual" ? ` ${unchecked.join(" and ").replace(/^./, c => c.toUpperCase())} noise could not be checked right now: check it on the official noise map.` : "");
+  ].join(" · ") + "." + (unchecked.length ? ` ${unchecked.join(" and ").replace(/^./, c => c.toUpperCase())} noise could not be checked right now: check it on the official noise map.` : "");
 
   const cell = (src, key, who) => {
     if (!src || (src.unavailable || []).includes(key)) return "Not available";
@@ -204,7 +206,7 @@ function checkNoise(R) {
         Airport, about ${formatDistance(airports[0].distanceKm)} away.</p>`;
 
   return {
-    ...base, status, found, ...(status === "manual" && { gap: "down" }),
+    ...base, status, found, ...(unchecked.length && { gap: "down" }),
     details: `<div class="table-wrap"><table>
         <thead><tr><th>Time of day</th><th>Road</th><th>Railway</th><th>WHO recommendation</th></tr></thead>
         <tbody>${periods.map(p => row(p)).join("")}</tbody>

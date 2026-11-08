@@ -185,13 +185,15 @@ const RECENT_DAYS = 7, RECENT_PLACES = 10, RECENT_MAX_CHARS = 200000, RECENT_IND
 const recentKey = key => "plc-recent:" + key;
 function rememberAnswer(loc, task, value) {
   const k = recentKey(reportKey(loc));
-  if (JSON.stringify(value === undefined ? null : value).length > RECENT_MAX_CHARS) return;
-  const all = store.get(k, {});
-  all[task] = { at: new Date().toISOString(), value };
-  const index = [k, ...store.get(RECENT_INDEX, []).filter(x => x !== k)];
-  index.slice(RECENT_PLACES).forEach(x => store.remove(x));
-  store.set(RECENT_INDEX, index.slice(0, RECENT_PLACES), { quiet: true });
-  store.set(k, all, { quiet: true });
+  try {   // optional: an answer that cannot be saved never stops the topic from showing
+    if (JSON.stringify(value === undefined ? null : value).length > RECENT_MAX_CHARS) return;
+    const all = store.get(k, {});
+    all[task] = { at: new Date().toISOString(), value };
+    const index = [k, ...store.get(RECENT_INDEX, []).filter(x => x !== k)];
+    index.slice(RECENT_PLACES).forEach(x => store.remove(x));
+    store.set(RECENT_INDEX, index.slice(0, RECENT_PLACES), { quiet: true });
+    store.set(k, all, { quiet: true });
+  } catch (e) { /* not saved: the cache is optional */ }
 }
 function recentAnswer(loc, task) {
   const a = store.get(recentKey(reportKey(loc)), {})[task];
@@ -232,7 +234,9 @@ function buildCheck(c) {
   let result;
   try { result = topicResult(c, { dataDate: "Checked live on " + today(), ...c.build(run.R) }); }
   catch (e) { result = topicResult(c, { status: "error", found: "This check failed: " + e.message }); }
-  if (result.status === "error") return savedInstead(c, result);
+  // A service failed: show this place's saved earlier answer, dated, if there is one. A check that still answers
+  // in part (for example other mining when the coal service is down) marks itself with failedService.
+  if (result.status === "error" || result.failedService) return savedInstead(c, result);
   // Built partly from recent answers (a service did not answer): say so, with the oldest answer's date.
   const cached = c.deps.map(k => run.R[k] && run.R[k].cachedAt).filter(Boolean).sort()[0];
   return cached ? { ...result, fromSaved: cached } : result;
@@ -569,7 +573,7 @@ function renderCheck(c) {
       <div class="check-body">
         ${c.fromSaved ? `<p class="notice saved-answer">The data service is not answering right now, so this is <strong>your saved result
           from ${escapeHTML(savedDate(c.fromSaved))}</strong>. It may be out of date.</p>` : ""}
-        ${c.status === "error" || c.fromSaved ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
+        ${c.status === "error" || c.fromSaved || c.gap === "down" ? `<p><button class="primary small-btn" type="button" data-retry="${c.id}">Try again</button></p>` : ""}
         <h4>What to do</h4>${actions}
         ${c.details || c.meaning ? `
         <p class="info-row"><button class="link-btn more-btn" type="button" data-info aria-expanded="false" aria-controls="about-${c.id}">More: what we found and what it means</button></p>

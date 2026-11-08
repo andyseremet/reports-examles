@@ -350,11 +350,18 @@ async function testCountryData() {
         const clay = checkClay({ loc, place, shrinkSwell: { ok: true, value: { level: NaN, localised: false } } });
         const sig = checkCoal({ loc, place, coal: down, otherMining: { ok: true, value: { level: "Significant" } } });
         const none = checkCoal({ loc, place, coal: down, otherMining: { ok: true, value: { level: "NA" } } });
+        // Near Heathrow the airport already rates noise "Worth checking": road noise that failed must still be named.
+        const heathrow = checkNoise({ loc: { ...loc, lat: 51.47, lon: -0.45 }, place, noise: down, railNoise: { ok: true, value: {} } });
+        // A railway service that answered only in part (no night figure) is not "quiet".
+        const partRail = checkNoise({ loc, place, noise: { ok: true, value: {} }, railNoise: { ok: true, value: { lden: null, lnight: null, unavailable: ["lnight"] } } });
         return { noise: [noise.status, /Road noise could not be checked/.test(noise.found)], clay: clay.status,
-          sig: [sig.status, /Coal mining could not be checked/.test(sig.found) && /known or considered likely/.test(sig.found)], none: none.status };
+          sig: [sig.status, /Coal mining could not be checked/.test(sig.found) && /known or considered likely/.test(sig.found), sig.gap, sig.failedService], none: none.status,
+          heathrow: [heathrow.status, heathrow.gap, /Road noise could not be checked/.test(heathrow.found)], partRail: [partRail.status, /Railway noise could not be checked/.test(partRail.found)] };
       });
-      const ok = r.noise[0] === "manual" && r.noise[1] && r.clay === "manual" && r.sig[0] === "medium" && r.sig[1] && r.none === "error";
-      return ok ? "noise and clay: Check yourself; coal down with significant other mining: Worth checking" : (() => { throw new Error(JSON.stringify(r)); })();
+      const ok = r.noise[0] === "manual" && r.noise[1] && r.clay === "manual" && r.sig[0] === "medium" && r.sig[1] && r.sig[2] === "down" &&
+        r.sig[3] === "coal" && r.none === "error" && r.heathrow[0] === "medium" && r.heathrow[1] === "down" && r.heathrow[2] &&
+        r.partRail[0] === "manual" && r.partRail[1];
+      return ok ? "noise (also near an airport, and with a partial railway answer), clay and mining name what was not checked" : (() => { throw new Error(JSON.stringify(r)); })();
     });
 
     await step("Wales: coal tips, coast, noise, heritage and nature from Welsh data", async () => {

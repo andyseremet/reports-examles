@@ -309,7 +309,7 @@ details.clear-fold > summary:hover {background:var(--hover)}
 .fold-names {font-weight:normal;color:var(--text)}
 details.clear-fold > .fold-body {padding:0 8px 8px}
 /* "Next steps": notes, viewing checklist and checklist, each folded with its count. */
-details.step-fold {border:1px solid var(--border);border-left:5px solid var(--link);border-radius:8px;margin:10px 0;background:var(--surface);border-left-color:var(--border)}
+details.step-fold {border:1px solid var(--border);border-left:5px solid var(--border);border-radius:8px;margin:10px 0;background:var(--surface)}
 details.step-fold > summary {cursor:pointer;list-style:none;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;padding:10px 14px}
 details.step-fold > summary::-webkit-details-marker {display:none}
 details.step-fold > summary:hover {background:var(--hover)}
@@ -598,13 +598,13 @@ body.print-summary.printing #reportMap {width:400px;height:300px}
   tr.list-extra[hidden] {display:table-row!important}
   li.list-extra[hidden] {display:list-item!important}
   .leaflet-control-zoom {display:none}
-  @page {size:A4;margin:14mm 14mm 16mm}
+  @page {size:A4}
   /* Paper shows what a reader needs: the at-a-glance table instead of the tappable grid, no app instructions. */
   .print-only {display:block!important}
   .topic-strip,.saved-note,#info-read,.rating-legend {display:none!important}
   .key-findings a {color:inherit;text-decoration:none}
   .glance-table {width:100%}
-  .glance-table th,.glance-table td {border:1px solid #bbb;text-align:left;vertical-align:top}
+  .glance-table th,.glance-table td {text-align:left;vertical-align:top}
   .glance-table th {background:#eee}
   .glance-table tr {break-inside:avoid}
   .glance-table .chip {white-space:nowrap}
@@ -617,17 +617,17 @@ body.print-summary.printing #reportMap {width:400px;height:300px}
   .cover-qr {margin:3mm 0 0;text-align:center;flex:none}
   .cover-qr svg {display:block}
   .cover-qr figcaption {font-size:8.5px;color:#444;margin-top:1mm}
-  .cover-details {border-collapse:collapse;margin:3mm 0 0;font-size:11px}
-  .cover-details th {text-align:left;color:#555;font-weight:normal;padding:1mm 6mm 1mm 0;vertical-align:top}
+  .cover-details {margin:3mm 0 0;font-size:11px}
+  .cover-details th {text-align:left;padding:1mm 6mm 1mm 0;vertical-align:top}
   .cover-details td {padding:1mm 0}
   #reportMap,body.printing #reportMap {width:520px;height:390px;margin:6mm auto 0}
-  .map-caption {text-align:center;font-size:9.5px;color:#444;font-style:italic}
+  .map-caption {text-align:center}
   .glance-key {color:#333;margin:3mm 0 0}
   .glance-key .chip {font-size:9.5px}
   .gaps-box {break-inside:avoid}
   .group > h2,#nextSteps > h2,.sources-fold h2 {break-after:avoid}
   /* Key findings: the most serious results, before the table. */
-  .key-findings {border:2px solid var(--navy);border-radius:6px;margin:4mm 0;break-inside:avoid}
+  .key-findings {break-inside:avoid}
   .key-findings ol {margin:0;padding-left:5mm}
   .key-findings p {margin:2mm 0 0;font-size:10px;color:#444}
   .viewing-sheet {font-size:13px;margin:0 0 3mm}

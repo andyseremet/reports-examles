@@ -51,9 +51,16 @@ function checkCoal(R) {
   const base = {
     source: { name: "Mining Remediation Authority (formerly the Coal Authority); British Geological Survey, mining other than coal (1 km overview)", url: LINKS.coalInfo }
   };
+  // Mining other than coal (tin, copper, lead, iron, salt and so on): the British Geological Survey's 1 km overview.
+  const otherNotes = {
+    Significant: "Other underground mining (for example tin, copper, lead or iron) is known or considered likely in this area.",
+    Moderate: "Small-scale underground mining other than coal may have happened in this area.",
+    Low: "Localised small-scale mining other than coal may have happened in this area."
+  };
   // The coal service failed: still show what the other-mining overview found (never hide a "Significant"),
   // and say coal could not be checked. With no other-mining answer either, the topic is not available.
-  const otherOnly = !R.coal.ok && R.otherMining.ok && R.otherMining.value && ["Significant", "Moderate", "Low"].includes(R.otherMining.value.level);
+  // (A saved earlier answer for this place still comes first: see failedService in buildCheck.)
+  const otherOnly = !R.coal.ok && R.otherMining.ok && R.otherMining.value && !!otherNotes[R.otherMining.value.level];
   if (!R.coal.ok && !otherOnly) return unavailable(base, R, "coal");
   const c = R.coal.ok ? R.coal.value : {};
   let status, found, meaning;
@@ -74,14 +81,8 @@ function checkCoal(R) {
     found = "Outside the coalfield: no recorded coal mining here.";
     meaning = "No coal mining search is needed.";
   }
-  // Mining other than coal (tin, copper, lead, iron, salt and so on): the British Geological Survey's 1 km overview.
   // Where underground mining is known or likely, a mining search is worth ordering; it is never good news if unknown.
   const other = R.otherMining.ok ? R.otherMining.value : undefined;
-  const otherNotes = {
-    Significant: "Other underground mining (for example tin, copper, lead or iron) is known or considered likely in this area.",
-    Moderate: "Small-scale underground mining other than coal may have happened in this area.",
-    Low: "Localised small-scale mining other than coal may have happened in this area."
-  };
   const otherSignificant = other && other.level === "Significant";
   if (other && otherNotes[other.level]) found += " " + otherNotes[other.level];
   if (otherSignificant && ["low", "manual"].includes(status)) status = "medium";
@@ -92,7 +93,7 @@ function checkCoal(R) {
   }
   meaning += " Mining other than coal comes from the British Geological Survey's overview in 1 km hexagons, so it describes the area, not the exact plot.";
   return {
-    ...(status === "manual" && { gap: "down" }),
+    ...((status === "manual" || !R.coal.ok) && { gap: "down" }), ...(!R.coal.ok && { failedService: "coal" }),
     ...base, status, found,
     details: !c.highAtPoint && c.highNearby ? `<p>A coal mining high-risk area lies within ${formatRadius(R.loc.radius)}.</p>` : "",
     meaning: `<p>${meaning}</p>`,
