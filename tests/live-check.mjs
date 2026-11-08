@@ -23,7 +23,7 @@
 import { chromium } from "playwright";
 import { writeFileSync, readFileSync } from "node:fs";
 import { BASE, OUT, CHECK_DATA_SERVICES, ONLY_SERVICES, QUICK, ONLY, STEPS, PARTIAL, runsPart, RECORD } from "./live/settings.mjs";
-import { record } from "./live/results.mjs";
+import { results, record } from "./live/results.mjs";
 import { recorded, replayData, replayed, askedLive, loadReplay, quietForEA } from "./live/recording.mjs";
 import { isReportDataService, SERVICES, SERVICE_TOPICS, checkServices } from "./live/services.mjs";
 import { DEVICES, FIXED, randomEnglishPostcode, testDevice } from "./live/devices.mjs";
@@ -36,7 +36,7 @@ import { writeSummary } from "./live/summary.mjs";
 // If the app itself does not answer (for example a local server that is not running), the page steps are left
 // out with one failure instead of a hundred; the data services are still checked and the summary is written.
 const appAnswers = await fetch(BASE, { signal: AbortSignal.timeout(20000) }).then(r => r.ok, () => false);
-let browser;
+let browser, services;
 const reports = {};
 try {
   if (ONLY_SERVICES.length) {
@@ -58,14 +58,16 @@ try {
   // data and the three devices all run at once. Without it, the services come first, then the country data during
   // the wait, then the reports one at a time, each a minute after the last request to that server (its limit).
   const parallel = !!replayData;
-  const services = checkServices(toCheck);
+  services = checkServices(toCheck);
   if (!appAnswers) { await services; throw new Error(`the app does not answer at ${BASE}: start the server (see CLAUDE.md "Serve locally")`); }
   browser = await chromium.launch();
-  // On replay, the third report uses the place the daily run picked, so its answers are recorded too.
-  const randomPlace = replayData && replayData.randomPlace ? replayData.randomPlace : await randomEnglishPostcode();
-  const places = [FIXED[0], FIXED[1], randomPlace];
   // Device numbers (in DEVICES) to test: the desktop only with QUICK; ONLY can leave out any of them.
   const devicesToTest = DEVICES.map((_, i) => i).filter(i => (!QUICK || i === 0) && runsPart(DEVICES[i].name.split(" ")[0].toLowerCase()));
+  // The third report (the tablet) uses a random English postcode, picked only when the tablet is tested. On replay it
+  // is the place the daily run picked, so its answers are recorded too.
+  const randomPlace = !devicesToTest.includes(2) ? null
+    : replayData && replayData.randomPlace ? replayData.randomPlace : await randomEnglishPostcode();
+  const places = [FIXED[0], FIXED[1], randomPlace];
   const countryData = () => QUICK || !runsPart("country") ? null : testCountryData(browser).catch(e => record("Country data (desktop)", "The country data steps crashed", false, e.message));
   const runDevice = async i => { reports[`${DEVICES[i].name}: ${places[i].join(", ")}`] = await testDevice(browser, DEVICES[i], places[i]); };
   if (parallel) await Promise.all([services, countryData(), ...devicesToTest.map(runDevice)]);
@@ -74,7 +76,7 @@ try {
     // second, so they do not run beside the services. They run during the wait before the first report (they answer
     // the Environment Agency map server themselves, so they send it nothing).
     await services;
-    await Promise.all([countryData(), devicesToTest.length ? quietForEA() : null]);
+    await countryData();   // the wait before the first report (below) counts from the services' last request
     for (const i of devicesToTest) {
       // The Environment Agency map server allows only about 15 requests a minute from
       // one address, and one report sends about 7. Pausing before each report keeps
@@ -86,12 +88,18 @@ try {
   if (replayData) record("Test run", "Report data from the daily recording", true,
     `${replayed} answers from the recording of ${String(replayData.recorded).slice(0, 10)}` +
     (askedLive.size ? `; asked live (not recorded): ${[...askedLive].sort().join(", ")}` : "; nothing asked live"));
+  // A STEP that names no step would run only open, search and the report, and still pass.
+  if (STEPS.length && !results.some(r => STEPS.some(st => r.name.toLowerCase().includes(st))))
+    record("Test run", "STEP names a step", false, `no step name contains ${STEPS.map(st => `"${st}"`).join(" or ")}`);
   if (PARTIAL) record("Test run", "Partial run, to find a fault (not a full check)", true,
     [ONLY.length && `ONLY=${ONLY.join(",")}`, STEPS.length && `STEP=${STEPS.join("|")}`].filter(Boolean).join("; "));
   if (RECORD && !PARTIAL) writeFileSync(`${OUT}/recordings.json`, JSON.stringify({ recorded: new Date().toISOString(), base: BASE, randomPlace, answers: recorded }));
 } catch (e) {
   record("Test run", "The test itself crashed", false, e.message);
 } finally {
+  // A crash can stop the run while the services are still being asked: let them finish, so the summary has every
+  // service's result and does not count a service as not checked.
+  if (services) await services.catch(e => record("Data services", "The data service checks crashed", false, e.message));
   if (browser) await browser.close();
 }
 

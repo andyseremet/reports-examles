@@ -1,7 +1,7 @@
 // 1. Data services: answer, expected content, and readable by web pages (CORS).
 import { BASE, ORIGIN, UA, EA_MAP_SERVER, EA_REFUSAL_NOTE } from "./settings.mjs";
 import { record } from "./results.mjs";
-import { noteEARequest } from "./recording.mjs";
+import { noteEARequest, NOMINATIM, nominatimTurn } from "./recording.mjs";
 
 export const isReportDataService = ([, , , options = {}]) => !options.alwaysChecked && !options.sameSite;
 
@@ -147,6 +147,7 @@ export async function checkService([name, url, expect, options = {}]) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       if (url.includes(EA_MAP_SERVER)) noteEARequest();
+      if (url.startsWith(NOMINATIM)) await nominatimTurn();
       const { sameSite, ...fetchOptions } = options;
       const res = await fetch(url, { ...fetchOptions, headers: { Origin: ORIGIN, "User-Agent": UA, Accept: "application/json", ...(options.headers || {}) },
         signal: AbortSignal.timeout(15000) });   // a hung service gives up after 15 s, then has a second try

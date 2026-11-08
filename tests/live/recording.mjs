@@ -32,7 +32,7 @@ export async function loadReplay() {
 // from the last one). A test step's own stub (page.route) answers first, so a stubbed request is never counted.
 export async function steadyContext(context) {
   const goneLive = new WeakSet();
-  await context.route(() => true, route => {
+  await context.route(() => true, async route => {
     const req = route.request();
     if (!isOutsideData(req)) return route.fallback();
     if (replayData) {
@@ -45,6 +45,7 @@ export async function steadyContext(context) {
       askedLive.add(new URL(req.url()).host);
     }
     if (req.url().includes(EA_MAP_SERVER)) noteEARequest();
+    if (req.url().startsWith(NOMINATIM)) await nominatimTurn();
     goneLive.add(req);
     return route.fallback();
   });
@@ -60,6 +61,16 @@ export async function steadyContext(context) {
     } catch (e) { /* the page was closed before the answer was read */ }
   });
 }
+// OpenStreetMap's Nominatim allows one request a second (owner's rule, 8 November 2026): every live request the test
+// sends it, from a page or a service check, waits for its turn here, so parts that run at the same time never send
+// two at once. A test step's own stub and a replayed answer send nothing, so they do not wait.
+export const NOMINATIM = "https://nominatim.openstreetmap.org/";
+let nominatimNext = 0;
+export const nominatimTurn = async () => {
+  const now = Date.now(), at = Math.max(now, nominatimNext);
+  nominatimNext = at + 1100;
+  if (at > now) await new Promise(r => setTimeout(r, at - now));
+};
 export let lastEARequest = 0;
 export const noteEARequest = () => { lastEARequest = Date.now(); };
 export const quietForEA = async () => {

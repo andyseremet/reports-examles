@@ -27,6 +27,12 @@ export const QUICK = process.env.QUICK === "1";
 export const ONLY = (process.env.ONLY || "").toLowerCase().split(",").map(s => s.trim()).filter(Boolean);
 export const STEPS = (process.env.STEP || "").toLowerCase().split("|").map(s => s.trim()).filter(Boolean);
 export const PARTIAL = ONLY.length > 0 || STEPS.length > 0;
+export const PARTS = ["services", "country", "desktop", "phone", "tablet"];
+const unknownParts = ONLY.filter(p => !PARTS.includes(p));
+if (unknownParts.length) {   // a misspelt part would quietly run nothing and still pass
+  console.error(`ONLY: no part called ${unknownParts.join(", ")}. The parts are: ${PARTS.join(", ")}.`);
+  process.exit(2);
+}
 export const runsPart = part => !ONLY.length || ONLY.includes(part);
 export const NEEDED_STEPS = ["Page opens with the search ready", "Search finds the postcode", "Report runs with every topic"];
 export const stepChosen = name => !STEPS.length || NEEDED_STEPS.includes(name) || STEPS.some(s => name.toLowerCase().includes(s));

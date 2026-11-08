@@ -16,8 +16,10 @@ export function writeSummary(reports) {
   // One line that tells an outside outage from a fault in the app (the pass rules are the same either way).
   // A data service that did not answer is an outage; every other failure (including the two list checks in that group)
   // is a fault in the app or the test.
-  const SERVICE_NAMES = new Set(SERVICES.map(([name]) => name));
-  const isOutage = r => r.group === "Data services" && SERVICE_NAMES.has(r.name);
+  // The app's own data files (sameSite rows, "saved with the app") are part of the app: a failure there is an app fault.
+  const OUTSIDE_SERVICES = new Set(SERVICES.filter(([, , , options = {}]) => !options.sameSite).map(([name]) => name));
+  const isOutage = r => r.group === "Data services" && OUTSIDE_SERVICES.has(r.name);
+  const table = rows => [`| Area | Check | Details |`, `|---|---|---|`, ...rows.map(r => `| ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`)];
   const serviceFails = failed.filter(isOutage), appFails = failed.filter(r => !isOutage(r));
   const servicesDown = serviceFails.length ? `${serviceFails.length} data service(s) did not answer: ${serviceFails.map(r => r.name).join("; ")}` : "";
   const appStepsRan = results.some(r => r.group !== "Data services" && r.group !== "Test run");
@@ -37,14 +39,10 @@ export function writeSummary(reports) {
     ``
   ];
   if (failed.length) {
-    lines.push(`## Problems`, ``, `| Area | Check | Details |`, `|---|---|---|`);
-    failed.forEach(r => lines.push(`| ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`));
-    lines.push(``);
+    lines.push(`## Problems`, ``, ...table(failed), ``);
   }
   if (warned.length) {
-    lines.push(`## Warnings (do not fail the check)`, ``, `| Area | Check | Details |`, `|---|---|---|`);
-    warned.forEach(r => lines.push(`| ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`));
-    lines.push(``);
+    lines.push(`## Warnings (do not fail the check)`, ``, ...table(warned), ``);
   }
   lines.push(`## All checks`, ``, `| Result | Area | Check | Details |`, `|---|---|---|---|`);
   results.forEach(r => lines.push(`| ${r.warn ? "⚠️" : r.pass ? "✅" : "❌"} | ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`));
@@ -60,7 +58,6 @@ export function writeSummary(reports) {
   // For the two GitHub issues the daily and manual runs keep (the workflow adds the run link, with every check):
   // "Live check failed" for app steps, "Data services down" for outside services that did not answer. Each closes
   // after a run in which its own part passed.
-  const table = rows => [`| Area | Check | Details |`, `|---|---|---|`, ...rows.map(r => `| ${r.group} | ${r.name} | ${r.info.replace(/\|/g, "/")} |`)];
   const tested = [`Tested: ${BASE}  `, `Date: ${new Date().toUTCString()}`, ``];
   const serviceWarnings = warned.filter(r => r.group === "Data services");
   writeFileSync(`${OUT}/issues.json`, JSON.stringify({
@@ -69,7 +66,10 @@ export function writeSummary(reports) {
       body: [`**In short:** ${headline}`, ``, ...tested, `## App steps that failed`, ``, ...table(appFails)].join("\n")
     },
     services: {
-      checked: CHECK_DATA_SERVICES && !PARTIAL && !ONLY_SERVICES.length, failed: serviceFails.length > 0,
+      // Only a run with a result for every service may close "Data services down" (not one that stopped early).
+      checked: CHECK_DATA_SERVICES && !PARTIAL && !ONLY_SERVICES.length
+        && SERVICES.every(([name]) => results.some(r => r.group === "Data services" && r.name === name)),
+      failed: serviceFails.length > 0,
       body: [`**In short:** ${servicesDown ? servicesDown[0].toUpperCase() + servicesDown.slice(1) : "every data service answered"}.`, ``, ...tested,
         `## Data services that did not answer`, ``, ...table(serviceFails),
         ...(serviceWarnings.length ? [``, `## Warnings (do not fail the check)`, ``, ...table(serviceWarnings)] : []),

@@ -1,0 +1,49 @@
+# Sets up Node.js, the test libraries and the saved test browser, for both jobs of the Live check workflow.
+# Change the setup here once; the versions come from the workflow's env (PLAYWRIGHT, AXE).
+name: Set up the test browser
+description: Node.js, Playwright (and any extra test libraries), and a test browser that starts.
+inputs:
+  playwright:
+    description: Playwright version
+    required: true
+  extra:
+    description: Extra npm packages to install, for example axe-core@4.14.0
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: "24"
+
+    - name: Install the test libraries
+      shell: bash
+      run: npm install --no-save --no-audit --no-fund "playwright@${{ inputs.playwright }}" ${{ inputs.extra }}
+
+    # The browser is saved between runs (it only changes with the Playwright version).
+    - name: Restore the saved test browser
+      id: browser-cache
+      uses: actions/cache@v5
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-${{ inputs.playwright }}-${{ runner.os }}
+
+    - name: Download the test browser (only when it is not saved yet)
+      if: steps.browser-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx playwright install chromium
+
+    # GitHub's machines usually have everything the browser needs. Installing the extra system files
+    # took up to 10 minutes on a slow day, so it only happens if the browser does not start without them.
+    - name: Make sure the test browser starts
+      shell: bash
+      run: |
+        if node -e "require('playwright').chromium.launch().then(b => b.close())"; then
+          echo "The browser starts: no extra system files needed."
+        else
+          echo "The browser did not start: installing its system files."
+          npx playwright install-deps chromium
+          node -e "require('playwright').chromium.launch().then(b => b.close())"
+        fi
