@@ -744,7 +744,9 @@ export async function testDevice(browser, device, [postcode, place]) {
     // once with no data (stand-ins), except the map library and map pictures; nothing is sent to the data services.
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     await steadyContext(ctx);
-    await ctx.route(u => !u.href.startsWith(BASE) && !/unpkg\.com|tile|arcgisonline|cartocdn/.test(u.href), r => {
+    // Compare the site, not the address: BASE can end in index.html (pull requests), and the app's own files must load.
+    const site = new URL(BASE).origin;
+    await ctx.route(u => u.origin !== site && !/unpkg\.com|tile|arcgisonline|cartocdn/.test(u.href), r => {
       const u = r.request().url();
       if (u.includes("api.postcodes.io/places")) return r.fulfill({ json: { status: 200, result: [{ name_1: "Portree", country: "Scotland", local_type: "Town", county_unitary: "Highland", latitude: 57.41, longitude: -6.19 }] } });
       return r.fulfill({ json: { features: [] } }).catch(() => {});
