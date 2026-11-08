@@ -765,10 +765,13 @@ async function testDevice(device, [postcode, place]) {
       const low = results.filter(c => c.status === "low").map(c => c.id).sort();
       const folded = [...document.querySelectorAll(".clear-fold .fold-body .slot")].map(el => el.id.slice(5)).sort();
       const symbols = [...document.querySelectorAll("#report .chip:is(.high,.medium,.low,.info,.manual,.error)")].filter(c => !c.querySelector(".chip-symbol")).length;
-      return { total: results.length, grid, low, folded, symbols, countBoxes: document.querySelectorAll("a.count").length };
+      return { total: results.length, grid, openAtStart: document.querySelectorAll("#report details.check[open]").length,
+        button: document.getElementById("toggleAll").textContent, low, folded, symbols, countBoxes: document.querySelectorAll("a.count").length };
     });
     // The topic grid shows every topic once; the count boxes are gone; every chip has its symbol.
     if (r0.grid !== r0.total) throw new Error(`the topic grid shows ${r0.grid} topics, expected ${r0.total}`);
+    // Every topic card starts closed, problems too (owner, 8 November 2026).
+    if (r0.openAtStart || r0.button !== "Open problems") throw new Error(`${r0.openAtStart} topic card(s) open at the start; the button says "${r0.button}"`);
     if (r0.countBoxes) throw new Error("the old count boxes are still shown");
     if (r0.symbols) throw new Error(`${r0.symbols} rating chip(s) without a symbol`);
     // Every "No issue found" topic, and only those, sits in its section's folded row.

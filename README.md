@@ -57,7 +57,9 @@ official checkers.
   kept on the device for 7 days and used, dated, only if that service fails. If the report is still loading after 8 seconds, the summary names the services it is waiting for, and their topics.
   A section bar stays at the top while scrolling, with one **Open problems / Close all** button that stays in view
   (Open problems opens only the topics rated Look into this or Worth checking); on a phone its edge fades to show that
-  it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open). The summary shows the topic grid, then "Key findings". Every rating has a symbol as well as a
+  it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open). The summary shows the topic grid (thin line icons; only topics to look into or check are coloured), the tapped
+  topic's one-line reason right under it, then "Key findings". Every topic card starts closed; **Open problems** opens
+  the ones that matter. Every rating has a symbol as well as a
   colour (❗ Look into this, ⚠️ Worth checking, ✓ No issue found, ℹ️ For information, ? Check yourself), and topics with
   no issue found fold into one row at the end of their section. Once a report is open, the search map and saved list
   shrink to one line above it ("📍 Barnsley test · Change · Saved (3)"). The map inside the report is always shown (4:3), so it

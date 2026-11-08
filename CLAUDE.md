@@ -114,6 +114,9 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
   panels (`#f5f5f7`) only where they group something. No heavy borders, boxes inside boxes, or shadows on paper.
 - **Space:** generous white space between cards and before sections; never crowd a page to save space.
 - **Less is more:** show only what the reader needs; move detail (sources, dates, long links) to one place at the end.
+- **One accent colour** (owner, 8 November 2026): a calm blue (`--link`/`--accent-bg`, `#0066cc`) for links, the
+  active tab and the one filled button ("Check this property"); buttons inside the report are quiet grey. Icons are
+  thin line drawings (`ICON_PATHS`, `TOPIC_ICONS`), never emoji, except the two problem ratings' symbols.
 - **Colour with meaning only:** a thin coloured accent per rating, always with its symbol (and a border pattern in
   print), so it still reads without colour.
 

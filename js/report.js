@@ -554,13 +554,14 @@ function moreToggle() {
   return `<span class="more no-print" aria-hidden="true"><span class="more-text"></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
 }
 
+// Every topic card starts closed, problems too (owner, 8 November 2026): "Open problems", the Key findings links
+// and the Problems tab open them.
 function renderCheck(c) {
-  const open = ["high", "medium", "error"].includes(c.status);
   const actions = c.actions && c.actions.length
     ? `<ul>${c.actions.map(a => `<li>${a}</li>`).join("")}</ul>`
     : "<p>Nothing more is needed for this topic.</p>";
   return `
-    <details class="check ${c.status}" id="check-${c.id}" ${open ? "open" : ""}>
+    <details class="check ${c.status}" id="check-${c.id}">
       <summary>
         <h3>${escapeHTML(c.title)}</h3>${chip(c.status)}
         <span class="found">${c.fromSaved ? `<strong>Saved result from ${escapeHTML(savedDate(c.fromSaved))}:</strong> ` : ""}${escapeHTML(c.found)}</span>
@@ -735,20 +736,20 @@ function renderSummary() {
       ${CHECKS.map(c => {
         const res = run.results[c.id];
         const st = res ? res.status : "loading";
-        const [icon, short] = TOPIC_ICONS[c.id];
+        const [paths, short] = TOPIC_ICONS[c.id];
         const label = res ? STATUS_LABEL[st] : "Checking";
         // The spoken name starts with the visible short name, so voice control users can say it.
         const name = ` ${c.title.toLowerCase()} `.includes(` ${short.toLowerCase()} `) ? c.title : `${short} (${c.title})`;
         return `<li><button type="button" class="topic ${st}" data-why="${c.id}" aria-controls="whyBox"
             aria-expanded="${run.whyId === c.id}" aria-label="${escapeHTML(name)}: ${label}. Show why">
-<span class="topic-icon" aria-hidden="true">${icon}</span><span class="topic-name">${short}</span></button></li>`;
+<svg class="topic-icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${paths}</svg><span class="topic-name">${short}</span></button></li>`;
       }).join("")}
     </ul>
+    ${whyBox()}
     ${run.done && priority.length ? `<div class="key-findings"><h3>Key findings</h3><ol>${priority.slice(0, 3).map(c =>
       `<li>${chip(c.status)} <a href="#check-${c.id}" data-open="check-${c.id}"><strong>${escapeHTML(c.title)}</strong></a>: ${escapeHTML(c.found)}</li>`).join("")}</ol>${priority.length > 3
       ? `<p>And ${plural(priority.length - 3, "more topic")} to look into or check: see the <span class="print-only">table</span><span class="no-print">sections</span> below.</p>` : ""}</div>` : ""}
     ${glanceTable(results)}
-    ${whyBox()}
     ${outsideEngland ? `<div class="notice"><strong>This location is in ${escapeHTML(p.country)}.</strong>
       ${p.country === "Wales"
         ? "Topics use Welsh data where England's stops at the border. Where Wales publishes nothing (for example old landfill sites), the topic says “Check yourself”."
