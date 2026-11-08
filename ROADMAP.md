@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.3.2** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.3.3** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.3.2)
+## Part 1: What the app does today (version 2.3.3)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -149,7 +149,9 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 - **Rename** and **Remove** buttons; Remove offers **Undo** for 10 seconds (1.22.0).
 - Private notes that say "Saved ✓" after each change, a starred shortlist, and compare two or three properties side by side, with a
   switch to show only the topics that differ (1.25.0).
-- Export and import, in a **Move to another device** panel (1.24.0), with a backup reminder.
+- Export and import, in a **Move to another device** panel (1.24.0), with a backup reminder. Since 2.3.3 an imported
+  file is rebuilt from plain values only (known topics, the six ratings, escaped text), and its saved report
+  snapshots are left out, so a file from someone else cannot carry hidden script.
 
 ### Share, print and export
 - **Share** links and the phone's share menu.
@@ -215,7 +217,7 @@ hold (Part 3). Chosen first, in the quiz of 8 November 2026:
 1. **Faster reports in outages:** done in 2.3.1 (one retry layer, a saved answer meanwhile, a 45-second deadline;
    shorter timeouts were not chosen).
 2. **Third place review:** done on 8 November 2026 (Part 4); its fixes shipped in 2.3.2.
-3. **Code review of the app** (`js/`), and fix what is found.
+3. **Code review of the app:** done on 8 November 2026; all 10 findings and 3 tidy-ups fixed in 2.3.3 (Part 4).
 4. **Wording and phone review:** plain English and consistency in every topic's text, and each screen checked on a
    phone with screenshots.
 
@@ -292,6 +294,16 @@ not be checked; "pharmacy 0 m" reads "under 50 m"; the code "MSOA" left the crim
 crime" (Scotland); a link with an unknown postcode keeps it in the search box; the reservoir line names at most 2
 reservoirs, high-risk ones first (Westminster listed "Pen Pond Lower Lake, Richmond, Pen Pond Upper Lake, Richmond, …");
 and the flood zone backup moved to Defra's copy, which also checks nearby flood zones during an outage.
+
+**Code review, 8 November 2026** (`js/`, 2.3.2). Fixed in 2.3.3: an imported file could carry hidden script or
+break the saved list (now rebuilt from plain values, without snapshots); a Scottish or Welsh pin whose country could
+not be found (no postcode within 2 km and no OpenStreetMap answer) was checked as England, so empty answers read "No
+issue found" (now OpenStreetMap is asked first, and an unknown country fails the topic instead); an air estimate with
+no figures said "within legal limits"; the verdict said a bold "No issues found" when nothing could be checked; coal
+read "No issue found" when the mining-other-than-coal overview had no data for the spot; Try again on a saved report
+never finished (it now runs a fresh report); Scottish and Northern Irish place names never appeared in the
+suggestions; a retry could drop the saved answer shown while waiting (from 2.3.1); one map shape with odd coordinates
+failed a whole topic. Tidy-ups: a duplicate list helper, a link defined twice, an unused value.
 
 **Known issues:** none at the moment.
 

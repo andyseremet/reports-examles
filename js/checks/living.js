@@ -18,7 +18,7 @@ function checkAmenities(R) {
   const uncovered = rows.filter(x => x.notCovered);
   const noneCovered = uncovered.length === rows.length;
   const uncoveredText = uncovered.length
-    ? ` ${sentenceStart(listWords(uncovered.map(x => x.t.many)))} are not covered in ${country}.` : "";
+    ? ` ${sentenceStart(andList(uncovered.map(x => x.t.many)))} are not covered in ${country}.` : "";
   const nationalLinks = {
     Wales: [`Find schools on ${link(LINKS.walesSchools, "My Local School")}.`],
     Scotland: [`Find GP surgeries and pharmacies on ${link(LINKS.scotNhs, "NHS inform")}, and schools in the ${link(LINKS.scotSchools, "Scottish Government's school list")}.`],
@@ -42,7 +42,7 @@ function checkAmenities(R) {
       + ((g.missing || []).length ? (summary.length ? " " : "") + "Not available right now: " + g.missing.join(", ") + "." : "") + uncoveredText).trim(),
     details: missing + `<div class="table-wrap"><table><thead><tr><th>Place</th><th>Nearest</th><th>Distance</th><th>Number nearby</th></tr></thead><tbody>${
       rows.map(x => x.notCovered
-        ? `<tr><td>${escapeHTML(x.t.label)}</td><td colspan="3">Not covered in ${escapeHTML(country)}: this register covers ${escapeHTML(listWords(x.t.covers))} only</td></tr>`
+        ? `<tr><td>${escapeHTML(x.t.label)}</td><td colspan="3">Not covered in ${escapeHTML(country)}: this register covers ${escapeHTML(andList(x.t.covers))} only</td></tr>`
         : `<tr><td>${escapeHTML(x.t.label)}</td><td>${x.near ? escapeHTML(x.near.name || "Unnamed") : "None found nearby"}</td>
         <td>${x.near ? formatDistance(x.near.distanceKm) : "–"}</td><td>${x.count} within ${formatRadius(x.t.within * 1000)}</td></tr>`).join("")
     }</tbody></table></div>`,
@@ -247,9 +247,18 @@ function checkAir(R) {
     source: { name: "Copernicus CAMS air quality model (via Open-Meteo); " + hotspotName,
       url: ni ? LINKS.niAir : isScotland(R) ? LINKS.scotAir : wales ? LINKS.walesAir : LINKS.ukair }
   };
-  const m = okValue(R, "air");
+  // An estimate with no figures (both averages missing) is no estimate: never "within legal limits" (code review, 2.3.3).
+  const model = okValue(R, "air");
+  const m = model && (model.no2 != null || model.pm25 != null) ? model : null;
+  const emptyModel = !!model && !m;
   const hotspots = ni ? null : wales ? sitesKey(R) : "planningPoint";
   const hotspotsKnown = !!hotspots && R[hotspots].ok;
+  if (!m && !hotspotsKnown && emptyModel) return {
+    ...base, status: "manual",
+    found: "The area pollution estimate has no figures for this place, and council air pollution hotspots " +
+      (ni ? "are not mapped for Northern Ireland" : "could not be checked right now") + ". Check with the council.",
+    actions: [`Ask the council about air quality near the property.`]
+  };
   if (!m && !hotspotsKnown) return unavailable(base, R, !R.air.ok || !hotspots ? "air" : hotspots);
 
   const ws = wales && hotspotsKnown ? okValue(R, hotspots) : null;
@@ -262,7 +271,7 @@ function checkAir(R) {
   let status = !m || !hotspotsKnown ? "info" : "low";
   const parts = [];
   if (m) parts.push(`Area pollution levels are estimated to be ${overLegal ? "above" : "within"} ${scot ? "Scottish" : "UK"} legal limits.`);
-  else parts.push("The area pollution estimate could not be retrieved right now.");
+  else parts.push(emptyModel ? "The area pollution estimate has no figures for this place." : "The area pollution estimate could not be retrieved right now.");
   if (hotspotsKnown) {
     if (here.length) { status = "medium"; parts.push("Inside an air pollution hotspot declared by the council (an Air Quality Management Area)."); }
     else parts.push("Not in an air pollution hotspot declared by the council." + (near.length ? ` There is one within ${formatRadius(R.loc.radius)}.` : ""));

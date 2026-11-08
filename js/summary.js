@@ -2,6 +2,25 @@
 // Property Location Check – the summary at the top of the report: the verdict, the topic grid, the box under it and key findings.
 // Loaded by index.html as a plain script (no build step); files share one global scope, in the order listed there.
 
+// The verdict of a finished report, from n(rating) = how many topics have that rating. Missing data is never good
+// news: nothing answered is never a bold "No issues found" (code review, 2.3.3).
+function doneVerdict(n) {
+  const unchecked = n("manual") + n("error"), checked = n("low") + n("info");
+  const notChecked = unchecked ? `${plural(unchecked, "topic")} could not be checked here.` : "";
+  if (n("high") || n("medium")) {
+    // One clear sentence, then the rest in smaller words underneath.
+    const found = [n("high") && `<strong>${plural(n("high"), "thing")} to look into</strong>`,
+      n("medium") && `<strong>${n("medium")} worth checking</strong>`].filter(Boolean).join(" and ");
+    return `<p class="verdict">We found ${found}.</p>
+      <p class="verdict-sub">${plural(n("low"), "check")} found no issue. ${notChecked}</p>`;
+  }
+  if (!checked) return `<p class="verdict"><strong>Nothing could be checked right now.</strong></p>
+      <p class="verdict-sub">${notChecked} Try again later, or use the official services linked in each topic.</p>`;
+  if (unchecked) return `<p class="verdict">No issues found in the ${plural(checked, "check")} we ran, but
+      <strong>${plural(unchecked, "topic")} could not be checked</strong>.</p>`;
+  return `<p class="verdict"><strong>No issues found</strong> in the ${plural(checked, "check")} we ran.</p>`;
+}
+
 function renderSummary() {
   const results = orderedResults();
   const n = s => results.filter(c => c.status === s).length;
@@ -10,9 +29,6 @@ function renderSummary() {
   const outsideEngland = p && p.country && p.country !== "England";
   const priority = results.filter(c => ["high", "medium"].includes(c.status))
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
-  // Missing data is never good news: the second line always says how many topics could not be checked.
-  const unchecked = n("manual") + n("error");
-  const notChecked = unchecked ? `${plural(unchecked, "topic")} could not be checked here.` : "";
 
   let verdict;
   if (!run.done) {
@@ -20,16 +36,7 @@ function renderSummary() {
     verdict = `<p class="verdict">Checking official data… <strong>${ready} of ${total}</strong> topics ready.</p>
       <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${ready}">
         <span style="width:${Math.round(ready / total * 100)}%"></span></div>${slowNote()}`;
-  } else if (n("high") || n("medium")) {
-    // One clear sentence, then the rest in smaller words underneath.
-    const found = [n("high") && `<strong>${plural(n("high"), "thing")} to look into</strong>`,
-      n("medium") && `<strong>${n("medium")} worth checking</strong>`].filter(Boolean).join(" and ");
-    verdict = `<p class="verdict">We found ${found}.</p>
-      <p class="verdict-sub">${plural(n("low"), "check")} found no issue. ${notChecked}</p>`;
-  } else {
-    verdict = `<p class="verdict"><strong>No issues found</strong> in the ${plural(n("low") + n("info"), "check")} we ran.</p>
-      ${notChecked ? `<p class="verdict-sub">${notChecked}</p>` : ""}`;
-  }
+  } else verdict = doneVerdict(n);
 
   const old = run.snapshot && isOld(run.snapshot.savedAt);
   const savedNote = run.snapshot ? `<div class="notice saved-note${old ? " old" : ""}">Saved results from

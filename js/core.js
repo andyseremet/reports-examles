@@ -49,7 +49,6 @@ const LINKS = {
   simdAbout: "https://www.gov.scot/collections/scottish-index-of-multiple-deprivation-2020/",
   scotCrime: "https://www.gov.scot/collections/recorded-crime-in-scotland/",
   coastalData: "https://environment.data.gov.uk/dataset/9fede91f-5acd-4fd2-9bd8-98153fa3c2ff",
-  geosure: "https://www.bgs.ac.uk/datasets/geosure/",
   police: "https://www.police.uk/",
   policeData: "https://data.police.uk/",
   epc: "https://www.gov.uk/find-energy-certificate",
@@ -121,7 +120,7 @@ const STATUS_ORDER = { high: 0, medium: 1, error: 2, info: 3, manual: 4, low: 5 
 const MAP_COLOURS = { landfill: "#b45309", landslide: "#7c3aed", hazard: "#b42318", contaminated: "#4b5563", coalTip: "#1f2937", wasteSite: "#166534" };
 
 const REQUEST_TIMEOUT = 15000;   // a hung service gives up after 15 s; its topic is then tried once more (startTask)
-const APP_VERSION = "2.3.2";
+const APP_VERSION = "2.3.3";
 const APP_UPDATED = "8 November 2026";
 
 let map, marker, radiusCircle, featureLayer, noiseLayer, reportMap;
@@ -237,7 +236,6 @@ const okValue = (R, key) => R && R[key] && R[key].ok ? R[key].value : null;
 
 // Nearest first; places with no known distance go last.
 // ["a", "b", "c"] -> "a, b and c".
-const listWords = items => items.length < 2 ? items.join("") : items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
 const sentenceStart = text => text.charAt(0).toUpperCase() + text.slice(1);
 const byDistance = (a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99);
 

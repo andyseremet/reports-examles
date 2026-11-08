@@ -92,6 +92,7 @@ function trimSaved(list) {
 }
 
 function countChips(checks) {
+  if (!Array.isArray(checks)) return "";   // an entry saved without topics never stops the list from drawing
   const n = s => checks.filter(c => c.status === s).length;
   return ["high", "medium", "low"].filter(s => n(s)).map(s => chip(s, `${n(s)} ${STATUS_LABEL[s].toLowerCase()}`)).join("");
 }
@@ -271,6 +272,27 @@ $("exportBtn").addEventListener("click", () => {
   $("transferHelp").textContent = `Exported ${plural(saved.length, "property", "properties")}. Open the file on the other device with “Import list”.`;
 });
 
+// An imported file can come from anyone, so each property is rebuilt from plain values only (code review, 8 November
+// 2026): known topics, the six ratings, text that is always shown escaped. Saved report snapshots in the file are left
+// out (they hold the report's HTML): a property from a file gets a fresh report when it is opened.
+function cleanImported(item) {
+  if (!item || typeof item !== "object") return null;
+  const lat = Number(item.lat), lon = Number(item.lon), radius = Number(item.radius) || 1000;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  const text = (v, max) => typeof v === "string" ? v.slice(0, max) : "";
+  const known = new Set(CHECKS.map(c => c.id));
+  const savedAt = Number.isNaN(Date.parse(item.savedAt)) ? new Date().toISOString() : new Date(item.savedAt).toISOString();
+  const loc = { lat, lon, radius };
+  return {
+    key: reportKey(loc), name: text(item.name, 120) || "Imported property", lat, lon, radius, savedAt,
+    postcode: text(item.postcode, 10), district: text(item.district, 80),
+    ...(item.starred === true && { starred: true }), ...(item.renamed === true && { renamed: true }),
+    checks: (Array.isArray(item.checks) ? item.checks : [])
+      .filter(c => c && known.has(c.id) && Object.prototype.hasOwnProperty.call(STATUS_LABEL, c.status))
+      .map(c => ({ id: c.id, title: text(c.title, 120), status: c.status, found: text(c.found, 600) }))
+  };
+}
+
 $("importBtn").addEventListener("click", () => $("importFile").click());
 $("importFile").addEventListener("change", async e => {
   const file = e.target.files && e.target.files[0];
@@ -281,18 +303,18 @@ $("importFile").addEventListener("change", async e => {
     if (!data || data.app !== "property-location-check" || !Array.isArray(data.saved)) throw new Error("not a Property Location Check file");
     const mine = store.get(SAVED_KEY, []);
     let added = 0;
-    data.saved.forEach(item => {
-      if (!item || typeof item.key !== "string" || !Number.isFinite(Number(item.lat))) return;
+    data.saved.forEach(raw => {
+      const item = cleanImported(raw);
+      if (!item) return;
+      const from = typeof raw.key === "string" ? raw.key : item.key;   // the file's own key, for its notes and ticks
       const i = mine.findIndex(s => s.key === item.key);
       if (i < 0) { mine.push(item); added++; }
       else if (new Date(item.savedAt) > new Date(mine[i].savedAt)) mine[i] = { ...item, starred: item.starred || mine[i].starred };
-      const snap = data.snapshots && data.snapshots[item.key];
-      const mySnap = store.get(snapKey(item.key), null);
-      if (snap && (!mySnap || new Date(snap.savedAt) > new Date(mySnap.savedAt))) store.set(snapKey(item.key), snap);
-      const note = data.notes && data.notes[item.key];
-      if (note && !store.get("plc-notes:" + item.key, "")) store.set("plc-notes:" + item.key, String(note));
-      const ticks = data.ticks && data.ticks[item.key];
-      if (Array.isArray(ticks)) store.set("plc-ticks:" + item.key, [...new Set([...store.get("plc-ticks:" + item.key, []), ...ticks])]);
+      const note = data.notes && data.notes[from];
+      if (typeof note === "string" && note && !store.get("plc-notes:" + item.key, "")) store.set("plc-notes:" + item.key, note.slice(0, 20000));
+      const ticks = data.ticks && data.ticks[from];
+      if (Array.isArray(ticks)) store.set("plc-ticks:" + item.key,
+        [...new Set([...store.get("plc-ticks:" + item.key, []), ...ticks.filter(t => typeof t === "string").map(t => t.slice(0, 200))])].slice(0, 200));
     });
     store.set(SAVED_KEY, trimSaved(mine.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))));
     renderSaved();
@@ -306,7 +328,7 @@ $("compareBtn").addEventListener("click", () => {
   const saved = store.get(SAVED_KEY, []);
   const list = selectedForCompare().map(k => saved.find(s => s.key === k)).filter(Boolean);
   if (list.length < 2) return;
-  const find = (s, id) => s.checks.find(x => x.id === id);
+  const find = (s, id) => (Array.isArray(s.checks) ? s.checks : []).find(x => x.id === id);
   const cell = (s, id) => {
     const c = find(s, id);
     return c ? `${chip(c.status)}<br><small>${escapeHTML(c.found)}</small>` : "<small>Not checked</small>";

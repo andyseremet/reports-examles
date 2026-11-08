@@ -739,6 +739,60 @@ export async function testDevice(browser, device, [postcode, place]) {
     return download.suggestedFilename();
   });
 
+  await desktopStep("Code review fixes (2.3.3): a file cannot carry script; Try again on a saved report; Scottish place names", async () => {
+    // A separate window with its own storage, so the saved list here is untouched. Outside data services answer at
+    // once with no data (stand-ins), except the map library and map pictures; nothing is sent to the data services.
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await steadyContext(ctx);
+    // Compare the site, not the address: BASE can end in index.html (pull requests), and the app's own files must load.
+    const site = new URL(BASE).origin;
+    await ctx.route(u => u.origin !== site && !/unpkg\.com|tile|arcgisonline|cartocdn/.test(u.href), r => {
+      const u = r.request().url();
+      if (u.includes("api.postcodes.io/places")) return r.fulfill({ json: { status: 200, result: [{ name_1: "Portree", country: "Scotland", local_type: "Town", county_unitary: "Highland", latitude: 57.41, longitude: -6.19 }] } });
+      return r.fulfill({ json: { features: [] } }).catch(() => {});
+    });
+    const p = await ctx.newPage();
+    try {
+      await p.goto(BASE);
+      // 1. An imported file with hidden script, a made-up rating and an entry without topics.
+      const file = { app: "property-location-check", format: 1, exportedAt: "2026-11-08T12:00:00Z",
+        saved: [
+          { key: "52.10000,-1.10000,1000", name: "<img src=x onerror=window.__hacked=1>", lat: 52.1, lon: -1.1, radius: 1000, savedAt: "2020-01-01T00:00:00Z",
+            checks: [{ id: "radon", title: "Radon", status: 'x" onmouseover="window.__hacked=1', found: "bad" }, { id: "flood", title: "Flooding", status: "low", found: "ok" }] },
+          { key: "52.20000,-1.20000,1000", name: "No topics", lat: 52.2, lon: -1.2, radius: 1000, savedAt: "2020-01-02T00:00:00Z" }
+        ],
+        snapshots: { "52.10000,-1.10000,1000": { savedAt: "2020-01-01T00:00:00Z", loc: { lat: 52.1, lon: -1.1, radius: 1000 },
+          results: [{ id: "radon", status: "low", found: "x", details: "<img src=x onerror=window.__hacked=1>" }], R: {} } } };
+      // (With nothing saved yet the saved list is hidden; the file goes straight to its file input.)
+      await p.setInputFiles("#importFile", { name: "list.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(file)) });
+      await p.waitForFunction(() => /Imported/.test(document.getElementById("transferHelp").textContent), null, { timeout: 5000 });
+      const imp = await p.evaluate(() => ({
+        rows: document.querySelectorAll("#savedList li").length, hacked: !!window.__hacked,
+        snapshot: store.get("plc-snap:52.10000,-1.10000,1000", null),
+        statuses: (store.get(SAVED_KEY, []).find(s => s.lat === 52.1) || {}).checks.map(c => c.status)
+      }));
+      if (imp.rows !== 2 || imp.hacked || imp.snapshot || imp.statuses.join() !== "low") throw new Error(`import: ${JSON.stringify(imp)}`);
+      // 2. Try again on a saved report runs a fresh report (a saved report keeps only part of its data).
+      await p.evaluate(() => {
+        const loc = { lat: 52.3, lon: -1.3, radius: Number(document.getElementById("radius").value) };
+        store.set(snapKey(reportKey(loc)), { savedAt: "2026-11-01T10:00:00Z", loc, R: { place: { ok: true, value: { country: "England" } } },
+          results: [topicResult(CHECKS.find(c => c.id === "radon"), { status: "error", found: "This check could not be completed right now." })] });
+      });
+      await p.goto(new URL("?lat=52.3&lon=-1.3&name=Saved%20test", BASE).href);
+      await p.waitForFunction(() => run && run.snapshot, null, { timeout: 10000 });
+      await p.click("#check-radon > summary");
+      await p.click('#check-radon [data-retry="radon"]');
+      const fresh = await p.waitForFunction(() => run && !run.snapshot && run.done, null, { timeout: 60000 }).then(() => true, () => false);
+      if (!fresh) throw new Error("Try again on a saved report did not run a fresh report to the end");
+      // 3. Scottish place names appear in the search suggestions.
+      await p.goto(BASE);
+      await p.fill("#q", "Portree");
+      const portree = await p.waitForSelector('#suggestions:not(.hidden) li:has-text("Portree")', { timeout: 10000 }).then(() => true, () => false);
+      if (!portree) throw new Error("Portree (Scotland) is not in the suggestions");
+      return "file: script and made-up ratings dropped, no snapshot kept; saved report: Try again ran a fresh report; Portree suggested";
+    } finally { await ctx.close(); }
+  });
+
   await step("Remove a saved property, then Undo puts it back", async () => {
     const before = await page.$$eval("#savedList li", x => x.length);
     const key = await page.$eval("#savedList [data-remove]", b => b.dataset.remove);
