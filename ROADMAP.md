@@ -2,7 +2,7 @@
 
 Property Location Check: what the app does today, and what is planned next.
 
-- Current version: **2.0.3** (live at https://andyseremet.github.io/reports-examles/)
+- Current version: **2.0.8** (live at https://andyseremet.github.io/reports-examles/)
 - Last updated: 8 November 2026
 - Approach: steady improvements, no radical changes. Coverage grows **deeper in England first**.
 - Language: the app stays in English only.
@@ -15,7 +15,7 @@ The [README](README.md) describes each feature in full.
 
 ---
 
-## Part 1: What the app does today (version 2.0.3)
+## Part 1: What the app does today (version 2.0.8)
 
 ### Finding the property
 - Search by postcode, address or place name, with suggestions as you type. The search box is always shown above the
@@ -63,7 +63,7 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   finding in bold, then "What to do", with "What we found" and "What this means" behind **More**; data dates and
   sources only in the table at the end; lines of about 70 characters on wide screens.
 - **Calm screen** (1.36.0): the system font, white cards with a hairline and one thin rating accent, lighter topic
-  tiles, and the verdict as one clear sentence, following the visual style in CLAUDE.md.
+  tiles, and the verdict as one clear sentence, following the visual style in docs/DESIGN.md.
 - **Fewer "i" buttons** (1.36.0): short explanations (checking the pin, saved properties, section intros) are one
   visible sentence; "i" stays only for long help.
 - **What the words mean** (1.36.0): a printable glossary page of 33 words (flood zone, radon, CON29M, conservation
@@ -78,16 +78,19 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
   phone. A phone report with topics closed went from 12 to about 8 screens.
 - **Phone tab bar** (1.31.0): Summary · Problems (N) · All topics · Next steps at the bottom of the screen on phones.
   Problems opens the topics to look into and goes to the first.
-- An overall verdict, the topic grid with one legend line of rating counts (1.29.0, replacing the count boxes), the "Key findings" panel, and a box for every topic with no real answer and who to ask
-  instead, which folds away with **Details / Hide** and starts closed when it lists more than 3 topics (1.25.0).
+- An overall verdict with a short second line (how many checks found no issue and how many topics could not be
+  checked), the topic grid and the "Key findings" panel. Since 2.0.4 (owner, 8 November 2026) the rating count chips
+  and the "Where we could not give an answer" box are gone: each topic still says what it could not check.
 - **Next steps** (1.30.0): notes, the viewing checklist and the checklist, each folded with its count ("0 of 11 done").
-- **At the viewing:** up to 12 things to look for and ask on the day, reached with the **Viewing** button.
+- **At the viewing:** up to 12 things to look for and ask on the day, in Next steps (the **Viewing** button went in 2.0.4).
 - A checklist for the seller and conveyancer; ticks are remembered for each property, and each list shows, for
   example, "2 of 7 done" (1.24.0).
 - **Email** or **Copy** the key points for your conveyancer. Nothing passes through the app.
 
 ### Reliability
 - A failed topic is tried again after 8 seconds (20 when the service refused the request), then offers **Try again**.
+  Since 2.0.8 (owner, 8 November 2026) Try again also sits in the box under the topic grid, so it is in sight while
+  the topic's card stays closed.
 - Backups (1.30.1, after planning.data.gov.uk was down for a day): when it does not answer, heritage and nature come
   from Historic England and Natural England, and the topic names what it could not check. A topic whose service does
   not answer shows this place's last saved answer, dated, with **Try again**. Since 1.31.1 the flood zone at the pin
@@ -122,7 +125,20 @@ live data (for example rail and aircraft noise, Japanese knotweed) link to the o
 
 ### Share, print and export
 - **Share** links and the phone's share menu.
-- **Save** menu: download the report, print a summary, or print the full report (or save as PDF).
+- Search box (2.0.7): "Postcode, address or place" is the hint inside the box ("Postcode or place" on the narrowest
+  screens); its label stays for screen readers. Phones get their 16 px panel padding back (a desktop rule had
+  overridden it).
+- Calmer look, part 2 (2.0.6): a light header (white, a hairline under it; also on the status and glossary pages,
+  with a matching phone browser bar), the first-visit guide as one quiet line, a slightly smaller semibold verdict,
+  one credits line on screen (the page footer, shortened; the full licence list is in "Data credits and licences",
+  and the printed and downloaded report keep their own credits line).
+- Calmer look (2.0.5, quiz of 8 November 2026): one accent blue; thin line icons in the topic grid and the phone tab
+  bar; only problem topics coloured in the grid; quiet grey buttons inside the report; thin grey "i" buttons; a
+  subtle back-to-top button; a text-style Open problems / Close all; thinner, paler card edges; every topic card
+  starts closed; the tapped topic's reason sits right under the grid.
+- Since 2.0.4: share and printer icons on the Summary heading's line (the printer gives the 2-page summary), and
+  **Download report** and **Print full report** under the summary. The top bar and its menu notes are gone; the end
+  of the report is quieter (sources as a small link, short checklist intros, a slim Send to my conveyancer row).
 - Printout extras (1.36.0): a one-line contents under the summary, a lined notes page at the end, and a 2-page short
   printout (the cover, key findings and the topic table; the checklists stay in the full report). Since 1.36.2 it
   keeps room to spare (a smaller map, tighter table rows), after a Lewes report ran onto a third page.

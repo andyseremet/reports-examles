@@ -1,7 +1,7 @@
 # Review instructions
 
 Property Location Check is a static site with no build step, used by non-technical home buyers. The rules behind
-these checks are in `CLAUDE.md`.
+these checks are in `CLAUDE.md` and `docs/`.
 
 ## What Important means here
 

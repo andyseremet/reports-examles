@@ -6,7 +6,8 @@
    SHARE, EXPORT AND PRINT
 ========================================================= */
 
-$("shareBtn").addEventListener("click", async () => {
+// The share, print and download buttons are drawn with the report, so one listener serves them all.
+async function shareReport() {
   const url = location.href;
   const title = "Property Location Report" + (run ? " – " + run.loc.name : "");
   if (navigator.share) {
@@ -15,12 +16,12 @@ $("shareBtn").addEventListener("click", async () => {
   }
   try {
     await navigator.clipboard.writeText(url);
-    $("shareText").textContent = "Link copied ✓";
+    $("shareNote").textContent = "Link copied";
+    setTimeout(() => { if ($("shareNote")) $("shareNote").textContent = ""; }, 2500);
   } catch (e) {
     prompt("Copy this link:", url);
   }
-  setTimeout(() => { $("shareText").textContent = "Share"; }, 2500);
-});
+}
 
 function downloadFile(filename, content, type) {
   const url = URL.createObjectURL(new Blob([content], { type }));
@@ -34,14 +35,15 @@ function fileBase() {
   return (reportData.location.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "property") + "-report";
 }
 
-$("downloadHtml").addEventListener("click", () => {
+function downloadReport() {
   if (!reportData) return;
   const copy = $("report").cloneNode(true);
   copy.querySelectorAll("details").forEach(d => d.setAttribute("open", ""));
   copy.querySelectorAll(".info-body, .list-extra").forEach(d => d.removeAttribute("hidden"));
-  copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button, #whyBox, .send-box").forEach(b => b.remove());
+  copy.querySelectorAll(".info-btn, .info-row, [data-retry], .saved-note button, #whyBox, .send-box, .icon-btn, .share-note, .keep-row").forEach(b => b.remove());
   copy.querySelectorAll("#notesText").forEach(t => t.remove());
   copy.querySelectorAll(".notes-print").forEach(d => { d.removeAttribute("aria-hidden"); d.classList.add("notes-download"); });
+  copy.querySelectorAll(".report-credits").forEach(p => p.classList.remove("print-only"));   // the download keeps its credits line
   copy.querySelectorAll("input[data-tick]").forEach(b => { if (b.checked) b.setAttribute("checked", ""); });
   const loc = reportData.location;
   const mapBox = copy.querySelector("#reportMap");
@@ -57,7 +59,7 @@ body{max-width:960px;margin:24px auto;padding:0 18px}
 @media print {${pageFooterCss()}}</style>
 </head><body>${copy.innerHTML}<p class="help">Live version: <a href="${escapeHTML(location.href)}">${escapeHTML(location.href)}</a></p></body></html>`;
   downloadFile(fileBase() + ".html", html, "text/html");
-});
+}
 
 // "i" buttons (and text links marked data-info): show or hide the explanation they point to.
 document.addEventListener("click", e => {
@@ -105,22 +107,14 @@ function pageFooterCss() {
   }`;
 }
 
-// "Save or print" menu: close it after a choice, on a click elsewhere, or with Escape.
-// refocus: put keyboard focus back on the menu button (after a choice or Escape, the focused item is hidden).
-const closeSaveMenu = refocus => {
-  $("saveMenu").open = false;
-  if (refocus) $("saveMenuBtn").focus({ preventScroll: true });
+const REPORT_ACTIONS = {
+  shareBtn: shareReport,
+  downloadHtml: downloadReport,
+  printReport: () => window.print(),
+  // Short printout (2 pages): the cover, key findings and the topic table. The checklists stay in the full report.
+  printSummary: () => { document.body.classList.add("print-summary"); window.print(); }
 };
-document.querySelectorAll(".save-menu-list button").forEach(b => b.addEventListener("click", () => closeSaveMenu(true)));
-document.addEventListener("click", e => { if ($("saveMenu").open && !e.target.closest("#saveMenu")) closeSaveMenu(); });
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && $("saveMenu").open) closeSaveMenu(true);
-});
-
-$("printReport").addEventListener("click", () => window.print());
-
-// Short printout (2 pages): the cover, key findings and the topic table. The checklists stay in the full report.
-$("printSummary").addEventListener("click", () => {
-  document.body.classList.add("print-summary");
-  window.print();
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("#report button[id]");
+  if (b && !b.disabled && REPORT_ACTIONS[b.id]) REPORT_ACTIONS[b.id]();
 });

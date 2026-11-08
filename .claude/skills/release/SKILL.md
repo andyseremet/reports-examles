@@ -27,7 +27,7 @@ Follow these steps in order. Stop and tell the owner if any step fails; never sk
   - Part 1 heading: `(version <new>)`;
   - move the shipped items from Part 2 into the right Part 1 section, and remove their Part 2 section.
 - `README.md`: add or change the rows for anything new (topics table, count of outside data services, testing text).
-- A new topic also needs its row in `SERVICES` in `tests/live-check.mjs` (see "Adding a topic" in CLAUDE.md).
+- A new topic also needs its row in `SERVICES` in `tests/live-check.mjs` (see "Adding a topic" in `docs/CODE.md`).
 
 ## 4. Check
 

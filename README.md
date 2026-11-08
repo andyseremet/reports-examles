@@ -35,20 +35,19 @@ official checkers.
    a short guide shows the three steps.
 3. Check the pin is on the right property (drag it if not), then press
    **Check this property**.
-4. Read the report: a one-sentence verdict, a "Key findings" panel of the things to look into, and a
-   "Where we could not give an answer" box listing topics with no answer and who to ask instead (it folds away with
-   **Details / Hide**, and starts closed when more than 3 topics are listed), then results grouped into
+4. Read the report: a one-sentence verdict (with how many topics could not be checked), a "Key findings" panel of
+   the things to look into, then results grouped into
    Flooding, Ground and land, Living environment, and Planning and
    surroundings, ending with a short list of things to look for and ask at the viewing, and a checklist for the seller and conveyancer.
-5. Press **Share** to copy or send the link, or **Save or print** to download the report, print a summary, or
-   print / save the full report as a PDF.
+5. Use the share and printer icons beside the Summary heading to send the link or print a 2-page summary, or
+   **Download report** and **Print full report** under the summary to keep it (or save it as a PDF).
 
 ## Features for easy use
 
 - **Map:** on phones, scroll the page with one finger and move the map with two; on computers, use Ctrl (⌘ on Mac)
   + scroll to zoom. Full-screen map button, "my location" button, satellite and street backgrounds.
 - **Report:** results appear topic by topic as the data arrives. A topic whose data fails is tried once more by itself
-  after 8 seconds (20 if the service refused the request); if it fails again, it shows a **Try again** button. If this place was checked before, the topic
+  after 8 seconds (20 if the service refused the request); if it fails again, it shows a **Try again** button, in its card and in the box under the topic grid. If this place was checked before, the topic
   shows that saved answer instead, clearly dated, still with **Try again**. When planning.data.gov.uk does not answer
   (England), heritage, conservation areas and nature are asked from Historic England and Natural England instead, and
   the flood zone at the pin from the Environment Agency's own flood map; each topic names anything it could not check
@@ -58,8 +57,9 @@ official checkers.
   kept on the device for 7 days and used, dated, only if that service fails. If the report is still loading after 8 seconds, the summary names the services it is waiting for, and their topics.
   A section bar stays at the top while scrolling, with one **Open problems / Close all** button that stays in view
   (Open problems opens only the topics rated Look into this or Worth checking); on a phone its edge fades to show that
-  it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open). The summary shows the topic grid with one
-  legend line (each rating's symbol, colour and count), then "Key findings". Every rating has a symbol as well as a
+  it scrolls. Each topic card shows **Details ▾** (or **Hide ▴** when open). The summary shows the topic grid (thin line icons; only topics to look into or check are coloured), the tapped
+  topic's one-line reason right under it, then "Key findings". Every topic card starts closed; **Open problems** opens
+  the ones that matter. Every rating has a symbol as well as a
   colour (❗ Look into this, ⚠️ Worth checking, ✓ No issue found, ℹ️ For information, ? Check yourself), and topics with
   no issue found fold into one row at the end of their section. Once a report is open, the search map and saved list
   shrink to one line above it ("📍 Barnsley test · Change · Saved (3)"). The map inside the report is always shown (4:3), so it
@@ -80,7 +80,7 @@ official checkers.
   example "Crimes reported in September 2026" or "Noise maps published by Defra in 2022". Saved results older than 3 months are marked, with a suggestion to refresh.
 - **Accessibility:** checked against WCAG 2.2 AA with the axe-core checker (light and dark mode, phone and desktop,
   normal and larger text, down to 320 px wide), plus keyboard focus, focus never hidden behind sticky bars, and tap
-  target sizes (at least 24 × 24 pixels). Last re-checked on 8 November 2026 (version 2.0.2): no problems found.
+  target sizes (at least 24 × 24 pixels). Last re-checked on 8 November 2026 (version 2.0.6): no problems found.
 - **Send to my conveyancer:** one button opens your email app with the report link, the topics to look into, and the
   searches and questions from the checklist. **Copy** does the same for web email or messaging apps. Nothing
   passes through the app.
@@ -101,8 +101,8 @@ official checkers.
   and suggests **Download a backup** once you have 5 or more saved properties and no backup in the last 30 days.
 - **No signal:** the app still opens and saved properties still open. A check asked for while offline waits, with a
   message at the top, and starts by itself when the signal returns.
-- **Save or print:** one menu with Download report, Print summary (2 pages: the cover, key findings and the topic table) and Print full
-  report, each with a one-line description. Printouts open with the property's details, a centred 4:3 map with a caption, a
+- **Share, print and keep:** share and printer icons on the Summary heading's line (Print summary: 2 pages, the cover,
+  key findings and the topic table), and **Download report** and **Print full report** under the summary. Printouts open with the property's details, a centred 4:3 map with a caption, a
   "Key findings" box (the most serious results), a table of every topic grouped by section (rating and finding, with a
   key) and a link and QR code to the live report. The full report adds a one-line contents and a lined notes page at the end. Sections are numbered and run on with space between them; the viewing checklist
   prints as its own page to take along; each rating also has its own border pattern for black-and-white printers; the
@@ -153,6 +153,10 @@ A static site with no build step and two small libraries: Leaflet (the map) and 
 The JavaScript files are plain scripts that share one global scope. `index.html` loads them in order, and each file
 can use what earlier files define.
 
+Guides for working on the app: `docs/CODE.md` (code), `docs/DESIGN.md` (look and wording), `docs/TESTING.md` (tests and
+checks) and `docs/WORKFLOW.md` (plans, pull requests, merges), with `CLAUDE.md` as the short summary and `REVIEW.md` for
+code reviews.
+
 ## Automatic testing
 
 A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-check.mjs`:
@@ -168,7 +172,7 @@ A GitHub Actions workflow (`.github/workflows/live-check.yml`) runs `tests/live-
 
 It checks that all 46 outside data services and the 2 data files saved with the app still answer and allow web pages to read them (on pull requests, at the owner's request, it leaves out the 42 that only supply report data, listed in `data/data-services.csv`; run it by hand to test them), then opens the page on a
 desktop, a phone and a tablet, runs reports (two fixed places and one random English postcode) and tests search,
-full screen, the offline message, the section bar, the topic icons, the rating legend, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England, Natural England and Defra landfill backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
+full screen, the offline message, the section bar, the topic icons, the share and print icons, the no-issue folds and Open problems / Close all, the one-line bar above the report, the report map (always shown, 4:3), More and Show all, the folded Next steps, the phone tab bar, the Historic England, Natural England and Defra landfill backups and saved answers when a service is down, coastal erosion on an eroding coast, the "still waiting for" note on a slow report, the viewing checklist, Send to my conveyancer, Back and Forward, saved reports and notes, Remove and Undo, the checklist counts, the Move to another device panel,
 printing and downloads (layout steps run on all three devices; steps that do not depend on the screen size run once, on the desktop). The map data for Wales, Scotland and Northern Ireland, nearby places and sale prices, and the rule that missing
 data is never "No issue found" (noise, clay and mining with a failed service), is tested once, on the desktop page, during the pause before the first report (it does not depend on the screen size, and it must
 send nothing to the Environment Agency map server). The test browser is saved between runs, and its extra system files
@@ -180,7 +184,8 @@ than about 15 requests a minute, which happens to GitHub's shared test machines.
 before each report, and the page itself sends at most 2 requests at a time to that server, gives it 35 seconds to
 answer and retries a refusal or a slow answer. DataMapWales, Historic Environment Scotland, NatureScot, SEPA and DAERA
 get the same treatment with up to 4 requests at a time and 30 seconds to answer. A topic that still fails is tried once more by the page after 20
-seconds. If it then shows "Try again", the test presses it once, as a person would; a topic that still fails after
+seconds. If it then shows "Try again", the test opens its card and presses it once, as a person would (a separate step
+checks the Try again under the topic grid with a topic made to fail); a topic that still fails after
 that fails the test.
 
 That server sometimes refuses GitHub's shared test machines outright ("403 Forbidden") for many minutes while

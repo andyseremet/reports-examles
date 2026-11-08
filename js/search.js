@@ -412,6 +412,12 @@ $("usePinBtn").addEventListener("click", () => {
      (OpenStreetMap Nominatim does not allow search-as-you-type).
 ========================================================= */
 
+// The search box's hint is its label's words; on the narrowest screens a shorter hint fits without being cut off.
+const narrowSearch = matchMedia("(max-width: 360px)");
+const setSearchHint = () => { $("q").placeholder = narrowSearch.matches ? "Postcode or place" : "Postcode, address or place"; };
+narrowSearch.addEventListener("change", setSearchHint);
+setSearchHint();
+
 // The message under the search box ("Finding your location…", "No match found", …); empty hides it.
 function showSearchStatus(message, isError) {
   const el = $("searchStatus");

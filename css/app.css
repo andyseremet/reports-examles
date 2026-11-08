@@ -3,12 +3,12 @@
 /* ---------- colours (light) ---------- */
 :root {
   --navy:#10243a;
-  --blue:#1769aa;
-  --link:#1769aa;
-  --teal:#077480;       /* 5:1 as small text on the light teal step box */
+  --blue:#0066cc;
+  --link:#0066cc;       /* one accent colour (owner, 8 November 2026): 5.6:1 on white */
+  --teal:#0066cc;
   --sticky-top:64px;    /* height of the sticky section bar */
   --bottom-clear:72px;  /* space kept clear for the "back to top" button */
-  --accent-bg:#087f8c;
+  --accent-bg:#0066cc;
   --bg:#f5f5f7;
   --surface:#ffffff;
   --surface-2:#f5f5f7;
@@ -36,8 +36,8 @@
   :root {
     --navy:#0b1826;
     --link:#7cbcf0;
-    --teal:#2bb3c0;     /* 5.5:1 as small text on the dark teal step box */
-    --accent-bg:#0a6f7a;
+    --teal:#7cbcf0;
+    --accent-bg:#0a64c2;
     --bg:#0e161f;
     --surface:#16212d;
     --surface-2:#1e2b39;
@@ -76,25 +76,25 @@ abbr[title] {text-decoration:underline dotted;cursor:help}
 html.large-text .zoomable {zoom:1.18}
 
 /* ---------- header ---------- */
-header {background:var(--navy);color:#fff;padding:18px 5%}
-header h1 {margin:0;font-size:24px}
+/* A light header (owner, 8 November 2026): white, a hairline under it, dark text. */
+header {background:var(--surface);color:var(--heading);padding:16px 5%;border-bottom:1px solid var(--hairline)}
+header h1 {margin:0;font-size:22px;font-weight:600;letter-spacing:-.015em}
 .title-row {display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .header-tools {margin-left:auto;display:flex;gap:8px}
-.header-tools button {background:#ffffff1f;color:#fff;border:1px solid #ffffff40;padding:7px 12px;font-size:14px}
-.header-tools button[aria-pressed="true"] {background:#fff;color:#10243a}
+.header-tools button {background:none;color:var(--link);border:1px solid var(--hairline);padding:7px 12px;font-size:14px;font-weight:600}
+.header-tools button[aria-pressed="true"] {background:var(--link);border-color:var(--link);color:var(--surface)}
 .tsize-label {display:none}
 @media (min-width:480px) {.tsize-label {display:inline}}
-header .info-body {color:#dce6f0;background:#1b3550;border:0;max-width:760px}
+header .info-body {max-width:760px}
 
 /* ---------- "i" buttons ---------- */
 .info-btn {
   width:24px;height:24px;padding:0;border-radius:50%;flex:none;
-  border:2px solid var(--link);background:var(--surface);color:var(--link);
+  border:1.5px solid var(--muted);background:var(--surface);color:var(--muted);
   font:bold 14px/20px Georgia,"Times New Roman",serif;font-style:italic;text-align:center;vertical-align:middle;
 }
-.info-btn[aria-expanded="true"] {background:var(--link);color:var(--surface)}
-header .info-btn {border-color:#cbd8e5;background:transparent;color:#fff}
-header .info-btn[aria-expanded="true"] {background:#fff;color:#10243a}
+.info-btn:hover {border-color:var(--link);color:var(--link)}
+.info-btn[aria-expanded="true"] {background:var(--link);border-color:var(--link);color:var(--surface)}
 .info-body {font-size:14px;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:8px 0 12px}
 .info-body p {margin:4px 0}
 .info-row {margin:10px 0 0;font-size:14px}
@@ -106,16 +106,19 @@ h2 .info-btn,h3 .info-btn,p .info-btn {margin-left:6px}
 
 /* ---------- layout ---------- */
 .container {max-width:1100px;margin:auto;padding:22px}
-.panel {background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.panel {background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:18px;box-shadow:var(--shadow)}
 h2 {font-size:20px;margin:0 0 12px;color:var(--heading)}
 h3 {font-size:17px;color:var(--heading);margin:0}
 h4 {font-size:14px;color:var(--heading);margin:14px 0 4px}
 label {display:block;font-weight:bold;font-size:14px;margin-bottom:6px}
 input,select,button {font:inherit;border-radius:6px}
 input,select {width:100%;border:1px solid var(--input-border);padding:11px;background:var(--surface);color:var(--text)}
+input::placeholder {color:var(--muted);opacity:1}
+/* Read by screen readers and voice control, not shown (the search box shows the same words as its hint). */
+.sr-only {position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 button {border:0;padding:12px 18px;cursor:pointer;font-weight:bold}
 button:disabled {opacity:.5;cursor:not-allowed}
-.primary {background:#1769aa;color:#fff}
+.primary {background:var(--accent-bg);color:#fff}
 .secondary {background:var(--btn2-bg);color:var(--btn2-text)}
 .big {background:var(--accent-bg);color:#fff;font-size:18px;padding:15px 26px}
 .small-btn {padding:7px 12px;font-size:14px}
@@ -130,13 +133,13 @@ button:disabled {opacity:.5;cursor:not-allowed}
 .glossary dd {margin:4px 0 0;color:var(--text);max-width:70ch;line-height:1.5}
 .glossary dt:target {color:var(--teal)}
 a.term {color:inherit;text-decoration:underline dotted;text-underline-offset:3px}
-.glossary-link {margin:0 0 12px}
 
 /* ---------- search: the 3-step guide, step labels and the search box ---------- */
-.guide {list-style:none;margin:0 0 16px;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px;
-  background:var(--surface-2);border-radius:12px;font-size:15px;line-height:1.35}
-.guide li {display:flex;gap:10px;align-items:flex-start}
-.guide-num {flex:none;width:24px;height:24px;border-radius:50%;background:var(--teal);color:var(--surface);font-weight:600;font-size:14px;
+/* The first-visit guide: one quiet line of three short steps. */
+.guide {list-style:none;margin:0 0 14px;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;line-height:1.35;color:var(--muted)}
+.guide strong {color:var(--heading);font-weight:600}
+.guide li {display:flex;gap:6px;align-items:center}
+.guide-num {flex:none;width:18px;height:18px;border-radius:50%;border:1px solid var(--hairline);color:var(--muted);font-weight:600;font-size:11px;
   display:inline-flex;align-items:center;justify-content:center}
 .step-label {font-size:13px;font-weight:bold;color:var(--teal);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .search-box {position:relative}
@@ -238,25 +241,8 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 #diffHelp {margin-top:0}
 
 /* ---------- report ---------- */
-.toolbar {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:10px}
-.toolbar button {padding:9px 14px;font-size:14px}
-.toolbar .btn-link,.save-menu > summary {padding:9px 14px;font-size:14px;font-weight:bold;border-radius:6px;text-decoration:none;
-  background:var(--surface-2);color:var(--heading);border:1px solid var(--border);min-height:24px}
 .icon-label {display:inline-flex;align-items:center;gap:6px}
 .icon-label svg {flex:none}
-.toolbar {position:relative;z-index:1200}   /* the open menu sits above the sticky section bar (1100) */
-.save-menu {position:relative}
-.save-menu > summary {list-style:none;cursor:pointer}
-.save-menu > summary::-webkit-details-marker {display:none}
-.save-menu-list {position:absolute;right:0;top:calc(100% + 4px);z-index:1;min-width:270px;display:flex;flex-direction:column;
-  background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px}
-.save-menu-list button {display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:none;border:0;
-  color:var(--heading);font-weight:bold;padding:10px 12px;border-radius:6px;cursor:pointer}
-.save-menu-list button:hover,.save-menu-list button:focus-visible {background:var(--surface-2)}
-.save-menu-list button:disabled {opacity:.5;cursor:default}
-.save-menu-list small {font-weight:normal;color:var(--muted);font-size:13px;margin-top:2px}
-@media (max-width:600px) { .save-menu {position:static} .save-menu-list {left:0;right:0;min-width:0} }
-@media (max-width:600px) { .toolbar {justify-content:flex-start} }
 .report-nav {
   position:sticky;top:0;z-index:1100;display:flex;gap:4px;align-items:center;overflow-x:auto;white-space:nowrap;
   background:var(--surface);border-bottom:1px solid var(--border);margin:0 -22px 10px;padding:8px 22px;scrollbar-width:none;
@@ -266,7 +252,8 @@ details.advanced summary {cursor:pointer;color:var(--link);padding:4px 0}
 .report-nav a.active {background:var(--accent-bg);color:#fff}
 .report-nav .nav-links {display:flex;gap:4px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
 .report-nav .nav-links::-webkit-scrollbar {display:none}
-.report-nav #toggleAll {flex:none}
+.report-nav #toggleAll {flex:none;background:none;color:var(--link);font-weight:600;padding:8px 10px}
+.report-nav #toggleAll:hover:not(:disabled) {text-decoration:underline}
 .nav-links.more-right {-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 40px),transparent)}
 .nav-links.more-left {-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 40px),transparent)}
 .nav-links.more-left.more-right {-webkit-mask-image:linear-gradient(to right,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(to right,transparent,#000 40px,#000 calc(100% - 40px),transparent)}
@@ -292,14 +279,12 @@ body.hide-search #searchPanel,body.hide-saved #savedPanel {display:none}
 .progress-bar {height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin:8px 0 14px}
 .progress-bar span {display:block;height:100%;background:var(--teal);transition:width .3s}
 /* One line under the topic grid: each rating's symbol, colour and count. */
-.rating-legend {list-style:none;padding:0;margin:-6px 0 16px;display:flex;flex-wrap:wrap;gap:6px}
-.rating-legend .chip {font-size:13px;padding:3px 10px}
 .chip-symbol {margin-right:4px}
 .topic {position:relative}
 /* The tile's symbol is drawn by CSS with empty alternative text, so it is not part of the button's spoken name. */
 .topic::after {position:absolute;top:3px;right:5px;font-size:11px;line-height:1}
 .topic.high::after {content:"❗" / ""} .topic.medium::after {content:"⚠️" / ""} .topic.low::after {content:"✓" / ""}
-.topic.info::after {content:"ℹ️" / ""} .topic.manual::after {content:"?" / ""} .topic.error::after {content:"✕" / ""}
+.topic.info::after {content:"i" / "";font:italic 600 11px Georgia,serif} .topic.manual::after {content:"?" / ""} .topic.error::after {content:"✕" / ""}
 /* Topics with "No issue found" fold into one row at the end of their section. */
 details.clear-fold {border:1px solid var(--border);border-left:5px solid var(--low);border-radius:8px;margin:10px 0;background:var(--surface)}
 details.clear-fold > summary {cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -322,21 +307,6 @@ details.step-fold > summary .more-text::before {content:"Open"}
 details.step-fold[open] > summary .more-text::before {content:"Hide"}
 details.step-fold[open] > summary .more svg {transform:rotate(180deg)}
 details.step-fold > .step-body {padding:0 14px 12px}
-.gaps-box {margin:16px 0;padding:12px 14px;border:1px solid var(--border);border-left:4px solid #6b7280;border-radius:8px;background:var(--surface-2)}
-.gaps-box h3 {margin:0 0 4px}
-.gaps-box p {margin:0;font-size:14px}
-.gaps-box > summary {cursor:pointer;list-style:none;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;
-  margin:-12px -14px;padding:12px 14px;border-radius:8px}
-.gaps-box > summary::-webkit-details-marker {display:none}
-.gaps-box > summary:hover {background:var(--hover)}
-.gaps-box > summary h3,.gaps-box > summary p {grid-column:1}
-.gaps-box > summary .more {grid-column:2;grid-row:1 / span 2}
-.gaps-box[open] > ul {margin-top:20px}
-.gaps-box ul {list-style:none;padding:0;margin:0}
-.gaps-box li {padding:8px 0;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:14px}
-.gaps-box li a {font-weight:bold}
-.gap-reason {font-size:12px;font-weight:bold;padding:2px 8px;border-radius:20px;background:var(--surface);border:1px solid var(--border);white-space:nowrap}
-.gap-ask {flex-basis:100%}
 .chip {display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:bold;white-space:nowrap}
 .chip.high {background:var(--high-bg);color:var(--high)}
 .chip.medium {background:var(--med-bg);color:var(--med)}
@@ -349,9 +319,12 @@ details.step-fold > .step-body {padding:0 14px 12px}
 /* "Data sources and dates": folded on screen, opened for print and downloads. */
 .sources-fold > summary {list-style:none;cursor:pointer}
 .sources-fold > summary::-webkit-details-marker {display:none}
-.sources-fold > summary h2 {display:flex;align-items:baseline;gap:8px;border-bottom:2px solid var(--border);padding-bottom:6px}
-.sources-fold > summary h2::before {content:"▸";font-size:14px;color:var(--muted)}
-.sources-fold[open] > summary h2::before {content:"▾"}
+.sources-fold {margin:28px 0 8px}
+.sources-fold > summary {display:inline-flex;align-items:center;gap:4px;min-height:24px;font-size:13px;color:var(--muted)}
+.sources-fold > summary:hover {color:var(--heading);text-decoration:underline}
+.sources-fold > summary::before {content:"▸";font-size:11px}
+.sources-fold[open] > summary::before {content:"▾"}
+.sources-fold[open] > .table-wrap {margin-top:10px}
 .muted-count {font-size:14px;font-weight:normal;color:var(--muted)}
 .check {border:1px solid var(--border);border-left:6px solid var(--border);border-radius:8px;margin:10px 0;background:var(--surface)}
 .check.high {border-left-color:var(--high)}
@@ -372,13 +345,13 @@ details.check > summary::-webkit-details-marker {display:none}
 details.check > summary .found {grid-column:1;font-size:14px;overflow-wrap:anywhere}
 details.check > summary:hover {background:var(--hover)}
 /* "Details" with a down arrow when closed, "Hide" with an up arrow when open. */
-details.check > summary .more,.gaps-box > summary .more,.clear-fold > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
+details.check > summary .more,.clear-fold > summary .more {grid-column:2;justify-self:end;align-self:end;display:inline-flex;align-items:center;gap:2px;
   font-size:14px;font-weight:bold;color:var(--link);white-space:nowrap}
-details.check > summary .more-text::before,.gaps-box > summary .more-text::before,.clear-fold > summary .more-text::before {content:"Details"}
-details.check[open] > summary .more-text::before,.gaps-box[open] > summary .more-text::before,.clear-fold[open] > summary .more-text::before {content:"Hide"}
-details.check > summary .more svg,.gaps-box > summary .more svg,.clear-fold > summary .more svg {transition:transform .15s}
-details.check[open] > summary .more svg,.gaps-box[open] > summary .more svg,.clear-fold[open] > summary .more svg {transform:rotate(180deg)}
-@media (prefers-reduced-motion:reduce) {details.check > summary .more svg,.gaps-box > summary .more svg {transition:none}}
+details.check > summary .more-text::before,.clear-fold > summary .more-text::before {content:"Details"}
+details.check[open] > summary .more-text::before,.clear-fold[open] > summary .more-text::before {content:"Hide"}
+details.check > summary .more svg,.clear-fold > summary .more svg {transition:transform .15s}
+details.check[open] > summary .more svg,.clear-fold[open] > summary .more svg {transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce) {details.check > summary .more svg {transition:none}}
 .check-body {padding:0 16px 14px;font-size:14px}
 .check-body p {margin:4px 0 8px}
 .check-body ul {margin:4px 0 8px;padding-left:20px}
@@ -400,7 +373,8 @@ details.move-device .saved-actions {margin-top:8px}
 .send-box p {margin:0}
 .send-box .help:empty {display:none}
 .send-box .help {margin-top:6px}
-.send-box .send-buttons {display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.send-box .send-buttons {display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.send-box .send-buttons strong {margin-right:auto}
 label.tick {display:flex;gap:10px;align-items:flex-start;font-weight:normal;font-size:14px;margin:0;padding:8px 2px;cursor:pointer}
 label.tick input {width:24px;height:24px;margin:0;flex:none}
 label.tick input:checked + span {text-decoration:line-through;color:var(--muted)}
@@ -408,7 +382,7 @@ label.tick input:checked + span {text-decoration:line-through;color:var(--muted)
 .legend-list li {margin:6px 0}
 .to-top {
   position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:1500;width:48px;height:48px;padding:0;
-  border-radius:50%;background:var(--accent-bg);color:#fff;font-size:22px;box-shadow:0 2px 10px #0006;border:2px solid #ffffffaa;
+  border-radius:50%;background:var(--surface);color:var(--muted);font-size:20px;font-weight:400;box-shadow:0 1px 4px #0000001a;border:1px solid var(--hairline);
 }
 footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
 /* Phone tab bar: Summary · Problems · All topics · Next steps, only on phones with a report open. */
@@ -418,8 +392,9 @@ footer {text-align:center;color:var(--muted);padding:20px;font-size:12px}
     background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -2px 10px #0002;padding:0 0 env(safe-area-inset-bottom)}
   .tab-bar a,.tab-bar button {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:4px 2px;
     font:inherit;font-size:12px;font-weight:bold;line-height:1.2;text-align:center;color:var(--link);background:none;border:0;border-radius:0;text-decoration:none;overflow-wrap:anywhere}
-  .tab-bar .tab-icon {font-size:18px}
-  .tab-bar .active {background:var(--hover);box-shadow:inset 0 3px 0 var(--link)}
+  .tab-bar a,.tab-bar button {color:var(--muted);font-weight:600}
+  .tab-bar .tab-icon {width:22px;height:22px}
+  .tab-bar .active {color:var(--link);background:none;box-shadow:none}
   .tab-bar button:disabled {color:var(--muted);opacity:1}
   body.report-open:not(.has-sticky) {--bottom-clear:140px}
   body.report-open:not(.has-sticky) .to-top {bottom:calc(72px + env(safe-area-inset-bottom))}
@@ -456,13 +431,25 @@ footer a {display:inline-block;min-height:24px;padding:4px 2px;line-height:16px}
 .topic.manual,.topic.error,.topic.loading {background:var(--manual-bg);color:var(--manual)}
 .topic.loading .topic-icon {opacity:.4}
 .summary-title {font-size:17px;margin:4px 0 0}
+/* Summary heading with the share and print icons on its right (calm: no fill, a soft grey circle on hover). */
+.summary-head {display:flex;align-items:center;gap:4px}
+.summary-head .summary-title {flex:1;min-width:0}
+.icon-btn {display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;
+  background:none;color:var(--muted);cursor:pointer}
+.icon-btn:hover:not(:disabled),.icon-btn:focus-visible {background:var(--surface-2);color:var(--heading)}
+.icon-btn:disabled {opacity:.35;cursor:default}
+.share-note {font-size:13px;color:var(--muted)}
+.share-note:empty {display:none}
+/* Keep this report: two quiet buttons under the key findings. */
+.keep-row {display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.keep-row button {font-size:14px;padding:8px 14px}
 .topic-strip .topic {cursor:pointer;font:inherit;font-size:12px;font-weight:bold}
 .topic[aria-expanded="true"] {outline:3px solid currentColor;outline-offset:1px}
 .why-box {margin:-8px 0 16px;padding:10px 12px;border-radius:8px;border-left:4px solid currentColor;font-size:14px;background:var(--surface-2)}
 .why-box.high {color:var(--high)} .why-box.medium {color:var(--med)} .why-box.low {color:var(--low)} .why-box.info {color:var(--info)}
 .why-box.manual,.why-box.error,.why-box.loading {color:var(--manual)}
 .why-box p {margin:0;color:var(--text)}
-.why-box a {display:inline-block;margin-top:4px}
+.why-box .why-actions {display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-top:6px}
 
 /* ---------- offline and storage messages ---------- */
 .app-bar {position:sticky;top:0;z-index:1500;display:flex;gap:10px;align-items:center;justify-content:space-between;
@@ -533,23 +520,34 @@ body.has-sticky footer {padding-bottom:100px}
    Kept out of print, which has its own rules in the print section at the end. ---------- */
 @media screen {
   h1,h2,h3 {font-weight:600;letter-spacing:-.015em}
-  .panel {border:1px solid var(--border);border-radius:14px;box-shadow:none;padding:24px}
+  .panel {border:1px solid var(--border);border-radius:14px;box-shadow:none}   /* padding: 24 px, 16 px on phones (above) */
   .place-bar {border-radius:14px;box-shadow:none}
   .group {margin-top:36px}
   .group > h2 {border-bottom:0;padding-bottom:0;font-size:22px;margin-bottom:4px}
 
   /* Topic cards: white, rounded, a hairline, and a thin accent in the rating's colour. */
-  .check,details.clear-fold,details.step-fold {border:1px solid var(--border);border-left-width:3px;border-radius:12px;margin:12px 0}
+  .check,details.clear-fold,details.step-fold {border:1px solid var(--border);border-left-width:2px;border-radius:12px;margin:12px 0}
+  /* A thin, paler edge in the rating's colour; the rating chip carries the full colour. */
+  .check.high {border-left-color:color-mix(in srgb, var(--high) 55%, var(--surface))}
+  .check.medium {border-left-color:color-mix(in srgb, #d99a26 60%, var(--surface))}
+  .check.low,details.clear-fold {border-left-color:color-mix(in srgb, var(--low) 45%, var(--surface))}
+  .check.info {border-left-color:color-mix(in srgb, var(--info) 45%, var(--surface))}
 
   /* Summary: lighter topic tiles (white, a hairline, the rating shown by its colour, symbol and a thin top line). */
   .topic-strip {gap:8px}
-  .topic-strip .topic {background:var(--surface);border:1px solid var(--border);border-top:3px solid currentColor;border-radius:12px;padding:9px 4px 8px}
-  .topic.loading {border-top-color:var(--border)}
-  .verdict {font-size:21px;font-weight:600;letter-spacing:-.015em;line-height:1.3;margin:12px 0 2px;color:var(--heading)}
-  .verdict strong {font-weight:700}
+  /* Tiles: white with a hairline; only Look into this and Worth checking are coloured, every tile keeps its symbol. */
+  .topic-strip .topic {background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 4px 8px;font-weight:600}
+  .topic-strip .topic.high {color:var(--high);border-color:color-mix(in srgb, var(--high) 35%, var(--border))}
+  .topic-strip .topic.medium {color:var(--med);border-color:color-mix(in srgb, var(--med) 35%, var(--border))}
+  .topic-strip .topic:is(.low,.info,.manual,.error,.loading) {color:var(--muted)}
+  .topic-strip .topic.low::after {color:var(--low)} .topic-strip .topic.info::after {color:var(--info)}
+  .topic-strip .topic:hover {background:var(--surface-2)}
+  /* Inside the report, actions are quiet grey buttons; only "Check this property" stays filled. */
+  #report .primary {background:var(--btn2-bg);color:var(--btn2-text)}
+  .verdict {font-size:19px;font-weight:600;letter-spacing:-.015em;line-height:1.3;margin:12px 0 2px;color:var(--heading)}
+  .verdict strong {font-weight:600}
   .verdict-sub {color:var(--muted);margin:0 0 14px}
   .verdict-sub:empty {display:none}
-  .rating-legend .chip {font-weight:600}
   .chip {font-weight:600}
   .key-findings {background:var(--surface-2);border-radius:14px;padding:16px 20px;margin:16px 0}
   .key-findings h3 {margin:0 0 8px}
@@ -566,8 +564,9 @@ body.has-sticky footer {padding-bottom:100px}
 
   /* Start page: the search, map and pin check read as one clean panel. */
   #map {border-radius:12px}
+  /* Map credit links stay underlined, so they stand out from the credit text in both themes (WCAG 1.4.1). */
+  .leaflet-control-attribution a {text-decoration:underline}
   .confirm {border-radius:12px}
-  .guide {background:var(--surface-2)}
 }
 
 /* The short printout's smaller map (set while printing, like the full report's map size). */
@@ -590,7 +589,7 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   a {color:#222;text-decoration:none}
   .details-start {margin-top:10mm}
   /* Long topic cards may continue on the next page (avoiding that left half-empty pages); a heading stays with its text. */
-  .checklist li,.gaps-box li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
+  .checklist li,details.check > summary,.check-body h4,.table-wrap tr {break-inside:avoid}
   details.check > summary,.check-body h4 {break-after:avoid}
   .info-row {display:none!important}
   .info-btn,[data-retry] {display:none!important}
@@ -601,7 +600,7 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   @page {size:A4}
   /* Paper shows what a reader needs: the at-a-glance table instead of the tappable grid, no app instructions. */
   .print-only {display:block!important}
-  .topic-strip,.saved-note,#info-read,.rating-legend {display:none!important}
+  .topic-strip,.saved-note,#info-read,.sources-fold > summary {display:none!important}
   .key-findings a {color:inherit;text-decoration:none}
   .glance-table {width:100%}
   .glance-table th,.glance-table td {text-align:left;vertical-align:top}
@@ -624,7 +623,6 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   .map-caption {text-align:center}
   .glance-key {color:#333;margin:3mm 0 0}
   .glance-key .chip {font-size:9.5px}
-  .gaps-box {break-inside:avoid}
   .group > h2,#nextSteps > h2,.sources-fold h2 {break-after:avoid}
   /* Key findings: the most serious results, before the table. */
   .key-findings {break-inside:avoid}
@@ -685,7 +683,6 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   .check-body .table-wrap th {color:#6e6e73;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.03em}
 
   /* Gaps box, next steps and sources in the same style. */
-  .gaps-box {border:.5px solid #d2d2d7;border-radius:12px;background:#fbfbfd;padding:4mm 5mm;margin:6mm 0}
   details.step-fold {border:.5px solid #d2d2d7;border-radius:12px;margin:6mm 0}
   details.step-fold > .step-body {padding:0 5mm 4mm}
   .checklist li {border-bottom:.5px solid #e5e5ea}
@@ -694,7 +691,7 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   #sourcesBox th {background:#f5f5f7;color:#6e6e73;text-transform:uppercase;font-size:8.5px;letter-spacing:.04em}
   #sourcesBox tr:last-child td {border-bottom:0}
   /* One text size inside cards and panels, smaller than the card heading. */
-  details.check > summary .found,.check-body p,.check-body li,.check-body td,.check-body .info-body,.gaps-box p,.gaps-box li,
+  details.check > summary .found,.check-body p,.check-body li,.check-body td,.check-body .info-body,
   .step-body p,.step-body li,.key-findings li {font-size:10.5px;line-height:1.5}
   .check-body .info-body p {font-size:10px}
   /* A section heading and its intro stay with the first card. */
@@ -726,7 +723,6 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   .fold-body {padding:0!important}
 
   .key-findings {padding:5mm 6mm}
-  .gaps-box {border-left:3px solid #8e8e93}
   details.step-fold {border-left:3px solid #1769aa}
   .live-link {font-size:9px;color:#6e6e73;overflow-wrap:anywhere;margin-top:8mm}
   .glossary dt {color:#1d1d1f !important;font-size:12pt;margin-top:12pt;break-after:avoid}
@@ -743,6 +739,6 @@ body.print-summary.printing #reportMap {width:360px;height:270px}
   span.print-only {display:inline!important}   /* a word shown only on paper stays in its sentence */
   body.print-summary .map-caption {margin-bottom:3mm}
   /* The short printout is the cover, key findings and the topic table only: the table already marks every gap. */
-  body.print-summary .gaps-box,body.print-summary #summaryBox > .notice {display:none!important}
+  body.print-summary #summaryBox > .notice {display:none!important}
   .glance h3 {break-after:avoid}
 }

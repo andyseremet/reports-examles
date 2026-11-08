@@ -109,7 +109,6 @@ function checkPlanningDevolved(R) {
   const conservationNote = " Conservation areas are not published nationally for Northern Ireland: check with the council.";
   return {
     ...base, status: applies.length ? "info" : unknownConservation ? "manual" : "low",
-    ...(!applies.length && unknownConservation && { gap: "coverage" }),
     found: (applies.length
       ? "Planning restrictions here: " + applies.map(a => a.name).join(", ") + "."
       : unknownConservation ? "No listed building, scheduled monument, Area of Outstanding Natural Beauty or similar restriction found here."

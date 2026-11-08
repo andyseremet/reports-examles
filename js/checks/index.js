@@ -81,7 +81,7 @@ const VIEWING_LOOK = {
   flood: ["Water marks, staining or new plaster low on the walls, and flood doors, barriers or raised air bricks."],
   surfacewater: ["Where rain would run: slopes towards the house, low doorways, blocked drains or gullies in the street."],
   coal: ["Cracks over doors and windows, sloping floors, or doors that stick (signs of ground movement)."],
-  radon: ["A radon sump or a small vent pipe outside, or a radon test result the seller can show you."],
+  radon: ['<path d="M3 20h18"/><path d="M8 17c0-2 2-2 2-4s-2-2-2-4M12 17c0-2 2-2 2-4s-2-2-2-4M16 17c0-2 2-2 2-4s-2-2-2-4"/>', "Radon"],   // gas rising from the ground
   landuse: ["Signs of past industrial use nearby: bare or patchy ground, vent pipes or fenced-off land."],
   landslides: ["Cracks in walls, paths or garden walls, leaning walls or fences, and wet or slipping slopes."],
   clay: ["Cracks wider than a coin near doors and windows, and big trees close to the house (their roots dry out clay)."],
@@ -106,12 +106,24 @@ const VIEWING_GENERAL = {
 const TASK_FN = Object.fromEntries(TASKS.map(([key, , fn]) => [key, fn]));
 
 // Short names and symbols for the row of topic icons in the summary.
+// Each topic's thin line icon (drawn like the share and print icons, 24 × 24) and its short name in the summary grid.
+const WAVE = y => `<path d="M2 ${y}c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/>`;
 const TOPIC_ICONS = {
-  flood: ["🌊", "Flood"], coal: ["⛏️", "Mining"], radon: ["☢️", "Radon"], landuse: ["🗑️", "Land use"],
-  landslides: ["⛰️", "Ground"], clay: ["🧱", "Clay"], noise: ["🔊", "Noise"],
-  air: ["💨", "Air"], crime: ["🚓", "Crime"], planning: ["🏛️", "Planning"], nature: ["🌳", "Nature"],
-  surfacewater: ["🌧️", "Rain flood"], amenities: ["🏫", "Nearby"], coastal: ["🏖️", "Coast"],
-  soldprices: ["💷", "Prices"]
+  flood: [WAVE(9) + WAVE(14) + WAVE(19), "Flood"],
+  surfacewater: ['<path d="M7 15a4 4 0 1 1 .6-8 5 5 0 0 1 9.4 1.6A3.5 3.5 0 0 1 17 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>', "Rain flood"],
+  coal: ['<path d="M4 20l9-9"/><path d="M11 5c3.5-1.5 7-.5 9 2-3-.8-5.5-.3-7.5 1.5"/><path d="M11 5l-2 2 4 4 2-2"/>', "Mining"],
+  radon: ['<circle cx="12" cy="12" r="1.8"/><path d="M10.5 10.5 7 5.2A8 8 0 0 0 4 12h6M14 12h6a8 8 0 0 0-3-6.8l-3.5 5.3M13 13.6l3 5.3a8 8 0 0 1-8 0l3-5.3"/>', "Radon"],
+  landuse: [ICON_PATHS.bin, "Land use"],
+  landslides: ['<path d="M3 20l6-10 4 6 3-4 5 8z"/>', "Ground"],
+  clay: ['<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 12h18M9 5v7M15 12v7"/>', "Clay"],
+  coastal: ['<path d="M3 20V8l5-2 3 4h2v10"/>' + '<path d="M13 17c2 0 2-1.5 4-1.5s2 1.5 4 1.5"/>', "Coast"],
+  noise: ['<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/>', "Noise"],
+  air: ['<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/>', "Air"],
+  amenities: ['<path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>', "Nearby"],
+  crime: ['<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>', "Crime"],
+  soldprices: ['<circle cx="12" cy="12" r="9"/><path d="M14.5 8.5A2.5 2.5 0 0 0 10 10v6M8 16h8M8.5 12.5h4.5"/>', "Prices"],
+  planning: ['<path d="M3 9l9-5 9 5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>', "Planning"],
+  nature: ['<path d="M12 21v-6"/><path d="M12 15c-4 0-7-3-7-6.5C5 5.5 8 3 12 3s7 2.5 7 5.5c0 3.5-3 6.5-7 6.5z"/>', "Nature"]
 };
 
 // Every check waits for the nearest-postcode lookup, which tells us the country.
@@ -157,7 +169,7 @@ function notCovered(c, country, place) {
     ? [`Ask ${escapeHTML(council)}'s planning service about restrictions and protected sites.`]
     : service ? [`Check this on ${link(service[1], service[0])}.`] : [];
   return topicResult(c, {
-    status: "manual", gap: "coverage",
+    status: "manual",
     found: `Not covered in ${country}: the data we use covers ${covered} only.`,
     meaning: `<p>This check uses official data that only covers ${covered}, so we cannot give a result for a property in ${escapeHTML(country)}.
       Use the national service instead.</p>`,

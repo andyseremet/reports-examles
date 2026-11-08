@@ -9,7 +9,7 @@ function checkRadon(R) {
   if (!R.radon.ok) return unavailable(base, R, "radon");
   const r = R.radon.value;
   if (!r) {
-    return { ...base, status: "manual", gap: "coverage", found: "No radon data for this point (the data covers Great Britain only).",
+    return { ...base, status: "manual", found: "No radon data for this point (the data covers Great Britain only).",
       meaning: "", actions: [`Check the address on ${link(LINKS.ukradon, "UKradon")}.`] };
   }
   if (r.VERSION) base.dataDate = r.VERSION + ", checked " + today();
@@ -119,7 +119,7 @@ function checkClay(R) {
   if (!R.shrinkSwell.ok) return unavailable(base, R, "shrinkSwell");
   const v = R.shrinkSwell.value;
   // No rating (or one outside 1 to 3) is missing data, never "No issue found".
-  if (!v || ![1, 2, 3].includes(v.level)) return { ...base, status: "manual", gap: "nodata", found: "No clay data was found for this spot. Ask your surveyor about the soil." };
+  if (!v || ![1, 2, 3].includes(v.level)) return { ...base, status: "manual", found: "No clay data was found for this spot. Ask your surveyor about the soil." };
   const word = { 1: "low", 2: "moderate", 3: "significant" }[v.level];
   const status = v.level === 3 ? "medium" : v.level === 2 || v.localised ? "info" : "low";
   const found = `The chance of clay soil shrinking and swelling is ${word} in this area.` +
@@ -221,7 +221,7 @@ function checkLanduseWales(R) {
     ? `${plural(tips.length, "disused coal tip")} within ${within}${tips[0].distanceKm == null ? "" : `, the nearest about ${formatDistance(tips[0].distanceKm)} away`}${higher.length ? ` (${plural(higher.length, "tip")} in the more often inspected categories C and D)` : ""}. Landfill and contaminated land are not published for Wales.`
     : `No disused coal tips within ${within}. Old landfill sites and contaminated land are not published for Wales, so check these another way.`;
   return {
-    ...base, status, found, ...(status === "manual" && { gap: "coverage" }),
+    ...base, status, found,
     dataDate: `Coal tip map as of March 2026. Checked live on ${today()}`,
     details: tips.length ? `<div class="table-wrap"><table class="site-list"><thead><tr><th>Coal tip</th><th>Distance</th><th>Category</th><th>Last inspected</th></tr></thead><tbody>${
       tips.slice(0, 10).map(t => `<tr><td>${escapeHTML(t.id || "Unnamed tip")}</td><td>${escapeHTML(t.distanceKm == null ? "Nearby" : formatDistance(t.distanceKm))}</td><td>${escapeHTML(COAL_TIP_CATEGORY[t.category] || t.category || "Not recorded")}</td><td>${escapeHTML(t.inspected || "Not recorded")}</td></tr>`).join("")
@@ -262,7 +262,7 @@ function checkLanduseScotland(R) {
     "Old, closed landfill sites and contaminated land are not published for Scotland, so check these another way."
   ].filter(Boolean).join(" ");
   return {
-    ...base, status, found, ...(status === "manual" && { gap: "coverage" }),
+    ...base, status, found,
     details: sites.length ? `<div class="table-wrap"><table class="site-list"><thead><tr><th>Waste site</th><th>Distance</th><th>Activity</th></tr></thead><tbody>${
       sites.slice(0, 10).map(s => `<tr><td>${escapeHTML(s.name || "Unnamed site")}</td><td>${escapeHTML(formatDistance(s.distanceKm))}</td><td>${escapeHTML(s.kinds.join(", ") || "Not recorded")}</td></tr>`).join("")
     }</tbody></table></div>` : "",
