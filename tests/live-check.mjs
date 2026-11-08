@@ -1251,6 +1251,12 @@ async function testDevice(device, [postcode, place]) {
 /* ---------------------------------------------------------------
    Run everything and write the summary
 --------------------------------------------------------------- */
+// Stop at once if the app itself does not answer (for example a local server that is not running),
+// instead of failing every page step.
+if (!(await fetch(BASE).then(r => r.ok, () => false))) {
+  console.log(`The app does not answer at ${BASE}: start the server (see CLAUDE.md "Serve locally").`);
+  process.exit(1);
+}
 let browser;
 const reports = {};
 try {
