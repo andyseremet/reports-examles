@@ -121,6 +121,9 @@ Clean, uncrowded and elegant, in a calm Apple-like style. Use it for every visua
 - **Small commits:** one change per commit, with a clear message.
 - **Pull requests:** open one only when asked, and never merge or approve; the owner merges. Watch it
   (`subscribe_pr_activity` plus one 50-minute safety check-in).
+- **Code reviews:** `/code-review` and any review of a pull request follow `REVIEW.md`: what counts as Important, at
+  most five Nits, what not to report and what to always check. It sums up the rules in this file, so when a rule
+  here changes (a rating rule, a file to keep in step, a paced host), update `REVIEW.md` in the same commit.
 - **After every merge:** cancel the check-in, run `tests/after-merge.sh` and report the pass count in plain English.
   If Pages has not published within about 10 minutes (no new "pages build and deployment" run), ask the owner to press
   Save in Settings → Pages.
