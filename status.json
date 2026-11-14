@@ -1,0 +1,831 @@
+{
+  "checked": "2026-11-14T12:15:48.442Z",
+  "base": "https://andyseremet.github.io/reports-examles/",
+  "services": [
+    {
+      "name": "Postcodes (postcodes.io)",
+      "status": "ok",
+      "detail": "225 ms",
+      "topics": [
+        "Every topic (finds the nearest postcode, council and country)",
+        "Recent sale prices nearby"
+      ]
+    },
+    {
+      "name": "Planning data (planning.data.gov.uk)",
+      "status": "fail",
+      "detail": "HTTP 503",
+      "topics": [
+        "Flooding from rivers and the sea",
+        "Past use of the land",
+        "Air quality",
+        "Planning restrictions and heritage",
+        "Protected nature sites"
+      ]
+    },
+    {
+      "name": "Surface water (Environment Agency)",
+      "status": "ok",
+      "detail": "671 ms",
+      "topics": [
+        "Flooding from heavy rain (surface water)"
+      ]
+    },
+    {
+      "name": "Radon (British Geological Survey)",
+      "status": "ok",
+      "detail": "747 ms",
+      "topics": [
+        "Radon gas"
+      ]
+    },
+    {
+      "name": "Landslides (British Geological Survey)",
+      "status": "ok",
+      "detail": "809 ms",
+      "topics": [
+        "Landslides and ground movement"
+      ]
+    },
+    {
+      "name": "Coal mining (Mining Remediation Authority)",
+      "status": "ok",
+      "detail": "661 ms",
+      "topics": [
+        "Mining (coal and other)"
+      ]
+    },
+    {
+      "name": "Road noise (Defra)",
+      "status": "fail",
+      "detail": "The operation was aborted due to timeout",
+      "topics": [
+        "Noise: road, railway and aircraft"
+      ]
+    },
+    {
+      "name": "Rail noise (Defra)",
+      "status": "ok",
+      "detail": "1070 ms",
+      "topics": [
+        "Noise: road, railway and aircraft"
+      ]
+    },
+    {
+      "name": "Historic landfill (Environment Agency)",
+      "status": "ok",
+      "detail": "580 ms",
+      "topics": [
+        "Past use of the land"
+      ]
+    },
+    {
+      "name": "Coastal erosion (Environment Agency)",
+      "status": "ok",
+      "detail": "201 ms",
+      "topics": [
+        "Coastal erosion"
+      ]
+    },
+    {
+      "name": "Sold prices (HM Land Registry)",
+      "status": "ok",
+      "detail": "643 ms",
+      "topics": [
+        "Recent sale prices nearby"
+      ]
+    },
+    {
+      "name": "Air quality model (Open-Meteo)",
+      "status": "ok",
+      "detail": "500 ms",
+      "topics": [
+        "Air quality"
+      ]
+    },
+    {
+      "name": "Crime (data.police.uk)",
+      "status": "ok",
+      "detail": "2063 ms",
+      "topics": [
+        "Reported crime"
+      ]
+    },
+    {
+      "name": "Police force for a place (data.police.uk)",
+      "status": "ok",
+      "detail": "535 ms",
+      "topics": [
+        "Reported crime"
+      ]
+    },
+    {
+      "name": "Census boundaries (ONS)",
+      "status": "fail",
+      "detail": "unexpected content",
+      "topics": [
+        "Reported crime (crime per 1,000 residents)"
+      ]
+    },
+    {
+      "name": "Scotland flood maps (SEPA)",
+      "status": "ok",
+      "detail": "703 ms",
+      "topics": [
+        "Flooding, for homes in Scotland"
+      ]
+    },
+    {
+      "name": "Wales flood maps (Natural Resources Wales)",
+      "status": "ok",
+      "detail": "1138 ms",
+      "topics": [
+        "Flooding, for homes in Wales"
+      ]
+    },
+    {
+      "name": "Wales heritage, nature and air sites (DataMapWales)",
+      "status": "ok",
+      "detail": "659 ms",
+      "topics": [
+        "Planning restrictions and heritage, for homes in Wales",
+        "Protected nature sites, for homes in Wales",
+        "Air quality, for homes in Wales"
+      ]
+    },
+    {
+      "name": "Wales noise maps (Welsh Government)",
+      "status": "ok",
+      "detail": "1362 ms",
+      "topics": [
+        "Noise, for homes in Wales"
+      ]
+    },
+    {
+      "name": "Wales coastal erosion (Natural Resources Wales)",
+      "status": "ok",
+      "detail": "386 ms",
+      "topics": [
+        "Coastal erosion, for homes in Wales"
+      ]
+    },
+    {
+      "name": "Wales disused coal tips (Welsh Government)",
+      "status": "ok",
+      "detail": "314 ms",
+      "topics": [
+        "Past use of the land, for homes in Wales"
+      ]
+    },
+    {
+      "name": "Scotland heritage sites (Historic Environment Scotland)",
+      "status": "ok",
+      "detail": "772 ms",
+      "topics": [
+        "Planning restrictions and heritage, for homes in Scotland"
+      ]
+    },
+    {
+      "name": "Scotland protected nature sites (NatureScot)",
+      "status": "ok",
+      "detail": "339 ms",
+      "topics": [
+        "Protected nature sites, for homes in Scotland"
+      ]
+    },
+    {
+      "name": "Scotland National Parks and Scenic Areas (Scottish Government)",
+      "status": "ok",
+      "detail": "632 ms",
+      "topics": [
+        "Planning restrictions and heritage, for homes in Scotland"
+      ]
+    },
+    {
+      "name": "Scotland air pollution hotspots (Scottish Air Quality)",
+      "status": "ok",
+      "detail": "690 ms",
+      "topics": [
+        "Air quality, for homes in Scotland"
+      ]
+    },
+    {
+      "name": "Scotland noise maps (SEPA)",
+      "status": "ok",
+      "detail": "112 ms",
+      "topics": [
+        "Noise, for homes in Scotland"
+      ]
+    },
+    {
+      "name": "Scotland coastal erosion (Dynamic Coast)",
+      "status": "ok",
+      "detail": "124 ms",
+      "topics": [
+        "Coastal erosion, for homes in Scotland"
+      ]
+    },
+    {
+      "name": "Scotland licensed waste sites (SEPA)",
+      "status": "ok",
+      "detail": "151 ms",
+      "topics": [
+        "Past use of the land, for homes in Scotland"
+      ]
+    },
+    {
+      "name": "Scotland crime rank (Scottish Government, SIMD 2020)",
+      "status": "ok",
+      "detail": "570 ms",
+      "topics": [
+        "Reported crime, for homes in Scotland"
+      ]
+    },
+    {
+      "name": "Northern Ireland heritage (Department for Communities)",
+      "status": "ok",
+      "detail": "351 ms",
+      "topics": [
+        "Planning restrictions and heritage, for homes in Northern Ireland"
+      ]
+    },
+    {
+      "name": "Northern Ireland protected areas (DAERA)",
+      "status": "ok",
+      "detail": "1242 ms",
+      "topics": [
+        "Planning restrictions and heritage, for homes in Northern Ireland",
+        "Protected nature sites, for homes in Northern Ireland"
+      ]
+    },
+    {
+      "name": "Northern Ireland noise maps (DAERA)",
+      "status": "ok",
+      "detail": "757 ms",
+      "topics": [
+        "Noise, for homes in Northern Ireland"
+      ]
+    },
+    {
+      "name": "Northern Ireland coastal erosion (DfI and DAERA)",
+      "status": "ok",
+      "detail": "887 ms",
+      "topics": [
+        "Coastal erosion, for homes in Northern Ireland"
+      ]
+    },
+    {
+      "name": "Address search (OpenStreetMap Nominatim)",
+      "status": "ok",
+      "detail": "510 ms",
+      "topics": [
+        "Finding the property by address"
+      ]
+    },
+    {
+      "name": "Schools register (planning.data.gov.uk)",
+      "status": "fail",
+      "detail": "HTTP 503",
+      "topics": [
+        "Schools, doctors and transport"
+      ]
+    },
+    {
+      "name": "Heritage backup (Historic England)",
+      "status": "ok",
+      "detail": "390 ms",
+      "topics": [
+        "Planning restrictions and heritage, when planning.data.gov.uk is not answering"
+      ]
+    },
+    {
+      "name": "Clay shrink-swell (British Geological Survey)",
+      "status": "ok",
+      "detail": "123 ms",
+      "topics": [
+        "Shrinking and swelling clay"
+      ]
+    },
+    {
+      "name": "Mining other than coal (British Geological Survey)",
+      "status": "ok",
+      "detail": "123 ms",
+      "topics": [
+        "Mining (coal and other)"
+      ]
+    },
+    {
+      "name": "Conservation areas backup (Historic England)",
+      "status": "ok",
+      "detail": "198 ms",
+      "topics": [
+        "Planning restrictions and heritage, when planning.data.gov.uk is not answering"
+      ]
+    },
+    {
+      "name": "Place backup (OpenStreetMap reverse lookup)",
+      "status": "ok",
+      "detail": "943 ms",
+      "topics": [
+        "Every topic (finds the country), when postcodes.io is not answering"
+      ]
+    },
+    {
+      "name": "Address search backup (Photon)",
+      "status": "ok",
+      "detail": "617 ms",
+      "topics": [
+        "Finding the property by address, when the main address search is not answering"
+      ]
+    },
+    {
+      "name": "Landfill backup (Defra copy)",
+      "status": "ok",
+      "detail": "410 ms",
+      "topics": [
+        "Past use of the land, when the Environment Agency map server is not answering"
+      ]
+    },
+    {
+      "name": "Past floods (Defra copy)",
+      "status": "ok",
+      "detail": "518 ms",
+      "topics": [
+        "Past floods recorded here"
+      ]
+    },
+    {
+      "name": "Reservoir flooding, normal day (Defra copy)",
+      "status": "ok",
+      "detail": "401 ms",
+      "topics": [
+        "Flooding from rivers and the sea (the reservoir line)"
+      ]
+    },
+    {
+      "name": "Reservoir flooding, rivers already flooding (Defra copy)",
+      "status": "ok",
+      "detail": "753 ms",
+      "topics": [
+        "Flooding from rivers and the sea (the reservoir line)"
+      ]
+    },
+    {
+      "name": "Past floods in Wales (DataMapWales)",
+      "status": "ok",
+      "detail": "240 ms",
+      "topics": [
+        "Past floods recorded here (Wales)"
+      ]
+    },
+    {
+      "name": "Flood zone backup (Defra copy)",
+      "status": "ok",
+      "detail": "264 ms",
+      "topics": [
+        "Flooding from rivers and the sea, when planning.data.gov.uk is not answering"
+      ]
+    },
+    {
+      "name": "Nature backup (Natural England)",
+      "status": "ok",
+      "detail": "161 ms",
+      "topics": [
+        "Planning restrictions and heritage, and Protected nature sites, when planning.data.gov.uk is not answering"
+      ]
+    },
+    {
+      "name": "GP surgeries and pharmacies (NHS Organisation Data Service)",
+      "status": "ok",
+      "detail": "621 ms",
+      "topics": [
+        "Schools, doctors and transport"
+      ]
+    },
+    {
+      "name": "Postcode lookup for many postcodes (postcodes.io)",
+      "status": "ok",
+      "detail": "147 ms",
+      "topics": [
+        "Schools, doctors and transport"
+      ]
+    },
+    {
+      "name": "Railway station list (saved with the app)",
+      "status": "ok",
+      "detail": "116 ms",
+      "topics": [
+        "Schools, doctors and transport"
+      ]
+    },
+    {
+      "name": "Census 2021 residents (saved with the app)",
+      "status": "ok",
+      "detail": "101 ms",
+      "topics": [
+        "Reported crime (crime per 1,000 residents)"
+      ]
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-11-08",
+      "services": {
+        "Postcodes (postcodes.io)": "ok",
+        "Planning data (planning.data.gov.uk)": "fail",
+        "Surface water (Environment Agency)": "ok",
+        "Radon (British Geological Survey)": "ok",
+        "Landslides (British Geological Survey)": "ok",
+        "Coal mining (Mining Remediation Authority)": "ok",
+        "Road noise (Defra)": "ok",
+        "Rail noise (Defra)": "ok",
+        "Historic landfill (Environment Agency)": "ok",
+        "Coastal erosion (Environment Agency)": "ok",
+        "Sold prices (HM Land Registry)": "fail",
+        "Air quality model (Open-Meteo)": "ok",
+        "Crime (data.police.uk)": "ok",
+        "Police force for a place (data.police.uk)": "ok",
+        "Census boundaries (ONS)": "ok",
+        "Scotland flood maps (SEPA)": "ok",
+        "Wales flood maps (Natural Resources Wales)": "ok",
+        "Wales heritage, nature and air sites (DataMapWales)": "ok",
+        "Wales noise maps (Welsh Government)": "ok",
+        "Wales coastal erosion (Natural Resources Wales)": "ok",
+        "Wales disused coal tips (Welsh Government)": "ok",
+        "Scotland heritage sites (Historic Environment Scotland)": "ok",
+        "Scotland protected nature sites (NatureScot)": "ok",
+        "Scotland National Parks and Scenic Areas (Scottish Government)": "ok",
+        "Scotland air pollution hotspots (Scottish Air Quality)": "ok",
+        "Scotland noise maps (SEPA)": "ok",
+        "Scotland coastal erosion (Dynamic Coast)": "ok",
+        "Scotland licensed waste sites (SEPA)": "ok",
+        "Scotland crime rank (Scottish Government, SIMD 2020)": "ok",
+        "Northern Ireland heritage (Department for Communities)": "ok",
+        "Northern Ireland protected areas (DAERA)": "ok",
+        "Northern Ireland noise maps (DAERA)": "ok",
+        "Northern Ireland coastal erosion (DfI and DAERA)": "ok",
+        "Address search (OpenStreetMap Nominatim)": "ok",
+        "Schools register (planning.data.gov.uk)": "fail",
+        "Heritage backup (Historic England)": "ok",
+        "Clay shrink-swell (British Geological Survey)": "ok",
+        "Mining other than coal (British Geological Survey)": "ok",
+        "Conservation areas backup (Historic England)": "ok",
+        "Place backup (OpenStreetMap reverse lookup)": "ok",
+        "Address search backup (Photon)": "ok",
+        "Landfill backup (Defra copy)": "ok",
+        "Past floods (Defra copy)": "ok",
+        "Reservoir flooding, normal day (Defra copy)": "ok",
+        "Reservoir flooding, rivers already flooding (Defra copy)": "ok",
+        "Past floods in Wales (DataMapWales)": "ok",
+        "Flood zone backup (Environment Agency)": "ok",
+        "Nature backup (Natural England)": "ok",
+        "GP surgeries and pharmacies (NHS Organisation Data Service)": "ok",
+        "Postcode lookup for many postcodes (postcodes.io)": "ok",
+        "Railway station list (saved with the app)": "ok",
+        "Census 2021 residents (saved with the app)": "ok"
+      }
+    },
+    {
+      "date": "2026-11-09",
+      "services": {
+        "Postcodes (postcodes.io)": "ok",
+        "Planning data (planning.data.gov.uk)": "fail",
+        "Surface water (Environment Agency)": "ok",
+        "Radon (British Geological Survey)": "ok",
+        "Landslides (British Geological Survey)": "ok",
+        "Coal mining (Mining Remediation Authority)": "ok",
+        "Road noise (Defra)": "ok",
+        "Rail noise (Defra)": "ok",
+        "Historic landfill (Environment Agency)": "ok",
+        "Coastal erosion (Environment Agency)": "ok",
+        "Sold prices (HM Land Registry)": "fail",
+        "Air quality model (Open-Meteo)": "ok",
+        "Crime (data.police.uk)": "ok",
+        "Police force for a place (data.police.uk)": "ok",
+        "Census boundaries (ONS)": "ok",
+        "Scotland flood maps (SEPA)": "ok",
+        "Wales flood maps (Natural Resources Wales)": "ok",
+        "Wales heritage, nature and air sites (DataMapWales)": "ok",
+        "Wales noise maps (Welsh Government)": "ok",
+        "Wales coastal erosion (Natural Resources Wales)": "ok",
+        "Wales disused coal tips (Welsh Government)": "ok",
+        "Scotland heritage sites (Historic Environment Scotland)": "ok",
+        "Scotland protected nature sites (NatureScot)": "ok",
+        "Scotland National Parks and Scenic Areas (Scottish Government)": "ok",
+        "Scotland air pollution hotspots (Scottish Air Quality)": "ok",
+        "Scotland noise maps (SEPA)": "ok",
+        "Scotland coastal erosion (Dynamic Coast)": "ok",
+        "Scotland licensed waste sites (SEPA)": "ok",
+        "Scotland crime rank (Scottish Government, SIMD 2020)": "ok",
+        "Northern Ireland heritage (Department for Communities)": "ok",
+        "Northern Ireland protected areas (DAERA)": "ok",
+        "Northern Ireland noise maps (DAERA)": "ok",
+        "Northern Ireland coastal erosion (DfI and DAERA)": "ok",
+        "Address search (OpenStreetMap Nominatim)": "ok",
+        "Schools register (planning.data.gov.uk)": "fail",
+        "Heritage backup (Historic England)": "ok",
+        "Clay shrink-swell (British Geological Survey)": "ok",
+        "Mining other than coal (British Geological Survey)": "ok",
+        "Conservation areas backup (Historic England)": "ok",
+        "Place backup (OpenStreetMap reverse lookup)": "ok",
+        "Address search backup (Photon)": "ok",
+        "Landfill backup (Defra copy)": "ok",
+        "Past floods (Defra copy)": "ok",
+        "Reservoir flooding, normal day (Defra copy)": "ok",
+        "Reservoir flooding, rivers already flooding (Defra copy)": "ok",
+        "Past floods in Wales (DataMapWales)": "ok",
+        "Flood zone backup (Defra copy)": "ok",
+        "Nature backup (Natural England)": "ok",
+        "GP surgeries and pharmacies (NHS Organisation Data Service)": "ok",
+        "Postcode lookup for many postcodes (postcodes.io)": "ok",
+        "Railway station list (saved with the app)": "ok",
+        "Census 2021 residents (saved with the app)": "ok"
+      }
+    },
+    {
+      "date": "2026-11-10",
+      "services": {
+        "Postcodes (postcodes.io)": "ok",
+        "Planning data (planning.data.gov.uk)": "fail",
+        "Surface water (Environment Agency)": "ok",
+        "Radon (British Geological Survey)": "ok",
+        "Landslides (British Geological Survey)": "ok",
+        "Coal mining (Mining Remediation Authority)": "ok",
+        "Road noise (Defra)": "ok",
+        "Rail noise (Defra)": "ok",
+        "Historic landfill (Environment Agency)": "ok",
+        "Coastal erosion (Environment Agency)": "ok",
+        "Sold prices (HM Land Registry)": "ok",
+        "Air quality model (Open-Meteo)": "ok",
+        "Crime (data.police.uk)": "ok",
+        "Police force for a place (data.police.uk)": "ok",
+        "Census boundaries (ONS)": "ok",
+        "Scotland flood maps (SEPA)": "ok",
+        "Wales flood maps (Natural Resources Wales)": "ok",
+        "Wales heritage, nature and air sites (DataMapWales)": "ok",
+        "Wales noise maps (Welsh Government)": "ok",
+        "Wales coastal erosion (Natural Resources Wales)": "ok",
+        "Wales disused coal tips (Welsh Government)": "ok",
+        "Scotland heritage sites (Historic Environment Scotland)": "ok",
+        "Scotland protected nature sites (NatureScot)": "ok",
+        "Scotland National Parks and Scenic Areas (Scottish Government)": "ok",
+        "Scotland air pollution hotspots (Scottish Air Quality)": "ok",
+        "Scotland noise maps (SEPA)": "ok",
+        "Scotland coastal erosion (Dynamic Coast)": "ok",
+        "Scotland licensed waste sites (SEPA)": "ok",
+        "Scotland crime rank (Scottish Government, SIMD 2020)": "ok",
+        "Northern Ireland heritage (Department for Communities)": "ok",
+        "Northern Ireland protected areas (DAERA)": "ok",
+        "Northern Ireland noise maps (DAERA)": "ok",
+        "Northern Ireland coastal erosion (DfI and DAERA)": "ok",
+        "Address search (OpenStreetMap Nominatim)": "ok",
+        "Schools register (planning.data.gov.uk)": "fail",
+        "Heritage backup (Historic England)": "ok",
+        "Clay shrink-swell (British Geological Survey)": "ok",
+        "Mining other than coal (British Geological Survey)": "ok",
+        "Conservation areas backup (Historic England)": "ok",
+        "Place backup (OpenStreetMap reverse lookup)": "ok",
+        "Address search backup (Photon)": "ok",
+        "Landfill backup (Defra copy)": "ok",
+        "Past floods (Defra copy)": "ok",
+        "Reservoir flooding, normal day (Defra copy)": "ok",
+        "Reservoir flooding, rivers already flooding (Defra copy)": "ok",
+        "Past floods in Wales (DataMapWales)": "ok",
+        "Flood zone backup (Defra copy)": "ok",
+        "Nature backup (Natural England)": "ok",
+        "GP surgeries and pharmacies (NHS Organisation Data Service)": "ok",
+        "Postcode lookup for many postcodes (postcodes.io)": "ok",
+        "Railway station list (saved with the app)": "ok",
+        "Census 2021 residents (saved with the app)": "ok"
+      }
+    },
+    {
+      "date": "2026-11-11",
+      "services": {
+        "Postcodes (postcodes.io)": "ok",
+        "Planning data (planning.data.gov.uk)": "fail",
+        "Surface water (Environment Agency)": "ok",
+        "Radon (British Geological Survey)": "ok",
+        "Landslides (British Geological Survey)": "ok",
+        "Coal mining (Mining Remediation Authority)": "ok",
+        "Road noise (Defra)": "ok",
+        "Rail noise (Defra)": "ok",
+        "Historic landfill (Environment Agency)": "ok",
+        "Coastal erosion (Environment Agency)": "ok",
+        "Sold prices (HM Land Registry)": "ok",
+        "Air quality model (Open-Meteo)": "ok",
+        "Crime (data.police.uk)": "ok",
+        "Police force for a place (data.police.uk)": "ok",
+        "Census boundaries (ONS)": "fail",
+        "Scotland flood maps (SEPA)": "ok",
+        "Wales flood maps (Natural Resources Wales)": "ok",
+        "Wales heritage, nature and air sites (DataMapWales)": "ok",
+        "Wales noise maps (Welsh Government)": "ok",
+        "Wales coastal erosion (Natural Resources Wales)": "ok",
+        "Wales disused coal tips (Welsh Government)": "ok",
+        "Scotland heritage sites (Historic Environment Scotland)": "ok",
+        "Scotland protected nature sites (NatureScot)": "ok",
+        "Scotland National Parks and Scenic Areas (Scottish Government)": "ok",
+        "Scotland air pollution hotspots (Scottish Air Quality)": "ok",
+        "Scotland noise maps (SEPA)": "ok",
+        "Scotland coastal erosion (Dynamic Coast)": "ok",
+        "Scotland licensed waste sites (SEPA)": "ok",
+        "Scotland crime rank (Scottish Government, SIMD 2020)": "ok",
+        "Northern Ireland heritage (Department for Communities)": "ok",
+        "Northern Ireland protected areas (DAERA)": "ok",
+        "Northern Ireland noise maps (DAERA)": "ok",
+        "Northern Ireland coastal erosion (DfI and DAERA)": "ok",
+        "Address search (OpenStreetMap Nominatim)": "ok",
+        "Schools register (planning.data.gov.uk)": "fail",
+        "Heritage backup (Historic England)": "ok",
+        "Clay shrink-swell (British Geological Survey)": "ok",
+        "Mining other than coal (British Geological Survey)": "ok",
+        "Conservation areas backup (Historic England)": "ok",
+        "Place backup (OpenStreetMap reverse lookup)": "ok",
+        "Address search backup (Photon)": "ok",
+        "Landfill backup (Defra copy)": "ok",
+        "Past floods (Defra copy)": "ok",
+        "Reservoir flooding, normal day (Defra copy)": "ok",
+        "Reservoir flooding, rivers already flooding (Defra copy)": "ok",
+        "Past floods in Wales (DataMapWales)": "ok",
+        "Flood zone backup (Defra copy)": "ok",
+        "Nature backup (Natural England)": "ok",
+        "GP surgeries and pharmacies (NHS Organisation Data Service)": "ok",
+        "Postcode lookup for many postcodes (postcodes.io)": "ok",
+        "Railway station list (saved with the app)": "ok",
+        "Census 2021 residents (saved with the app)": "ok"
+      }
+    },
+    {
+      "date": "2026-11-12",
+      "services": {
+        "Postcodes (postcodes.io)": "ok",
+        "Planning data (planning.data.gov.uk)": "fail",
+        "Surface water (Environment Agency)": "ok",
+        "Radon (British Geological Survey)": "ok",
+        "Landslides (British Geological Survey)": "ok",
+        "Coal mining (Mining Remediation Authority)": "ok",
+        "Road noise (Defra)": "ok",
+        "Rail noise (Defra)": "ok",
+        "Historic landfill (Environment Agency)": "ok",
+        "Coastal erosion (Environment Agency)": "ok",
+        "Sold prices (HM Land Registry)": "ok",
+        "Air quality model (Open-Meteo)": "ok",
+        "Crime (data.police.uk)": "ok",
+        "Police force for a place (data.police.uk)": "ok",
+        "Census boundaries (ONS)": "fail",
+        "Scotland flood maps (SEPA)": "ok",
+        "Wales flood maps (Natural Resources Wales)": "ok",
+        "Wales heritage, nature and air sites (DataMapWales)": "ok",
+        "Wales noise maps (Welsh Government)": "ok",
+        "Wales coastal erosion (Natural Resources Wales)": "ok",
+        "Wales disused coal tips (Welsh Government)": "ok",
+        "Scotland heritage sites (Historic Environment Scotland)": "ok",
+        "Scotland protected nature sites (NatureScot)": "ok",
+        "Scotland National Parks and Scenic Areas (Scottish Government)": "ok",
+        "Scotland air pollution hotspots (Scottish Air Quality)": "ok",
+        "Scotland noise maps (SEPA)": "ok",
+        "Scotland coastal erosion (Dynamic Coast)": "ok",
+        "Scotland licensed waste sites (SEPA)": "ok",
+        "Scotland crime rank (Scottish Government, SIMD 2020)": "ok",
+        "Northern Ireland heritage (Department for Communities)": "ok",
+        "Northern Ireland protected areas (DAERA)": "ok",
+        "Northern Ireland noise maps (DAERA)": "ok",
+        "Northern Ireland coastal erosion (DfI and DAERA)": "ok",
+        "Address search (OpenStreetMap Nominatim)": "ok",
+        "Schools register (planning.data.gov.uk)": "fail",
+        "Heritage backup (Historic England)": "ok",
+        "Clay shrink-swell (British Geological Survey)": "ok",
+        "Mining other than coal (British Geological Survey)": "ok",
+        "Conservation areas backup (Historic England)": "ok",
+        "Place backup (OpenStreetMap reverse lookup)": "ok",
+        "Address search backup (Photon)": "ok",
+        "Landfill backup (Defra copy)": "ok",
+        "Past floods (Defra copy)": "ok",
+        "Reservoir flooding, normal day (Defra copy)": "ok",
+        "Reservoir flooding, rivers already flooding (Defra copy)": "ok",
+        "Past floods in Wales (DataMapWales)": "ok",
+        "Flood zone backup (Defra copy)": "ok",
+        "Nature backup (Natural England)": "ok",
+        "GP surgeries and pharmacies (NHS Organisation Data Service)": "ok",
+        "Postcode lookup for many postcodes (postcodes.io)": "ok",
+        "Railway station list (saved with the app)": "ok",
+        "Census 2021 residents (saved with the app)": "ok"
+      }
+    },
+    {
+      "date": "2026-11-13",
+      "services": {
+        "Postcodes (postcodes.io)": "ok",
+        "Planning data (planning.data.gov.uk)": "fail",
+        "Surface water (Environment Agency)": "fail",
+        "Radon (British Geological Survey)": "ok",
+        "Landslides (British Geological Survey)": "ok",
+        "Coal mining (Mining Remediation Authority)": "ok",
+        "Road noise (Defra)": "ok",
+        "Rail noise (Defra)": "ok",
+        "Historic landfill (Environment Agency)": "ok",
+        "Coastal erosion (Environment Agency)": "ok",
+        "Sold prices (HM Land Registry)": "ok",
+        "Air quality model (Open-Meteo)": "ok",
+        "Crime (data.police.uk)": "ok",
+        "Police force for a place (data.police.uk)": "ok",
+        "Census boundaries (ONS)": "fail",
+        "Scotland flood maps (SEPA)": "ok",
+        "Wales flood maps (Natural Resources Wales)": "ok",
+        "Wales heritage, nature and air sites (DataMapWales)": "ok",
+        "Wales noise maps (Welsh Government)": "ok",
+        "Wales coastal erosion (Natural Resources Wales)": "ok",
+        "Wales disused coal tips (Welsh Government)": "ok",
+        "Scotland heritage sites (Historic Environment Scotland)": "ok",
+        "Scotland protected nature sites (NatureScot)": "ok",
+        "Scotland National Parks and Scenic Areas (Scottish Government)": "ok",
+        "Scotland air pollution hotspots (Scottish Air Quality)": "ok",
+        "Scotland noise maps (SEPA)": "ok",
+        "Scotland coastal erosion (Dynamic Coast)": "ok",
+        "Scotland licensed waste sites (SEPA)": "ok",
+        "Scotland crime rank (Scottish Government, SIMD 2020)": "ok",
+        "Northern Ireland heritage (Department for Communities)": "ok",
+        "Northern Ireland protected areas (DAERA)": "ok",
+        "Northern Ireland noise maps (DAERA)": "ok",
+        "Northern Ireland coastal erosion (DfI and DAERA)": "ok",
+        "Address search (OpenStreetMap Nominatim)": "ok",
+        "Schools register (planning.data.gov.uk)": "fail",
+        "Heritage backup (Historic England)": "ok",
+        "Clay shrink-swell (British Geological Survey)": "ok",
+        "Mining other than coal (British Geological Survey)": "ok",
+        "Conservation areas backup (Historic England)": "ok",
+        "Place backup (OpenStreetMap reverse lookup)": "ok",
+        "Address search backup (Photon)": "ok",
+        "Landfill backup (Defra copy)": "ok",
+        "Past floods (Defra copy)": "ok",
+        "Reservoir flooding, normal day (Defra copy)": "ok",
+        "Reservoir flooding, rivers already flooding (Defra copy)": "ok",
+        "Past floods in Wales (DataMapWales)": "ok",
+        "Flood zone backup (Defra copy)": "ok",
+        "Nature backup (Natural England)": "ok",
+        "GP surgeries and pharmacies (NHS Organisation Data Service)": "ok",
+        "Postcode lookup for many postcodes (postcodes.io)": "ok",
+        "Railway station list (saved with the app)": "ok",
+        "Census 2021 residents (saved with the app)": "ok"
+      }
+    },
+    {
+      "date": "2026-11-14",
+      "services": {
+        "Postcodes (postcodes.io)": "ok",
+        "Planning data (planning.data.gov.uk)": "fail",
+        "Surface water (Environment Agency)": "ok",
+        "Radon (British Geological Survey)": "ok",
+        "Landslides (British Geological Survey)": "ok",
+        "Coal mining (Mining Remediation Authority)": "ok",
+        "Road noise (Defra)": "fail",
+        "Rail noise (Defra)": "ok",
+        "Historic landfill (Environment Agency)": "ok",
+        "Coastal erosion (Environment Agency)": "ok",
+        "Sold prices (HM Land Registry)": "ok",
+        "Air quality model (Open-Meteo)": "ok",
+        "Crime (data.police.uk)": "ok",
+        "Police force for a place (data.police.uk)": "ok",
+        "Census boundaries (ONS)": "fail",
+        "Scotland flood maps (SEPA)": "ok",
+        "Wales flood maps (Natural Resources Wales)": "ok",
+        "Wales heritage, nature and air sites (DataMapWales)": "ok",
+        "Wales noise maps (Welsh Government)": "ok",
+        "Wales coastal erosion (Natural Resources Wales)": "ok",
+        "Wales disused coal tips (Welsh Government)": "ok",
+        "Scotland heritage sites (Historic Environment Scotland)": "ok",
+        "Scotland protected nature sites (NatureScot)": "ok",
+        "Scotland National Parks and Scenic Areas (Scottish Government)": "ok",
+        "Scotland air pollution hotspots (Scottish Air Quality)": "ok",
+        "Scotland noise maps (SEPA)": "ok",
+        "Scotland coastal erosion (Dynamic Coast)": "ok",
+        "Scotland licensed waste sites (SEPA)": "ok",
+        "Scotland crime rank (Scottish Government, SIMD 2020)": "ok",
+        "Northern Ireland heritage (Department for Communities)": "ok",
+        "Northern Ireland protected areas (DAERA)": "ok",
+        "Northern Ireland noise maps (DAERA)": "ok",
+        "Northern Ireland coastal erosion (DfI and DAERA)": "ok",
+        "Address search (OpenStreetMap Nominatim)": "ok",
+        "Schools register (planning.data.gov.uk)": "fail",
+        "Heritage backup (Historic England)": "ok",
+        "Clay shrink-swell (British Geological Survey)": "ok",
+        "Mining other than coal (British Geological Survey)": "ok",
+        "Conservation areas backup (Historic England)": "ok",
+        "Place backup (OpenStreetMap reverse lookup)": "ok",
+        "Address search backup (Photon)": "ok",
+        "Landfill backup (Defra copy)": "ok",
+        "Past floods (Defra copy)": "ok",
+        "Reservoir flooding, normal day (Defra copy)": "ok",
+        "Reservoir flooding, rivers already flooding (Defra copy)": "ok",
+        "Past floods in Wales (DataMapWales)": "ok",
+        "Flood zone backup (Defra copy)": "ok",
+        "Nature backup (Natural England)": "ok",
+        "GP surgeries and pharmacies (NHS Organisation Data Service)": "ok",
+        "Postcode lookup for many postcodes (postcodes.io)": "ok",
+        "Railway station list (saved with the app)": "ok",
+        "Census 2021 residents (saved with the app)": "ok"
+      }
+    }
+  ]
+}
